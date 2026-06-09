@@ -13,7 +13,7 @@ interface FeaturedPropertiesProps {
 function PropertyCard({ property, index }: { property: Property; index: number }) {
   const primaryImage = property.media?.find((m) => m.is_primary && m.type === 'image');
   const typeLabel    = TYPE_LABELS[property.type] ?? property.type;
-  const href = `/fincas-en-venta/${property.municipality?.slug ?? 'la-vega'}/${property.slug}`;
+  const href = `/propiedad/${property.slug}`;
 
   const hectareas =
     property.area_lot_m2 && property.area_lot_m2 >= 10_000
@@ -205,7 +205,7 @@ export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
             </p>
           </div>
           <Link
-            href="/fincas-en-venta"
+            href="/propiedades"
             className="text-sm font-bold underline underline-offset-4 transition-colors"
             style={{ color: '#1B56A1' }}
             onMouseEnter={(e) => (e.currentTarget.style.color = '#E8B92F')}

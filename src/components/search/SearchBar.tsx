@@ -18,11 +18,10 @@ export function SearchBar({ compact = false }: SearchBarProps) {
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const params = new URLSearchParams();
-    if (tipo)     params.set('tipo',      tipo);
+    if (tipo)      params.set('tipo',      tipo);
     if (municipio) params.set('municipio', municipio);
-    if (precioMax) params.set('precio_max', precioMax);
-    const base = municipio ? `/fincas-en-venta/${municipio}` : '/fincas-en-venta';
-    router.push(`${base}?${params.toString()}`);
+    if (precioMax) params.set('maxPrecio', precioMax);
+    router.push(`/propiedades?${params.toString()}`);
   };
 
   if (compact) {

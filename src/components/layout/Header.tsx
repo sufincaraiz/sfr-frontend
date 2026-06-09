@@ -7,12 +7,12 @@ import { X } from 'lucide-react';
 import { SearchBar } from '@/components/search/SearchBar';
 
 const NAV_LINKS = [
-  { href: '/fincas-en-venta',         label: 'Fincas' },
-  { href: '/fincas-en-venta/la-vega', label: 'La Vega' },
-  { href: '/municipios',              label: 'Municipios' },
-  { href: '/vender-mi-finca',         label: 'Vende tu finca' },
-  { href: '/nosotros',                label: 'Nosotros' },
-  { href: '/blog',                    label: 'Blog' },
+  { href: '/propiedades?tipo=finca',      label: 'Fincas' },
+  { href: '/propiedades?municipio=La Vega', label: 'La Vega' },
+  { href: '/propiedades',                 label: 'Propiedades' },
+  { href: '/vender-mi-finca',            label: 'Vende tu finca' },
+  { href: '/nosotros',                   label: 'Nosotros' },
+  { href: '/blog',                       label: 'Blog' },
 ];
 
 // Ícono hamburguesa (3 líneas)
