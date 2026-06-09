@@ -1,0 +1,384 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --color-primary:      #1B56A1;
+  --color-primary-dark: #0D2D5E;
+  --color-gold:         #E8B92F;
+  --color-green:        #A7CB61;
+  --color-white:        #FFFFFF;
+  --color-stone:        #2C2C2C;
+  --color-stone-light:  #6B7280;
+  --color-bg:           #F8FAFF;
+}
+
+@layer base {
+  *, *::before, *::after { box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: #FFFFFF;
+    color: var(--color-stone);
+    font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-montserrat), 'Montserrat', sans-serif;
+    font-weight: 700;
+  }
+
+  img, video { max-width: 100%; height: auto; }
+}
+
+/* ─── Hero — CSS animations (reemplazan GSAP en above-the-fold) ────────────── */
+/* GPU-composited: solo opacity + transform, no layout thrashing              */
+@keyframes heroFadeUp {
+  from { opacity: 0; transform: translateY(28px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* Clase base — aplicada a cada elemento del hero */
+.hero-anim {
+  opacity: 0; /* estado inicial antes de que la animación dispare */
+  animation: heroFadeUp 0.75s ease forwards;
+}
+
+/* Parallax overlay — fade-in estático sin GSAP */
+@keyframes heroOverlayIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.hero-overlay-anim {
+  animation: heroOverlayIn 0.4s ease forwards;
+}
+
+/* ─── Shared section tokens ────────────────────────────────────────────────── */
+.sfr-container {
+  max-width: 1280px;
+  margin-inline: auto;
+  padding-inline: clamp(1rem, 5vw, 2rem);
+}
+
+.sfr-eyebrow {
+  display: block;
+  font-family: var(--font-montserrat), Montserrat, sans-serif;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
+  color: var(--color-green);
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
+}
+
+.sfr-section-heading {
+  font-family: var(--font-montserrat), Montserrat, sans-serif;
+  font-weight: 700;
+  color: var(--color-primary-dark);
+  font-size: clamp(1.75rem, 4vw, 2.6rem);
+  line-height: 1.15;
+  margin-bottom: 2.5rem;
+  text-wrap: balance;
+}
+
+/* ─── AboutUs ───────────────────────────────────────────────────────────────── */
+.sfr-about-section {
+  background: #ffffff;
+  padding-block: clamp(4rem, 8vw, 7rem);
+}
+
+.sfr-about-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3rem;
+}
+
+@media (min-width: 1024px) {
+  .sfr-about-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: center;
+  }
+}
+
+.sfr-about-text p {
+  font-size: 0.97rem;
+  line-height: 1.8;
+  color: #444;
+  margin-bottom: 1.1rem;
+}
+
+.sfr-about-text p strong {
+  color: var(--color-primary-dark);
+}
+
+.sfr-about-facts {
+  list-style: none;
+  padding: 0;
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem 1.5rem;
+}
+
+@media (max-width: 540px) {
+  .sfr-about-facts { grid-template-columns: 1fr; }
+}
+
+.sfr-about-fact-item {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-primary-dark);
+  line-height: 1.4;
+}
+
+.sfr-about-check {
+  color: var(--color-green);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+/* Imagen + badge */
+.sfr-about-image-wrap {
+  position: relative;
+  border-radius: 16px;
+  overflow: visible; /* badge puede sobresalir */
+}
+
+.sfr-about-img {
+  width: 100%;
+  height: 420px;
+  object-fit: cover;
+  border-radius: 16px;
+  display: block;
+  box-shadow: 0 20px 60px rgba(13,45,94,0.15);
+}
+
+.sfr-about-badge {
+  position: absolute;
+  bottom: -1.25rem;
+  left: -1.25rem;
+  background: var(--color-primary-dark);
+  border: 3px solid var(--color-gold);
+  border-radius: 14px;
+  padding: 1rem 1.4rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+}
+
+.sfr-about-badge strong {
+  font-family: var(--font-montserrat), Montserrat, sans-serif;
+  font-weight: 800;
+  font-size: 2rem;
+  color: var(--color-gold);
+  letter-spacing: -0.02em;
+}
+
+.sfr-about-badge span {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.8);
+  text-align: center;
+}
+
+/* ─── FAQ ───────────────────────────────────────────────────────────────────── */
+.sfr-faq-section {
+  background: #F5F7FA;
+  padding-top: clamp(4rem, 8vw, 7rem);
+  padding-bottom: 2rem;
+}
+
+.sfr-faq-header {
+  text-align: center;
+  margin-bottom: 3rem;
+}
+
+.sfr-faq-header .sfr-eyebrow {
+  display: block;
+  text-align: center;
+}
+
+.sfr-faq-header .sfr-section-heading {
+  text-align: center;
+  margin-bottom: 0;
+}
+
+.sfr-faq-list {
+  max-width: 860px;
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.sfr-faq-item {
+  border-bottom: 1px solid #E2E8F0;
+  background: transparent;
+}
+
+.sfr-faq-item:first-child {
+  border-top: 1px solid #E2E8F0;
+}
+
+.sfr-faq-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.25rem 0;
+  cursor: pointer;
+  list-style: none;
+  user-select: none;
+  outline: none;
+}
+
+/* Quita el triángulo nativo en todos los navegadores */
+.sfr-faq-summary::-webkit-details-marker { display: none; }
+.sfr-faq-summary::marker { display: none; }
+
+.sfr-faq-question-text {
+  font-family: var(--font-montserrat), Montserrat, sans-serif;
+  font-weight: 700;
+  font-size: 1rem;
+  color: var(--color-primary-dark);
+  line-height: 1.4;
+  flex: 1;
+}
+
+/* Ícono + que rota a × al abrir */
+.sfr-faq-icon {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 2px solid var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease, background 0.25s ease, border-color 0.25s ease;
+  position: relative;
+}
+
+/* Línea horizontal del + */
+.sfr-faq-icon::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 2px;
+  background: var(--color-primary);
+  border-radius: 2px;
+  transition: background 0.25s ease;
+}
+
+/* Línea vertical del + */
+.sfr-faq-icon::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 10px;
+  background: var(--color-primary);
+  border-radius: 2px;
+  transition: transform 0.3s ease, background 0.25s ease;
+}
+
+/* Al abrir: rota la línea vertical → desaparece (queda solo —) */
+details[open] .sfr-faq-icon {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  transform: rotate(45deg);
+}
+
+details[open] .sfr-faq-icon::before,
+details[open] .sfr-faq-icon::after {
+  background: #ffffff;
+}
+
+.sfr-faq-answer {
+  overflow: hidden;
+  padding-bottom: 1.25rem;
+}
+
+.sfr-faq-answer p {
+  font-size: 0.94rem;
+  line-height: 1.8;
+  color: #444;
+  margin: 0;
+}
+
+/* Animación suave de apertura */
+details .sfr-faq-answer {
+  animation: faqSlideDown 0.3s ease forwards;
+}
+
+@keyframes faqSlideDown {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* CTA inferior */
+.sfr-faq-cta {
+  text-align: center;
+  margin-top: 2.5rem;
+  font-size: 0.95rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.sfr-faq-cta-link {
+  color: var(--color-primary);
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: border-color 0.2s ease, color 0.2s ease;
+}
+
+.sfr-faq-cta-link:hover {
+  color: var(--color-gold);
+  border-color: var(--color-gold);
+}
+
+/* ─── Utilities ─────────────────────────────────────────────────────────────── */
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+
+  /* GSAP targets — initial state set via JS, but provide a safe default */
+  .gsap-fade-up {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+
+  /* Parallax container */
+  .parallax-hero {
+    will-change: transform;
+  }
+
+  @media (pointer: fine) {
+    .cursor-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--color-gold);
+      border-radius: 50%;
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      transition: width 0.2s ease, height 0.2s ease;
+    }
+    .cursor-dot.over-link {
+      width: 22px;
+      height: 22px;
+      background: var(--color-primary);
+    }
+  }
+}
