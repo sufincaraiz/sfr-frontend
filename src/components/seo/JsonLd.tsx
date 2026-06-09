@@ -1,3 +1,5 @@
+import { SITE_URL } from '@/lib/site';
+
 interface JsonLdProps {
   data: Record<string, unknown> | Record<string, unknown>[];
 }
@@ -21,7 +23,7 @@ export function localBusinessSchema() {
       // ── 1. RealEstateAgent / LocalBusiness ────────────────────────────────
       {
         '@type': ['RealEstateAgent', 'LocalBusiness'],
-        '@id': 'https://www.sufincaraiz.com/#organization',
+        '@id': `${SITE_URL}/#organization`,
 
         name: 'Su Finca Raíz',
         alternateName: 'Inmobiliaria Su Finca Raíz',
@@ -32,14 +34,14 @@ export function localBusinessSchema() {
           'Gualivá, Cundinamarca, Colombia. Más de 10 años de experiencia y ' +
           'más de 150 propiedades vendidas.',
 
-        url:   'https://www.sufincaraiz.com',
+        url:   SITE_URL,
         logo: {
           '@type':  'ImageObject',
-          url:      'https://www.sufincaraiz.com/images/logo.png',
+          url:      `${SITE_URL}/images/logo-su-finca-raiz-blanco.png`,
           width:    200,
           height:   200,
         },
-        image: 'https://www.sufincaraiz.com/images/og-home.jpg',
+        image: `${SITE_URL}/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg`,
 
         // ── Contacto ─────────────────────────────────────────────────────────
         telephone: '+573218826730',
@@ -203,20 +205,20 @@ export function localBusinessSchema() {
       // ── 2. WebSite con SearchAction (Sitelinks Searchbox en Google) ────────
       {
         '@type': 'WebSite',
-        '@id':   'https://www.sufincaraiz.com/#website',
-        url:     'https://www.sufincaraiz.com',
+        '@id':   `${SITE_URL}/#website`,
+        url:     SITE_URL,
         name:    'Su Finca Raíz',
         description:
           'Portal inmobiliario especializado en fincas, lotes y casas campestres ' +
           'en La Vega y el Gualivá, Cundinamarca, Colombia.',
-        publisher:  { '@id': 'https://www.sufincaraiz.com/#organization' },
+        publisher:  { '@id': `${SITE_URL}/#organization` },
         inLanguage: 'es-CO',
         // Habilita el cuadro de búsqueda interno en los resultados de Google
         potentialAction: {
           '@type': 'SearchAction',
           target: {
             '@type':     'EntryPoint',
-            urlTemplate: 'https://www.sufincaraiz.com/fincas-en-venta?q={search_term_string}',
+            urlTemplate: `${SITE_URL}/propiedades?q={search_term_string}`,
           },
           'query-input': 'required name=search_term_string',
         },
@@ -235,7 +237,7 @@ export function breadcrumbSchema(items: { name: string; href: string }[]) {
       '@type':    'ListItem',
       position:    i + 1,
       name:        item.name,
-      item:       `https://www.sufincaraiz.com${item.href}`,
+      item:       `${SITE_URL}${item.href}`,
     })),
   };
 }
@@ -262,7 +264,7 @@ export function propertySchema(property: {
     '@context': 'https://schema.org',
     '@type':    'RealEstateListing',
     name:        property.title,
-    url:        `https://www.sufincaraiz.com/fincas-en-venta/${property.slug}`,
+    url:        `${SITE_URL}/propiedad/${property.slug}`,
     description: property.description,
     datePosted:  property.published_at,
     dateModified: property.updated_at,
@@ -298,7 +300,7 @@ export function propertySchema(property: {
     broker: {
       '@type': 'RealEstateAgent',
       name:    'Su Finca Raíz',
-      url:     'https://www.sufincaraiz.com',
+      url:     SITE_URL,
     },
   };
 }

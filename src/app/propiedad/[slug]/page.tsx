@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { SITE_URL } from '@/lib/site';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Home, MapPin, Bed, Bath, Car, Maximize2, Layers, ChevronRight } from 'lucide-react';
@@ -76,9 +77,13 @@ export async function generateMetadata(
   return {
     title: `${title} | Su Finca Raíz`,
     description,
+    alternates: {
+      canonical: `${SITE_URL}/propiedad/${slug}`,
+    },
     openGraph: {
       title: `${title} | Su Finca Raíz`,
       description,
+      url: `${SITE_URL}/propiedad/${slug}`,
       images: img ? [{ url: img.url, width: 1200, height: 630 }] : [],
       type: 'website',
       locale: 'es_CO',
@@ -134,7 +139,7 @@ export default async function PropiedadDetallePage(
     '@type': 'RealEstateListing',
     name: title,
     description: descripcion || p.short_description,
-    url: `https://www.sufincaraiz.com/propiedad/${p.slug}`,
+    url: `${SITE_URL}/propiedad/${p.slug}`,
     image: banner?.url,
     offers: {
       '@type': 'Offer',

@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { MessageCircle, Send, Phone } from 'lucide-react';
+import { SITE_URL } from '@/lib/site';
 
 interface Props {
   propertyTitle: string;
@@ -22,7 +23,7 @@ export function FormContactoPropiedad({ propertyTitle, propertySlug, price, what
     : 'Consultar precio';
 
   const waText = encodeURIComponent(
-    `Hola! Estoy interesado en la propiedad *${propertyTitle}* (${priceStr}).\n🔗 sufincaraiz.com/propiedad/${propertySlug}`
+    `Hola! Estoy interesado en la propiedad *${propertyTitle}* (${priceStr}).\n🔗 ${SITE_URL}/propiedad/${propertySlug}`
   );
   const waHref = `https://wa.me/${whatsapp}?text=${waText}`;
 

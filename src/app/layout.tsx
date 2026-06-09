@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { WhatsAppFloat } from '@/components/layout/WhatsAppFloat';
 import { CustomCursor } from '@/components/layout/CustomCursor';
+import { SITE_URL } from '@/lib/site';
 
 const montserrat = Montserrat({
   subsets: ['latin'],
@@ -18,9 +19,7 @@ const montserrat = Montserrat({
 
 // ─── Metadata global (heredada por todas las páginas) ─────────────────────────
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? 'https://www.sufincaraiz.com'
-  ),
+  metadataBase: new URL(SITE_URL),
 
   // Template: cada página sobreescribe el segmento antes del pipe
   title: {
@@ -53,14 +52,14 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_CO',
     siteName: 'Su Finca Raíz',
-    url: 'https://www.sufincaraiz.com',
+    url: SITE_URL,
     title: 'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
     description:
       'Fincas, lotes y casas campestres en La Vega y el Gualivá. ' +
       '+100 propiedades verificadas a solo 2 horas de Bogotá.',
     images: [
       {
-        url: '/images/og-home.jpg',
+        url: '/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg',
         width: 1200,
         height: 630,
         alt: 'Fincas en venta en La Vega, Cundinamarca — Su Finca Raíz',
@@ -76,7 +75,7 @@ export const metadata: Metadata = {
     description:
       'Fincas, lotes y casas campestres en La Vega y el Gualivá, Cundinamarca. ' +
       '+100 propiedades verificadas.',
-    images: ['/images/og-home.jpg'],
+    images: ['/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg'],
   },
 
   // ── Robots ──────────────────────────────────────────────────────────────────
@@ -98,10 +97,10 @@ export const metadata: Metadata = {
   },
 
   // ── Idioma y región ─────────────────────────────────────────────────────────
-  alternates: {
-    canonical: 'https://www.sufincaraiz.com',
-    languages: { 'es-CO': 'https://www.sufincaraiz.com' },
-  },
+  // canonical se omite aquí: cada página declara el suyo (auto-referencial).
+  // languages/hreflang se omite: sitio mono-idioma; ponerlo globalmente haría
+  // que todas las páginas internas apunten su hreflang a la home.
+  alternates: {},
 
   // ── App / PWA ────────────────────────────────────────────────────────────────
   applicationName: 'Su Finca Raíz',
@@ -128,7 +127,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="ICBM"            content="4.9929, -74.3404" />
         {/* WhatsApp Business — número de teléfono */}
         <meta name="business:contact_data:phone_number" content="+573218826730" />
-        <meta name="business:contact_data:website"      content="https://www.sufincaraiz.com" />
+        <meta name="business:contact_data:website"      content={SITE_URL} />
         <meta name="business:contact_data:country_name" content="Colombia" />
       </head>
       <body className="font-sans">

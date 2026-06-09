@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
+import { SITE_URL } from '@/lib/site';
 import { prisma } from '@/lib/prisma';
 import { PropiedadesGrid }    from '@/components/propiedades/PropiedadesGrid';
 import { FiltrosPropiedades } from '@/components/propiedades/FiltrosPropiedades';
@@ -11,6 +12,12 @@ import type { Property }      from '@/types';
 export const metadata: Metadata = {
   title: 'Propiedades en Venta | La Vega Cundinamarca | Su Finca Raíz',
   description: 'Fincas, lotes, casas campestres, condominios y apartamentos en venta en La Vega, Cundinamarca. Más de 24 propiedades verificadas. ☎ 321 882 6730.',
+  alternates: {
+    canonical: `${SITE_URL}/propiedades`,
+  },
+  openGraph: {
+    url: `${SITE_URL}/propiedades`,
+  },
 };
 
 const LIMIT = 12;

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { SITE_URL } from '@/lib/site';
 import { Hero }               from '@/components/home/Hero';
 import { FeaturedProperties } from '@/components/home/FeaturedProperties';
 import { StatsSection }       from '@/components/home/StatsSection';
@@ -24,7 +25,7 @@ export const metadata: Metadata = {
     '+100 propiedades verificadas a 2 h de Bogotá. Asesórate gratis: ☎ 321 882 6730.',
 
   alternates: {
-    canonical: 'https://www.sufincaraiz.com/',
+    canonical: SITE_URL,
   },
 
   openGraph: {
@@ -32,10 +33,10 @@ export const metadata: Metadata = {
     description:
       'Fincas, lotes y casas campestres en La Vega y el Gualivá. ' +
       '+100 propiedades verificadas a solo 2 horas de Bogotá.',
-    url:    'https://www.sufincaraiz.com/',
+    url:    SITE_URL,
     images: [
       {
-        url:    '/images/og-home.jpg',
+        url:    '/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg',
         width:   1200,
         height:  630,
         alt:    'Fincas en venta en La Vega, Cundinamarca — Su Finca Raíz',
