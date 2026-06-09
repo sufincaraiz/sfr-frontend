@@ -30,6 +30,39 @@ const nextConfig: NextConfig = {
     // Extrae CSS crítico e inlinea el above-the-fold — mejora FCP
     optimizeCss: true,
   },
+
+  // ── Redirects SEO ──────────────────────────────────────────────────────────
+  async redirects() {
+    return [
+      {
+        // Ruta legacy — redirige permanentemente a la nueva URL canónica
+        source:      '/inmuebles',
+        destination: '/propiedades',
+        permanent:   true,
+      },
+    ]
+  },
+
+  // ── Headers de seguridad ────────────────────────────────────────────────────
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          // Evita que el navegador "adivine" el Content-Type (MIME sniffing)
+          { key: 'X-Content-Type-Options',  value: 'nosniff' },
+          // Bloquea que el sitio sea embebido en iframes ajenos (clickjacking)
+          { key: 'X-Frame-Options',         value: 'SAMEORIGIN' },
+          // Solo envía el origen (sin path ni query) en requests cross-origin
+          { key: 'Referrer-Policy',         value: 'strict-origin-when-cross-origin' },
+          // Desactiva APIs de hardware no usadas
+          { key: 'Permissions-Policy',      value: 'camera=(), microphone=(), geolocation=()' },
+          // Fuerza HTTPS por 2 años, incluyendo subdominios, en la lista preload
+          { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig
