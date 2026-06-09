@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Geographic hierarchy ────────────────────────────────────────────────────
+
+model Municipality {
+  id           String     @id @default(uuid())
+  slug         String     @unique
+  name         String
+  province     String     @default("Cundinamarca")
+  demand_score Int        @default(0)
+  veredas      Vereda[]
+  properties   Property[]
+
+  @@map("municipalities")
+}
+
+model Vereda {
+  id              String       @id @default(uuid())
+  slug            String
+  name            String
+  municipality_id String
+  lat             Float?
+  lng             Float?
+  municipality    Municipality @relation(fields: [municipality_id], references: [id])
+  properties      Property[]
+
+  @@unique([slug, municipality_id])
+  @@map("veredas")
+}
+
+// ─── Core ────────────────────────────────────────────────────────────────────
+
+model Property {
+  id               String          @id @default(uuid())
+  slug             String          @unique
+  type             String          // finca | lote | casa | apartamento | condominio | local
+  transaction_type String          @default("venta")
+  municipality_id  String
+  vereda_id        String?
+  address_visible  String?
+  price_cop        BigInt
+  area_lot_m2      Float?
+  area_built_m2    Float?
+  bedrooms         Int             @default(0)
+  bathrooms        Int             @default(0)
+  parking          Int             @default(0)
+  year_built       Int?
+  status           String          @default("available") // available | reserved | sold
+  geo_lat          Float?
+  geo_lng          Float?
+  published_at     DateTime        @default(now())
+  updated_at       DateTime        @updatedAt
+  // SEO / content
+  title            String?
+  short_description String?
+  description      String?
+  meta_title       String?
+  meta_description String?
+  // Relations
+  municipality     Municipality    @relation(fields: [municipality_id], references: [id])
+  vereda           Vereda?         @relation(fields: [vereda_id], references: [id])
+  media            PropertyMedia[]
+  features         PropertyFeature[]
+  leads            Lead[]
+
+  @@index([municipality_id, status, price_cop])
+  @@index([vereda_id, status])
+  @@index([type, status])
+  @@map("properties")
+}
+
+model PropertyFeature {
+  id            String   @id @default(uuid())
+  property_id   String
+  feature_key   String
+  feature_value String
+  property      Property @relation(fields: [property_id], references: [id], onDelete: Cascade)
+
+  @@map("property_features")
+}
+
+model PropertyMedia {
+  id                String   @id @default(uuid())
+  property_id       String
+  type              String   // image | video | tour360
+  tour360_type      String?  // self_hosted | embed
+  tour360_embed_url String?
+  url               String
+  order             Int      @default(0)
+  alt_text          String   @default("")
+  is_primary        Boolean  @default(false)
+  property          Property @relation(fields: [property_id], references: [id], onDelete: Cascade)
+
+  @@map("property_media")
+}
+
+// ─── Agents ─────────────────────────────────────────────────────────────────
+
+model Agent {
+  id      String  @id @default(uuid())
+  name    String
+  slug    String  @unique
+  photo   String?
+  license String?
+  whatsapp String
+  email   String  @unique
+  leads   Lead[]
+
+  @@map("agents")
+}
+
+// ─── Leads ──────────────────────────────────────────────────────────────────
+
+model Lead {
+  id                String   @id @default(uuid())
+  property_id       String?
+  name              String
+  phone             String
+  email             String
+  channel           String   @default("web")
+  message           String?
+  utm_source        String?
+  utm_medium        String?
+  utm_campaign      String?
+  created_at        DateTime @default(now())
+  status            String   @default("new") // new | contacted | qualified | closed
+  assigned_agent_id String?
+  property          Property? @relation(fields: [property_id], references: [id], onDelete: SetNull)
+  agent             Agent?    @relation(fields: [assigned_agent_id], references: [id])
+
+  @@map("leads")
+}
+
+// ─── Content ────────────────────────────────────────────────────────────────
+
+model Article {
+  id               String   @id @default(uuid())
+  slug             String   @unique
+  title            String
+  excerpt          String?
+  content          String
+  cover_image_url  String?
+  published_at     DateTime?
+  updated_at       DateTime @updatedAt
+  meta_title       String?
+  meta_description String?
+
+  @@map("articles")
+}
+
+model Redirect {
+  id          String @id @default(uuid())
+  source      String @unique
+  destination String
+  permanent   Boolean @default(true)
+
+  @@map("redirects")
+}
+
+model SearchLog {
+  id          String   @id @default(uuid())
+  query       String?
+  tipo        String?
+  municipio   String?
+  precio_max  BigInt?
+  results     Int      @default(0)
+  created_at  DateTime @default(now())
+
+  @@map("search_logs")
+}
