@@ -138,6 +138,20 @@ model Lead {
   @@map("leads")
 }
 
+// ─── Admin ──────────────────────────────────────────────────────────────────
+
+model Admin {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  nombre    String
+  role      String   @default("admin")
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@map("admins")
+}
+
 // ─── Content ────────────────────────────────────────────────────────────────
 
 model Article {

@@ -56,8 +56,8 @@ export function Paginacion({ page, pages, total }: Props) {
         {btn(<ChevronLeft size={16} />, () => go(page - 1), page === 1)}
         {pageNums.map((n, i) =>
           n === '…'
-            ? <span key={`e${i}`} style={{ display: 'flex', alignItems: 'center', padding: '0 4px', color: '#94A3B8' }}>…</span>
-            : btn(n, () => go(n as number), false, n === page)
+            ? <span key={`ellipsis-${i}`} style={{ display: 'flex', alignItems: 'center', padding: '0 4px', color: '#94A3B8' }}>…</span>
+            : <span key={`page-${n}`}>{btn(n, () => go(n as number), false, n === page)}</span>
         )}
         {btn(<ChevronRight size={16} />, () => go(page + 1), page === pages)}
       </div>
