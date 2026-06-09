@@ -10,7 +10,7 @@ export function Tour360Section() {
   // Lazy load del iframe — solo cuando el usuario llega a la sección
   useEffect(() => {
     const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setIsVisible(true); },
+      (entries) => { if (entries[0]?.isIntersecting) setIsVisible(true); },
       { threshold: 0.2 }
     );
     if (sectionRef.current) observer.observe(sectionRef.current);
