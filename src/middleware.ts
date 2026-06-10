@@ -21,7 +21,7 @@ export async function middleware(request: NextRequest) {
 
   // ── Bloquea indexación de hosts no canónicos (*.vercel.app, previews, etc.) ─
   // Condición: si el host NO es exactamente www.sufincaraiz.com → noindex
-  const host = (request.headers.get('host') ?? '').split(':')[0].toLowerCase()
+  const host = (request.headers.get('host') ?? '').split(':')[0]?.toLowerCase() ?? ''
   if (host !== CANONICAL_HOST) {
     const response = NextResponse.next()
     response.headers.set('X-Robots-Tag', 'noindex, nofollow')
