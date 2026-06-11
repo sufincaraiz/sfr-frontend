@@ -11,7 +11,8 @@ const MacChatWidget = dynamic(() => import('./MacChatWidget'), {
 
 export function MacChatWidgetLoader() {
   const pathname = usePathname()
-  // No mostrar en /admin ni en sus sub-rutas
-  if (pathname.startsWith('/admin')) return null
+  // usePathname() puede ser null durante el pre-render estático (Vercel);
+  // el null-guard evita que el componente falle silenciosamente en producción
+  if (!pathname || pathname.startsWith('/admin')) return null
   return <MacChatWidget />
 }
