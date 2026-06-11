@@ -63,6 +63,9 @@ model Property {
   description      String?
   meta_title       String?
   meta_description String?
+  // Media embeds
+  video_url        String?
+  virtual_tour_url String?
   // Relations
   municipality     Municipality    @relation(fields: [municipality_id], references: [id])
   vereda           Vereda?         @relation(fields: [vereda_id], references: [id])
@@ -118,24 +121,105 @@ model Agent {
 
 // ─── Leads ──────────────────────────────────────────────────────────────────
 
+enum LeadQualification {
+  SIN_CALIFICAR
+  CALIENTE
+  TIBIO
+  FRIO
+  VACIO
+  DESCARTADO
+}
+
+enum LeadPipeline {
+  NUEVO
+  CONTACTADO
+  VISITA_AGENDADA
+  EN_NEGOCIACION
+  CERRADO_GANADO
+  CERRADO_PERDIDO
+}
+
 model Lead {
-  id                String   @id @default(uuid())
+  id                String            @id @default(uuid())
   property_id       String?
   name              String
   phone             String
   email             String
-  channel           String   @default("web")
+  channel           String            @default("web")
   message           String?
   utm_source        String?
   utm_medium        String?
   utm_campaign      String?
-  created_at        DateTime @default(now())
-  status            String   @default("new") // new | contacted | qualified | closed
+  created_at        DateTime          @default(now())
+  status            String            @default("new")
   assigned_agent_id String?
-  property          Property? @relation(fields: [property_id], references: [id], onDelete: SetNull)
-  agent             Agent?    @relation(fields: [assigned_agent_id], references: [id])
+  // Mac agent fields
+  qualification     LeadQualification @default(SIN_CALIFICAR)
+  budgetMin         Int?
+  budgetMax         Int?
+  interestType      String?
+  interestZone      String?
+  timeframe         String?
+  financing         String?
+  agentNotes        String?           @db.Text
+  source            String?
+  portalAdId        String?
+  pipeline          LeadPipeline      @default(NUEVO)
+  nextAction        String?
+  nextActionDate    DateTime?
+  lastContactAt     DateTime?
+  property          Property?         @relation(fields: [property_id], references: [id], onDelete: SetNull)
+  agent             Agent?            @relation(fields: [assigned_agent_id], references: [id])
+  conversations     Conversation[]
 
   @@map("leads")
+}
+
+// ─── Agent conversations ─────────────────────────────────────────────────────
+
+enum Channel {
+  WEB
+  WHATSAPP
+  TELEGRAM
+  APP
+}
+
+enum ConvStatus {
+  ACTIVE
+  ESCALATED
+  CLOSED
+}
+
+enum MsgRole {
+  USER
+  ASSISTANT
+}
+
+model Conversation {
+  id          String     @id @default(cuid())
+  channel     Channel    @default(WEB)
+  externalId  String
+  leadId      String?
+  lead        Lead?      @relation(fields: [leadId], references: [id])
+  status      ConvStatus @default(ACTIVE)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  messages    Message[]
+
+  @@unique([channel, externalId])
+  @@map("conversations")
+}
+
+model Message {
+  id             String       @id @default(cuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  role           MsgRole
+  content        String       @db.Text
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
 }
 
 // ─── Admin ──────────────────────────────────────────────────────────────────

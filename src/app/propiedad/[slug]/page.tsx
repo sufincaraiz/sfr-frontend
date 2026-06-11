@@ -8,6 +8,8 @@ import { prisma } from '@/lib/prisma';
 import { formatPrice, TYPE_LABELS } from '@/lib/utils';
 import { GaleriaLightbox } from '@/components/propiedades/GaleriaLightbox';
 import { FormContactoPropiedad } from '@/components/propiedades/FormContactoPropiedad';
+import { JsonLd, breadcrumbSchema, propertySchema } from '@/components/seo/JsonLd';
+import { RelatedProperties } from '@/components/propiedades/RelatedProperties';
 import type { Property, PropertyMedia, PropertyFeature } from '@/types';
 
 // ─── helpers ────────────────────────────────────────────────────────────────
@@ -133,39 +135,34 @@ export default async function PropiedadDetallePage(
   // Tour 360
   const tour = p.media?.find(m => m.type === 'tour360' && m.tour360_embed_url);
 
-  // Schema.org
-  const schema = {
-    '@context': 'https://schema.org',
-    '@type': 'RealEstateListing',
-    name: title,
-    description: descripcion || p.short_description,
-    url: `${SITE_URL}/propiedad/${p.slug}`,
-    image: banner?.url,
-    offers: {
-      '@type': 'Offer',
-      price: p.price_cop,
-      priceCurrency: 'COP',
-      availability: 'https://schema.org/InStock',
-    },
-    address: {
-      '@type': 'PostalAddress',
-      addressLocality: muni,
-      addressRegion: 'Cundinamarca',
-      addressCountry: 'CO',
-    },
-    ...(p.geo_lat && p.geo_lng ? {
-      geo: { '@type': 'GeoCoordinates', latitude: p.geo_lat, longitude: p.geo_lng },
-    } : {}),
-    numberOfRooms: p.bedrooms || undefined,
-    floorSize: p.area_built_m2 ? { '@type': 'QuantitativeValue', value: p.area_built_m2, unitCode: 'MTK' } : undefined,
-  };
+  const breadcrumbs = breadcrumbSchema([
+    { name: 'Inicio', href: '/' },
+    { name: 'Propiedades', href: '/propiedades' },
+    { name: title, href: `/propiedad/${p.slug}` },
+  ])
+
+  const listing = propertySchema({
+    title,
+    slug:          p.slug,
+    description:   descripcion || p.short_description || '',
+    price_cop:     p.price_cop,
+    status:        p.status,
+    bedrooms:      p.bedrooms ?? 0,
+    bathrooms:     p.bathrooms ?? 0,
+    area_built_m2: p.area_built_m2,
+    area_lot_m2:   p.area_lot_m2,
+    geo_lat:       p.geo_lat,
+    geo_lng:       p.geo_lng,
+    city:          muni,
+    images:        p.media?.map(m => m.url) ?? [],
+    published_at:  p.published_at,
+    updated_at:    p.updated_at,
+  })
 
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
-      />
+      <JsonLd data={breadcrumbs} />
+      <JsonLd data={listing} />
 
       <main style={{ background: '#F8FAFC', minHeight: '100vh' }}>
 
@@ -374,6 +371,15 @@ export default async function PropiedadDetallePage(
           </aside>
         </div>
       </main>
+
+      <RelatedProperties
+        currentSlug={p.slug}
+        municipalityId={p.municipality_id}
+        municipalitySlug={p.municipality?.slug ?? ''}
+        municipalityName={muni}
+        veredaId={p.vereda_id}
+        type={p.type}
+      />
 
       {/* Responsive styles */}
       <style>{`

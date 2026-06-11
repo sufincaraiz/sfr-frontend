@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { WhatsAppFloat } from '@/components/layout/WhatsAppFloat';
 import { CustomCursor } from '@/components/layout/CustomCursor';
+import { MacChatWidgetLoader } from '@/components/mac/MacChatWidgetLoader';
 import { SITE_URL } from '@/lib/site';
 
 const montserrat = Montserrat({
@@ -136,6 +137,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <main id="main-content">{children}</main>
         <Footer />
         <WhatsAppFloat />
+        <MacChatWidgetLoader />
       </body>
     </html>
   );

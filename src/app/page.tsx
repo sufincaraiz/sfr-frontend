@@ -7,7 +7,8 @@ import { ValueProp }          from '@/components/home/ValueProp';
 import { Tour360Section }     from '@/components/home/Tour360Section';
 import { AboutUs }            from '@/components/home/AboutUs';
 import { FAQ }                from '@/components/home/FAQ';
-import { JsonLd, localBusinessSchema } from '@/components/seo/JsonLd';
+import { JsonLd, localBusinessSchema, faqSchema, webPageSchema } from '@/components/seo/JsonLd';
+import { HOME_FAQS } from '@/lib/faq-data';
 import { SEED_PROPERTIES }    from '@/lib/seed-properties';
 import type { Property }      from '@/types';
 
@@ -73,6 +74,15 @@ export default async function HomePage() {
         Contiene @graph con: RealEstateAgent + WebSite (SearchAction).
       */}
       <JsonLd data={localBusinessSchema()} />
+      <JsonLd data={faqSchema(HOME_FAQS)} />
+      <JsonLd data={webPageSchema({
+        url:                 SITE_URL,
+        name:                'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
+        description:         'Compra fincas, lotes y casas campestres en La Vega, Cundinamarca. +100 propiedades verificadas a 2 h de Bogotá.',
+        speakable_selectors: ['.sfr-speakable', 'h1', '#preguntas-frecuentes'],
+        about_name:          'Finca raíz en La Vega, Cundinamarca',
+        about_same_as:       'https://es.wikipedia.org/wiki/La_Vega_(Cundinamarca)',
+      })} />
 
       <Hero />
       <FeaturedProperties properties={featuredProperties} />

@@ -177,7 +177,7 @@ export function localBusinessSchema() {
           {
             '@type':             'ContactPoint',
             telephone:           '+573218826730',
-            contactType:         'customer service',
+            contactType:         'customer-service',
             availableLanguage:   'Spanish',
           },
         ],
@@ -215,11 +215,8 @@ export function localBusinessSchema() {
         inLanguage: 'es-CO',
         // Habilita el cuadro de búsqueda interno en los resultados de Google
         potentialAction: {
-          '@type': 'SearchAction',
-          target: {
-            '@type':     'EntryPoint',
-            urlTemplate: `${SITE_URL}/propiedades?q={search_term_string}`,
-          },
+          '@type':       'SearchAction',
+          target:        `${SITE_URL}/propiedades?q={search_term_string}`,
           'query-input': 'required name=search_term_string',
         },
       },
@@ -297,12 +294,54 @@ export function propertySchema(property: {
     ...(property.area_lot_m2
       ? { lotSize:   { '@type': 'QuantitativeValue', value: property.area_lot_m2,   unitCode: 'MTK' } }
       : {}),
-    broker: {
-      '@type': 'RealEstateAgent',
-      name:    'Su Finca Raíz',
-      url:     SITE_URL,
-    },
+    broker: { '@id': `${SITE_URL}/#organization` },
   };
+}
+
+// ── Article Schema (blog posts) ───────────────────────────────────────────────
+export function articleSchema(article: {
+  title:        string
+  excerpt:      string
+  slug:         string
+  date:         string
+  updated?:     string
+  author?:      string
+  cover_image?: string
+  category_name: string
+}) {
+  const imageUrl = article.cover_image
+    ? `${SITE_URL}${article.cover_image}`
+    : `${SITE_URL}/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg`
+
+  return {
+    '@context':    'https://schema.org',
+    '@type':       'BlogPosting',
+    '@id':         `${SITE_URL}/blog/${article.slug}#article`,
+    headline:       article.title,
+    description:    article.excerpt,
+    url:           `${SITE_URL}/blog/${article.slug}`,
+    datePublished:  article.date,
+    dateModified:   article.updated ?? article.date,
+    image: [{ '@type': 'ImageObject', url: imageUrl, width: 1200, height: 630 }],
+    author: { '@id': `${SITE_URL}/#organization` },
+    publisher: {
+      '@type': 'Organization',
+      '@id':   `${SITE_URL}/#organization`,
+      name:    'Su Finca Raíz',
+      url:      SITE_URL,
+      logo: {
+        '@type':  'ImageObject',
+        url:      `${SITE_URL}/images/logo-su-finca-raiz-blanco.png`,
+        width:    200,
+        height:   60,
+      },
+    },
+    articleSection: article.category_name,
+    mainEntityOfPage: {
+      '@type': 'WebPage',
+      '@id':  `${SITE_URL}/blog/${article.slug}`,
+    },
+  }
 }
 
 // ── FAQ Schema (reutilizable en landing pages) ────────────────────────────────
@@ -319,4 +358,106 @@ export function faqSchema(items: { question: string; answer: string }[]) {
       },
     })),
   };
+}
+
+// ── WebPage con Speakable (AEO — AI engines / voice assistants) ───────────────
+export function webPageSchema(params: {
+  url:                  string
+  name:                 string
+  description:          string
+  speakable_selectors:  string[]
+  about_name?:          string
+  about_same_as?:       string | string[]
+}) {
+  return {
+    '@context':   'https://schema.org',
+    '@type':      'WebPage',
+    '@id':        `${params.url}#webpage`,
+    url:           params.url,
+    name:          params.name,
+    description:   params.description,
+    isPartOf:     { '@id': `${SITE_URL}/#website` },
+    ...(params.about_name ? {
+      about: {
+        '@type':  'Thing',
+        name:      params.about_name,
+        ...(params.about_same_as ? { sameAs: params.about_same_as } : {}),
+      },
+    } : {}),
+    speakable: {
+      '@type':       'SpeakableSpecification',
+      cssSelector:    params.speakable_selectors,
+    },
+  }
+}
+
+// ── HowTo Schema (guías de compra, pasos de proceso) ─────────────────────────
+export function howToSchema(params: {
+  name:            string
+  description:     string
+  url:             string
+  total_time?:     string     // ISO 8601, e.g. "P30D"
+  estimated_cost?: string     // e.g. "3-5% del precio de compra"
+  steps: { name: string; text: string }[]
+}) {
+  return {
+    '@context':   'https://schema.org',
+    '@type':      'HowTo',
+    name:          params.name,
+    description:   params.description,
+    url:           params.url,
+    ...(params.total_time ? { totalTime: params.total_time } : {}),
+    ...(params.estimated_cost ? {
+      estimatedCost: {
+        '@type':   'MonetaryAmount',
+        currency:  'COP',
+        value:      params.estimated_cost,
+      },
+    } : {}),
+    step: params.steps.map((s, i) => ({
+      '@type':    'HowToStep',
+      position:    i + 1,
+      name:        s.name,
+      text:        s.text,
+    })),
+  }
+}
+
+// ── Glosario / DefinedTermSet (AEO — respuestas a queries de definición) ──────
+export function glossarySchema(terms: { term: string; definition: string; slug: string }[]) {
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type':       'DefinedTermSet',
+        '@id':         `${SITE_URL}/glosario#termset`,
+        name:          'Glosario de Finca Raíz — Su Finca Raíz',
+        description:   'Términos del mercado inmobiliario rural y urbano en Colombia: documentos, trámites, impuestos y tipos de propiedad.',
+        url:           `${SITE_URL}/glosario`,
+        inLanguage:    'es-CO',
+        publisher:     { '@id': `${SITE_URL}/#organization` },
+        hasDefinedTerm: terms.map(t => ({
+          '@type':          'DefinedTerm',
+          '@id':            `${SITE_URL}/glosario#${t.slug}`,
+          name:              t.term,
+          description:       t.definition,
+          url:              `${SITE_URL}/glosario#${t.slug}`,
+          inDefinedTermSet: { '@id': `${SITE_URL}/glosario#termset` },
+        })),
+      },
+      // FAQPage paralelo — para rich results de Google
+      {
+        '@type':    'FAQPage',
+        '@id':      `${SITE_URL}/glosario#faq`,
+        mainEntity: terms.map(t => ({
+          '@type': 'Question',
+          name:    `¿Qué es ${t.term} en Colombia?`,
+          acceptedAnswer: {
+            '@type': 'Answer',
+            text:     t.definition,
+          },
+        })),
+      },
+    ],
+  }
 }
