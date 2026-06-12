@@ -9,7 +9,7 @@ import { AboutUs }            from '@/components/home/AboutUs';
 import { FAQ }                from '@/components/home/FAQ';
 import { JsonLd, localBusinessSchema, faqSchema, webPageSchema } from '@/components/seo/JsonLd';
 import { HOME_FAQS } from '@/lib/faq-data';
-import { SEED_PROPERTIES }    from '@/lib/seed-properties';
+import { prisma }            from '@/lib/prisma';
 import type { Property }      from '@/types';
 
 // ─── Metadata específica de la homepage ───────────────────────────────────────
@@ -49,18 +49,46 @@ export const metadata: Metadata = {
 
 // ─── Fetch propiedades destacadas ─────────────────────────────────────────────
 async function getFeaturedProperties(): Promise<Property[]> {
-  try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000';
-    const res = await fetch(`${apiUrl}/api/properties?featured=true&limit=6`, {
-      next: { revalidate: 3600 },
-    });
-    if (!res.ok) return SEED_PROPERTIES;
-    const data = await res.json() as { properties: Property[] };
-    const props = data.properties ?? [];
-    return props.length > 0 ? props : SEED_PROPERTIES;
-  } catch {
-    return SEED_PROPERTIES;
-  }
+  // Fuente única de verdad: la misma BD que usan /propiedades y la ficha de
+  // detalle. Antes esta función consultaba un backend externo con fallback a
+  // SEED_PROPERTIES (slugs viejos duplicados), lo que producía enlaces 404.
+  const rows = await prisma.property.findMany({
+    where:   { status: 'available' },
+    take:    6,
+    orderBy: [{ published_at: 'desc' }],
+    include: {
+      municipality: { select: { id: true, slug: true, name: true, province: true, demand_score: true } },
+      media:        { orderBy: { order: 'asc' }, take: 6 },
+    },
+  });
+
+  return rows.map(r => ({
+    id:                r.id,
+    slug:              r.slug,
+    type:              r.type as Property['type'],
+    transaction_type:  'venta' as const,
+    municipality_id:   r.municipality_id,
+    vereda_id:         r.vereda_id,
+    address_visible:   r.address_visible,
+    price_cop:         Number(r.price_cop),
+    area_lot_m2:       r.area_lot_m2,
+    area_built_m2:     r.area_built_m2,
+    bedrooms:          r.bedrooms,
+    bathrooms:         r.bathrooms,
+    parking:           r.parking,
+    year_built:        r.year_built,
+    status:            r.status as Property['status'],
+    geo_lat:           r.geo_lat,
+    geo_lng:           r.geo_lng,
+    published_at:      r.published_at.toISOString(),
+    updated_at:        r.updated_at.toISOString(),
+    title:             r.title ?? undefined,
+    short_description: r.short_description ?? undefined,
+    meta_title:        r.meta_title ?? undefined,
+    meta_description:  r.meta_description ?? undefined,
+    municipality:      r.municipality ?? undefined,
+    media:             r.media as Property['media'],
+  }));
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
