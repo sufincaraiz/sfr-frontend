@@ -12,17 +12,14 @@ const EventoLightbox = dynamic(() => import('./EventoLightbox'), { ssr: false })
 // correcto sin importar la zona del visitante.
 const START = new Date('2026-06-12T00:00:00-05:00').getTime();
 const END   = new Date('2026-06-16T00:00:00-05:00').getTime(); // visible todo el 15, desaparece al entrar el 16
-const SESSION_KEY = 'lavega421_popup_seen';
 
 export function EventoPopup() {
   const [show, setShow] = useState(false);
 
   useEffect(() => {
     const now = Date.now();
-    if (now < START || now >= END) return;          // fuera de fechas → no se monta
-    if (sessionStorage.getItem(SESSION_KEY)) return; // ya se mostró en esta sesión
-    sessionStorage.setItem(SESSION_KEY, '1');
-    setShow(true);
+    if (now < START || now >= END) return; // fuera de fechas → no se monta
+    setShow(true);                         // dentro del rango: aparece en cada carga de la home
   }, []);
 
   if (!show) return null;
