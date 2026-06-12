@@ -48,13 +48,19 @@ export const metadata: Metadata = {
 };
 
 // ─── Fetch propiedades destacadas ─────────────────────────────────────────────
+const FEATURED_COUNT = 6;
+
 async function getFeaturedProperties(): Promise<Property[]> {
   // Fuente única de verdad: la misma BD que usan /propiedades y la ficha de
   // detalle. Antes esta función consultaba un backend externo con fallback a
   // SEED_PROPERTIES (slugs viejos duplicados), lo que producía enlaces 404.
+  //
+  // Selección con variedad de tipos: traemos todas las disponibles ordenadas
+  // por fecha y luego intercalamos por tipo (round-robin) para no llenar las 6
+  // tarjetas con un solo tipo. Si un tipo se agota, las rondas siguientes lo
+  // saltan y completan con los demás hasta llegar a 6.
   const rows = await prisma.property.findMany({
     where:   { status: 'available' },
-    take:    6,
     orderBy: [{ published_at: 'desc' }],
     include: {
       municipality: { select: { id: true, slug: true, name: true, province: true, demand_score: true } },
@@ -62,7 +68,28 @@ async function getFeaturedProperties(): Promise<Property[]> {
     },
   });
 
-  return rows.map(r => ({
+  // Agrupar por tipo conservando el orden por fecha dentro de cada grupo
+  const byType = new Map<string, typeof rows>();
+  for (const r of rows) {
+    const list = byType.get(r.type) ?? [];
+    list.push(r);
+    byType.set(r.type, list);
+  }
+
+  // Round-robin: una propiedad de cada tipo por ronda hasta llenar FEATURED_COUNT
+  const queues = [...byType.values()];
+  const selected: typeof rows = [];
+  let exhausted = false;
+  while (selected.length < FEATURED_COUNT && !exhausted) {
+    exhausted = true;
+    for (const q of queues) {
+      if (selected.length >= FEATURED_COUNT) break;
+      const next = q.shift();
+      if (next) { selected.push(next); exhausted = false; }
+    }
+  }
+
+  return selected.map(r => ({
     id:                r.id,
     slug:              r.slug,
     type:              r.type as Property['type'],
