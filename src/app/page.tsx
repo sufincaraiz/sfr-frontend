@@ -10,6 +10,7 @@ import { FAQ }                from '@/components/home/FAQ';
 import { JsonLd, localBusinessSchema, faqSchema, webPageSchema } from '@/components/seo/JsonLd';
 import { HOME_FAQS } from '@/lib/faq-data';
 import { prisma }            from '@/lib/prisma';
+import { EventoPopup }       from '@/components/eventos/EventoPopup';
 import type { Property }      from '@/types';
 
 // ─── Metadata específica de la homepage ───────────────────────────────────────
@@ -146,6 +147,9 @@ export default async function HomePage() {
       <ValueProp />
       <AboutUs />
       <FAQ />
+
+      {/* Popup del evento "421 años de La Vega" — cliente, no afecta SSR/SEO */}
+      <EventoPopup />
     </>
   );
 }
