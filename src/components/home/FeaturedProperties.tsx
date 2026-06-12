@@ -1,17 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useEffect, useRef } from 'react';
-import { Bed, Bath, Maximize2, MapPin, ArrowRight } from 'lucide-react';
-import { formatPrice, TYPE_LABELS } from '@/lib/utils';
+import { useEffect, useState, useCallback } from 'react';
+import useEmblaCarousel from 'embla-carousel-react';
+import AutoScroll from 'embla-carousel-auto-scroll';
+import { Bed, Bath, Maximize2, MapPin, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import { formatPrice, TYPE_LABELS, cloudinarySquare } from '@/lib/utils';
 import type { Property } from '@/types';
 
 interface FeaturedPropertiesProps {
   properties: Property[];
 }
 
-function PropertyCard({ property, index }: { property: Property; index: number }) {
-  const primaryImage = property.media?.find((m) => m.is_primary && m.type === 'image');
+// ─── Tarjeta (imagen cuadrada 1:1) ───────────────────────────────────────────
+
+function PropertyCard({ property }: { property: Property }) {
+  const primaryImage = property.media?.find((m) => m.is_primary && m.type === 'image') ?? property.media?.[0];
   const typeLabel    = TYPE_LABELS[property.type] ?? property.type;
   const href = `/propiedad/${property.slug}`;
 
@@ -23,29 +27,25 @@ function PropertyCard({ property, index }: { property: Property; index: number }
         : null;
 
   return (
-    <div
-      data-prop-card
-      className="group flex flex-col bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 transition-all duration-400 hover:shadow-xl hover:-translate-y-1.5"
-      style={{ opacity: 0, transform: 'scale(0.96) translateY(20px)' }}
-    >
-      {/* Imagen */}
-      <div className="relative h-56 overflow-hidden bg-gray-100">
+    <div className="group flex flex-col h-full bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl">
+      {/* Imagen cuadrada 1:1 — el banner se ve completo */}
+      <div className="relative overflow-hidden bg-gray-100" style={{ aspectRatio: '1 / 1' }}>
         {primaryImage && (
           <img
-            src={primaryImage.url}
-            alt={primaryImage.alt_text}
+            src={cloudinarySquare(primaryImage.url)}
+            alt={primaryImage.alt_text || property.title || typeLabel}
+            loading="lazy"
+            decoding="async"
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             className="transition-transform duration-500 group-hover:scale-[1.06]"
           />
         )}
-        {/* Badge tipo */}
         <span
           className="absolute top-3 left-3 text-xs font-bold px-3 py-1 rounded-full"
           style={{ background: '#1B56A1', color: '#FFFFFF' }}
         >
           {typeLabel}
         </span>
-        {/* Badge disponible */}
         <span
           className="absolute top-3 right-3 text-xs font-bold px-2.5 py-1 rounded-full"
           style={{ background: '#A7CB61', color: '#0D2D5E' }}
@@ -56,13 +56,11 @@ function PropertyCard({ property, index }: { property: Property; index: number }
 
       {/* Contenido */}
       <div className="flex flex-col flex-1 p-5">
-        {/* Municipio */}
         <div className="flex items-center gap-1 text-xs font-semibold mb-1.5" style={{ color: '#6B7280' }}>
           <MapPin size={12} />
           <span>{property.municipality?.name ?? 'La Vega'}</span>
         </div>
 
-        {/* Título */}
         <h3
           className="font-sans font-bold text-base leading-snug mb-2 line-clamp-2"
           style={{ color: '#0D2D5E' }}
@@ -70,15 +68,10 @@ function PropertyCard({ property, index }: { property: Property; index: number }
           {property.title}
         </h3>
 
-        {/* Precio destacado en #1B56A1 */}
-        <p
-          className="font-sans font-bold text-xl mb-4"
-          style={{ color: '#1B56A1' }}
-        >
+        <p className="font-sans font-bold text-xl mb-4" style={{ color: '#1B56A1' }}>
           {formatPrice(property.price_cop)}
         </p>
 
-        {/* Stats */}
         <div className="flex items-center gap-4 text-xs font-semibold mb-5" style={{ color: '#6B7280' }}>
           {property.bedrooms > 0 && (
             <span className="flex items-center gap-1.5">
@@ -100,7 +93,6 @@ function PropertyCard({ property, index }: { property: Property; index: number }
           )}
         </div>
 
-        {/* Botón "Ver propiedad" */}
         <Link
           href={href}
           className="mt-auto flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.97]"
@@ -116,92 +108,126 @@ function PropertyCard({ property, index }: { property: Property; index: number }
   );
 }
 
-export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
-  const sectionRef = useRef<HTMLElement>(null);
+// ─── Una fila del carrusel ────────────────────────────────────────────────────
 
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section) return;
+function CarouselRow({
+  properties,
+  direction,
+  autoplay,
+}: {
+  properties: Property[];
+  direction: 'forward' | 'backward';
+  autoplay: boolean;
+}) {
+  const plugins = autoplay
+    ? [
+        AutoScroll({
+          playOnInit: true,
+          speed: 0.9,
+          direction,
+          stopOnInteraction: false,  // reanuda tras soltar (touch/drag)
+          stopOnMouseEnter: true,    // pausa al pasar el mouse (desktop)
+          stopOnFocusIn: true,       // pausa al enfocar con teclado
+        }),
+      ]
+    : [];
 
-    let ctx: { revert: () => void } | null = null;
+  const [emblaRef, emblaApi] = useEmblaCarousel(
+    { loop: true, dragFree: true, align: 'start', containScroll: false },
+    plugins,
+  );
 
-    const init = async () => {
-      const { gsap }          = await import('gsap');
-      const { ScrollTrigger } = await import('gsap/ScrollTrigger');
-      gsap.registerPlugin(ScrollTrigger);
-
-      ctx = gsap.context(() => {
-        // Expansión suave al entrar al viewport
-        gsap.to('[data-prop-card]', {
-          opacity: 1,
-          scale: 1,
-          y: 0,
-          duration: 0.65,
-          ease: 'power3.out',
-          stagger: 0.15,
-          scrollTrigger: {
-            trigger: section,
-            start: 'top 80%',
-            once: true,
-          },
-        });
-
-        // Título y subtítulo
-        gsap.from('[data-props-header]', {
-          opacity: 0,
-          y: 28,
-          duration: 0.7,
-          ease: 'power3.out',
-          scrollTrigger: { trigger: section, start: 'top 85%', once: true },
-        });
-      }, section);
-    };
-
-    void init();
-    return () => ctx?.revert();
-  }, []);
+  const scrollPrev = useCallback(() => emblaApi?.scrollPrev(), [emblaApi]);
+  const scrollNext = useCallback(() => emblaApi?.scrollNext(), [emblaApi]);
 
   return (
-    <section id="featured-properties" ref={sectionRef} className="py-20 px-4 sm:px-6 lg:px-8 bg-white">
-      <div className="max-w-7xl mx-auto">
+    <div className="relative">
+      <div ref={emblaRef} style={{ overflow: 'hidden' }}>
+        <div style={{ display: 'flex' }}>
+          {properties.map((p) => (
+            <div
+              key={p.id}
+              style={{
+                flex: '0 0 auto',
+                width: 'clamp(230px, 78vw, 290px)',
+                paddingRight: 20,
+                boxSizing: 'border-box',
+              }}
+            >
+              <PropertyCard property={p} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Flechas manuales — solo cuando NO hay auto-scroll (reduced-motion) */}
+      {!autoplay && (
+        <>
+          <button
+            onClick={scrollPrev}
+            aria-label="Anterior"
+            className="absolute left-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-10 h-10 rounded-full shadow-md"
+            style={{ background: '#fff', color: '#0D2D5E', border: '1px solid #E2E8F0' }}
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={scrollNext}
+            aria-label="Siguiente"
+            className="absolute right-1 top-1/2 -translate-y-1/2 z-10 flex items-center justify-center w-10 h-10 rounded-full shadow-md"
+            style={{ background: '#fff', color: '#0D2D5E', border: '1px solid #E2E8F0' }}
+          >
+            <ChevronRight size={20} />
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Sección ──────────────────────────────────────────────────────────────────
+
+export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
+  // autoplay arranca apagado; se activa tras montar si NO hay reduced-motion.
+  // El `key` en cada fila fuerza un re-init de Embla cuando cambia este estado.
+  const [autoplay, setAutoplay] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const update = () => setAutoplay(!mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  // Dos filas: primera mitad y segunda mitad
+  const mid  = Math.ceil(properties.length / 2);
+  const row1 = properties.slice(0, mid);
+  const row2 = properties.slice(mid);
+
+  return (
+    <section id="featured-properties" className="py-20 bg-white overflow-hidden">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
-        <div
-          data-props-header
-          className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-12"
-        >
+        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 mb-12">
           <div>
-            {/*
-              CAPA SEO — H2 pequeño con keyword de sección.
-              Visualmente discreto (eyebrow), semánticamente H2 para rastreo de sección.
-            */}
-            {/* SEO H2 eyebrow */}
             <h2
               style={{
-                fontSize: '0.78rem',
-                fontWeight: 600,
-                color: '#A7CB61',
-                letterSpacing: '0.18em',
-                textTransform: 'uppercase',
-                marginBottom: '0.4rem',
+                fontSize: '0.78rem', fontWeight: 600, color: '#A7CB61',
+                letterSpacing: '0.18em', textTransform: 'uppercase', marginBottom: '0.4rem',
               }}
             >
               SELECCIÓN CURADA
             </h2>
-
-            {/* UX H3 — titular emocional */}
             <h3
               className="font-sans font-bold"
               style={{ fontSize: 'clamp(1.8rem, 4vw, 2.6rem)', color: '#0D2D5E', marginBottom: '0.5rem' }}
             >
               Tu Próximo Descanso Comienza Aquí
             </h3>
-
-            {/* Subtítulo descriptivo */}
-            <p
-              style={{ fontSize: '0.9rem', color: '#6B7280', maxWidth: 420, lineHeight: 1.6 }}
-            >
-              Explora fincas y casas campestres seleccionadas para brindarte paz,
-              clima ideal y confort.
+            <p style={{ fontSize: '0.9rem', color: '#6B7280', maxWidth: 420, lineHeight: 1.6 }}>
+              Explora fincas, casas, apartamentos, lotes y condominios seleccionados
+              para brindarte paz, clima ideal y confort.
             </p>
           </div>
           <Link
@@ -214,13 +240,28 @@ export function FeaturedProperties({ properties }: FeaturedPropertiesProps) {
             Ver todas →
           </Link>
         </div>
+      </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {properties.map((p, i) => (
-            <PropertyCard key={p.id} property={p} index={i} />
-          ))}
-        </div>
+      {/* Dos filas de carrusel (full-bleed para el efecto marquee) */}
+      <div className="flex flex-col gap-6">
+        <CarouselRow properties={row1} direction="forward"  autoplay={autoplay} key={`r1-${autoplay}`} />
+        {row2.length > 0 && (
+          <CarouselRow properties={row2} direction="backward" autoplay={autoplay} key={`r2-${autoplay}`} />
+        )}
+      </div>
+
+      {/* Ver más */}
+      <div className="flex justify-center mt-12">
+        <Link
+          href="/propiedades"
+          className="inline-flex items-center gap-2 px-7 py-3.5 rounded-xl text-sm font-bold transition-all active:scale-[0.97]"
+          style={{ background: '#0D2D5E', color: '#fff' }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = '#1B56A1')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = '#0D2D5E')}
+        >
+          Ver más propiedades
+          <ArrowRight size={16} />
+        </Link>
       </div>
     </section>
   );

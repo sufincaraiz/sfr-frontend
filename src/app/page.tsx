@@ -48,7 +48,7 @@ export const metadata: Metadata = {
 };
 
 // ─── Fetch propiedades destacadas ─────────────────────────────────────────────
-const FEATURED_COUNT = 6;
+const FEATURED_COUNT = 14;  // 2 filas de 7 para los carruseles de la home
 
 async function getFeaturedProperties(): Promise<Property[]> {
   // Fuente única de verdad: la misma BD que usan /propiedades y la ficha de

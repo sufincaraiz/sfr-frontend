@@ -19,6 +19,22 @@ export function formatPrice(price: number): string {
   }).format(price);
 }
 
+/**
+ * Inyecta una transformación de Cloudinary justo después de `/upload/`.
+ * Para tarjetas cuadradas usamos c_fill,ar_1:1,g_auto (recorte inteligente al
+ * sujeto; como los banners ya son 1:1 no recorta) + f_auto,q_auto,w_<width>
+ * para servir un cuadrado liviano. Si la URL no es de Cloudinary la devuelve tal cual.
+ */
+export function cloudinarySquare(url: string, width = 600): string {
+  if (!url || !url.includes('res.cloudinary.com') || !url.includes('/upload/')) {
+    return url;
+  }
+  // Evita duplicar la transformación si ya se aplicó
+  if (url.includes('/upload/c_fill,ar_1:1')) return url;
+  const transform = `c_fill,ar_1:1,g_auto,f_auto,q_auto,w_${width}`;
+  return url.replace('/upload/', `/upload/${transform}/`);
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()

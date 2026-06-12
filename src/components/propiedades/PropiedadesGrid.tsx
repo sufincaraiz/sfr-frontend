@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Bed, Bath, Maximize2, MapPin, Eye } from 'lucide-react';
-import { formatPrice, TYPE_LABELS } from '@/lib/utils';
+import { formatPrice, TYPE_LABELS, cloudinarySquare } from '@/lib/utils';
 import type { Property } from '@/types';
 
 interface Props {
@@ -95,11 +95,11 @@ function PropCard({ property: p, priority }: { property: Property; priority?: bo
         onMouseLeave={e => { (e.currentTarget as HTMLElement).style.boxShadow = '0 2px 12px rgba(0,0,0,0.07)'; (e.currentTarget as HTMLElement).style.transform = 'translateY(0)'; }}
         aria-label={`Ver ${p.title ?? typeLabel}`}
       >
-        {/* Imagen */}
-        <div style={{ position: 'relative', aspectRatio: '4/3', overflow: 'hidden', background: '#EFF6FF' }}>
+        {/* Imagen — cuadrada 1:1 (banner completo, sin recortes raros) */}
+        <div style={{ position: 'relative', aspectRatio: '1/1', overflow: 'hidden', background: '#EFF6FF' }}>
           {img ? (
             <Image
-              src={img.url}
+              src={cloudinarySquare(img.url)}
               alt={img.alt_text || `${p.title} — Su Finca Raíz`}
               fill
               sizes="(max-width:640px) 100vw,(max-width:1024px) 50vw,33vw"
