@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Send, CheckCircle2, AlertCircle } from 'lucide-react';
 
 type Status = 'idle' | 'loading' | 'success' | 'error';
@@ -127,7 +128,11 @@ export function VenderForm() {
       </button>
 
       <p style={{ fontSize: '0.72rem', color: '#94A3B8', textAlign: 'center', lineHeight: 1.5 }}>
-        Al enviar aceptas nuestros Términos y Condiciones y la Política de Tratamiento de Datos.
+        Al enviar este formulario, aceptas la{' '}
+        <Link href="/politica-tratamiento-datos" style={{ color: '#1B56A1', fontWeight: 600, textDecoration: 'underline' }}>
+          Política de Tratamiento de Datos
+        </Link>{' '}
+        de Su Finca Raíz.
       </p>
     </form>
   );

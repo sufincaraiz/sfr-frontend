@@ -29,6 +29,8 @@ const LeadSchema = z.object({
   email:    z.string().trim().email().max(160).optional().or(z.literal('')).default(''),
   // distingue el origen del lead; ej. "vender-finca" para "Vende tu finca"
   channel:  z.string().trim().max(40).optional().default('web'),
+  // opcional: slug de la propiedad consultada (form de ficha) → enlaza property_id
+  propertySlug: z.string().trim().max(200).optional(),
 })
 
 // ─── POST /api/leads — captura pública de leads (tabla Lead) ──────────────────
@@ -57,17 +59,28 @@ export async function POST(req: NextRequest) {
     )
   }
 
-  const { nombre, telefono, mensaje, email, channel } = parsed.data
+  const { nombre, telefono, mensaje, email, channel, propertySlug } = parsed.data
 
   try {
+    // Si viene de la ficha de una propiedad, resolvemos su id para enlazarla
+    let propertyId: string | null = null
+    if (propertySlug) {
+      const prop = await prisma.property.findUnique({
+        where:  { slug: propertySlug },
+        select: { id: true },
+      })
+      propertyId = prop?.id ?? null
+    }
+
     await prisma.lead.create({
       data: {
         name:    nombre,
         phone:   telefono,
         email:   email ?? '',
-        channel,                  // "vender-finca" para leads de venta
+        channel,                  // "vender-finca", "propiedad" o "web"
         message: mensaje || null,
         status:  'new',
+        ...(propertyId && { property_id: propertyId }),
       },
     })
     return NextResponse.json({ ok: true })

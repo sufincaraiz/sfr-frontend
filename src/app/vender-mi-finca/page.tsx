@@ -70,7 +70,8 @@ export default function VenderMiFincaPage() {
             </h1>
             <p style={{ color: 'rgba(255,255,255,0.85)', lineHeight: 1.7, fontSize: '1.05rem', maxWidth: 620, margin: '0 auto' }}>
               Transformamos la forma de vender fincas, lotes y casas campestres en Cundinamarca.
-              Conectamos tu predio con los inversionistas correctos.
+              Conectamos tu predio con los inversionistas correctos a través de
+              tecnología de vanguardia y blindaje legal integral.
             </p>
             <a
               href="#formulario"
@@ -95,7 +96,7 @@ export default function VenderMiFincaPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '2rem' }}>
               <div style={{ width: 4, height: 24, background: '#E8B92F', borderRadius: 2 }} />
               <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: 'clamp(1.3rem,3vw,1.7rem)', margin: 0 }}>
-                ¿Por qué vender con nosotros?
+                ¿Por qué promover tu predio con nosotros?
               </h2>
             </div>
 
@@ -121,7 +122,7 @@ export default function VenderMiFincaPage() {
             <div style={{ maxWidth: 560, margin: '0 auto', background: '#fff', borderRadius: 18, border: '1px solid #E2E8F0', overflow: 'hidden', boxShadow: '0 4px 24px rgba(13,45,94,0.06)' }}>
               <div style={{ background: 'linear-gradient(135deg, #0D2D5E, #1B56A1)', padding: '1.75rem 1.75rem 1.5rem' }}>
                 <h2 style={{ color: '#fff', fontWeight: 800, fontSize: '1.3rem', marginBottom: 6 }}>
-                  Cuéntanos sobre tu propiedad
+                  Registra tu propiedad
                 </h2>
                 <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '0.9rem', lineHeight: 1.55 }}>
                   Déjanos tus datos y un asesor te contactará en menos de 24 horas para coordinar la valoración.

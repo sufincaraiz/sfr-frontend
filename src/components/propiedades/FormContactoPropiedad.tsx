@@ -27,13 +27,39 @@ export function FormContactoPropiedad({ propertyTitle, propertySlug, price, what
   );
   const waHref = `https://wa.me/${whatsapp}?text=${waText}`;
 
+  const [error, setError] = useState('');
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.nombre.trim().length < 2 || form.telefono.trim().length < 7) {
+      setError('Por favor ingresa tu nombre y un teléfono válido.');
+      return;
+    }
     setLoading(true);
-    // Simular envío (en producción: POST /api/leads)
-    await new Promise(r => setTimeout(r, 900));
-    setLoading(false);
-    setSent(true);
+    setError('');
+    try {
+      const res = await fetch('/api/leads', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nombre:       form.nombre,
+          telefono:     form.telefono,
+          mensaje:      form.mensaje || `Interesado en: ${propertyTitle}`,
+          channel:      'propiedad',
+          propertySlug,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error ?? 'No pudimos enviar tu mensaje. Intenta de nuevo.');
+        return;
+      }
+      setSent(true);
+    } catch {
+      setError('Error de conexión. Revisa tu internet e intenta de nuevo.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const field = (
@@ -110,6 +136,12 @@ export function FormContactoPropiedad({ propertyTitle, propertySlug, price, what
             {field('Nombre', 'nombre', 'text', 'Tu nombre completo')}
             {field('Teléfono / WhatsApp', 'telefono', 'tel', '321 000 0000')}
             {field('Mensaje', 'mensaje', 'text', `Hola, me interesa esta ${propertyTitle.toLowerCase().includes('finca') ? 'finca' : 'propiedad'}...`, true)}
+
+            {error && (
+              <p style={{ color: '#B91C1C', fontSize: '0.8rem', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 8, padding: '8px 10px' }}>
+                {error}
+              </p>
+            )}
 
             <button
               type="submit"
