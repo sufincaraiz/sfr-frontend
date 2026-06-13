@@ -12,6 +12,7 @@ const PROPERTY_LINKS = [
 
 const COMPANY_LINKS = [
   { href: '/nosotros',        label: 'Nosotros' },
+  { href: '/guia-inversion',  label: 'Guía de Inversión en La Vega' },
   { href: '/vender-mi-finca', label: 'Vende tu finca' },
   { href: '/blog',            label: 'Blog' },
   { href: '/contacto',        label: 'Contacto' },
