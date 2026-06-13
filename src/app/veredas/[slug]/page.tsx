@@ -352,9 +352,9 @@ export default async function VeredaPage(
               <p style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.9rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>Buscar en {v.municipio_name}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                 {[
-                  { label: `Fincas en ${v.municipio_name}`, href: `/fincas-en-venta-${v.municipio_slug}-cundinamarca` },
-                  { label: `Lotes en ${v.municipio_name}`, href: `/lotes-en-venta-${v.municipio_slug}-cundinamarca` },
-                  { label: `Casas campestres`, href: `/casas-campestres-en-venta-${v.municipio_slug}-cundinamarca` },
+                  { label: `Fincas en ${v.municipio_name}`, href: `/propiedades?tipo=finca&municipio=${v.municipio_name}` },
+                  { label: `Lotes en ${v.municipio_name}`, href: `/propiedades?tipo=lote&municipio=${v.municipio_name}` },
+                  { label: `Casas campestres`, href: `/propiedades?tipo=casa&municipio=${v.municipio_name}` },
                   { label: `Ver todas las propiedades`, href: `/propiedades?municipio=${v.municipio_name}` },
                 ].map(l => (
                   <Link key={l.href} href={l.href} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.55rem 0.8rem', borderRadius: 8, border: '1px solid #F1F5F9', color: '#334155', fontSize: '0.84rem', fontWeight: 600, textDecoration: 'none', background: '#FAFAFA' }}>

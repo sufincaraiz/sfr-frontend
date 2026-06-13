@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { MapPin, Phone, Mail } from 'lucide-react';
+import { getAllMunicipiosData } from '@/lib/municipios-data';
 
 const PROPERTY_LINKS = [
-  { href: '/fincas-en-venta',         label: 'Fincas en venta' },
-  { href: '/fincas-en-venta/la-vega', label: 'Fincas en La Vega' },
-  { href: '/fincas-en-venta/sasaima', label: 'Fincas en Sasaima' },
-  { href: '/lotes-en-venta',          label: 'Lotes en venta' },
-  { href: '/condominios-campestres',  label: 'Condominios campestres' },
+  { href: '/propiedades?tipo=finca',                    label: 'Fincas en venta' },
+  { href: '/propiedades?tipo=finca&municipio=La Vega',  label: 'Fincas en La Vega' },
+  { href: '/propiedades?tipo=finca&municipio=Sasaima',  label: 'Fincas en Sasaima' },
+  { href: '/propiedades?tipo=lote',                     label: 'Lotes en venta' },
+  { href: '/propiedades?tipo=condominio',               label: 'Condominios campestres' },
 ];
 
 const COMPANY_LINKS = [
@@ -22,7 +23,8 @@ const LEGAL_LINKS = [
   { href: '/politica-de-cookies',        label: 'Política de cookies' },
 ];
 
-const MUNICIPIOS = ['La Vega', 'Sasaima', 'Nocaima', 'Villeta', 'San Francisco', 'Supatá'];
+// Municipios derivados de la data real (solo los que tienen página /municipios/[slug])
+const MUNICIPIOS = getAllMunicipiosData().map(m => ({ name: m.name, slug: m.slug }));
 
 // SVG icons para redes sociales no incluidas en Lucide
 function IconInstagram() {
@@ -168,16 +170,12 @@ export function Footer() {
             </h3>
             <ul className="space-y-2 text-sm mb-5">
               {MUNICIPIOS.map((m) => (
-                <li key={m}>
+                <li key={m.slug}>
                   <Link
-                    href={`/municipios/${m
-                      .toLowerCase()
-                      .normalize('NFD')
-                      .replace(/[̀-ͯ]/g, '')
-                      .replace(/ /g, '-')}`}
+                    href={`/municipios/${m.slug}`}
                     className="hover:text-white transition-colors"
                   >
-                    {m}
+                    {m.name}
                   </Link>
                 </li>
               ))}

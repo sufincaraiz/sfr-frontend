@@ -131,7 +131,7 @@ export function Hero() {
           style={{ animationDelay: '0.8s' }}
         >
           <Link
-            href="/fincas-en-venta"
+            href="/propiedades?tipo=finca"
             className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-3.5 rounded-xl text-sm transition-all active:scale-[0.97]"
             style={{ background: '#E8B92F', color: '#0D2D5E', fontWeight: 700 }}
             onMouseEnter={(e) => (e.currentTarget.style.background = '#d4a728')}
