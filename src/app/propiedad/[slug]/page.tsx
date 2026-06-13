@@ -53,11 +53,20 @@ async function getProperty(slug: string) {
     short_description: raw.short_description ?? undefined,
     meta_title:       raw.meta_title ?? undefined,
     meta_description: raw.meta_description ?? undefined,
+    video_url:        raw.video_url ?? null,
+    virtual_tour_url: raw.virtual_tour_url ?? null,
     municipality:     raw.municipality ?? undefined,
     media:            raw.media as PropertyMedia[],
     features:         raw.features as PropertyFeature[],
   };
   return p;
+}
+
+// Convierte una URL de YouTube (watch, youtu.be, shorts, embed) a su URL de embed
+function youtubeEmbedUrl(url: string | null | undefined): string | null {
+  if (!url) return null;
+  const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|v\/|shorts\/))([\w-]{11})/);
+  return m ? `https://www.youtube.com/embed/${m[1]}` : null;
 }
 
 // ─── SSG ────────────────────────────────────────────────────────────────────
@@ -136,8 +145,10 @@ export default async function PropiedadDetallePage(
     return v && v !== 'no' && v !== 'false' && v !== '0';
   });
 
-  // Tour 360
-  const tour = p.media?.find(m => m.type === 'tour360' && m.tour360_embed_url);
+  // Tour 360 — preferimos la columna dedicada; fallback a media tipo tour360
+  const tourUrl = p.virtual_tour_url ?? p.media?.find(m => m.type === 'tour360' && m.tour360_embed_url)?.tour360_embed_url ?? null;
+  // Video de YouTube (si la propiedad lo tiene)
+  const youtubeUrl = youtubeEmbedUrl(p.video_url);
 
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },
@@ -309,8 +320,30 @@ export default async function PropiedadDetallePage(
               </section>
             )}
 
-            {/* Tour 360 */}
-            {tour?.tour360_embed_url && (
+            {/* Video de YouTube — solo si la propiedad lo tiene */}
+            {youtubeUrl && (
+              <section style={{ background: '#0D2D5E', borderRadius: 16, overflow: 'hidden' }}>
+                <div style={{ padding: '1.5rem 1.75rem 1rem' }}>
+                  <p style={{ color: '#E8B92F', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
+                    Video
+                  </p>
+                  <h2 style={{ color: '#fff', fontWeight: 800, fontSize: '1.1rem' }}>Recorrido en video</h2>
+                </div>
+                <div style={{ position: 'relative', width: '100%', aspectRatio: '16 / 9' }}>
+                  <iframe
+                    src={youtubeUrl}
+                    title="Video de la propiedad"
+                    style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    loading="lazy"
+                  />
+                </div>
+              </section>
+            )}
+
+            {/* Tour 360 — solo si la propiedad lo tiene */}
+            {tourUrl && (
               <section style={{ background: '#0D2D5E', borderRadius: 16, overflow: 'hidden' }}>
                 <div style={{ padding: '1.5rem 1.75rem 1rem' }}>
                   <p style={{ color: '#E8B92F', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
@@ -319,7 +352,7 @@ export default async function PropiedadDetallePage(
                   <h2 style={{ color: '#fff', fontWeight: 800, fontSize: '1.1rem' }}>Tour Virtual 360°</h2>
                 </div>
                 <iframe
-                  src={tour.tour360_embed_url}
+                  src={tourUrl}
                   title="Tour 360° de la propiedad"
                   width="100%"
                   height="480"

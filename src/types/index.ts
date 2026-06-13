@@ -72,6 +72,9 @@ export interface Property {
   short_description?: string;
   meta_title?: string;
   meta_description?: string;
+  // Embeds
+  video_url?: string | null;
+  virtual_tour_url?: string | null;
 }
 
 export interface PropertyFeature {
