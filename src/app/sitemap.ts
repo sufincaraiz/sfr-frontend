@@ -20,6 +20,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/nosotros`,          lastModified: new Date(), changeFrequency: 'yearly',  priority: 0.65 },
     { url: `${SITE_URL}/vender-mi-finca`,   lastModified: new Date(), changeFrequency: 'monthly', priority: 0.75 },
     { url: `${SITE_URL}/glosario`,           lastModified: new Date(), changeFrequency: 'monthly', priority: 0.72 },
+    { url: `${SITE_URL}/terminos-y-condiciones`,     lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${SITE_URL}/politica-tratamiento-datos`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
+    { url: `${SITE_URL}/politica-de-cookies`,        lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
   ]
 
   // ── 2. Propiedades disponibles ─────────────────────────────────────────────
