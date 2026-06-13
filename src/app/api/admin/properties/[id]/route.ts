@@ -1,6 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { getAdminSession } from '@/lib/auth'
+
+// Revalida las páginas estáticas afectadas por un cambio de propiedad,
+// para que las ediciones del admin se reflejen de inmediato en la web pública.
+function revalidatePropertyPaths(slug?: string | null) {
+  if (slug) revalidatePath(`/propiedad/${slug}`)
+  revalidatePath('/propiedades')
+  revalidatePath('/')
+}
 
 export async function GET(
   _req: NextRequest,
@@ -67,6 +76,7 @@ export async function PUT(
       data: updateData,
       include: { municipality: true, media: true },
     })
+    revalidatePropertyPaths(updated.slug)
     return NextResponse.json({ ...updated, price_cop: Number(updated.price_cop) })
   } catch (err) {
     console.error('[PUT /api/admin/properties/[id]]', err)
@@ -83,7 +93,8 @@ export async function DELETE(
 
   const { id } = await params
   try {
-    await prisma.property.delete({ where: { id } })
+    const deleted = await prisma.property.delete({ where: { id } })
+    revalidatePropertyPaths(deleted.slug)
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('[DELETE /api/admin/properties/[id]]', err)

@@ -72,6 +72,9 @@ export default function EditarPropiedadPage() {
         }),
       });
       if (!res.ok) { const d = await res.json(); setError(d.error ?? 'Error'); return; }
+      // Sincroniza la UI (banner "Precio actual", etc.) con lo realmente guardado
+      const saved = await res.json();
+      setData(prev => ({ ...(prev ?? {}), ...saved }));
       setSuccess('✅ Propiedad actualizada correctamente');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {

@@ -12,6 +12,10 @@ import { JsonLd, breadcrumbSchema, propertySchema } from '@/components/seo/JsonL
 import { RelatedProperties } from '@/components/propiedades/RelatedProperties';
 import type { Property, PropertyMedia, PropertyFeature } from '@/types';
 
+// ISR: además de la revalidación on-demand al editar en el admin, la ficha se
+// regenera al menos cada hora como red de seguridad.
+export const revalidate = 3600;
+
 // ─── helpers ────────────────────────────────────────────────────────────────
 
 async function getProperty(slug: string) {
