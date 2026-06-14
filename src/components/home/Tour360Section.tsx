@@ -126,7 +126,7 @@ export function Tour360Section() {
             gap: 6,
             backdropFilter: 'blur(4px)',
           }}>
-            ⟳ Tour 360° · Finca Macondo
+            ⟳ Tour 360° · La Vega, Cundinamarca
           </div>
 
           {/* Loader — se muestra hasta que IntersectionObserver dispara */}
@@ -158,8 +158,8 @@ export function Tour360Section() {
           {isVisible && (
             <iframe
               id="tour-embeded"
-              name="FINCA MACONDO"
-              src="https://tour.panoee.net/iframe/macondo"
+              name="La Vega Cundinamarca"
+              src="https://tour.panoee.net/iframe/lavegacund"
               frameBorder={0}
               width="100%"
               height="500px"
@@ -168,7 +168,7 @@ export function Tour360Section() {
               allowFullScreen
               loading="eager"
               style={{ display: 'block' }}
-              title="Tour Virtual 360° — Finca Macondo · Su Finca Raíz La Vega, Cundinamarca"
+              title="Tour Virtual 360° — Panorámica de La Vega, Cundinamarca · Su Finca Raíz"
             />
           )}
         </div>
