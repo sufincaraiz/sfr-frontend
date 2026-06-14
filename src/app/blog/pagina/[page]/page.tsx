@@ -11,7 +11,7 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
 export async function generateStaticParams() {
-  const { totalPages } = getPaginatedPosts(1, POSTS_PER_PAGE)
+  const { totalPages } = await getPaginatedPosts(1, POSTS_PER_PAGE)
   return Array.from({ length: Math.max(0, totalPages - 1) }, (_, i) => ({
     page: String(i + 2), // pages 2..N (page 1 is /blog)
   }))
@@ -41,7 +41,7 @@ export default async function BlogPaginaPage(
   const n = parseInt(page, 10)
   if (isNaN(n) || n < 2) notFound()
 
-  const { posts, totalPages } = getPaginatedPosts(n, POSTS_PER_PAGE)
+  const { posts, totalPages } = await getPaginatedPosts(n, POSTS_PER_PAGE)
   if (n > totalPages && totalPages > 0) notFound()
 
   const breadcrumbs = breadcrumbSchema([

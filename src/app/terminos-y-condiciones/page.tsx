@@ -79,7 +79,47 @@ export default function TerminosPage() {
           jurisdicción correspondiente a La Vega, Cundinamarca.
         </p>
 
-        <h2>7. Contacto</h2>
+        <h2>7. Políticas de Contenido Generado por el Usuario (Blog y Comunidad)</h2>
+        <p>
+          Estas cláusulas aplican a cualquier artículo, mensaje, imagen u otro material que un usuario
+          publique en el blog y la comunidad de Su Finca Raíz.
+        </p>
+        <p>
+          <strong>Licencia de Uso:</strong> Al publicar un artículo, el usuario conserva los derechos
+          de autor sobre su obra, pero otorga a Su Finca Raíz una licencia gratuita, perpetua y no
+          exclusiva para exhibir, modificar (por corrección de estilo o SEO) y compartir el contenido
+          en sus redes sociales y canales aliados.
+        </p>
+        <p>
+          <strong>Enfoque Comunitario y Contenido Prohibido:</strong> El objetivo fundamental del blog
+          y la comunidad de Su Finca Raíz es trascender el conocimiento, aportando valor educativo
+          sobre el sector inmobiliario, la inversión y el desarrollo en la región. Para proteger este
+          propósito constructivo, queda estrictamente prohibido utilizar la plataforma para publicar:
+        </p>
+        <ul>
+          <li><strong>Proselitismo y Politiquería:</strong> Cualquier contenido destinado a promover campañas políticas, debates partidistas o proselitismo de cualquier índole.</li>
+          <li><strong>Discursos de Odio y Discriminación:</strong> Textos que ataquen, denigren o promuevan la intolerancia hacia cualquier persona o grupo por motivos de género, raza, religión, orientación sexual o ideología.</li>
+          <li><strong>Crítica Destructiva:</strong> Artículos diseñados para difamar, atacar posturas ajenas o generar polémica innecesaria.</li>
+          <li><strong>Spam Comercial:</strong> Anuncios clasificados de venta directa de inmuebles (los cuales deben gestionarse a través del Centro de Negocios).</li>
+        </ul>
+        <p>
+          Todo contenido debe mantener un tono respetuoso, profesional y estrictamente orientado al
+          aprendizaje mutuo. Su Finca Raíz se reserva el derecho de eliminar inmediatamente cualquier
+          publicación que altere la convivencia y el propósito educativo de la plataforma.
+        </p>
+        <p>
+          <strong>Derecho de Admisión y Moderación:</strong> Su Finca Raíz se reserva el derecho
+          unilateral e inapelable de rechazar, editar, suspender o eliminar cualquier artículo o cuenta
+          de usuario que incumpla estas políticas o que no se alinee con los estándares de calidad del
+          Centro de Negocios, sin necesidad de previo aviso ni justificación.
+        </p>
+        <p>
+          <strong>Cláusula de Indemnidad:</strong> El usuario se compromete a defender y mantener
+          indemne a Su Finca Raíz y a su equipo directivo frente a cualquier demanda, multa o gasto
+          legal que surja como consecuencia del contenido que haya subido a la plataforma.
+        </p>
+
+        <h2>8. Contacto</h2>
         <p>
           Su Finca Raíz — Calle 21 #2-18, Calle Los Naranjos, La Vega, Cundinamarca. Correo:{' '}
           <a href="mailto:sufincaraiz.comercial@gmail.com">sufincaraiz.comercial@gmail.com</a> —

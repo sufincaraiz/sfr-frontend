@@ -13,8 +13,8 @@ export const metadata: Metadata = {
   alternates: { canonical: `${SITE_URL}/blog/categorias` },
 }
 
-export default function CategoriasIndexPage() {
-  const withCount = getAllCategories()
+export default async function CategoriasIndexPage() {
+  const withCount = await getAllCategories()
   const countMap = Object.fromEntries(withCount.map(c => [c.slug, c.count]))
 
   const breadcrumbs = breadcrumbSchema([

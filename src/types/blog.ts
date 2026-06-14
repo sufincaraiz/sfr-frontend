@@ -7,6 +7,7 @@ export const BLOG_CATEGORIES = {
   'inversion-rural':        'Inversión Rural',
   'tramites-y-legal':       'Trámites y Legal',
   'noticias':               'Noticias',
+  'comunidad':              'Comunidad',
 } as const
 
 export type BlogCategorySlug = keyof typeof BLOG_CATEGORIES
@@ -42,12 +43,16 @@ export interface PostMeta extends PostFrontmatter {
   slug:          string
   reading_time:  string        // "5 min de lectura"
   category_name: string
+  // Aportes de la comunidad (blog colaborativo, guardados en BD)
+  community?:    boolean       // true si proviene de la tabla Article
+  author_photo?: string        // foto del autor (seudónimo)
+  author_email?: string        // correo del autor (visible para contacto)
 }
 
-// ─── Post completo (incluye MDX source) ──────────────────────────────────────
+// ─── Post completo (incluye MDX source o texto plano de comunidad) ────────────
 
 export interface Post extends PostMeta {
-  content: string              // raw MDX string para MDXRemote
+  content: string              // MDX (artículos) o texto plano (comunidad)
 }
 
 // ─── Página paginada ─────────────────────────────────────────────────────────

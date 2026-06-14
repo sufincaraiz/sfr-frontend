@@ -35,6 +35,20 @@ export function cloudinarySquare(url: string, width = 600): string {
   return url.replace('/upload/', `/upload/${transform}/`);
 }
 
+/**
+ * Optimiza una imagen de Cloudinary para entrega liviana sin recortar:
+ * f_auto (AVIF/WebP), q_auto (calidad automática) y c_limit (cap de ancho,
+ * nunca agranda). Ideal para portadas del blog y fotos subidas por usuarios.
+ */
+export function cloudinaryOptimize(url: string, width = 1280): string {
+  if (!url || !url.includes('res.cloudinary.com') || !url.includes('/upload/')) {
+    return url;
+  }
+  if (url.includes('/upload/f_auto') || url.includes('/upload/c_fill,ar_1:1')) return url;
+  const transform = `f_auto,q_auto,c_limit,w_${width}`;
+  return url.replace('/upload/', `/upload/${transform}/`);
+}
+
 export function slugify(text: string): string {
   return text
     .toLowerCase()

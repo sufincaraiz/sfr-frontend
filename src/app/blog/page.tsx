@@ -32,10 +32,10 @@ export const metadata: Metadata = {
 
 export const revalidate = 3600
 
-export default function BlogIndexPage() {
-  const { posts, totalPages } = getPaginatedPosts(1)
-  const featured = getFeaturedPosts(3)
-  const categories = getAllCategories()
+export default async function BlogIndexPage() {
+  const { posts, totalPages } = await getPaginatedPosts(1)
+  const featured = await getFeaturedPosts(3)
+  const categories = await getAllCategories()
 
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },

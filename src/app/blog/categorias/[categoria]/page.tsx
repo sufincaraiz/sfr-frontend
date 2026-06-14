@@ -46,7 +46,7 @@ export default async function CategoriaPage(
   const name = BLOG_CATEGORIES[categoria as BlogCategorySlug]
   if (!name) notFound()
 
-  const { posts, totalPages, total } = getPostsByCategory(categoria as BlogCategorySlug, 1)
+  const { posts, totalPages, total } = await getPostsByCategory(categoria as BlogCategorySlug, 1)
 
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },

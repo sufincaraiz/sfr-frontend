@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Home, ChevronRight, Calendar, Clock, User, Tag } from 'lucide-react'
+import { Home, ChevronRight, Calendar, Clock, User, Tag, Mail } from 'lucide-react'
 import { SITE_URL } from '@/lib/site'
 import { getPost, getAllPostSlugs, getRelatedPosts } from '@/lib/blog'
 import { ArticleContent } from '@/components/blog/ArticleContent'
@@ -12,7 +12,7 @@ import { JsonLd, breadcrumbSchema, articleSchema, howToSchema, webPageSchema } f
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
 export async function generateStaticParams() {
-  return getAllPostSlugs()
+  return await getAllPostSlugs()
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -21,7 +21,7 @@ export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
   const { slug } = await params
-  const post = getPost(slug)
+  const post = await getPost(slug)
   if (!post) return { title: 'Artículo no encontrado | Su Finca Raíz' }
 
   return {
@@ -53,10 +53,10 @@ export default async function BlogPostPage(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params
-  const post = getPost(slug)
+  const post = await getPost(slug)
   if (!post) notFound()
 
-  const related = getRelatedPosts(post, 3)
+  const related = await getRelatedPosts(post, 3)
 
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },
@@ -160,8 +160,16 @@ export default async function BlogPostPage(
               {post.excerpt}
             </p>
 
-            {/* MDX */}
-            <ArticleContent content={post.content} />
+            {/* Contenido: MDX (artículos) o texto plano seguro (comunidad) */}
+            {post.community ? (
+              <div className="community-content" style={{ color: '#334155', fontSize: '1.02rem', lineHeight: 1.85 }}>
+                {post.content.split(/\n{2,}/).map((para, i) => (
+                  <p key={i} style={{ marginBottom: '1.1rem', whiteSpace: 'pre-wrap' }}>{para}</p>
+                ))}
+              </div>
+            ) : (
+              <ArticleContent content={post.content} />
+            )}
 
             {/* Tags footer */}
             {post.tags.length > 0 && (
@@ -205,17 +213,35 @@ export default async function BlogPostPage(
             {/* Info del autor */}
             <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', padding: '1.25rem 1.4rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '0.75rem' }}>
-                <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#0D2D5E', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <User size={20} style={{ color: '#fff' }} />
-                </div>
+                {post.community && post.author_photo ? (
+                  <div style={{ position: 'relative', width: 44, height: 44, borderRadius: '50%', overflow: 'hidden', flexShrink: 0, border: '2px solid #E8B92F' }}>
+                    <Image src={post.author_photo} alt={post.author ?? 'Autor'} fill style={{ objectFit: 'cover' }} sizes="44px" />
+                  </div>
+                ) : (
+                  <div style={{ width: 44, height: 44, borderRadius: '50%', background: '#0D2D5E', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <User size={20} style={{ color: '#fff' }} />
+                  </div>
+                )}
                 <div>
                   <p style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '0.9rem', margin: 0 }}>{post.author ?? 'Su Finca Raíz'}</p>
-                  <p style={{ color: '#64748B', fontSize: '0.75rem', margin: 0 }}>Expertos en Gualivá</p>
+                  <p style={{ color: '#64748B', fontSize: '0.75rem', margin: 0 }}>
+                    {post.community ? 'Voz de la comunidad' : 'Expertos en Gualivá'}
+                  </p>
                 </div>
               </div>
               <p style={{ color: '#475569', fontSize: '0.82rem', lineHeight: 1.6 }}>
-                Especialistas en compraventa de finca raíz en La Vega y la región del Gualivá, Cundinamarca.
+                {post.community
+                  ? 'Aporte de la comunidad de Su Finca Raíz — conocimiento que perdura en el tiempo.'
+                  : 'Especialistas en compraventa de finca raíz en La Vega y la región del Gualivá, Cundinamarca.'}
               </p>
+              {post.community && post.author_email && (
+                <a
+                  href={`mailto:${post.author_email}`}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginTop: '0.9rem', background: '#1B56A1', color: '#fff', fontWeight: 700, fontSize: '0.8rem', padding: '8px 14px', borderRadius: 9, textDecoration: 'none' }}
+                >
+                  <Mail size={14} /> Contactar al autor
+                </a>
+              )}
             </div>
 
             {/* Detalles del artículo */}

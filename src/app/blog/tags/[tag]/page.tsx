@@ -9,8 +9,9 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
-export function generateStaticParams() {
-  return getAllTags().map(({ tag }) => ({ tag: encodeURIComponent(tag.toLowerCase()) }))
+export async function generateStaticParams() {
+  const tags = await getAllTags()
+  return tags.map(({ tag }) => ({ tag: encodeURIComponent(tag.toLowerCase()) }))
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -35,7 +36,7 @@ export default async function TagPage(
 ) {
   const { tag } = await params
   const decoded = decodeURIComponent(tag)
-  const { posts, totalPages, total } = getPostsByTag(decoded, 1)
+  const { posts, totalPages, total } = await getPostsByTag(decoded, 1)
 
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },

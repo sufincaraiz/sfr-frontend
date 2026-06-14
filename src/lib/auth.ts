@@ -21,3 +21,25 @@ export async function getAdminSession() {
   if (!token) return null
   return verifyToken(token)
 }
+
+// ─── Sesión del escritor del blog colaborativo (credencial única) ─────────────
+
+export function createBlogToken(user: string) {
+  return jwt.sign({ user, role: 'blog_writer' }, JWT_SECRET, { expiresIn: '7d' })
+}
+
+export function verifyBlogToken(token: string) {
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as { user: string; role: string }
+    return payload.role === 'blog_writer' ? payload : null
+  } catch {
+    return null
+  }
+}
+
+export async function getBlogWriterSession() {
+  const cookieStore = await cookies()
+  const token = cookieStore.get('blog_writer_token')?.value
+  if (!token) return null
+  return verifyBlogToken(token)
+}

@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
-import { getAllPosts, getAllCategories } from '@/lib/blog'
+import { getAllPosts } from '@/lib/blog'
 import { getAllMunicipiosData } from '@/lib/municipios-data'
 import { getAllVeredasData } from '@/lib/veredas-data'
 import { BLOG_CATEGORIES, type BlogCategorySlug } from '@/types/blog'
@@ -64,7 +64,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }))
 
   // ── 6. Blog: artículos ────────────────────────────────────────────────────
-  const posts = getAllPosts()
+  const posts = await getAllPosts()
   const blogPostRoutes: MetadataRoute.Sitemap = posts.map(p => ({
     url:             `${SITE_URL}/blog/${p.slug}`,
     lastModified:    new Date(p.updated ?? p.date),
