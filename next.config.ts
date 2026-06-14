@@ -43,6 +43,15 @@ const nextConfig: NextConfig = {
     ]
   },
 
+  // ── Propuestas comerciales (HTML estático en /public/propuesta) ─────────────
+  // URL limpia sin .html. Para cada propuesta nueva: deja el archivo en
+  // public/propuesta/<slug>.html y agrega aquí una línea con su <slug>.
+  async rewrites() {
+    return [
+      { source: '/propuesta/villa-maria-elvira', destination: '/propuesta/villa-maria-elvira.html' },
+    ]
+  },
+
   // ── Headers de seguridad ────────────────────────────────────────────────────
   async headers() {
     return [

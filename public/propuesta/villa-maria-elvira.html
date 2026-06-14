@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Villa María Elvira · Proyección Comercial — Su Finca Raíz · Conarc · MOX</title>
+<meta name="description" content="Propuesta de proyección comercial para la venta de la Finca Villa María Elvira, La Vega — Cundinamarca. Consorcio Su Finca Raíz, Conarc y MOX.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=IBM+Plex+Sans:wght@300;400;500;600;700&amp;family=IBM+Plex+Serif:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400;1,500;1,600&amp;display=swap" rel="stylesheet">
+<style>
+  :root{
+    /* ---- brand palette (referencia) ---- */
+    --slate:#405C60;
+    --amethyst:#525266;
+    --charcoal:#383838;
+    --charcoal-2:#2B2B2B;
+    --mist:#D1E0DE;
+    --keylime:#EEF4CE;
+    --slate-deep:#2C4448;
+
+    /* ---- text on dark ---- */
+    --d-hi:#F2F5F2;
+    --d-bd:#C9D5D2;
+    --d-mut:#8C9A98;
+    /* ---- text on light (mist) ---- */
+    --l-hi:#2B2B2B;
+    --l-bd:#3F4A49;
+    --l-mut:#5C6A69;
+
+    /* ---- hairlines / surfaces ---- */
+    --line-d:rgba(238,244,206,.20);
+    --line-l:rgba(44,68,72,.18);
+    --card-d:rgba(255,255,255,.05);
+    --card-l:#FAFBF6;
+
+    --maxw:1200px;
+    --pad-x:clamp(1.4rem,5vw,5.5rem);
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto;}}
+
+  body{
+    margin:0;
+    background:var(--charcoal-2);
+    color:var(--d-bd);
+    font-family:"IBM Plex Sans",system-ui,sans-serif;
+    font-weight:400;
+    font-size:clamp(1rem,1.05vw,1.08rem);
+    line-height:1.72;
+    -webkit-font-smoothing:antialiased;
+    text-rendering:optimizeLegibility;
+    -webkit-hyphens:auto;hyphens:auto;
+    overflow-x:hidden;
+  }
+  ::selection{background:var(--keylime);color:var(--charcoal);}
+
+  h1,h2,h3{font-family:"IBM Plex Serif",Georgia,serif;font-weight:600;line-height:1.04;letter-spacing:-0.02em;margin:0;-webkit-hyphens:manual;hyphens:manual;}
+  p{margin:0 0 1.1em;}
+  a{color:inherit;}
+
+  .wrap{max-width:var(--maxw);margin:0 auto;padding-left:var(--pad-x);padding-right:var(--pad-x);}
+
+  /* ---------- eyebrows / labels ---------- */
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:.72rem;font-weight:500;
+    letter-spacing:.26em;text-transform:uppercase;
+    color:var(--keylime);
+    display:flex;align-items:center;gap:.85rem;
+    margin:0 0 1.7rem;
+  }
+  .eyebrow::before{content:"";width:30px;height:2px;background:var(--keylime);display:inline-block;}
+  .eyebrow.center{justify-content:center;}
+  .mono{font-family:"IBM Plex Mono",monospace;}
+
+  /* ---------- left section rail ---------- */
+  .rail{
+    position:fixed;top:0;left:0;height:100vh;width:78px;z-index:40;
+    display:flex;flex-direction:column;align-items:center;justify-content:space-between;
+    padding:1.7rem 0;border-right:1px solid var(--line-d);
+    background:rgba(43,43,43,.82);backdrop-filter:blur(4px);
+  }
+  .rail .mark{writing-mode:vertical-rl;transform:rotate(180deg);
+    font-family:"IBM Plex Mono",monospace;font-size:.64rem;letter-spacing:.28em;text-transform:uppercase;color:var(--d-mut);}
+  .rail nav{display:flex;flex-direction:column;gap:.5rem;align-items:center;}
+  .rail a{
+    width:32px;height:32px;display:grid;place-items:center;border-radius:2px;
+    font-family:"IBM Plex Mono",monospace;font-size:.68rem;color:var(--d-mut);
+    text-decoration:none;position:relative;transition:color .35s ease,background .35s ease;
+  }
+  .rail a:hover{color:var(--d-hi);}
+  .rail a.active{color:var(--charcoal);background:var(--keylime);}
+  .rail .dot{writing-mode:vertical-rl;font-family:"IBM Plex Mono",monospace;font-size:.6rem;letter-spacing:.26em;text-transform:uppercase;color:var(--d-mut);}
+
+  .progress{position:fixed;top:0;left:0;height:3px;width:0;background:var(--keylime);z-index:60;transition:width .12s linear;}
+
+  main{margin-left:78px;}
+
+  /* ---------- sections ---------- */
+  section{position:relative;padding:clamp(5rem,12vh,9.5rem) 0;overflow:hidden;}
+  /* dark family — shared text tokens */
+  section.dark{color:var(--d-bd);}
+  section.dark h1,section.dark h2,section.dark h3{color:var(--d-hi);}
+  section.dark .muted{color:var(--d-mut);}
+  section.dark.bg-charcoal{background:var(--charcoal);}
+  section.dark.bg-charcoal2{background:var(--charcoal-2);}
+  section.dark.bg-slate{background:var(--slate);}
+  section.dark.bg-amethyst{background:var(--amethyst);}
+  /* light family */
+  section.light{background:var(--mist);color:var(--l-bd);}
+  section.light h1,section.light h2,section.light h3{color:var(--l-hi);}
+  section.light .eyebrow{color:var(--slate-deep);}
+  section.light .eyebrow::before{background:var(--slate-deep);}
+  section.light .muted{color:var(--l-mut);}
+
+  .section-index{
+    position:absolute;top:clamp(2rem,5vh,3.2rem);right:var(--pad-x);
+    font-family:"IBM Plex Mono",monospace;font-size:.74rem;letter-spacing:.12em;
+  }
+  section.dark .section-index{color:var(--keylime);opacity:.72;}
+  section.light .section-index{color:var(--slate-deep);opacity:.7;}
+
+  /* line motif removed */
+  .topo{display:none;}
+  section > .wrap{position:relative;z-index:1;}
+
+  /* ---------- HERO ---------- */
+  .hero{min-height:100vh;display:flex;flex-direction:column;justify-content:center;
+    padding-top:clamp(4rem,9vh,7rem);padding-bottom:clamp(3rem,7vh,5rem);}
+  .hero .topo{opacity:.12;}
+  .hero-top{display:flex;justify-content:space-between;align-items:baseline;gap:1rem;flex-wrap:wrap;
+    border-bottom:1px solid var(--line-d);padding-bottom:1.3rem;margin-bottom:clamp(2.5rem,7vh,5rem);}
+  .hero-top .tag{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.18em;text-transform:uppercase;color:var(--d-mut);}
+  .hero-top .tag b{color:var(--keylime);font-weight:500;}
+  .hero h1{font-size:clamp(3.4rem,11.5vw,10rem);font-weight:600;letter-spacing:-0.035em;color:var(--d-hi);}
+  .hero h1 em{font-style:italic;color:var(--keylime);font-weight:600;}
+  .hero .sub{max-width:44ch;margin-top:1.7rem;color:var(--d-bd);font-size:clamp(1.1rem,1.6vw,1.4rem);line-height:1.55;font-weight:300;}
+  .hero .meta{display:flex;flex-wrap:wrap;gap:.6rem 2.6rem;margin-top:2.6rem;
+    font-family:"IBM Plex Mono",monospace;font-size:.82rem;letter-spacing:.03em;color:var(--d-mut);}
+  .hero .meta span b{color:var(--d-hi);font-weight:500;}
+  .hero-foot{margin-top:auto;padding-top:clamp(2.6rem,7vh,4.5rem);
+    display:flex;justify-content:space-between;align-items:flex-end;gap:2rem;flex-wrap:wrap;}
+  .prepared .lbl{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.24em;text-transform:uppercase;color:var(--keylime);display:block;margin-bottom:.45rem;}
+  .prepared .name{font-family:"IBM Plex Serif",serif;font-weight:500;font-size:1.8rem;color:var(--d-hi);}
+  .prepared .role{color:var(--d-mut);font-size:.9rem;}
+  .lockup{display:flex;align-items:center;gap:1.1rem;font-family:"IBM Plex Mono",monospace;font-size:.74rem;letter-spacing:.14em;text-transform:uppercase;color:var(--d-mut);}
+  .lockup span{white-space:nowrap;}
+  .lockup .sep{width:1px;height:14px;background:var(--line-d);}
+
+  /* reveal */
+  .reveal{opacity:0;transform:translateY(26px);transition:opacity .9s cubic-bezier(.2,.7,.2,1),transform .9s cubic-bezier(.2,.7,.2,1);}
+  .reveal.in{opacity:1;transform:none;}
+  .reveal.d1{transition-delay:.08s;}.reveal.d2{transition-delay:.16s;}.reveal.d3{transition-delay:.24s;}.reveal.d4{transition-delay:.32s;}.reveal.d5{transition-delay:.4s;}
+  @media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none;transition:none;}}
+
+  /* ---------- type helpers ---------- */
+  .lede{font-family:"IBM Plex Serif",serif;font-weight:500;font-size:clamp(1.7rem,3.7vw,3rem);line-height:1.14;letter-spacing:-0.018em;max-width:18ch;}
+  .display{font-size:clamp(2.3rem,6.2vw,4.6rem);font-weight:600;letter-spacing:-0.025em;}
+  .display em{font-style:italic;}
+  section.dark .display em,section.dark .lede em{color:var(--keylime);}
+  section.light .display em,section.light .lede em{color:var(--slate);}
+
+  .two-col{display:grid;grid-template-columns:0.9fr 1.1fr;gap:clamp(2rem,6vw,5.5rem);align-items:start;}
+  .two-col.flip{grid-template-columns:1.1fr 0.9fr;}
+  @media (max-width:860px){.two-col,.two-col.flip{grid-template-columns:1fr;gap:2.2rem;}}
+
+  .body-narrow{max-width:54ch;}
+  .body-narrow p{margin-bottom:1.2em;text-align:justify;}
+  .brand-card p,.num-item p,.inc p,.tl-what p{text-align:justify;}
+
+  /* ---------- brand cards ---------- */
+  .brand-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.3rem;margin-top:3rem;}
+  @media (max-width:860px){.brand-grid{grid-template-columns:1fr;}}
+  .brand-card{border:1px solid var(--line-l);background:var(--card-l);border-radius:3px;padding:2rem 1.7rem;}
+  section.dark .brand-card{background:var(--card-d);border-color:var(--line-d);}
+  .brand-card .bn{font-family:"IBM Plex Serif",serif;font-weight:600;font-size:1.5rem;}
+  section.light .brand-card .bn{color:var(--slate);}
+  section.dark .brand-card .bn{color:var(--keylime);}
+  .brand-card .br{font-family:"IBM Plex Mono",monospace;font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;margin:.35rem 0 1.1rem;}
+  section.light .brand-card .br{color:var(--l-mut);}
+  section.dark .brand-card .br{color:var(--d-mut);}
+  .brand-card p{font-size:.95rem;margin:0;}
+
+  /* ---------- stat strip ---------- */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;margin-top:3rem;border-radius:3px;overflow:hidden;}
+  @media (max-width:760px){.stats{grid-template-columns:repeat(2,1fr);}}
+  section.light .stats{background:var(--line-l);}
+  section.dark .stats{background:var(--line-d);}
+  .stat{padding:1.9rem 1.5rem;}
+  section.light .stat{background:var(--mist);}
+  section.dark .stat{background:inherit;}
+  .stat .n{font-family:"IBM Plex Serif",serif;font-weight:600;font-size:clamp(1.9rem,4vw,2.7rem);line-height:1;}
+  section.light .stat .n{color:var(--slate);}
+  section.dark .stat .n{color:var(--keylime);}
+  .stat .l{font-family:"IBM Plex Mono",monospace;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;margin-top:.7rem;}
+  section.light .stat .l{color:var(--l-mut);}
+  section.dark .stat .l{color:var(--d-mut);}
+
+  /* ---------- spec list ---------- */
+  .spec-list{margin-top:2.4rem;border-top:1px solid var(--line-d);}
+  section.light .spec-list{border-color:var(--line-l);}
+  .spec-list .row{display:flex;justify-content:space-between;gap:1.5rem;padding:1.05rem 0;border-bottom:1px solid var(--line-d);}
+  section.light .spec-list .row{border-color:var(--line-l);}
+  .spec-list .k{font-size:.92rem;}
+  section.dark .spec-list .k{color:var(--d-mut);} section.light .spec-list .k{color:var(--l-mut);}
+  .spec-list .v{font-family:"IBM Plex Mono",monospace;font-size:.95rem;text-align:right;}
+  section.dark .spec-list .v{color:var(--d-hi);} section.light .spec-list .v{color:var(--l-hi);}
+  section.dark .spec-list .v.hi{color:var(--keylime);} section.light .spec-list .v.hi{color:var(--slate);}
+
+  /* ---------- numbered method grid ---------- */
+  .num-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;margin-top:3rem;border-radius:3px;overflow:hidden;background:var(--line-l);}
+  @media (max-width:760px){.num-grid{grid-template-columns:1fr;}}
+  .num-item{background:var(--mist);padding:2rem 1.8rem;}
+  .num-item .ni{font-family:"IBM Plex Mono",monospace;font-size:1rem;color:var(--slate);font-weight:600;}
+  .num-item h3{font-size:1.32rem;margin:.7rem 0 .55rem;}
+  .num-item p{font-size:.93rem;color:var(--l-mut);margin:0;}
+
+  /* ---------- services ---------- */
+  .svc-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:clamp(1.6rem,3vw,2.6rem);margin-top:3.2rem;}
+  @media (max-width:980px){.svc-grid{grid-template-columns:repeat(2,1fr);}}
+  @media (max-width:560px){.svc-grid{grid-template-columns:1fr;}}
+  .svc-col h3{font-family:"IBM Plex Mono",monospace;font-size:.82rem;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--keylime);
+    padding-bottom:.85rem;margin-bottom:1rem;border-bottom:1px solid var(--line-d);}
+  .svc-col ul{list-style:none;margin:0;padding:0;}
+  .svc-col li{font-size:.95rem;color:var(--d-bd);padding:.46rem 0;line-height:1.4;border-bottom:1px solid rgba(238,244,206,.07);}
+  .svc-col li:last-child{border-bottom:none;}
+
+  /* ---------- investment ---------- */
+  .ratio{display:grid;grid-template-columns:1fr auto 1fr;gap:clamp(1.4rem,4vw,3.5rem);align-items:center;
+    margin:3.5rem 0 3rem;text-align:center;}
+  @media (max-width:760px){.ratio{grid-template-columns:1fr;gap:1.4rem;}}
+  .ratio .blk .lbl{font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--d-mut);margin-bottom:.7rem;}
+  .ratio .blk .fig{font-family:"IBM Plex Serif",serif;font-weight:600;font-size:clamp(1.8rem,4.5vw,3rem);line-height:1;color:var(--d-hi);}
+  .ratio .blk.accent .fig{color:var(--keylime);}
+  .ratio .blk .fig small{font-family:"IBM Plex Mono",monospace;font-size:.42em;font-weight:400;color:var(--d-mut);display:block;margin-top:.6rem;letter-spacing:.05em;}
+  .ratio .op{font-family:"IBM Plex Mono",monospace;font-size:clamp(1.4rem,3vw,2rem);color:var(--keylime);opacity:.7;}
+  .pct-line{text-align:center;max-width:58ch;margin:0 auto 3.6rem;}
+  .pct-line .big{font-family:"IBM Plex Serif",serif;font-weight:700;font-size:clamp(3rem,11vw,7rem);color:var(--keylime);display:block;line-height:.95;margin-bottom:1.3rem;letter-spacing:-0.02em;}
+  .pct-line p{color:var(--d-bd);font-size:clamp(1.05rem,1.6vw,1.3rem);margin:0;text-align:center;}
+  .pct-line p strong{color:var(--d-hi);font-weight:600;}
+  .includes{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;border-radius:3px;overflow:hidden;background:var(--line-d);}
+  @media (max-width:760px){.includes{grid-template-columns:1fr;}}
+  .inc{background:var(--slate);padding:1.8rem 1.6rem;}
+  .inc .ic{font-family:"IBM Plex Mono",monospace;font-size:.78rem;color:var(--keylime);margin-bottom:.7rem;font-weight:500;}
+  .inc h3{font-size:1.2rem;color:var(--d-hi);margin-bottom:.4rem;}
+  .inc p{font-size:.88rem;color:var(--d-bd);margin:0;}
+
+  /* ---------- timeline ---------- */
+  .timeline{margin-top:3.2rem;}
+  .tl-row{display:grid;grid-template-columns:150px 1fr;gap:1.6rem;padding:1.7rem 0;border-top:1px solid var(--line-l);align-items:baseline;}
+  .tl-row:last-child{border-bottom:1px solid var(--line-l);}
+  @media (max-width:620px){.tl-row{grid-template-columns:1fr;gap:.5rem;}}
+  .tl-when{font-family:"IBM Plex Mono",monospace;font-size:.84rem;letter-spacing:.05em;color:var(--slate);text-transform:uppercase;font-weight:500;}
+  .tl-what h3{font-size:1.25rem;margin-bottom:.3rem;}
+  .tl-what p{font-size:.93rem;color:var(--l-mut);margin:0;}
+
+  /* ---------- pull quote ---------- */
+  .pull{border-left:3px solid var(--keylime);padding-left:clamp(1.4rem,4vw,2.6rem);margin-top:3.2rem;max-width:32ch;}
+  section.light .pull{border-color:var(--slate);}
+  .pull p{font-family:"IBM Plex Serif",serif;font-style:italic;font-weight:400;font-size:clamp(1.35rem,2.7vw,2rem);line-height:1.32;margin:0;}
+  section.dark .pull p{color:var(--d-hi);} section.light .pull p{color:var(--l-hi);}
+
+  /* ---------- closing ---------- */
+  .cta-btn{display:inline-flex;align-items:center;gap:.8rem;margin-top:2.4rem;
+    background:var(--keylime);color:var(--charcoal);text-decoration:none;
+    font-family:"IBM Plex Mono",monospace;font-size:.78rem;letter-spacing:.16em;text-transform:uppercase;font-weight:600;
+    padding:1.05rem 2rem;border-radius:2px;transition:transform .3s ease,box-shadow .3s ease;}
+  .cta-btn:hover{transform:translateY(-2px);box-shadow:0 10px 30px rgba(238,244,206,.18);}
+  .contact-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2.2rem 1.5rem;margin-top:4rem;
+    border-top:1px solid var(--line-d);padding-top:3rem;}
+  @media (max-width:760px){.contact-grid{grid-template-columns:1fr 1fr;}}
+  @media (max-width:480px){.contact-grid{grid-template-columns:1fr;}}
+  .contact-grid .cg .cl{font-family:"IBM Plex Mono",monospace;font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--keylime);margin-bottom:.7rem;}
+  .contact-grid .cg p,.contact-grid .cg a{font-size:.95rem;color:var(--d-bd);margin:0;text-decoration:none;line-height:1.6;}
+  .contact-grid .cg a{display:block;transition:color .25s ease;}
+  .contact-grid .cg a:hover{color:var(--keylime);}
+  .colophon{margin-top:4rem;display:flex;justify-content:space-between;gap:1.5rem;flex-wrap:wrap;
+    font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--d-mut);
+    border-top:1px solid var(--line-d);padding-top:1.8rem;}
+
+  /* ---------- terms / honorarios ---------- */
+  .terms{display:grid;grid-template-columns:repeat(3,1fr);gap:1.3rem;margin-top:3.2rem;}
+  @media (max-width:860px){.terms{grid-template-columns:1fr;}}
+  .terms-card{border:1px solid var(--line-d);background:var(--card-d);border-radius:3px;padding:2rem 1.8rem;}
+  .terms-card .tv{font-family:"IBM Plex Serif",serif;font-weight:700;font-size:clamp(2.4rem,5vw,3.4rem);line-height:1;color:var(--keylime);letter-spacing:-0.02em;}
+  .terms-card .tl{font-family:"IBM Plex Mono",monospace;font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--d-hi);margin:.9rem 0 1rem;}
+  .terms-card p{font-size:.93rem;color:var(--d-bd);margin:0;text-align:justify;}
+  .terms-card p strong{color:var(--keylime);font-weight:500;}
+
+  /* ---------- edit mode ---------- */
+  .editbar{position:fixed;right:18px;bottom:18px;z-index:80;display:flex;align-items:center;gap:.6rem;
+    font-family:"IBM Plex Mono",monospace;}
+  .eb-toggle{background:var(--keylime);color:var(--charcoal);border:none;cursor:pointer;
+    font-family:inherit;font-size:.74rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+    padding:.85rem 1.2rem;border-radius:30px;box-shadow:0 8px 24px rgba(0,0,0,.3);transition:transform .25s ease;}
+  .eb-toggle:hover{transform:translateY(-2px);}
+  .eb-actions{display:none;align-items:center;gap:.55rem;background:var(--charcoal-2);
+    border:1px solid var(--line-d);border-radius:30px;padding:.5rem .6rem .5rem 1rem;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+  body.editing .eb-actions{display:flex;}
+  body.editing .eb-toggle{display:none;}
+  .eb-hint{font-size:.68rem;letter-spacing:.06em;color:var(--d-mut);text-transform:uppercase;}
+  .eb-btn{background:var(--keylime);color:var(--charcoal);border:none;cursor:pointer;font-family:inherit;
+    font-size:.7rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;padding:.6rem .9rem;border-radius:20px;}
+  .eb-btn.ghost{background:transparent;color:var(--d-bd);border:1px solid var(--line-d);}
+  .eb-btn.ghost:hover{color:var(--keylime);}
+  @media (max-width:560px){.eb-hint{display:none;}}
+
+  body.editing [contenteditable]:hover{outline:1px dashed rgba(238,244,206,.55);outline-offset:3px;cursor:text;}
+  body.editing [contenteditable]:focus{outline:2px solid var(--keylime);outline-offset:3px;background:rgba(238,244,206,.06);border-radius:2px;}
+  body.editing section.light [contenteditable]:hover{outline-color:rgba(44,68,72,.5);}
+  body.editing section.light [contenteditable]:focus{outline-color:var(--slate);background:rgba(44,68,72,.05);}
+
+  @media (max-width:900px){
+    .rail{display:none;}
+    main{margin-left:0;}
+    .section-index{top:1.4rem;}
+  }
+</style>
+</head>
+<body>
+
+<div class="progress" id="progress"></div>
+
+<aside class="rail" aria-label="Navegación del documento">
+  <div class="mark">Su Finca Raíz · Conarc · MOX</div>
+  <nav id="rail-nav">
+    <a href="#hero" data-i="00" class="active" aria-label="Portada">·</a>
+    <a href="#consorcio" data-i="01" class="">01</a>
+    <a href="#predio" data-i="02" class="">02</a>
+    <a href="#lectura" data-i="03" class="">03</a>
+    <a href="#mercado" data-i="04" class="">04</a>
+    <a href="#metodo" data-i="05" class="">05</a>
+    <a href="#servicios" data-i="06" class="">06</a>
+    <a href="#inversion" data-i="07" class="">07</a>
+    <a href="#proyeccion" data-i="08" class="">08</a>
+    <a href="#acuerdo" data-i="09" class="">09</a>
+    <a href="#cierre" data-i="10" class="">10</a>
+  </nav>
+  <div class="dot">2026</div>
+</aside>
+
+<main>
+
+  <!-- ===== HERO ===== -->
+  <section id="hero" class="hero dark bg-charcoal2">
+    <div class="topo tr" data-topo=""><svg viewBox="0 0 1200 820" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#EEF4CE" stroke-width="1"><path d="M-40 60 C 250 40 470 84 700 62 S 1130 34 1380 66" vector-effect="non-scaling-stroke"></path><path d="M-40 160 C 250 140 470 184 700 162 S 1130 134 1380 166" vector-effect="non-scaling-stroke"></path><path d="M-40 260 C 250 240 470 284 700 262 S 1130 234 1380 266" vector-effect="non-scaling-stroke"></path><path d="M-40 360 C 250 340 470 384 700 362 S 1130 334 1380 366" vector-effect="non-scaling-stroke"></path><path d="M-40 460 C 250 440 470 484 700 462 S 1130 434 1380 466" vector-effect="non-scaling-stroke"></path><path d="M-40 560 C 250 540 470 584 700 562 S 1130 534 1380 566" vector-effect="non-scaling-stroke"></path><path d="M-40 660 C 250 640 470 684 700 662 S 1130 634 1380 666" vector-effect="non-scaling-stroke"></path><path d="M-40 760 C 250 740 470 784 700 762 S 1130 734 1380 766" vector-effect="non-scaling-stroke"></path></svg></div>
+    <div class="wrap">
+      <div class="hero-top reveal">
+        <div class="tag">Propuesta de proyección comercial · <b>Documento confidencial</b></div>
+        <div class="tag">La Vega — Cundinamarca · 2026</div>
+      </div>
+
+      <h1 class="reveal d1">Villa María<br><em>Elvira</em></h1>
+
+      <p class="sub reveal d2">Una estrategia para vender bien: al mejor valor,&nbsp;<div>con respaldo profesional y en el menor tiempo posible.</div></p>
+
+      <div class="meta reveal d3">
+        <span><b>5.007 m²</b> de terreno</span>
+        <span>Vereda San Antonio</span>
+        <span>Vía La Vega — Sasaima</span>
+        <span><b>$970.000.000</b> COP</span>
+      </div>
+
+      <div class="hero-foot">
+        <div class="prepared reveal d4">
+          <span class="lbl">Preparado para</span>
+          <span class="name">Jorge Benavides</span>
+          <span class="role"> — propietario</span>
+        </div>
+        <div class="lockup reveal d5">
+          <span>Su Finca Raíz</span><span class="sep"></span>
+          <span>Conarc</span><span class="sep"></span>
+          <span>MOX</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 01 · CONSORCIO ===== -->
+  <section id="consorcio" class="light">
+    <div class="section-index">01 — Quiénes somos</div>
+    <div class="wrap">
+      <div class="two-col">
+        <div class="reveal">
+          <p class="eyebrow">El consorcio</p>
+          <h2 class="lede">Un consorcio, una sola responsabilidad: su patrimonio.</h2>
+        </div>
+        <div class="body-narrow reveal d1">
+          <p>Somos un consorcio de bienes raíces con sede en La Vega, Cundinamarca, que reúne a una inmobiliaria, una constructora y un estudio de arquitectura y territorio bajo un mismo propósito. Ocho años en el mercado nos posicionan entre los referentes a nivel regional y departamental.</p>
+          <p>Trabajamos con un equipo interdisciplinario de profesionales para ofrecer un servicio integral y certero: desde la asesoría comercial hasta el diseño, los trámites y la ejecución. Atendemos en La Vega y en toda Cundinamarca, desde nuestra oficina principal en la Calle 21 # 2-18, Los Naranjos.</p>
+        </div>
+      </div>
+
+      <div class="brand-grid">
+        <div class="brand-card reveal d1">
+          <div class="bn">Su Finca Raíz</div>
+          <div class="br">Inmobiliaria</div>
+          <p>Conectamos propietarios con compradores e inversionistas. Especialistas en fincas, proyectos rurales y propiedades de alto potencial de valorización.</p>
+        </div>
+        <div class="brand-card reveal d2">
+          <div class="bn">Conarc</div>
+          <div class="br">Constructora</div>
+          <p>Diseñamos y construimos proyectos residenciales, turísticos y comerciales con altos estándares de calidad y sostenibilidad.</p>
+        </div>
+        <div class="brand-card reveal d3">
+          <div class="bn">MOX</div>
+          <div class="br">Arquitectura y territorio</div>
+          <p>Convertimos ideas en proyectos. Diseñamos experiencias y estrategias territoriales con visión y rigor técnico.</p>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat reveal d1"><div class="n">8</div><div class="l">Años en el mercado</div></div>
+        <div class="stat reveal d2"><div class="n">3</div><div class="l">Disciplinas integradas</div></div>
+        <div class="stat reveal d3"><div class="n">La Vega</div><div class="l">Y toda Cundinamarca</div></div>
+        <div class="stat reveal d4"><div class="n">IA</div><div class="l">Agentes de apoyo a la estrategia</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 02 · PREDIO ===== -->
+  <section id="predio" class="dark bg-slate">
+    <div class="topo bl" data-topo=""><svg viewBox="0 0 1200 820" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#EEF4CE" stroke-width="1"><path d="M-40 60 C 250 40 470 84 700 62 S 1130 34 1380 66" vector-effect="non-scaling-stroke"></path><path d="M-40 160 C 250 140 470 184 700 162 S 1130 134 1380 166" vector-effect="non-scaling-stroke"></path><path d="M-40 260 C 250 240 470 284 700 262 S 1130 234 1380 266" vector-effect="non-scaling-stroke"></path><path d="M-40 360 C 250 340 470 384 700 362 S 1130 334 1380 366" vector-effect="non-scaling-stroke"></path><path d="M-40 460 C 250 440 470 484 700 462 S 1130 434 1380 466" vector-effect="non-scaling-stroke"></path><path d="M-40 560 C 250 540 470 584 700 562 S 1130 534 1380 566" vector-effect="non-scaling-stroke"></path><path d="M-40 660 C 250 640 470 684 700 662 S 1130 634 1380 666" vector-effect="non-scaling-stroke"></path><path d="M-40 760 C 250 740 470 784 700 762 S 1130 734 1380 766" vector-effect="non-scaling-stroke"></path></svg></div>
+    <div class="section-index">02 — El activo</div>
+    <div class="wrap">
+      <div class="two-col flip">
+        <div class="body-narrow reveal d1">
+          <p>Villa María Elvira es una finca de <strong>5.007 m²</strong> de topografía plana y semiplana, con vocación ecoturística y residencial. Por el predio cruza la quebrada Cambulal, una fuente natural de agua permanente que define su carácter y su valor.</p>
+          <p>La infraestructura existente —casa principal de siete habitaciones, kiosco tradicional, áreas comunes, garaje cubierto, acueducto y acometidas— hace que el predio esté listo para habitar o para transformarse en un proyecto. La documentación está al día, con desenglobe realizado y lista para transferencia.</p>
+          <p class="muted" style="font-size:.92rem;text-align:left;">Identificado como predio #7 en el plano oficial de la zona.</p>
+        </div>
+        <div class="reveal">
+          <p class="eyebrow">El predio hoy</p>
+          <h2 class="display">Villa María Elvira,<br><em>tal como es hoy.</em></h2>
+          <div class="spec-list">
+            <div class="row"><span class="k">Área del terreno</span><span class="v hi">5.007 m²</span></div>
+            <div class="row"><span class="k">Topografía</span><span class="v">Plana y semiplana</span></div>
+            <div class="row"><span class="k">Recurso hídrico</span><span class="v">Quebrada Cambulal</span></div>
+            <div class="row"><span class="k">Casa principal</span><span class="v">7 habitaciones</span></div>
+            <div class="row"><span class="k">Servicios</span><span class="v">Acueducto y acometidas</span></div>
+            <div class="row"><span class="k">Documentación</span><span class="v">Al día · desenglobe</span></div>
+            <div class="row"><span class="k">Precio de lista</span><span class="v hi">$970.000.000 COP</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 03 · LECTURA ===== -->
+  <section id="lectura" class="light">
+    <div class="section-index">03 — La lectura honesta</div>
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">El punto de partida</p>
+        <h2 class="display" style="max-width:16ch;">Un activo de este nivel <em>no se vende, se posiciona.</em></h2>
+      </div>
+      <div class="two-col" style="margin-top:3rem;">
+        <div class="body-narrow reveal d1">
+          <p>Una propiedad cercana a los mil millones de pesos no se mueve como una casa de barrio con cientos de compradores potenciales. Su comprador natural es un inversionista o una familia que busca un proyecto: un mercado pequeño, calificado y exigente.</p>
+          <p>Vender bien en ese nicho no es publicar el aviso en un portal y esperar. Es llegarle a la persona correcta, con la historia correcta y con material que sostenga el valor que se pide.</p>
+        </div>
+        <div class="body-narrow reveal d2">
+          <p>Por eso no trabajamos con falsas expectativas. Antes de salir al mercado revisamos la trazabilidad del predio y los escenarios reales de retorno, para que la conversación con el comprador sea racional de ambos lados.</p>
+          <p>Lo que cierra una venta de este nivel es la <strong>confianza</strong>. Y la confianza no se improvisa: se construye con un proyecto bien presentado y un equipo que responde.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 04 · MERCADO ===== -->
+  <section id="mercado" class="dark bg-amethyst">
+    <div class="topo tr" data-topo=""><svg viewBox="0 0 1200 820" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#EEF4CE" stroke-width="1"><path d="M-40 60 C 250 40 470 84 700 62 S 1130 34 1380 66" vector-effect="non-scaling-stroke"></path><path d="M-40 160 C 250 140 470 184 700 162 S 1130 134 1380 166" vector-effect="non-scaling-stroke"></path><path d="M-40 260 C 250 240 470 284 700 262 S 1130 234 1380 266" vector-effect="non-scaling-stroke"></path><path d="M-40 360 C 250 340 470 384 700 362 S 1130 334 1380 366" vector-effect="non-scaling-stroke"></path><path d="M-40 460 C 250 440 470 484 700 462 S 1130 434 1380 466" vector-effect="non-scaling-stroke"></path><path d="M-40 560 C 250 540 470 584 700 562 S 1130 534 1380 566" vector-effect="non-scaling-stroke"></path><path d="M-40 660 C 250 640 470 684 700 662 S 1130 634 1380 666" vector-effect="non-scaling-stroke"></path><path d="M-40 760 C 250 740 470 784 700 762 S 1130 734 1380 766" vector-effect="non-scaling-stroke"></path></svg></div>
+    <div class="section-index">04 — Contexto de mercado</div>
+    <div class="wrap">
+      <div class="two-col">
+        <div class="reveal">
+          <p class="eyebrow">El mercado en La Vega</p>
+          <h2 class="display">La Vega no para<br>de <em>valorizarse.</em></h2>
+        </div>
+        <div class="body-narrow reveal d1">
+          <p>Según nuestra experiencia y los datos del sector, La Vega está catalogada entre los cinco mejores municipios de Cundinamarca para el descanso y el desarrollo de proyectos. La demanda es alta por tres razones que se sostienen en el tiempo: ubicación, clima y seguridad. Y el municipio sigue mejorando.</p>
+          <p>A esto se suma un factor de coyuntura que leemos con cuidado: el ánimo inversionista se mueve con la confianza, y el ciclo electoral presidencial influye en cómo y cuándo decide quien tiene capital. Leída bien, esa coyuntura es una ventana, no un riesgo.</p>
+        </div>
+      </div>
+      <div class="pull reveal d2">
+        <p>El mercado rural cerca de Bogotá premia las&nbsp;<div><span style="font-size: clamp(1.35rem, 2.7vw, 2rem);">propiedades con agua, entorno y&nbsp;</span></div><div><span style="font-size: clamp(1.35rem, 2.7vw, 2rem);">vocación clara.&nbsp;</span></div><div><span style="font-size: clamp(1.35rem, 2.7vw, 2rem);">Villa María Elvira tiene las tres.</span></div></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 05 · MÉTODO ===== -->
+  <section id="metodo" class="light">
+    <div class="section-index">05 — Cómo vendemos</div>
+    <div class="wrap">
+      <div class="two-col">
+        <div class="reveal">
+          <p class="eyebrow">Metodología de mercadeo</p>
+          <h2 class="lede">Una maquinaria de venta, no un aviso clasificado.</h2>
+        </div>
+        <div class="body-narrow reveal d1">
+          <p>La promoción inmobiliaria responsable combina presencia física, alianzas y una estrategia digital construida con criterio. Estos son los mecanismos con los que ponemos a circular un inmueble entre quienes de verdad pueden comprarlo.</p>
+        </div>
+      </div>
+
+      <div class="num-grid">
+        <div class="num-item reveal d1"><div class="ni">01</div><h3>Sala de ventas física</h3><p>Punto de atención propio en La Vega, Cundinamarca, para recibir y calificar interesados en el territorio.</p></div>
+        <div class="num-item reveal d2"><div class="ni">02</div><h3>Convenios en la sabana y Bogotá</h3><p>Red de inmobiliarias aliadas que amplía el alcance hacia el comprador capitalino e inversionista.</p></div>
+        <div class="num-item reveal d1"><div class="ni">03</div><h3>Presencia digital asertiva</h3><p>Difusión a través de nuestra página web sufincaraiz.com y canales propios, con material a la altura del activo.</p></div>
+        <div class="num-item reveal d2"><div class="ni">04</div><h3>Redes sociales</h3><p>Facebook @inmobiliariasufincaraiz&nbsp;&nbsp;<div>Instagram @sufincaraizlavega&nbsp;</div><div>con contenido segmentado al perfil del comprador.</div></p></div>
+        <div class="num-item reveal d1"><div class="ni">05</div><h3>Video y formatos cortos</h3><p>YouTube y TikTok @sufincaraiz para mostrar el predio en movimiento y llegar a audiencias nuevas.</p></div>
+        <div class="num-item reveal d2"><div class="ni">06</div><h3>Portales líderes de Colombia</h3><p>Presencia corporativa en Metrocuadrado, Fincaraíz y Mercado Libre, los portales de mayor tráfico del país.</p></div>
+      </div>
+
+      <div class="pull reveal d2" style="max-width:48ch;">
+        <p>Con todas las herramientas tecnológicas a disposición y el apoyo de nuestros agentes de IA, diseñamos la estrategia idónea para vender responsablemente.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 06 · SERVICIOS ===== -->
+  <section id="servicios" class="dark bg-charcoal">
+    <div class="topo bl" data-topo=""><svg viewBox="0 0 1200 820" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#EEF4CE" stroke-width="1"><path d="M-40 60 C 250 40 470 84 700 62 S 1130 34 1380 66" vector-effect="non-scaling-stroke"></path><path d="M-40 160 C 250 140 470 184 700 162 S 1130 134 1380 166" vector-effect="non-scaling-stroke"></path><path d="M-40 260 C 250 240 470 284 700 262 S 1130 234 1380 266" vector-effect="non-scaling-stroke"></path><path d="M-40 360 C 250 340 470 384 700 362 S 1130 334 1380 366" vector-effect="non-scaling-stroke"></path><path d="M-40 460 C 250 440 470 484 700 462 S 1130 434 1380 466" vector-effect="non-scaling-stroke"></path><path d="M-40 560 C 250 540 470 584 700 562 S 1130 534 1380 566" vector-effect="non-scaling-stroke"></path><path d="M-40 660 C 250 640 470 684 700 662 S 1130 634 1380 666" vector-effect="non-scaling-stroke"></path><path d="M-40 760 C 250 740 470 784 700 762 S 1130 734 1380 766" vector-effect="non-scaling-stroke"></path></svg></div>
+    <div class="section-index">06 — Capacidades</div>
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Servicios integrales</p>
+        <h2 class="display" style="max-width:20ch;">Todo lo que un proyecto de esta magnitud necesita, <em>bajo un mismo techo.</em></h2>
+      </div>
+
+      <div class="svc-grid">
+        <div class="svc-col reveal d1">
+          <h3>Inmobiliario y comercial</h3>
+          <ul>
+            <li>Asesoría inmobiliaria</li>
+            <li>Promoción de venta en La Vega y municipios vecinos</li>
+            <li>Caracterización de mercado y estrategias</li>
+            <li>Avalúos</li>
+            <li>Trámites inmobiliarios</li>
+            <li>Trámites prediales</li>
+            <li>Trámites legales</li>
+          </ul>
+        </div>
+        <div class="svc-col reveal d2">
+          <h3>Arquitectura y diseño</h3>
+          <ul>
+            <li>Arquitectura</li>
+            <li>Anteproyectos arquitectónicos</li>
+            <li>Interiorismo y paisajismo</li>
+            <li>Renders y planos</li>
+            <li>Topografía</li>
+            <li>Diseño de huertas y sistemas productivos</li>
+          </ul>
+        </div>
+        <div class="svc-col reveal d3">
+          <h3>Estrategia y viabilidad</h3>
+          <ul>
+            <li>Análisis de viabilidad de proyectos</li>
+            <li>Factibilidad de proyectos</li>
+            <li>Planes maestros de fincas</li>
+            <li>Prefactibilidad turística</li>
+          </ul>
+        </div>
+        <div class="svc-col reveal d4">
+          <h3>Visualización y obra</h3>
+          <ul>
+            <li>Implantación en realidad aumentada</li>
+            <li>Recorridos 360° dinámicos</li>
+            <li>Ejecución de obra</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 07 · INVERSIÓN ===== -->
+  <section id="inversion" class="dark bg-slate">
+    <div class="topo tr" data-topo=""><svg viewBox="0 0 1200 820" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#EEF4CE" stroke-width="1"><path d="M-40 60 C 250 40 470 84 700 62 S 1130 34 1380 66" vector-effect="non-scaling-stroke"></path><path d="M-40 160 C 250 140 470 184 700 162 S 1130 134 1380 166" vector-effect="non-scaling-stroke"></path><path d="M-40 260 C 250 240 470 284 700 262 S 1130 234 1380 266" vector-effect="non-scaling-stroke"></path><path d="M-40 360 C 250 340 470 384 700 362 S 1130 334 1380 366" vector-effect="non-scaling-stroke"></path><path d="M-40 460 C 250 440 470 484 700 462 S 1130 434 1380 466" vector-effect="non-scaling-stroke"></path><path d="M-40 560 C 250 540 470 584 700 562 S 1130 534 1380 566" vector-effect="non-scaling-stroke"></path><path d="M-40 660 C 250 640 470 684 700 662 S 1130 634 1380 666" vector-effect="non-scaling-stroke"></path><path d="M-40 760 C 250 740 470 784 700 762 S 1130 734 1380 766" vector-effect="non-scaling-stroke"></path></svg></div>
+    <div class="section-index">07 — La inversión</div>
+    <div class="wrap">
+      <div class="reveal" style="text-align:center;">
+        <p class="eyebrow center">La inversión</p>
+        <h2 class="display" style="max-width:24ch;margin:0 auto;">Para vender un proyecto, primero hay que <em>mostrarlo como proyecto.</em></h2>
+      </div>
+
+      <div class="ratio reveal d1">
+        <div class="blk">
+          <div class="lbl">Valor del inmueble</div>
+          <div class="fig">$970.000.000<small>COP · 100%</small></div>
+        </div>
+        <div class="op">→</div>
+        <div class="blk accent">
+          <div class="lbl">Inversión en potenciación comercial</div>
+          <div class="fig">$3.500.000<small>COP · paquete integral</small></div>
+        </div>
+      </div>
+
+      <div class="pct-line reveal d2">
+        <span class="big">0,36%</span>
+        <p>No es un gasto. Es el <strong>0,36%</strong> que multiplica la percepción de valor del 100% restante. Una inversión mínima frente al resultado: vender mejor, más rápido y con mayor capacidad de negociación.</p>
+      </div>
+
+      <p class="eyebrow center reveal d2" style="margin-bottom:1.4rem;">Qué incluye el paquete</p>
+      <div class="includes reveal d3">
+        <div class="inc"><div class="ic">01</div><h3>Diagnóstico de potencial</h3><p>Estudio completo del predio y su entorno para identificar oportunidades reales.</p></div>
+        <div class="inc"><div class="ic">02</div><h3>Master plan conceptual</h3><p>Hasta tres escenarios de desarrollo para visualizar el máximo potencial.</p></div>
+        <div class="inc"><div class="ic">03</div><h3>Visualización arquitectónica</h3><p>Renders y recorridos que permiten enamorar a compradores e inversionistas.</p></div>
+        <div class="inc"><div class="ic">04</div><h3>Ficha comercial premium</h3><p>Brochure profesional en PDF interactivo y versiones para todos los canales.</p></div>
+        <div class="inc"><div class="ic">05</div><h3>Estudio de rentabilidad</h3><p>Inversión, costos, retornos y escenarios de viabilidad con números claros.</p></div>
+        <div class="inc"><div class="ic">06</div><h3>Acompañamiento estratégico</h3><p>Asesoría y respaldo del equipo durante todo el proceso de venta.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 08 · PROYECCIÓN ===== -->
+  <section id="proyeccion" class="light">
+    <div class="section-index">08 — La proyección</div>
+    <div class="wrap">
+      <div class="two-col">
+        <div class="reveal">
+          <p class="eyebrow">La proyección de venta</p>
+          <h2 class="display">Una venta en menos de un año, <em>sin falsas expectativas.</em></h2>
+        </div>
+        <div class="body-narrow reveal d1">
+          <p>Con el plan maestro construido, el posicionamiento correcto y la ventana de mercado a favor, proyectamos el cierre dentro de los doce meses siguientes al lanzamiento.</p>
+          <p>El comprador será un inversionista, así que armamos el caso con trazabilidad y escenarios de retorno reales: la decisión tiene que ser racional para ambas partes. Ese es nuestro compromiso —trabajarla hacia una venta rápida y bien valorada.</p>
+        </div>
+      </div>
+
+      <div class="timeline">
+        <div class="tl-row reveal d1">
+          <div class="tl-when">Mes 0 — 1</div>
+          <div class="tl-what"><h3>Diagnóstico y plan maestro</h3><p>Lectura del predio, escenarios de desarrollo y definición de la estrategia comercial.</p></div>
+        </div>
+        <div class="tl-row reveal d1">
+          <div class="tl-when">Mes 1 — 2</div>
+          <div class="tl-what"><h3>Material comercial y lanzamiento</h3><p>Renders, recorridos, ficha premium y puesta en circulación por todos los canales.</p></div>
+        </div>
+        <div class="tl-row reveal d2">
+          <div class="tl-when">Mes 2 — 8</div>
+          <div class="tl-what"><h3>Posicionamiento y prospección calificada</h3><p>Difusión sostenida, convenios y filtrado de interesados reales para el perfil del activo.</p></div>
+        </div>
+        <div class="tl-row reveal d2">
+          <div class="tl-when">Mes 6 — 12</div>
+          <div class="tl-what"><h3>Negociación y cierre</h3><p>Acompañamiento en la negociación, due diligence y transferencia.</p></div>
+        </div>
+      </div>
+
+      <p class="muted reveal d3" style="font-size:.9rem;margin-top:2rem;max-width:64ch;text-align:justify;">El tiempo de cierre depende del valor final acordado y de la respuesta del nicho inversionista. Por eso trabajamos con expectativas reales y revisamos los escenarios contigo antes de salir al mercado.</p>
+    </div>
+  </section>
+
+  <!-- ===== 09 · ACUERDO Y HONORARIOS ===== -->
+  <section id="acuerdo" class="dark bg-amethyst">
+    <div class="topo bl" data-topo=""><svg viewBox="0 0 1200 820" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#EEF4CE" stroke-width="1"><path d="M-40 60 C 250 40 470 84 700 62 S 1130 34 1380 66" vector-effect="non-scaling-stroke"></path><path d="M-40 160 C 250 140 470 184 700 162 S 1130 134 1380 166" vector-effect="non-scaling-stroke"></path><path d="M-40 260 C 250 240 470 284 700 262 S 1130 234 1380 266" vector-effect="non-scaling-stroke"></path><path d="M-40 360 C 250 340 470 384 700 362 S 1130 334 1380 366" vector-effect="non-scaling-stroke"></path><path d="M-40 460 C 250 440 470 484 700 462 S 1130 434 1380 466" vector-effect="non-scaling-stroke"></path><path d="M-40 560 C 250 540 470 584 700 562 S 1130 534 1380 566" vector-effect="non-scaling-stroke"></path><path d="M-40 660 C 250 640 470 684 700 662 S 1130 634 1380 666" vector-effect="non-scaling-stroke"></path><path d="M-40 760 C 250 740 470 784 700 762 S 1130 734 1380 766" vector-effect="non-scaling-stroke"></path></svg></div>
+    <div class="section-index">09 — El acuerdo</div>
+    <div class="wrap">
+      <div class="two-col flip">
+        <div class="body-narrow reveal d1">
+          <p>Para invertir el tiempo de nuestro equipo, nuestro propio capital y nuestra reputación en renders, plan maestro y una campaña completa, necesitamos un mandato claro y único: un contrato de corretaje con <strong>exclusividad de venta</strong>.</p>
+          <p>La exclusividad no es una restricción, es una alineación. Significa que un solo equipo responde por la venta, con una estrategia coherente y un precio que no se canibaliza entre intermediarios. Es la condición de un trabajo serio —y la mejor garantía para usted.</p>
+        </div>
+        <div class="reveal">
+          <p class="eyebrow">El acuerdo y los honorarios</p>
+          <h2 class="display">Términos claros para una <em>venta seria.</em></h2>
+        </div>
+      </div>
+
+      <div class="terms reveal d2">
+        <div class="terms-card">
+          <div class="tv">5%</div>
+          <div class="tl">Comisión sobre el valor de venta</div>
+          <p>Honorario por la gestión comercial. Se causa <strong>contra resultado</strong>: solo se paga cuando la venta se concreta.</p>
+        </div>
+        <div class="terms-card">
+          <div class="tv">Incluida</div>
+          <div class="tl">Gestión documental completa</div>
+          <p>Nos encargamos de toda la papelería —promesa de compraventa, contratos y trámites— sin costo adicional.</p>
+        </div>
+        <div class="terms-card">
+          <div class="tv">Exclusiva</div>
+          <div class="tl">Modalidad del contrato</div>
+          <p>Contrato de corretaje con exclusividad de venta: un solo equipo responde por todo el proceso.</p>
+        </div>
+      </div>
+
+      <p class="muted reveal d2" style="font-size:.9rem;margin-top:1.8rem;max-width:70ch;text-align:justify;">La inversión de potenciación comercial (sección 07) es el único valor inicial; la comisión del 5% solo se causa al cierre.&nbsp;</p>
+
+      <div class="pull reveal d2" style="max-width:42ch;">
+        <p>Cuando un equipo se juega la reputación por su propiedad, usted gana un aliado. Cuando se reparte entre muchos, gana el azar.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== 10 · CIERRE ===== -->
+  <section id="cierre" class="dark bg-charcoal2">
+    <div class="topo tr" data-topo=""><svg viewBox="0 0 1200 820" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#EEF4CE" stroke-width="1"><path d="M-40 60 C 250 40 470 84 700 62 S 1130 34 1380 66" vector-effect="non-scaling-stroke"></path><path d="M-40 160 C 250 140 470 184 700 162 S 1130 134 1380 166" vector-effect="non-scaling-stroke"></path><path d="M-40 260 C 250 240 470 284 700 262 S 1130 234 1380 266" vector-effect="non-scaling-stroke"></path><path d="M-40 360 C 250 340 470 384 700 362 S 1130 334 1380 366" vector-effect="non-scaling-stroke"></path><path d="M-40 460 C 250 440 470 484 700 462 S 1130 434 1380 466" vector-effect="non-scaling-stroke"></path><path d="M-40 560 C 250 540 470 584 700 562 S 1130 534 1380 566" vector-effect="non-scaling-stroke"></path><path d="M-40 660 C 250 640 470 684 700 662 S 1130 634 1380 666" vector-effect="non-scaling-stroke"></path><path d="M-40 760 C 250 740 470 784 700 762 S 1130 734 1380 766" vector-effect="non-scaling-stroke"></path></svg></div>
+    <div class="section-index">10 — Próximo paso</div>
+    <div class="wrap">
+      <div class="reveal">
+        <p class="eyebrow">Próximo paso</p>
+        <h2 class="display" style="max-width:18ch;">Conversemos sobre <em>Villa María Elvira.</em></h2>
+        <p class="body-narrow" style="margin-top:1.6rem;color:var(--d-bd);">Permítanos mostrarle todo el potencial de su propiedad y cómo lo convertimos en una venta efectiva. Agende una reunión con nuestro equipo.</p>
+        <a class="cta-btn" href="https://wa.me/573218826730" target="_blank" rel="noopener">Agendar una reunión →</a>
+      </div>
+
+      <div class="contact-grid">
+        <div class="cg reveal d1">
+          <div class="cl">Oficina principal</div>
+          <p>Calle 21 # 2-18, Los Naranjos<br>La Vega, Cundinamarca</p>
+        </div>
+        <div class="cg reveal d2">
+          <div class="cl">Teléfonos</div>
+          <p>Su Finca Raíz · 321 882 6730<br>Conarc · 321 360 5711<br>MOX · 321 993 1029</p>
+        </div>
+        <div class="cg reveal d3">
+          <div class="cl">Contacto</div>
+          <a href="https://www.sufincaraiz.com" target="_blank" rel="noopener">www.sufincaraiz.com</a>
+          <a href="mailto:sufincaraiz.comercial@gmail.com">sufincaraiz.comercial@gmail.com</a>
+        </div>
+        <div class="cg reveal d1">
+          <div class="cl">Facebook</div>
+          <a href="https://www.facebook.com/inmobiliariasufincaraiz" target="_blank" rel="noopener">@inmobiliariasufincaraiz</a>
+        </div>
+        <div class="cg reveal d2">
+          <div class="cl">Instagram</div>
+          <a href="https://www.instagram.com/sufincaraizlavega" target="_blank" rel="noopener">@sufincaraizlavega</a>
+        </div>
+        <div class="cg reveal d3">
+          <div class="cl">TikTok</div>
+          <a href="https://www.tiktok.com/@sufincaraiz" target="_blank" rel="noopener">@sufincaraiz</a>
+        </div>
+      </div>
+
+      <div class="colophon">
+        <span>Su Finca Raíz · Conarc · MOX</span>
+        <span>El potencial existe — la transformación depende de la visión.</span>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+  // ---- Subtle line motif (fine strata) ----
+  function wave(y){
+    return '<path d="M-40 '+y+' C 250 '+(y-20)+' 470 '+(y+24)+' 700 '+(y+2)
+      +' S 1130 '+(y-26)+' 1380 '+(y+6)+'" vector-effect="non-scaling-stroke"/>';
+  }
+  var lines = '';
+  for (var i=0;i<8;i++){ lines += wave(60 + i*100); }
+  var topoSVG = '<svg viewBox="0 0 1200 820" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" '
+    + 'fill="none" stroke="#EEF4CE" stroke-width="1">' + lines + '</svg>';
+  document.querySelectorAll('[data-topo]').forEach(function(el){ el.innerHTML = topoSVG; });
+
+  // ---- Scroll reveal ----
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if(reduce){
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+      });
+    }, {threshold:0.12, rootMargin:'0px 0px -8% 0px'});
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  }
+
+  // ---- Rail active state + progress ----
+  var links = {};
+  document.querySelectorAll('#rail-nav a').forEach(function(a){ links[a.getAttribute('href').slice(1)] = a; });
+  var navIO = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        var id = e.target.id;
+        Object.keys(links).forEach(function(k){ links[k].classList.toggle('active', k===id); });
+      }
+    });
+  }, {threshold:0.5});
+  document.querySelectorAll('main > section').forEach(function(s){ navIO.observe(s); });
+
+  var progress = document.getElementById('progress');
+  function onScroll(){
+    var h = document.documentElement;
+    var max = h.scrollHeight - h.clientHeight;
+    var pct = max > 0 ? (h.scrollTop || document.body.scrollTop) / max : 0;
+    progress.style.width = (pct*100) + '%';
+  }
+  window.addEventListener('scroll', onScroll, {passive:true});
+  onScroll();
+
+  </script>
+
+
+</body></html>
