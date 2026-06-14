@@ -28,8 +28,13 @@ function PropertyCard({ property }: { property: Property }) {
 
   return (
     <div className="group flex flex-col h-full bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 transition-all duration-300 hover:shadow-xl">
-      {/* Imagen cuadrada 1:1 — el banner se ve completo */}
-      <div className="relative overflow-hidden bg-gray-100" style={{ aspectRatio: '1 / 1' }}>
+      {/* Imagen cuadrada 1:1 — clickeable para entrar a la ficha */}
+      <Link
+        href={href}
+        aria-label={`Ver ${property.title ?? typeLabel}`}
+        className="relative block overflow-hidden bg-gray-100"
+        style={{ aspectRatio: '1 / 1' }}
+      >
         {primaryImage && (
           <img
             src={cloudinarySquare(primaryImage.url)}
@@ -52,7 +57,7 @@ function PropertyCard({ property }: { property: Property }) {
         >
           Disponible
         </span>
-      </div>
+      </Link>
 
       {/* Contenido */}
       <div className="flex flex-col flex-1 p-5">
