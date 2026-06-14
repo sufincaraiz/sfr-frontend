@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { MessageCircle, Send, Phone } from 'lucide-react';
+import { MessageCircle, Send } from 'lucide-react';
 import { SITE_URL } from '@/lib/site';
 
 interface Props {
@@ -158,14 +158,6 @@ export function FormContactoPropiedad({ propertyTitle, propertySlug, price, what
             </button>
           </form>
         )}
-
-        {/* Teléfono directo */}
-        <a
-          href="tel:+573218826730"
-          style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, color: '#64748B', fontSize: '0.82rem', textDecoration: 'none', fontWeight: 600 }}
-        >
-          <Phone size={14} /> 321 882 6730 · Lunes a Sábado 8am–6pm
-        </a>
       </div>
     </div>
   );
