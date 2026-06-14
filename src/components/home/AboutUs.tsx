@@ -38,6 +38,33 @@ export function AboutUs() {
     return () => ctx?.revert();
   }, []);
 
+  // Reenviar eventos de giroscopio al tour 360° (móvil VR)
+  useEffect(() => {
+    const handleMotion = (e: DeviceMotionEvent) => {
+      const iframe = document.getElementById('tour-embeded-about') as HTMLIFrameElement | null;
+      if (!iframe?.contentWindow) return;
+      iframe.contentWindow.postMessage(
+        {
+          type: 'devicemotion',
+          deviceMotionEvent: {
+            acceleration: { x: e.acceleration?.x, y: e.acceleration?.y, z: e.acceleration?.z },
+            accelerationIncludingGravity: {
+              x: e.accelerationIncludingGravity?.x,
+              y: e.accelerationIncludingGravity?.y,
+              z: e.accelerationIncludingGravity?.z,
+            },
+            rotationRate: { alpha: e.rotationRate?.alpha, beta: e.rotationRate?.beta, gamma: e.rotationRate?.gamma },
+            interval: e.interval,
+            timeStamp: e.timeStamp,
+          },
+        },
+        '*'
+      );
+    };
+    window.addEventListener('devicemotion', handleMotion);
+    return () => window.removeEventListener('devicemotion', handleMotion);
+  }, []);
+
   return (
     <section
       id="nosotros"
@@ -60,7 +87,7 @@ export function AboutUs() {
               <strong>Su Finca Raíz es la agencia inmobiliaria y centro de negocios líder
               en La Vega, Cundinamarca</strong>, especializada en la compra, venta y asesoría
               de fincas, lotes, casas campestres y condominios en la región del Gualivá.
-              Con más de 10 años de presencia en el territorio, conocemos cada vereda, cada
+              Con más de 8 años de presencia en el territorio, conocemos cada vereda, cada
               nacedero y cada camino de los municipios de La Vega, Sasaima, Nocaima, Villeta,
               San Francisco y Supatá.
             </p>
@@ -89,17 +116,25 @@ export function AboutUs() {
             </ul>
           </div>
 
-          {/* Columna de imagen */}
+          {/* Columna de tour 360° */}
           <div data-about-img className="sfr-about-image-wrap">
-            <img
-              src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80"
-              alt="Vista aérea campestre en La Vega, Cundinamarca — Su Finca Raíz"
-              className="sfr-about-img"
+            <iframe
+              id="tour-embeded-about"
+              name="La Vega Cundinamarca"
+              src="https://tour.panoee.net/iframe/lavegac"
+              title="Tour Virtual 360° — La Vega, Cundinamarca · Su Finca Raíz"
+              scrolling="no"
+              allow="vr; xr; accelerometer; gyroscope; autoplay"
+              allowFullScreen
               loading="lazy"
+              style={{
+                width: '100%', height: 420, border: 'none', borderRadius: 16,
+                display: 'block', boxShadow: '0 20px 60px rgba(13,45,94,0.15)',
+              }}
             />
             {/* Badge superpuesto */}
             <div className="sfr-about-badge" aria-hidden="true">
-              <strong>+10</strong>
+              <strong>+8</strong>
               <span>años en La Vega</span>
             </div>
           </div>
