@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Home, PlusCircle, Users, ExternalLink,
-  LogOut, Menu, X, ChevronRight, FileText,
+  LogOut, Menu, X, ChevronRight, FileText, Store,
 } from 'lucide-react';
 
 const NAV = [
@@ -15,6 +15,7 @@ const NAV = [
   { href: '/admin/propiedades/nueva', icon: PlusCircle,      label: 'Nueva Propiedad' },
   { href: '/admin/leads',             icon: Users,           label: 'Leads' },
   { href: '/admin/propuesta-comercial', icon: FileText,      label: 'Propuesta comercial' },
+  { href: '/admin/directorio',         icon: Store,           label: 'Directorio' },
 ];
 
 // Inline style helpers

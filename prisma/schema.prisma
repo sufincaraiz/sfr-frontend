@@ -258,6 +258,23 @@ model Article {
   @@map("articles")
 }
 
+model Business {
+  id              String   @id @default(uuid())
+  nombre          String
+  imagen_url      String?
+  categoria       String   // Restaurante | Ferretería | Droguería | Vivero | Otros
+  municipio       String   @default("La Vega")
+  whatsapp        String?
+  domicilios      Boolean  @default(false)
+  google_maps_url String?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@index([categoria])
+  @@index([municipio])
+  @@map("businesses")
+}
+
 model PageContent {
   id         String   @id @default(uuid())
   key        String   @unique

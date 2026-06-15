@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { href: '/vender-mi-finca',            label: 'Vende tu finca' },
   { href: '/nosotros',                   label: 'Nosotros' },
   { href: '/blog',                       label: 'Blog' },
+  { href: '/directorio',                 label: 'Directorio' },
 ];
 
 // Ícono hamburguesa (3 líneas)

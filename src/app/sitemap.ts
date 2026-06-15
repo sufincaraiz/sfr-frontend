@@ -21,6 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${SITE_URL}/vender-mi-finca`,   lastModified: new Date(), changeFrequency: 'monthly', priority: 0.75 },
     { url: `${SITE_URL}/glosario`,           lastModified: new Date(), changeFrequency: 'monthly', priority: 0.72 },
     { url: `${SITE_URL}/guia-inversion`,     lastModified: new Date(), changeFrequency: 'monthly', priority: 0.85 },
+    { url: `${SITE_URL}/directorio`,         lastModified: new Date(), changeFrequency: 'weekly',  priority: 0.7 },
     { url: `${SITE_URL}/terminos-y-condiciones`,     lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
     { url: `${SITE_URL}/politica-tratamiento-datos`, lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
     { url: `${SITE_URL}/politica-de-cookies`,        lastModified: new Date(), changeFrequency: 'yearly', priority: 0.3 },
