@@ -258,6 +258,15 @@ model Article {
   @@map("articles")
 }
 
+model PageContent {
+  id         String   @id @default(uuid())
+  key        String   @unique
+  data       Json
+  updated_at DateTime @updatedAt
+
+  @@map("page_content")
+}
+
 model Redirect {
   id          String @id @default(uuid())
   source      String @unique
