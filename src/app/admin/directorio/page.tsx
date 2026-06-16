@@ -1,22 +1,23 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Save, Loader2, Upload, Trash2, Pencil, Plus, ExternalLink, X } from 'lucide-react';
-import { CATEGORIAS, MUNICIPIOS_DIR, type Business } from '@/lib/directorio';
+import { Save, Loader2, Upload, Trash2, Pencil, Plus, ExternalLink, X, Star } from 'lucide-react';
+import { CATEGORIAS, MUNICIPIOS_DIR, MAX_FOTOS, fotosDe, type Business } from '@/lib/directorio';
 
 interface Form {
   id?: string;
-  nombre: string; imagen_url: string; categoria: string; municipio: string;
+  nombre: string; imagenes: string[]; descripcion: string; categoria: string; municipio: string;
   whatsapp: string; domicilios: boolean; google_maps_url: string;
 }
 
 const CLOUD  = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
 const PRESET = 'sufincaraiz_properties';
+const DESC_MAX = 300;
 
 const inputS: React.CSSProperties = { padding: '9px 12px', border: '1.5px solid #E2E8F0', borderRadius: 9, fontSize: '0.875rem', outline: 'none', color: '#0D2D5E', background: '#fff', width: '100%', boxSizing: 'border-box' };
 const labelS: React.CSSProperties = { fontSize: '0.76rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: 5 };
 
-const EMPTY: Form = { nombre: '', imagen_url: '', categoria: 'Restaurante', municipio: 'La Vega', whatsapp: '', domicilios: false, google_maps_url: '' };
+const EMPTY: Form = { nombre: '', imagenes: [], descripcion: '', categoria: 'Restaurante', municipio: 'La Vega', whatsapp: '', domicilios: false, google_maps_url: '' };
 
 export default function AdminDirectorioPage() {
   const [list, setList] = useState<Business[]>([]);
@@ -34,18 +35,32 @@ export default function AdminDirectorioPage() {
   }, []);
   useEffect(() => { load(); }, [load]);
 
-  const set = (k: keyof Form, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
+  const set = (k: keyof Form, v: string | boolean | string[]) => setForm(f => ({ ...f, [k]: v }));
 
-  const upload = async (file: File) => {
+  const uploadMany = async (files: FileList) => {
     setUploading(true);
-    const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', PRESET); fd.append('folder', 'directorio');
-    try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
-      const d = await res.json();
-      if (d.secure_url) set('imagen_url', d.secure_url.replace('/upload/', '/upload/c_fill,ar_4:3,g_auto,f_auto,q_auto,w_700/'));
-    } catch { /* */ }
+    const espacio = MAX_FOTOS - form.imagenes.length;
+    const lote = Array.from(files).slice(0, Math.max(0, espacio));
+    const subidas: string[] = [];
+    for (const file of lote) {
+      const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', PRESET); fd.append('folder', 'directorio');
+      try {
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
+        const d = await res.json();
+        if (d.secure_url) subidas.push(d.secure_url.replace('/upload/', '/upload/c_fill,ar_4:3,g_auto,f_auto,q_auto,w_900/'));
+      } catch { /* */ }
+    }
+    if (subidas.length) setForm(f => ({ ...f, imagenes: [...f.imagenes, ...subidas].slice(0, MAX_FOTOS) }));
+    if (files.length > espacio) setMsg(`⚠️ Máximo ${MAX_FOTOS} fotos. Se agregaron las primeras disponibles.`);
     setUploading(false);
   };
+
+  const removeFoto = (i: number) => setForm(f => ({ ...f, imagenes: f.imagenes.filter((_, idx) => idx !== i) }));
+  const hacerPortada = (i: number) => setForm(f => {
+    const portada = f.imagenes[i];
+    if (portada === undefined) return f;
+    return { ...f, imagenes: [portada, ...f.imagenes.filter((_, idx) => idx !== i)] };
+  });
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,7 +79,14 @@ export default function AdminDirectorioPage() {
     load();
   };
 
-  const edit = (b: Business) => { setForm({ ...b, imagen_url: b.imagen_url ?? '', whatsapp: b.whatsapp ?? '', google_maps_url: b.google_maps_url ?? '' }); setMsg(''); window.scrollTo({ top: 0, behavior: 'smooth' }); };
+  const edit = (b: Business) => {
+    setForm({
+      id: b.id, nombre: b.nombre, imagenes: fotosDe(b), descripcion: b.descripcion ?? '',
+      categoria: b.categoria, municipio: b.municipio, whatsapp: b.whatsapp ?? '',
+      domicilios: b.domicilios, google_maps_url: b.google_maps_url ?? '',
+    });
+    setMsg(''); window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
   const del = async (id: string) => {
     if (!confirm('¿Eliminar este negocio?')) return;
     await fetch(`/api/admin/directorio?id=${id}`, { method: 'DELETE' });
@@ -99,18 +121,38 @@ export default function AdminDirectorioPage() {
           <div style={{ gridColumn: '1 / -1' }}><label style={labelS}>Enlace de Google Maps</label><input value={form.google_maps_url} onChange={e => set('google_maps_url', e.target.value)} style={inputS} placeholder="https://maps.app.goo.gl/…" /></div>
         </div>
 
-        {/* Imagen */}
+        {/* Descripción corta */}
         <div style={{ marginTop: '1rem' }}>
-          <label style={labelS}>Foto del negocio</label>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            {form.imagen_url
-              // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={form.imagen_url} alt="" style={{ width: 100, height: 75, objectFit: 'cover', borderRadius: 8, border: '1px solid #E2E8F0' }} />
-              : <div style={{ width: 100, height: 75, borderRadius: 8, background: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#CBD5E1', fontSize: '0.7rem' }}>Sin foto</div>}
-            <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => e.target.files?.[0] && upload(e.target.files[0])} />
-            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '2px dashed #CBD5E1', background: '#F8FAFC', color: '#64748B', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>
-              {uploading ? <Loader2 size={14} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={14} />} {uploading ? 'Subiendo…' : 'Subir foto'}
-            </button>
+          <label style={labelS}>Descripción corta</label>
+          <textarea value={form.descripcion} onChange={e => set('descripcion', e.target.value.slice(0, DESC_MAX))} rows={3}
+            style={{ ...inputS, resize: 'vertical', lineHeight: 1.5 }}
+            placeholder="Ej: Comida típica de la región, asados y cazuelas. Ambiente familiar con vista a la montaña." />
+          <p style={{ margin: '4px 0 0', textAlign: 'right', fontSize: '0.72rem', color: form.descripcion.length >= DESC_MAX ? '#DC2626' : '#94A3B8' }}>{form.descripcion.length}/{DESC_MAX}</p>
+        </div>
+
+        {/* Fotos (hasta 5) */}
+        <div style={{ marginTop: '1rem' }}>
+          <label style={labelS}>Fotos del negocio (hasta {MAX_FOTOS}) — la primera es la portada</label>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'flex-start' }}>
+            {form.imagenes.map((url, i) => (
+              <div key={url + i} style={{ position: 'relative', width: 110 }}>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={url} alt="" style={{ width: 110, height: 82, objectFit: 'cover', borderRadius: 8, border: i === 0 ? '2px solid #E8B92F' : '1px solid #E2E8F0', display: 'block' }} />
+                {i === 0 && <span style={{ position: 'absolute', top: 4, left: 4, background: '#E8B92F', color: '#0D2D5E', fontSize: '0.6rem', fontWeight: 800, padding: '2px 6px', borderRadius: 5 }}>PORTADA</span>}
+                <div style={{ display: 'flex', gap: 4, marginTop: 4 }}>
+                  {i !== 0 && (
+                    <button type="button" onClick={() => hacerPortada(i)} title="Hacer portada" style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3, padding: '3px', borderRadius: 6, border: '1px solid #E2E8F0', background: '#fff', color: '#B7791F', cursor: 'pointer', fontSize: '0.66rem', fontWeight: 700 }}><Star size={11} /> Portada</button>
+                  )}
+                  <button type="button" onClick={() => removeFoto(i)} title="Eliminar" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '3px 7px', borderRadius: 6, border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', cursor: 'pointer' }}><Trash2 size={12} /></button>
+                </div>
+              </div>
+            ))}
+            {form.imagenes.length < MAX_FOTOS && (
+              <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} style={{ width: 110, height: 82, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 5, borderRadius: 8, border: '2px dashed #CBD5E1', background: '#F8FAFC', color: '#64748B', fontWeight: 700, fontSize: '0.72rem', cursor: uploading ? 'wait' : 'pointer' }}>
+                {uploading ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={16} />} {uploading ? 'Subiendo…' : 'Subir foto'}
+              </button>
+            )}
+            <input ref={fileRef} type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => { if (e.target.files?.length) uploadMany(e.target.files); e.target.value = ''; }} />
           </div>
         </div>
 
@@ -130,20 +172,23 @@ export default function AdminDirectorioPage() {
       <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
         <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #F1F5F9', fontWeight: 700, color: '#0D2D5E', fontSize: '0.9rem' }}>Negocios registrados ({list.length})</div>
         {list.length === 0 && <div style={{ padding: '2.5rem', textAlign: 'center', color: '#94A3B8' }}>Aún no hay negocios. Agrega el primero arriba.</div>}
-        {list.map(b => (
+        {list.map(b => {
+          const fotos = fotosDe(b);
+          return (
           <div key={b.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0.8rem 1.25rem', borderTop: '1px solid #F1F5F9' }}>
-            {b.imagen_url
+            {fotos[0]
               // eslint-disable-next-line @next/next/no-img-element
-              ? <img src={b.imagen_url} alt="" style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
+              ? <img src={fotos[0]} alt="" style={{ width: 48, height: 36, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
               : <div style={{ width: 48, height: 36, borderRadius: 6, background: '#F1F5F9', flexShrink: 0 }} />}
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ margin: 0, fontWeight: 700, color: '#0D2D5E', fontSize: '0.88rem' }}>{b.nombre} {b.domicilios && <span title="Domicilios">🛵</span>}</p>
-              <p style={{ margin: 0, color: '#64748B', fontSize: '0.78rem' }}>{b.categoria} · {b.municipio}</p>
+              <p style={{ margin: 0, color: '#64748B', fontSize: '0.78rem' }}>{b.categoria} · {b.municipio}{fotos.length > 1 ? ` · 📷 ${fotos.length}` : ''}</p>
             </div>
             <button onClick={() => edit(b)} title="Editar" style={{ border: '1.5px solid #E2E8F0', background: '#fff', color: '#1B56A1', borderRadius: 8, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Pencil size={15} /></button>
             <button onClick={() => del(b.id)} title="Eliminar" style={{ border: '1.5px solid #FECACA', background: '#FEF2F2', color: '#DC2626', borderRadius: 8, width: 34, height: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Trash2 size={15} /></button>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

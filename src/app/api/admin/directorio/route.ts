@@ -6,7 +6,8 @@ import { getAdminSession } from '@/lib/auth'
 
 const BizSchema = z.object({
   nombre:          z.string().trim().min(2).max(160),
-  imagen_url:      z.string().trim().max(600).optional().or(z.literal('')),
+  imagenes:        z.array(z.string().trim().max(600)).max(5).optional().default([]),
+  descripcion:     z.string().trim().max(300).optional().or(z.literal('')),
   categoria:       z.string().trim().min(2).max(40),
   municipio:       z.string().trim().min(2).max(60),
   whatsapp:        z.string().trim().max(40).optional().or(z.literal('')),
@@ -27,9 +28,11 @@ export async function POST(req: NextRequest) {
   const parsed = BizSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
   const d = parsed.data
+  const imagenes = (d.imagenes ?? []).filter(Boolean).slice(0, 5)
   const biz = await prisma.business.create({
     data: {
-      nombre: d.nombre, imagen_url: d.imagen_url || null, categoria: d.categoria,
+      nombre: d.nombre, imagenes, imagen_url: imagenes[0] || null,
+      descripcion: d.descripcion || null, categoria: d.categoria,
       municipio: d.municipio, whatsapp: d.whatsapp || null,
       domicilios: d.domicilios ?? false, google_maps_url: d.google_maps_url || null,
     },
@@ -46,10 +49,12 @@ export async function PUT(req: NextRequest) {
   const parsed = BizSchema.safeParse(body)
   if (!parsed.success) return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
   const d = parsed.data
+  const imagenes = (d.imagenes ?? []).filter(Boolean).slice(0, 5)
   await prisma.business.update({
     where: { id: body.id },
     data: {
-      nombre: d.nombre, imagen_url: d.imagen_url || null, categoria: d.categoria,
+      nombre: d.nombre, imagenes, imagen_url: imagenes[0] || null,
+      descripcion: d.descripcion || null, categoria: d.categoria,
       municipio: d.municipio, whatsapp: d.whatsapp || null,
       domicilios: d.domicilios ?? false, google_maps_url: d.google_maps_url || null,
     },

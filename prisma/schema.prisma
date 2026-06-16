@@ -261,7 +261,9 @@ model Article {
 model Business {
   id              String   @id @default(uuid())
   nombre          String
-  imagen_url      String?
+  imagen_url      String?  // legacy: portada única (respaldo). Ahora se usa `imagenes`.
+  imagenes        String[] @default([]) // hasta 5 fotos; imagenes[0] = portada
+  descripcion     String?  // descripción corta
   categoria       String   // Restaurante | Ferretería | Droguería | Vivero | Otros
   municipio       String   @default("La Vega")
   whatsapp        String?
