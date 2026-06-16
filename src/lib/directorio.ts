@@ -26,6 +26,18 @@ export function fotosDe(b: Pick<Business, 'imagenes' | 'imagen_url'>): string[] 
   return b.imagen_url ? [b.imagen_url] : [];
 }
 
+/**
+ * Versión sin recorte para verla completa en el lightbox.
+ * Las fotos se guardan con un recorte 4:3 de Cloudinary (`c_fill,ar_4:3,…`) para que las
+ * portadas de la grilla queden uniformes; aquí reemplazamos esa transformación por una que
+ * limita el tamaño sin recortar (`c_limit`), así la foto original se ve entera. URLs que no
+ * sean de Cloudinary (o sin ese recorte) se devuelven sin cambios.
+ */
+export function fotoCompleta(url: string | undefined): string {
+  if (!url) return '';
+  return url.replace(/\/upload\/[^/]*c_fill[^/]*\//, '/upload/c_limit,w_1600,f_auto,q_auto/');
+}
+
 /** Construye un enlace wa.me a partir de un número (lo normaliza a formato internacional COL). */
 export function waLink(whatsapp: string | null | undefined, nombre?: string): string | null {
   if (!whatsapp) return null;

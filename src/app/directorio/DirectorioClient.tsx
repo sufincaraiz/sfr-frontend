@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect, useCallback } from 'react';
 import { MapPin, MessageCircle, ChevronLeft, ChevronRight, X, Images } from 'lucide-react';
-import { CATEGORIAS, type Business, waLink, fotosDe } from '@/lib/directorio';
+import { CATEGORIAS, type Business, waLink, fotosDe, fotoCompleta } from '@/lib/directorio';
 
 export function DirectorioClient({ businesses }: { businesses: Business[] }) {
   const [cat, setCat]   = useState<string>('Todos');
@@ -147,7 +147,7 @@ export function DirectorioClient({ businesses }: { businesses: Business[] }) {
 
           <div onClick={e => e.stopPropagation()} style={{ position: 'relative', width: '100%', maxWidth: 920, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={lightbox.fotos[lightbox.i]} alt={`${lightbox.nombre} — foto ${lightbox.i + 1}`} style={{ maxWidth: '100%', maxHeight: '76vh', objectFit: 'contain', borderRadius: 12, boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }} />
+            <img src={fotoCompleta(lightbox.fotos[lightbox.i])} alt={`${lightbox.nombre} — foto ${lightbox.i + 1}`} style={{ maxWidth: '100%', maxHeight: '85vh', width: 'auto', objectFit: 'contain', borderRadius: 12, boxShadow: '0 10px 40px rgba(0,0,0,0.5)' }} />
 
             {lightbox.fotos.length > 1 && (
               <>
