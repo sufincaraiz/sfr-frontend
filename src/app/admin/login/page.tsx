@@ -25,7 +25,7 @@ export default function AdminLoginPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Error al iniciar sesión'); return; }
-      router.push('/admin/dashboard');
+      router.push(data.home || '/admin/dashboard');
     } catch {
       setError('Error de conexión. Intenta de nuevo.');
     } finally {

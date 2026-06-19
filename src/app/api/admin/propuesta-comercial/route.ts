@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
-import { getAdminSession } from '@/lib/auth'
+import { requireRole } from '@/lib/auth'
 import { PROPUESTA_KEY, withDefaults, type PropuestaContent } from '@/lib/propuesta'
 
 // Cargar el contenido actual (con defaults aplicados)
 export async function GET() {
-  const session = await getAdminSession()
+  const session = await requireRole(['admin'])
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const row = await prisma.pageContent.findUnique({ where: { key: PROPUESTA_KEY } })
@@ -16,7 +16,7 @@ export async function GET() {
 
 // Guardar el contenido
 export async function PUT(req: NextRequest) {
-  const session = await getAdminSession()
+  const session = await requireRole(['admin'])
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   let body: unknown

@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getAdminSession } from '@/lib/auth'
+import { requireRole } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
-  const session = await getAdminSession()
+  const session = await requireRole(['admin'])
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { searchParams } = new URL(request.url)
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const session = await getAdminSession()
+  const session = await requireRole(['admin'])
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id, status } = await request.json()

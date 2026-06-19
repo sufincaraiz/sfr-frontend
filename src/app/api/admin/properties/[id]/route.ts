@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
-import { getAdminSession } from '@/lib/auth'
+import { requireRole } from '@/lib/auth'
 
 // Revalida las páginas estáticas afectadas por un cambio de propiedad,
 // para que las ediciones del admin se reflejen de inmediato en la web pública.
@@ -15,7 +15,7 @@ export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getAdminSession()
+  const session = await requireRole(['admin'])
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id } = await params
@@ -31,7 +31,7 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getAdminSession()
+  const session = await requireRole(['admin'])
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id } = await params
@@ -88,7 +88,7 @@ export async function DELETE(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const session = await getAdminSession()
+  const session = await requireRole(['admin'])
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id } = await params

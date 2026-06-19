@@ -5,18 +5,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import {
-  LayoutDashboard, Home, PlusCircle, Users, ExternalLink,
-  LogOut, Menu, X, ChevronRight, FileText, Store,
+  LayoutDashboard, Home, PlusCircle, Users, Contact, Shield, ExternalLink,
+  LogOut, Menu, X, ChevronRight, FileText, Store, Loader2,
 } from 'lucide-react';
 
-const NAV = [
-  { href: '/admin/dashboard',         icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/admin/propiedades',       icon: Home,            label: 'Propiedades' },
-  { href: '/admin/propiedades/nueva', icon: PlusCircle,      label: 'Nueva Propiedad' },
-  { href: '/admin/leads',             icon: Users,           label: 'Leads' },
-  { href: '/admin/propuesta-comercial', icon: FileText,      label: 'Propuesta comercial' },
-  { href: '/admin/directorio',         icon: Store,           label: 'Directorio' },
-];
+// Mapa nombre-de-icono → componente (los nombres vienen de permissions.ts, edge-safe)
+const ICONS: Record<string, React.ComponentType<{ size?: number; style?: React.CSSProperties }>> = {
+  LayoutDashboard, Home, PlusCircle, Users, Contact, Shield, FileText, Store,
+};
+
+interface Me {
+  nombre: string;
+  role: string;
+  home: string;
+  nav: { href: string; label: string; icon: string }[];
+}
 
 // Inline style helpers
 const hoverIn  = (e: React.MouseEvent<HTMLElement>) => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; };
@@ -25,13 +28,28 @@ const hoverOut = (e: React.MouseEvent<HTMLElement>, col = 'rgba(255,255,255,0.65
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router   = useRouter();
-  const [open,   setOpen]   = useState(false);
-  const [nombre, setNombre] = useState('Admin');
+  const [open, setOpen] = useState(false);
+  const [me,   setMe]   = useState<Me | null>(null);
+  const [ready, setReady] = useState(false);
+
+  // No layout (ni fetch de sesión) en la página de login
+  const isLogin = pathname === '/admin/login';
 
   useEffect(() => {
-    const n = localStorage.getItem('admin_nombre');
-    if (n) setNombre(n);
-  }, []);
+    if (isLogin) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/me');
+        if (res.status === 401) { router.replace('/admin/login'); return; }
+        const data = (await res.json()) as Me;
+        if (!cancelled) { setMe(data); setReady(true); }
+      } catch {
+        if (!cancelled) router.replace('/admin/login');
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [isLogin, router]);
 
   useEffect(() => {
     const handler = () => { if (window.innerWidth >= 1024) setOpen(false); };
@@ -39,21 +57,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     return () => window.removeEventListener('resize', handler);
   }, []);
 
-  // No layout en login
-  if (pathname === '/admin/login') return <>{children}</>;
+  if (isLogin) return <>{children}</>;
+
+  if (!ready || !me) {
+    return (
+      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#F5F7FA' }}>
+        <Loader2 size={28} style={{ color: '#1B56A1', animation: 'spin 1s linear infinite' }} />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      </div>
+    );
+  }
+
+  const nav = me.nav;
+  const canCreateProperty = nav.some(n => n.href === '/admin/propiedades/nueva');
 
   const handleLogout = async () => {
     await fetch('/api/admin/logout', { method: 'POST' });
-    localStorage.removeItem('admin_nombre');
     router.push('/admin/login');
   };
 
+  // Título de la página: ítem de nav con prefijo más específico que matchee la ruta
   const pageTitle = (() => {
-    if (pathname === '/admin/dashboard')        return 'Dashboard';
-    if (pathname === '/admin/propiedades')      return 'Propiedades';
-    if (pathname === '/admin/propiedades/nueva') return 'Nueva Propiedad';
-    if (pathname === '/admin/leads')            return 'Leads';
-    if (pathname.startsWith('/admin/propiedades/')) return 'Editar Propiedad';
+    if (pathname.startsWith('/admin/propiedades/') && pathname !== '/admin/propiedades/nueva') return 'Editar Propiedad';
+    const matches = nav.filter(n => pathname === n.href || pathname.startsWith(n.href + '/'));
+    if (matches.length) return matches.reduce((a, b) => (b.href.length > a.href.length ? b : a)).label;
     return 'Admin';
   })();
 
@@ -97,12 +124,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
         {/* Nav */}
         <nav style={{ flex: 1, padding: '0.75rem', overflowY: 'auto' }}>
-          {NAV.map(item => {
+          {nav.map(item => {
             const isActive = pathname === item.href
               || (item.href !== '/admin/dashboard'
                   && item.href !== '/admin/propiedades/nueva'
                   && pathname.startsWith(item.href));
-            const Icon = item.icon;
+            const Icon = ICONS[item.icon] ?? Home;
             return (
               <Link
                 key={item.href}
@@ -149,7 +176,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div style={{ padding: '0.75rem', borderTop: '1px solid rgba(255,255,255,0.08)' }}>
           <div style={{ padding: '8px 12px', marginBottom: 8 }}>
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Sesión</p>
-            <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.85rem', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{nombre}</p>
+            <p style={{ color: '#fff', fontWeight: 700, fontSize: '0.85rem', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{me.nombre}</p>
           </div>
           <button
             onClick={handleLogout}
@@ -189,22 +216,24 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </h2>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Link
-              href="/admin/propiedades/nueva"
-              style={{
-                background: '#E8B92F', color: '#0D2D5E', fontWeight: 700, fontSize: '0.8rem',
-                padding: '7px 14px', borderRadius: 8, textDecoration: 'none',
-                display: 'flex', alignItems: 'center', gap: 5,
-              }}
-            >
-              <PlusCircle size={14} /> Nueva
-            </Link>
+            {canCreateProperty && (
+              <Link
+                href="/admin/propiedades/nueva"
+                style={{
+                  background: '#E8B92F', color: '#0D2D5E', fontWeight: 700, fontSize: '0.8rem',
+                  padding: '7px 14px', borderRadius: 8, textDecoration: 'none',
+                  display: 'flex', alignItems: 'center', gap: 5,
+                }}
+              >
+                <PlusCircle size={14} /> Nueva
+              </Link>
+            )}
             <div style={{
               width: 34, height: 34, borderRadius: '50%', background: '#1B56A1',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
               color: '#fff', fontWeight: 800, fontSize: '0.9rem', flexShrink: 0,
             }}>
-              {nombre.charAt(0).toUpperCase()}
+              {me.nombre.charAt(0).toUpperCase()}
             </div>
           </div>
         </header>
@@ -216,6 +245,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
         @media (min-width: 1024px) {
           .admin-sidebar { transform: translateX(0) !important; }
           .admin-main    { margin-left: 260px !important; }

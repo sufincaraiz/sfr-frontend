@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
 import { createToken } from '@/lib/auth'
+import { roleHome } from '@/lib/permissions'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,8 +14,11 @@ export async function POST(request: NextRequest) {
     if (!admin || !(await bcrypt.compare(password, admin.password)))
       return NextResponse.json({ error: 'Credenciales incorrectas' }, { status: 401 })
 
+    if (!admin.activo)
+      return NextResponse.json({ error: 'Usuario desactivado. Contacta al administrador.' }, { status: 403 })
+
     const token = createToken({ id: admin.id, email: admin.email, role: admin.role })
-    const res = NextResponse.json({ ok: true, nombre: admin.nombre })
+    const res = NextResponse.json({ ok: true, nombre: admin.nombre, role: admin.role, home: roleHome(admin.role) })
     res.cookies.set('admin_token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

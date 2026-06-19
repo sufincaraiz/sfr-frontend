@@ -2,13 +2,13 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { PlusCircle, Eye, ArrowRight } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
-import { getAdminSession } from '@/lib/auth';
+import { requireRole } from '@/lib/auth';
 import { formatPrice, TYPE_LABELS } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
 export default async function DashboardPage() {
-  const session = await getAdminSession();
+  const session = await requireRole(['admin']);
   if (!session) redirect('/admin/login');
 
   // Métricas

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
-import { getAdminSession } from '@/lib/auth'
+import { requireRole } from '@/lib/auth'
 
 const BizSchema = z.object({
   nombre:          z.string().trim().min(2).max(160),
@@ -16,14 +16,14 @@ const BizSchema = z.object({
 })
 
 export async function GET() {
-  const session = await getAdminSession()
+  const session = await requireRole(['admin'])
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const businesses = await prisma.business.findMany({ orderBy: [{ categoria: 'asc' }, { nombre: 'asc' }] })
   return NextResponse.json({ businesses })
 }
 
 export async function POST(req: NextRequest) {
-  const session = await getAdminSession()
+  const session = await requireRole(['admin'])
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const parsed = BizSchema.safeParse(await req.json().catch(() => null))
   if (!parsed.success) return NextResponse.json({ error: 'Datos inválidos' }, { status: 400 })
@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-  const session = await getAdminSession()
+  const session = await requireRole(['admin'])
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const body = await req.json().catch(() => null) as { id?: string } | null
   if (!body?.id) return NextResponse.json({ error: 'Falta id' }, { status: 400 })
@@ -64,7 +64,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-  const session = await getAdminSession()
+  const session = await requireRole(['admin'])
   if (!session) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   const { searchParams } = new URL(req.url)
   const id = searchParams.get('id')
