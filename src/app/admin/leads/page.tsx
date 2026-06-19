@@ -2,13 +2,14 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { RefreshCw } from 'lucide-react';
+import { RefreshCw, UserPlus, Check, Loader2 } from 'lucide-react';
 
 interface LeadRow {
   id: string; name: string; phone: string; email: string;
   channel: string; message: string | null; status: string;
   created_at: string;
   property: { slug: string; title: string | null; type: string } | null;
+  contacto: { id: string } | null;
 }
 
 const STATUS_OPTS = [
@@ -44,12 +45,29 @@ export default function AdminLeadsPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const [convId, setConvId] = useState('');
+
   const updateStatus = async (id: string, newStatus: string) => {
     await fetch('/api/admin/leads', {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id, status: newStatus }),
     });
+    fetchData();
+  };
+
+  const pasarAlCrm = async (id: string) => {
+    setConvId(id);
+    const res = await fetch('/api/admin/crm', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lead_id: id }),
+    });
+    setConvId('');
+    if (!res.ok) {
+      const d = await res.json().catch(() => ({}));
+      alert(d.error ?? 'No se pudo pasar el lead al CRM.');
+      return;
+    }
     fetchData();
   };
 
@@ -60,6 +78,7 @@ export default function AdminLeadsPage() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
 
       {/* Filtros */}
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -117,13 +136,25 @@ export default function AdminLeadsPage() {
                   </td>
                   <td style={{ padding: '10px 14px' }}>{getBadge(l.status)}</td>
                   <td style={{ padding: '10px 14px' }}>
-                    <select
-                      value={l.status}
-                      onChange={e => updateStatus(l.id, e.target.value)}
-                      style={{ padding: '4px 8px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: '0.75rem', fontWeight: 600, color: '#0D2D5E', background: '#fff', cursor: 'pointer' }}
-                    >
-                      {STATUS_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
-                    </select>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <select
+                        value={l.status}
+                        onChange={e => updateStatus(l.id, e.target.value)}
+                        style={{ padding: '4px 8px', border: '1.5px solid #E2E8F0', borderRadius: 7, fontSize: '0.75rem', fontWeight: 600, color: '#0D2D5E', background: '#fff', cursor: 'pointer' }}
+                      >
+                        {STATUS_OPTS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+                      </select>
+                      {l.contacto ? (
+                        <Link href="/admin/crm" title="Ya está en el CRM" style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 9px', borderRadius: 7, background: '#F0FDF4', color: '#15803D', border: '1px solid #BBF7D0', fontSize: '0.72rem', fontWeight: 700, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                          <Check size={12} /> En CRM
+                        </Link>
+                      ) : (
+                        <button onClick={() => pasarAlCrm(l.id)} disabled={convId === l.id} title="Pasar al CRM"
+                          style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 9px', borderRadius: 7, background: '#EFF6FF', color: '#1B56A1', border: '1px solid #BFDBFE', fontSize: '0.72rem', fontWeight: 700, cursor: convId === l.id ? 'wait' : 'pointer', whiteSpace: 'nowrap' }}>
+                          {convId === l.id ? <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> : <UserPlus size={12} />} Pasar al CRM
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))}

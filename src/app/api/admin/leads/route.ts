@@ -22,6 +22,7 @@ export async function GET(request: NextRequest) {
       orderBy: { created_at: 'desc' },
       include: {
         property: { select: { slug: true, title: true, type: true } },
+        contacto: { select: { id: true } },
       },
     }),
     prisma.lead.count({ where }),

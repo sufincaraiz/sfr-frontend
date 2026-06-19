@@ -171,8 +171,32 @@ model Lead {
   property          Property?         @relation(fields: [property_id], references: [id], onDelete: SetNull)
   agent             Agent?            @relation(fields: [assigned_agent_id], references: [id])
   conversations     Conversation[]
+  contacto          Contacto?
 
   @@map("leads")
+}
+
+// ─── CRM: contactos con embudo de ventas ─────────────────────────────────────
+model Contacto {
+  id                  String    @id @default(uuid())
+  nombre              String
+  telefono            String?
+  email               String?
+  tipo                String    @default("comprador") // comprador | vendedor | arrendatario
+  interes             String?   @db.Text              // qué busca
+  etapa               String    @default("nuevo")     // nuevo | contactado | en_seguimiento | cerrado
+  proximo_seguimiento DateTime?
+  origen              String    @default("manual")    // manual | lead-web | referido | otro
+  notas               String?   @db.Text
+  lead_id             String?   @unique               // si vino de un Lead web (evita doble conversión)
+  lead                Lead?     @relation(fields: [lead_id], references: [id], onDelete: SetNull)
+  created_by          String?   // id del usuario (Admin) que lo cargó — conserva historial
+  created_at          DateTime  @default(now())
+  updated_at          DateTime  @updatedAt
+
+  @@index([etapa])
+  @@index([proximo_seguimiento])
+  @@map("contactos")
 }
 
 // ─── Agent conversations ─────────────────────────────────────────────────────
