@@ -5,6 +5,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { WhatsAppFloat } from '@/components/layout/WhatsAppFloat';
 import { CustomCursor } from '@/components/layout/CustomCursor';
+import { PublicChrome } from '@/components/layout/PublicChrome';
 import { MacChatWidgetLoader } from '@/components/mac/MacChatWidgetLoader';
 import { SITE_URL } from '@/lib/site';
 
@@ -133,10 +134,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="font-sans">
         <CustomCursor />
-        <Header />
+        <PublicChrome><Header /></PublicChrome>
         <main id="main-content">{children}</main>
-        <Footer />
-        <WhatsAppFloat />
+        <PublicChrome>
+          <Footer />
+          <WhatsAppFloat />
+        </PublicChrome>
         <MacChatWidgetLoader />
       </body>
     </html>
