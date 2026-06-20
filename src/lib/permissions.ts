@@ -43,6 +43,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
   { prefix: '/admin/leads',               label: 'Leads',               icon: 'Users',           roles: ['admin'] },
   { prefix: '/admin/propuesta-comercial', label: 'Propuesta comercial', icon: 'FileText',        roles: ['admin'] },
   { prefix: '/admin/directorio',          label: 'Directorio',          icon: 'Store',           roles: ['admin'] },
+  { prefix: '/admin/blog',                label: 'Blog',                icon: 'PenSquare',       roles: ['admin', 'autor_blog'] },
   { prefix: '/admin/usuarios',            label: 'Usuarios',            icon: 'Shield',          roles: ['admin'] },
 ];
 
@@ -50,6 +51,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
 export function roleHome(role: string): string {
   switch (role) {
     case 'asistente_crm': return '/admin/crm';
+    case 'autor_blog':    return '/admin/blog';
     default:              return '/admin/dashboard'; // admin (y fallback seguro)
   }
 }

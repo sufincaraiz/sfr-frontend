@@ -257,6 +257,7 @@ model Admin {
   activo    Boolean  @default(true)    // desactivar (no borrar) para conservar historial
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+  articulos Article[]
 
   @@map("admins")
 }
@@ -278,8 +279,12 @@ model Article {
   author_name      String?
   author_photo_url String?
   author_email     String?
+  // Autor con cuenta propia (rol autor_blog). null = artículo MDX/comunidad/legacy.
+  author_id        String?
+  autor            Admin?   @relation(fields: [author_id], references: [id], onDelete: SetNull)
   created_at       DateTime @default(now())
 
+  @@index([author_id])
   @@map("articles")
 }
 

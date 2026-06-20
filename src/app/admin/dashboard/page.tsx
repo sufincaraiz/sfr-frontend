@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { PlusCircle, Eye, ArrowRight } from 'lucide-react';
+import { PlusCircle, Eye, ArrowRight, PenSquare } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/auth';
 import { formatPrice, TYPE_LABELS } from '@/lib/utils';
+import { DashboardArticles, type DashArticle } from './DashboardArticles';
 
 export const dynamic = 'force-dynamic';
 
@@ -12,11 +13,12 @@ export default async function DashboardPage() {
   if (!session) redirect('/admin/login');
 
   // Métricas
-  const [total, activas, vendidas, leads, ultimasProp, ultimosLeads] = await Promise.all([
+  const [total, activas, vendidas, leads, articulosTotal, ultimasProp, ultimosLeads, ultimosArticulos] = await Promise.all([
     prisma.property.count(),
     prisma.property.count({ where: { status: 'available' } }),
     prisma.property.count({ where: { status: 'sold' } }),
     prisma.lead.count(),
+    prisma.article.count(),
     prisma.property.findMany({
       orderBy: { published_at: 'desc' }, take: 8,
       include: { municipality: { select: { name: true } }, media: { where: { is_primary: true }, take: 1 } },
@@ -25,15 +27,25 @@ export default async function DashboardPage() {
       orderBy: { created_at: 'desc' }, take: 6,
       include: { property: { select: { title: true, slug: true, type: true } } },
     }),
+    prisma.article.findMany({
+      orderBy: { created_at: 'desc' }, take: 6,
+      select: { id: true, slug: true, title: true, author_name: true, author_id: true, cover_image_url: true, published_at: true, created_at: true },
+    }),
   ]);
 
   const reservadas = await prisma.property.count({ where: { status: 'reserved' } });
+
+  const articulosDash: DashArticle[] = ultimosArticulos.map(a => ({
+    id: a.id, slug: a.slug, title: a.title, author_name: a.author_name, author_id: a.author_id,
+    cover_image_url: a.cover_image_url, date: (a.published_at ?? a.created_at).toISOString(),
+  }));
 
   const metrics = [
     { label: 'Total propiedades', value: total,     color: '#1B56A1', bg: '#EFF6FF', icon: '🏡' },
     { label: 'Disponibles',       value: activas,   color: '#15803D', bg: '#F0FDF4', icon: '✅' },
     { label: 'Reservadas',        value: reservadas, color: '#D97706', bg: '#FFFBEB', icon: '🔒' },
     { label: 'Leads recibidos',   value: leads,     color: '#7C3AED', bg: '#F5F3FF', icon: '📩' },
+    { label: 'Artículos del blog', value: articulosTotal, color: '#B45309', bg: '#FEF9C3', icon: '📝' },
   ];
 
   const statusBadge = (s: string) => {
@@ -195,6 +207,19 @@ export default async function DashboardPage() {
             </table>
           </div>
         )}
+      </section>
+
+      {/* Blog (modo Dios: el admin ve y controla todos los artículos) */}
+      <section style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
+        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #F1F5F9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <PenSquare size={17} style={{ color: '#1B56A1' }} /> Últimos artículos del blog
+          </h2>
+          <Link href="/admin/blog" style={{ color: '#1B56A1', fontSize: '0.82rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
+            Gestionar blog <ArrowRight size={13} />
+          </Link>
+        </div>
+        <DashboardArticles initial={articulosDash} />
       </section>
 
       {/* Stats footer */}

@@ -6,12 +6,12 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import {
   LayoutDashboard, Home, PlusCircle, Users, Contact, Shield, ExternalLink,
-  LogOut, Menu, X, ChevronRight, FileText, Store, Loader2,
+  LogOut, Menu, X, ChevronRight, FileText, Store, PenSquare, Loader2,
 } from 'lucide-react';
 
 // Mapa nombre-de-icono → componente (los nombres vienen de permissions.ts, edge-safe)
 const ICONS: Record<string, React.ComponentType<{ size?: number; style?: React.CSSProperties }>> = {
-  LayoutDashboard, Home, PlusCircle, Users, Contact, Shield, FileText, Store,
+  LayoutDashboard, Home, PlusCircle, Users, Contact, Shield, FileText, Store, PenSquare,
 };
 
 interface Me {
