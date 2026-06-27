@@ -93,9 +93,13 @@ export const metadata: Metadata = {
     },
   },
 
-  // ── Verificación de propiedad en Google Search Console ──────────────────────
+  // ── Verificación de propiedad (Google Search Console + Meta/Facebook) ───────
   verification: {
     google: process.env.NEXT_PUBLIC_GSC_VERIFICATION ?? '',
+    other: {
+      // Verificación de dominio de Meta/Facebook (renderizada server-side en <head>)
+      'facebook-domain-verification': '68dt356kb74alxbx0k805ybssnlijf',
+    },
   },
 
   // ── Idioma y región ─────────────────────────────────────────────────────────
