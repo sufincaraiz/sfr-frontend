@@ -12,10 +12,11 @@ interface Articulo {
 }
 
 interface Form {
-  id?: string; title: string; content: string; cover_image_url: string; author_photo_url: string;
+  id?: string; title: string; content: string; cover_image_url: string;
+  author_name: string; author_photo_url: string; author_email: string;
 }
 
-const EMPTY: Form = { title: '', content: '', cover_image_url: '', author_photo_url: '' };
+const EMPTY: Form = { title: '', content: '', cover_image_url: '', author_name: '', author_photo_url: '', author_email: '' };
 
 const CLOUD  = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
 const PRESET = 'sufincaraiz_properties';
@@ -44,6 +45,9 @@ export default function AdminBlogPage() {
   const [upCover, setUpCover] = useState(false);
   const [upPhoto, setUpPhoto] = useState(false);
   const [msg, setMsg] = useState('');
+  const [declaro, setDeclaro] = useState(false);
+  const [acepto, setAcepto] = useState(false);
+  const [me, setMe] = useState<{ nombre: string; email: string }>({ nombre: '', email: '' });
   const coverRef = useRef<HTMLInputElement>(null);
   const photoRef = useRef<HTMLInputElement>(null);
 
@@ -53,13 +57,20 @@ export default function AdminBlogPage() {
     const d = await res.json();
     setList(d.articulos ?? []); setRole(d.role ?? '');
   }, []);
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    load();
+    // Datos del usuario para prellenar seudónimo + correo al crear.
+    fetch('/api/admin/me').then(r => r.ok ? r.json() : null).then(d => d && setMe({ nombre: d.nombre ?? '', email: d.email ?? '' })).catch(() => {});
+  }, [load]);
 
   const isAdmin = role === 'admin';
   const set = (k: keyof Form, v: string) => setForm(f => ({ ...f, [k]: v }));
   const flash = (m: string) => { setMsg(m); window.scrollTo({ top: 0, behavior: 'smooth' }); };
 
-  const nuevo = () => { setForm(EMPTY); setShowForm(true); setMsg(''); };
+  const nuevo = () => {
+    setForm({ ...EMPTY, author_name: me.nombre, author_email: me.email });
+    setDeclaro(false); setAcepto(false); setShowForm(true); setMsg('');
+  };
   const editar = async (id: string) => {
     setShowForm(true); setMsg('⏳ Cargando contenido…');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -67,12 +78,14 @@ export default function AdminBlogPage() {
       const res = await fetch(`/api/admin/blog/${id}`);
       if (res.ok) {
         const d = await res.json();
-        setForm({ id: d.id, title: d.title, content: d.content ?? '', cover_image_url: d.cover_image_url ?? '', author_photo_url: d.author_photo_url ?? '' });
+        setForm({ id: d.id, title: d.title, content: d.content ?? '', cover_image_url: d.cover_image_url ?? '', author_name: d.author_name ?? '', author_photo_url: d.author_photo_url ?? '', author_email: d.author_email ?? '' });
+        // Ya fue aceptado previamente al crear; no obligamos a re-tildar para editar.
+        setDeclaro(true); setAcepto(true);
         setMsg('');
       } else { flash('⚠️ No se pudo cargar el artículo.'); }
     } catch { flash('⚠️ No se pudo cargar el artículo.'); }
   };
-  const cerrar = () => { setForm(EMPTY); setShowForm(false); };
+  const cerrar = () => { setForm(EMPTY); setDeclaro(false); setAcepto(false); setShowForm(false); };
 
   // Enlace directo desde el dashboard: /admin/blog?edit=<id> abre el editor.
   useEffect(() => {
@@ -85,6 +98,9 @@ export default function AdminBlogPage() {
     e.preventDefault();
     if (form.title.trim().length < 4) { flash('⚠️ El título es muy corto.'); return; }
     if (form.content.trim().length < 20) { flash('⚠️ El contenido es muy corto.'); return; }
+    if (!form.author_email.trim()) { flash('⚠️ El correo electrónico es obligatorio.'); return; }
+    if (!declaro) { flash('⚠️ Debes declarar la originalidad del contenido.'); return; }
+    if (!acepto) { flash('⚠️ Debes aceptar los Términos y Condiciones.'); return; }
     setSaving(true); setMsg('');
     const editing = !!form.id;
     const res = await fetch('/api/admin/blog', {
@@ -135,12 +151,12 @@ export default function AdminBlogPage() {
           </div>
 
           <div>
-            <label style={labelS}>Título *</label>
+            <label style={labelS}>Título del tema *</label>
             <input value={form.title} onChange={e => set('title', e.target.value)} required maxLength={180} style={inputS} placeholder="Ej. La historia del café en La Vega" />
           </div>
 
           <div>
-            <label style={labelS}>Foto de portada (opcional)</label>
+            <label style={labelS}>Foto del tema (opcional)</label>
             <input ref={coverRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={async e => { const f = e.target.files?.[0]; if (!f) return; setUpCover(true); const u = await uploadToCloudinary(f); if (u) set('cover_image_url', cloudinaryOptimize(u, 1280)); setUpCover(false); }} />
             {form.cover_image_url ? (
               <div style={{ position: 'relative', width: '100%', maxWidth: 320, aspectRatio: '16/9', borderRadius: 10, overflow: 'hidden', border: '1px solid #E2E8F0' }}>
@@ -156,12 +172,17 @@ export default function AdminBlogPage() {
           </div>
 
           <div>
-            <label style={labelS}>Contenido *</label>
+            <label style={labelS}>Contenido del post *</label>
             <textarea value={form.content} onChange={e => set('content', e.target.value)} required rows={14} style={{ ...inputS, resize: 'vertical', minHeight: 280, lineHeight: 1.6 }} placeholder="Escribe aquí tu artículo. Separa los párrafos con una línea en blanco." />
           </div>
 
           <div>
-            <label style={labelS}>Foto del autor (opcional)</label>
+            <label style={labelS}>Tus datos (seudónimo)</label>
+            <input value={form.author_name} onChange={e => set('author_name', e.target.value)} maxLength={80} style={inputS} placeholder="Cómo quieres que aparezca tu nombre" />
+          </div>
+
+          <div>
+            <label style={labelS}>Fotografía personal (opcional)</label>
             <input ref={photoRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={async e => { const f = e.target.files?.[0]; if (!f) return; setUpPhoto(true); const u = await uploadToCloudinary(f); if (u) set('author_photo_url', cloudinarySquare(u, 400)); setUpPhoto(false); }} />
             {form.author_photo_url ? (
               <div style={{ position: 'relative', width: 72, height: 72, borderRadius: '50%', overflow: 'hidden', border: '2px solid #E8B92F' }}>
@@ -174,6 +195,35 @@ export default function AdminBlogPage() {
                 {upPhoto ? <Loader2 size={16} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={16} />} {upPhoto ? 'Subiendo…' : 'Subir foto'}
               </button>
             )}
+          </div>
+
+          <div>
+            <label style={labelS}>Correo electrónico *</label>
+            <input type="email" value={form.author_email} onChange={e => set('author_email', e.target.value)} required maxLength={160} style={inputS} placeholder="tucorreo@ejemplo.com" />
+            <p style={{ color: '#94A3B8', fontSize: '0.72rem', marginTop: 5 }}>Se mostrará en tu publicación para que los interesados te puedan contactar.</p>
+          </div>
+
+          {/* Declaraciones obligatorias */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem', borderTop: '1px solid #F1F5F9', paddingTop: '1.1rem' }}>
+            <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+              <input type="checkbox" checked={declaro} onChange={e => setDeclaro(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0, accentColor: '#1B56A1', cursor: 'pointer' }} />
+              <span style={{ color: '#475569', fontSize: '0.82rem', lineHeight: 1.55 }}>
+                Declaro que el contenido compartido (textos e imágenes) es original, de mi autoría, o cuento con los
+                permisos legales para su uso. Eximo a Su Finca Raíz de cualquier responsabilidad frente a terceros por
+                derechos de autor o propiedad intelectual, asumiendo total responsabilidad legal por lo publicado.
+                Asimismo, cedo a la plataforma los derechos de publicación, adaptación y distribución de este material.
+              </span>
+            </label>
+            <label style={{ display: 'flex', gap: 10, alignItems: 'flex-start', cursor: 'pointer' }}>
+              <input type="checkbox" checked={acepto} onChange={e => setAcepto(e.target.checked)} style={{ marginTop: 3, width: 18, height: 18, flexShrink: 0, accentColor: '#1B56A1', cursor: 'pointer' }} />
+              <span style={{ color: '#475569', fontSize: '0.82rem', lineHeight: 1.55 }}>
+                Acepto los{' '}
+                <Link href="/terminos-y-condiciones" target="_blank" style={{ color: '#1B56A1', fontWeight: 700, textDecoration: 'underline' }}>
+                  Términos y Condiciones
+                </Link>
+                , incluidas las Políticas de Contenido Generado por el Usuario.
+              </span>
+            </label>
           </div>
 
           <div>

@@ -11,7 +11,9 @@ const BaseSchema = z.object({
   title:            z.string().trim().min(4, 'Título muy corto').max(180),
   content:          z.string().trim().min(20, 'El contenido es muy corto').max(40000),
   cover_image_url:  z.string().url().max(500).optional().or(z.literal('')),
+  author_name:      z.string().trim().max(80).optional().or(z.literal('')),
   author_photo_url: z.string().url().max(500).optional().or(z.literal('')),
+  author_email:     z.string().trim().email('Correo electrónico inválido').max(160),
 })
 const UpdateSchema = BaseSchema.partial().extend({ id: z.string().min(1) })
 
@@ -62,8 +64,8 @@ export async function POST(req: NextRequest) {
       content:          d.content,
       cover_image_url:  d.cover_image_url || null,
       author_id:        session.id,
-      author_name:      session.nombre,
-      author_email:     session.email,
+      author_name:      d.author_name?.trim() || session.nombre,
+      author_email:     d.author_email,
       author_photo_url: d.author_photo_url || null,
       published_at:     new Date(), // publicación directa
     },
@@ -93,6 +95,9 @@ export async function PUT(req: NextRequest) {
   if (d.content !== undefined) { data.content = d.content; data.excerpt = excerptFrom(d.content) }
   if (d.cover_image_url !== undefined) data.cover_image_url = d.cover_image_url || null
   if (d.author_photo_url !== undefined) data.author_photo_url = d.author_photo_url || null
+  // Solo actualizamos seudónimo/correo si vienen con valor (no los borramos con el editor).
+  if (d.author_name !== undefined && d.author_name.trim()) data.author_name = d.author_name.trim()
+  if (d.author_email !== undefined && d.author_email) data.author_email = d.author_email
 
   await prisma.article.update({ where: { id }, data })
   revalidatePath('/blog')

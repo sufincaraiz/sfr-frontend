@@ -17,5 +17,6 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   return NextResponse.json({
     id: a.id, slug: a.slug, title: a.title, content: a.content,
     cover_image_url: a.cover_image_url, author_photo_url: a.author_photo_url,
+    author_name: a.author_name, author_email: a.author_email,
   })
 }
