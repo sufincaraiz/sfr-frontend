@@ -22,6 +22,7 @@ const LEGAL_LINKS = [
   { href: '/politica-tratamiento-datos', label: 'Política de datos' },
   { href: '/terminos-y-condiciones',     label: 'Términos y condiciones' },
   { href: '/politica-de-cookies',        label: 'Política de cookies' },
+  { href: '/eliminacion-de-datos',       label: 'Eliminación de datos' },
 ];
 
 // Municipios derivados de la data real (solo los que tienen página /municipios/[slug])
