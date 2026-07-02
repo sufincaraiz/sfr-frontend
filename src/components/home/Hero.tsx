@@ -97,6 +97,21 @@ export function Hero() {
           <span style={{ color: '#E8B92F' }}>Realidad</span>!
         </h2>
 
+        {/* Posicionamiento — delay 0.4s */}
+        <p
+          className="hero-anim font-sans mb-4"
+          style={{
+            fontSize: 'clamp(0.95rem, 1.8vw, 1.1rem)',
+            fontWeight: 700,
+            color: '#E8B92F',
+            letterSpacing: '0.02em',
+            textShadow: '0 1px 6px rgba(0,0,0,0.45)',
+            animationDelay: '0.4s',
+          }}
+        >
+          La primera inmobiliaria inteligente de La Vega y el Gualivá
+        </p>
+
         {/* Descripción — delay 0.5s */}
         <p
           className="hero-anim font-sans text-white/80 max-w-2xl mb-8 leading-relaxed"
