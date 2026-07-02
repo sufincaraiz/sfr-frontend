@@ -4,9 +4,10 @@ import Link from 'next/link';
 import {
   Home, ChevronRight, Rotate3d, Plane, Box,
   Eye, ShieldCheck, Network, ArrowRight,
+  Bot, Sparkles, Lightbulb, Layers, Building2,
 } from 'lucide-react';
 import { SITE_URL } from '@/lib/site';
-import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd';
+import { JsonLd, breadcrumbSchema, faqSchema } from '@/components/seo/JsonLd';
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
@@ -49,6 +50,64 @@ const TECNOLOGIA = [
   },
 ];
 
+// ── Inmobiliaria inteligente: 6 servicios (contenido exacto del posicionamiento) ─
+const INTELIGENTE = [
+  {
+    icon: Bot,
+    title: 'Mac — Agente IA experto inmobiliario, 24/7 y en cualquier idioma',
+    text: 'Mac es nuestro asesor con inteligencia artificial: analiza tu necesidad, compara propiedades y genera respuestas en minutos, los 7 días de la semana, las 24 horas. Atiende y asesora en cualquier idioma, para que inversionistas locales y extranjeros reciban respuesta inmediata.',
+  },
+  {
+    icon: Rotate3d,
+    title: 'Recorridos virtuales 360° con asistencia IA inmediata',
+    text: 'Explora cada propiedad desde donde estés con nuestros recorridos virtuales inmersivos, y resuelve tus dudas al instante con el apoyo de Mac. Conoce la finca antes de visitarla.',
+  },
+  {
+    icon: Sparkles,
+    title: 'Búsqueda con recomendaciones inteligentes',
+    text: 'Cuéntanos qué buscas y nuestra tecnología te recomienda las propiedades que de verdad se ajustan a tus necesidades: presupuesto, ubicación, tipo de inmueble y estilo de vida.',
+  },
+  {
+    icon: Lightbulb,
+    title: 'Aterrizamos tu idea con herramientas tecnológicas',
+    text: '¿Tienes una idea de inversión, parcelación o proyecto campestre? Te ayudamos a estructurarla y validarla con herramientas de análisis y visualización, para que tomes decisiones con datos y no con suposiciones.',
+  },
+  {
+    icon: Layers,
+    title: 'Elaboración ágil de proyectos inmobiliarios',
+    text: 'Mediante parametrización y renderización, convertimos conceptos en propuestas visuales de proyectos inmobiliarios en tiempos que el mercado tradicional no puede igualar.',
+  },
+  {
+    icon: Building2,
+    title: 'Construcción a otro nivel — Alianza con Constructora Conarc',
+    text: 'A través de nuestra alianza con Constructora Conarc, implementamos tecnología de realidad aumentada para que veas tu proyecto desde una mejor perspectiva y tomes decisiones puntuales antes y durante la construcción.',
+  },
+];
+
+// ── Preguntas frecuentes (visibles + schema FAQPage) ──────────────────────────
+const FAQS = [
+  {
+    question: '¿Qué es una inmobiliaria inteligente?',
+    answer: 'Una inmobiliaria inteligente integra inteligencia artificial y tecnología en sus procesos: atención automatizada 24/7, búsqueda con recomendaciones personalizadas, recorridos virtuales y visualización de proyectos. Su Finca Raíz es la primera inmobiliaria inteligente de La Vega, Cundinamarca y la región del Gualivá.',
+  },
+  {
+    question: '¿Quién es Mac?',
+    answer: 'Mac es el agente de inteligencia artificial de Su Finca Raíz, experto en el mercado inmobiliario de La Vega y el Gualivá. Analiza tu necesidad, compara propiedades y responde en minutos, las 24 horas, los 7 días de la semana, en cualquier idioma.',
+  },
+  {
+    question: '¿Puedo ver una finca sin viajar a La Vega?',
+    answer: 'Sí. Nuestros recorridos virtuales 360° te permiten explorar las propiedades desde cualquier lugar del mundo, y Mac resuelve tus preguntas al instante.',
+  },
+  {
+    question: '¿Su Finca Raíz atiende inversionistas extranjeros?',
+    answer: 'Sí. Mac asesora en cualquier idioma y nuestro equipo acompaña todo el proceso legal y comercial para inversión extranjera en la región del Gualivá.',
+  },
+  {
+    question: '¿Qué zonas cubre Su Finca Raíz?',
+    answer: 'La Vega, Cundinamarca y toda la región del Gualivá: fincas, lotes urbanizados, casas campestres, condominios y proyectos de parcelación.',
+  },
+];
+
 const FILOSOFIA = [
   {
     icon: Eye,
@@ -87,6 +146,7 @@ export default function NosotrosPage() {
   return (
     <>
       <JsonLd data={breadcrumbs} />
+      <JsonLd data={faqSchema(FAQS)} />
 
       <main style={{ background: '#F8FAFC', minHeight: '100vh' }}>
 
@@ -138,7 +198,40 @@ export default function NosotrosPage() {
             </p>
           </section>
 
-          {/* ── 3. La Vanguardia Tecnológica ── */}
+          {/* ── 3. La primera inmobiliaria inteligente ── */}
+          <section style={{ marginBottom: '4rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1.5rem' }}>
+              <div style={{ width: 4, height: 24, background: '#E8B92F', borderRadius: 2 }} />
+              <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: 'clamp(1.3rem,3vw,1.7rem)', margin: 0 }}>
+                La primera inmobiliaria inteligente de La Vega y la región del Gualivá
+              </h2>
+            </div>
+            <p style={{ color: '#475569', fontSize: '1.02rem', lineHeight: 1.75, marginBottom: '2rem', maxWidth: 820 }}>
+              Su Finca Raíz es un Centro de Inversión Inmobiliaria que integra inteligencia
+              artificial y tecnología de vanguardia en cada etapa del negocio. No somos una
+              inmobiliaria tradicional con página web: somos la primera inmobiliaria inteligente
+              de La Vega, Cundinamarca y la región del Gualivá — un equipo de expertos del
+              territorio potenciado por herramientas de IA que mejoran resultados en menos tiempo.
+            </p>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+              {INTELIGENTE.map(({ icon: Icon, title, text }) => (
+                <article key={title} style={cardStyle}>
+                  <span style={iconWrap}><Icon size={25} color="#1B56A1" /></span>
+                  <h3 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.02rem', lineHeight: 1.3, marginBottom: 9 }}>{title}</h3>
+                  <p style={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.6 }}>{text}</p>
+                </article>
+              ))}
+            </div>
+
+            <p style={{ color: '#0D2D5E', fontWeight: 600, fontSize: '1.02rem', lineHeight: 1.75, marginTop: '2rem', maxWidth: 820 }}>
+              Tecnología al servicio de la confianza: cada herramienta que usamos existe para que
+              compres, vendas o inviertas en el Gualivá con más información, más rapidez y más
+              respaldo. Eso es ser una inmobiliaria inteligente.
+            </p>
+          </section>
+
+          {/* ── 3b. La Vanguardia Tecnológica ── */}
           <section style={{ marginBottom: '4rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '2rem' }}>
               <div style={{ width: 4, height: 24, background: '#E8B92F', borderRadius: 2 }} />
@@ -199,7 +292,26 @@ export default function NosotrosPage() {
             </div>
           </section>
 
-          {/* ── 5. Cierre / CTA ── */}
+          {/* ── 5. Preguntas Frecuentes ── */}
+          <section style={{ marginBottom: '4rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '2rem' }}>
+              <div style={{ width: 4, height: 24, background: '#E8B92F', borderRadius: 2 }} />
+              <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: 'clamp(1.3rem,3vw,1.7rem)', margin: 0 }}>
+                Preguntas Frecuentes
+              </h2>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: 820 }}>
+              {FAQS.map(({ question, answer }) => (
+                <article key={question} style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '1.4rem 1.5rem' }}>
+                  <h3 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.35, marginBottom: 8 }}>{question}</h3>
+                  <p style={{ color: '#475569', fontSize: '0.95rem', lineHeight: 1.7, margin: 0 }}>{answer}</p>
+                </article>
+              ))}
+            </div>
+          </section>
+
+          {/* ── 6. Cierre / CTA ── */}
           <section style={{ background: 'linear-gradient(135deg, #0D2D5E 0%, #1B56A1 100%)', borderRadius: 20, padding: 'clamp(2rem,5vw,3.25rem)', textAlign: 'center' }}>
             <h2 style={{ color: '#fff', fontWeight: 900, fontSize: 'clamp(1.4rem,3.5vw,2.1rem)', lineHeight: 1.2, marginBottom: 14 }}>
               El respaldo que necesitas para tu próximo paso.

@@ -27,12 +27,13 @@ export function localBusinessSchema() {
 
         name: 'Su Finca Raíz',
         alternateName: 'Inmobiliaria Su Finca Raíz',
-        slogan: 'Tu finca en La Vega, a solo 2 horas de Bogotá',
+        slogan: 'La primera inmobiliaria inteligente de La Vega y el Gualivá',
         description:
-          'Inmobiliaria local especializada en compraventa de fincas, lotes, ' +
-          'condominios campestres y casas de campo en La Vega y la región del ' +
-          'Gualivá, Cundinamarca, Colombia. Más de 10 años de experiencia y ' +
-          'más de 150 propiedades vendidas.',
+          'Su Finca Raíz — la primera inmobiliaria inteligente de La Vega, ' +
+          'Cundinamarca y la región del Gualivá. Centro de Inversión Inmobiliaria ' +
+          'con agente IA (Mac) 24/7 multilingüe, recorridos virtuales 360°, ' +
+          'recomendaciones inteligentes de propiedades, renderización de proyectos ' +
+          'y realidad aumentada mediante alianza con Constructora Conarc.',
 
         url:   SITE_URL,
         logo: {
@@ -192,6 +193,12 @@ export function localBusinessSchema() {
 
         // ── Temáticas de expertise para E-E-A-T ──────────────────────────────
         knowsAbout: [
+          'inteligencia artificial inmobiliaria',
+          'fincas La Vega Cundinamarca',
+          'inversión inmobiliaria Gualivá',
+          'recorridos virtuales 360',
+          'proyectos de parcelación',
+          'realidad aumentada construcción',
           'Compraventa de fincas en Cundinamarca',
           'Lotes campestres en La Vega',
           'Casas de recreo cerca de Bogotá',
