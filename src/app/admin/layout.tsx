@@ -97,12 +97,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* ── SIDEBAR ── */}
       <aside
-        className="admin-sidebar"
+        className={`admin-sidebar${open ? ' is-open' : ''}`}
         style={{
           position: 'fixed', top: 0, left: 0, bottom: 0, width: 260, zIndex: 50,
           background: '#0D2D5E', display: 'flex', flexDirection: 'column',
-          transform: open ? 'translateX(0)' : 'translateX(-100%)',
-          transition: 'transform 0.28s ease',
         }}
       >
         {/* Logo */}
@@ -207,9 +205,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <button
               onClick={() => setOpen(v => !v)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0D2D5E', padding: 6, borderRadius: 8, display: 'flex', alignItems: 'center' }}
+              className="lg-hide"
+              aria-label="Abrir menú"
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#0D2D5E', padding: 8, borderRadius: 8, display: 'flex', alignItems: 'center', marginLeft: -4 }}
             >
-              <Menu size={21} />
+              <Menu size={22} />
             </button>
             <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.05rem', margin: 0 }}>
               {pageTitle}
@@ -246,10 +246,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
+        /* Drawer móvil por clases (predecible, sin mezclar transform inline). */
+        .admin-sidebar { transform: translateX(-100%); transition: transform 0.28s ease; }
+        .admin-sidebar.is-open { transform: translateX(0); }
         @media (min-width: 1024px) {
-          .admin-sidebar { transform: translateX(0) !important; }
+          .admin-sidebar { transform: translateX(0) !important; } /* siempre visible en desktop */
           .admin-main    { margin-left: 260px !important; }
-          .lg-hide       { display: none !important; }
+          .lg-hide       { display: none !important; }            /* oculta hamburguesa/cerrar */
         }
       `}</style>
     </div>
