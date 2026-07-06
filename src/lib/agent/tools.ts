@@ -18,7 +18,8 @@ export const MAC_TOOLS: Tool[] = [
         precioMin:  { type: 'number', description: 'Precio mínimo en COP' },
         precioMax:  { type: 'number', description: 'Precio máximo en COP' },
         areaMin:    { type: 'number', description: 'Área mínima en m²' },
-        limite:     { type: 'number', description: 'Máximo de resultados (default 5, max 5)' },
+        limite:     { type: 'number', description: 'Máximo de resultados (default 6, máx 10)' },
+        ordenar:    { type: 'string', enum: ['reciente', 'precio_desc', 'precio_asc'], description: 'Orden: "reciente" (default, novedades primero), "precio_desc" (premium/las más costosas primero, útil para anclar la opción más full) o "precio_asc" (las más económicas primero)' },
       },
       required: [],
     },
@@ -68,7 +69,7 @@ export const MAC_TOOLS: Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        motivo:  { type: 'string', description: 'LEAD_CALIENTE | LLAMADA_PREFERIDA | VISITA | CLIENTE_MOLESTO' },
+        motivo:  { type: 'string', description: 'LEAD_CALIENTE | LLAMADA_PREFERIDA | VISITA | VENDEDOR | PROPIEDAD_FUERA_CATALOGO | ALIADO_BROKER | CLIENTE_MOLESTO' },
         resumen: { type: 'string', description: 'Síntesis de la conversación y datos clave del lead' },
       },
       required: ['motivo', 'resumen'],
@@ -85,6 +86,7 @@ interface BuscarInput {
   precioMax?: number
   areaMin?: number
   limite?: number
+  ordenar?: 'reciente' | 'precio_desc' | 'precio_asc'
 }
 
 interface DetalleInput {
@@ -118,7 +120,14 @@ interface SolicitarInput {
 export type ToolInput = BuscarInput | DetalleInput | LeadInput | SolicitarInput
 
 async function buscarPropiedades(input: BuscarInput) {
-  const limite = Math.min(input.limite ?? 5, 5)
+  const limite = Math.min(input.limite ?? 6, 10)
+
+  // Orden: por defecto novedades primero (así las propiedades recién subidas
+  // siempre aparecen); opcional por precio para anclar la opción "más full".
+  const orderBy =
+    input.ordenar === 'precio_asc'  ? { price_cop: 'asc'  as const } :
+    input.ordenar === 'precio_desc' ? { price_cop: 'desc' as const } :
+                                      { updated_at: 'desc' as const }
 
   const where: Record<string, unknown> = { status: 'available' }
   if (input.tipo) where['type'] = input.tipo
@@ -140,7 +149,7 @@ async function buscarPropiedades(input: BuscarInput) {
       vereda:       { select: { name: true } },
       media:        { where: { is_primary: true }, take: 1 },
     },
-    orderBy: { price_cop: 'asc' },
+    orderBy,
     take: limite,
   }) as Array<Parameters<typeof formatProperty>[0]>
 
