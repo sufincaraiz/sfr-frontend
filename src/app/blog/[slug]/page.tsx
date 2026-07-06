@@ -111,11 +111,13 @@ export default async function BlogPostPage(
       <main style={{ background: '#F8FAFC', minHeight: '100vh' }}>
 
         {/* ── Cover hero ── */}
+        {/* paddingTop reserva la franja del header fijo transparente (72px) para que
+            el título nunca quede tapado por el logo en móvil, sin importar su largo. */}
         {post.cover_image ? (
-          <div style={{ position: 'relative', width: '100%', height: 'clamp(220px,38vw,460px)', overflow: 'hidden', background: '#0D2D5E' }}>
+          <div style={{ position: 'relative', width: '100%', minHeight: 'clamp(300px,38vw,460px)', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', paddingTop: 88, boxSizing: 'border-box', overflow: 'hidden', background: '#0D2D5E' }}>
             <Image src={post.cover_image} alt={post.cover_alt ?? post.title} fill priority style={{ objectFit: 'cover', opacity: 0.65 }} sizes="100vw" />
             <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to bottom, rgba(13,45,94,0.2) 0%, rgba(13,45,94,0.85) 100%)' }} />
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, padding: 'clamp(1.25rem,4vw,2.75rem)', maxWidth: 860 }}>
+            <div style={{ position: 'relative', zIndex: 1, padding: 'clamp(1.25rem,4vw,2.75rem)', maxWidth: 860 }}>
               <div style={{ marginBottom: 10 }}>
                 <CategoryBadge category={post.category} name={post.category_name} inverse />
               </div>
@@ -126,7 +128,7 @@ export default async function BlogPostPage(
             </div>
           </div>
         ) : (
-          <div style={{ background: 'linear-gradient(135deg, #0D2D5E 0%, #1B56A1 100%)', padding: 'clamp(2rem,5vw,3.5rem) 1.5rem' }}>
+          <div style={{ background: 'linear-gradient(135deg, #0D2D5E 0%, #1B56A1 100%)', padding: '6rem 1.5rem 2.5rem' }}>
             <div style={{ maxWidth: 860, margin: '0 auto' }}>
               <div style={{ marginBottom: 10 }}>
                 <CategoryBadge category={post.category} name={post.category_name} inverse />

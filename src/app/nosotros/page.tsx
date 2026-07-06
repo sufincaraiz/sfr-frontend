@@ -151,7 +151,7 @@ export default function NosotrosPage() {
       <main style={{ background: '#F8FAFC', minHeight: '100vh' }}>
 
         {/* ── 1. Hero ── */}
-        <section style={{ background: 'linear-gradient(135deg, #0D2D5E 0%, #1B56A1 100%)', padding: 'clamp(2.5rem,7vw,4.5rem) 1.5rem' }}>
+        <section style={{ background: 'linear-gradient(135deg, #0D2D5E 0%, #1B56A1 100%)', padding: '6rem 1.5rem 3rem' }}>
           <div style={{ maxWidth: 820, margin: '0 auto', textAlign: 'center' }}>
             <span style={{ display: 'inline-block', background: '#E8B92F', color: '#0D2D5E', fontSize: '0.7rem', fontWeight: 800, padding: '4px 14px', borderRadius: 20, marginBottom: 16, letterSpacing: 1, textTransform: 'uppercase' }}>
               Nosotros
