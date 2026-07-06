@@ -241,6 +241,27 @@ export default async function PropiedadDetallePage(
               </section>
             )}
 
+            {/* Tour 360 — entre la galería y Características */}
+            {tourUrl && (
+              <section style={{ background: '#0D2D5E', borderRadius: 16, overflow: 'hidden' }}>
+                <div style={{ padding: '1.5rem 1.75rem 1rem' }}>
+                  <p style={{ color: '#E8B92F', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
+                    Experiencia inmersiva
+                  </p>
+                  <h2 style={{ color: '#fff', fontWeight: 800, fontSize: '1.1rem' }}>Tour Virtual 360°</h2>
+                </div>
+                <iframe
+                  src={tourUrl}
+                  title="Tour 360° de la propiedad"
+                  width="100%"
+                  height="480"
+                  style={{ border: 'none', display: 'block' }}
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </section>
+            )}
+
             {/* Ficha rápida */}
             <section style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '1.5rem 1.75rem' }}>
               <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.1rem', marginBottom: '1.25rem' }}>Características</h2>
@@ -339,27 +360,6 @@ export default async function PropiedadDetallePage(
                     loading="lazy"
                   />
                 </div>
-              </section>
-            )}
-
-            {/* Tour 360 — solo si la propiedad lo tiene */}
-            {tourUrl && (
-              <section style={{ background: '#0D2D5E', borderRadius: 16, overflow: 'hidden' }}>
-                <div style={{ padding: '1.5rem 1.75rem 1rem' }}>
-                  <p style={{ color: '#E8B92F', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
-                    Experiencia inmersiva
-                  </p>
-                  <h2 style={{ color: '#fff', fontWeight: 800, fontSize: '1.1rem' }}>Tour Virtual 360°</h2>
-                </div>
-                <iframe
-                  src={tourUrl}
-                  title="Tour 360° de la propiedad"
-                  width="100%"
-                  height="480"
-                  style={{ border: 'none', display: 'block' }}
-                  allowFullScreen
-                  loading="lazy"
-                />
               </section>
             )}
 
