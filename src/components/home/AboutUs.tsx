@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 
 const FACTS = [
   'Más de 150 propiedades vendidas en la región',
@@ -84,26 +86,17 @@ export function AboutUs() {
           {/* Columna de texto */}
           <div data-about-text className="sfr-about-text">
             <p>
-              <strong>Su Finca Raíz es la agencia inmobiliaria y centro de negocios líder
-              en La Vega, Cundinamarca</strong>, especializada en la compra, venta y asesoría
-              de fincas, lotes, casas campestres y condominios en la región del Gualivá.
-              Con más de 8 años de presencia en el territorio, conocemos cada vereda, cada
-              nacedero y cada camino de los municipios de La Vega, Sasaima, Nocaima, Villeta,
-              San Francisco y Supatá.
+              <strong>Su Finca Raíz es el Centro de Negocios Inmobiliarios líder de La Vega
+              y el Gualivá</strong>, y la <strong>primera inmobiliaria inteligente</strong> de
+              la región: combinamos el conocimiento de un equipo nacido y criado en el
+              territorio con la potencia de la Inteligencia Artificial, encabezada por{' '}
+              <strong>Mac</strong>, nuestro asistente disponible 24/7.
             </p>
             <p>
-              A diferencia de las grandes inmobiliarias de Bogotá,{' '}
-              <strong>somos un equipo nacido y criado en La Vega</strong>. Esto nos permite
-              ofrecer información hiperlocal verificada sobre valorización, servicios públicos,
-              vías de acceso y proyección de cada zona — datos que ningún portal nacional
-              puede darte.
-            </p>
-            <p>
-              Somos el único centro de negocios inmobiliario de la región que combina{' '}
-              <strong>tecnología de punta — tours virtuales 360°, fotografía aérea con
-              drones y renders inmersivos</strong> — con el acompañamiento legal completo
-              en cada negociación: estudio de títulos, certificado de tradición y libertad,
-              y asesoría notarial incluida sin costo adicional.
+              Ofrecemos un manejo integral de cada negocio — promoción, comercialización y
+              consultoría jurídica de fincas, lotes, casas campestres y condominios — con
+              riguroso blindaje legal para proteger tu inversión y el respaldo de la{' '}
+              <strong>Constructora Conarc</strong>. Tu inmueble te espera, hazlo realidad.
             </p>
 
             <ul className="sfr-about-facts">
@@ -114,6 +107,17 @@ export function AboutUs() {
                 </li>
               ))}
             </ul>
+
+            <Link
+              href="/nosotros"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: '1.75rem',
+                background: '#E8B92F', color: '#0D2D5E', fontWeight: 800, fontSize: '0.92rem',
+                padding: '12px 24px', borderRadius: 12, textDecoration: 'none',
+              }}
+            >
+              Conoce más sobre nosotros <ArrowRight size={17} />
+            </Link>
           </div>
 
           {/* Columna de tour 360° */}
