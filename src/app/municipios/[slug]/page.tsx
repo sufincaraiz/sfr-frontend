@@ -5,7 +5,7 @@ import Image from 'next/image'
 import { Home, ChevronRight, MapPin, Thermometer, Clock, TrendingUp, Mountain, Trees, Building2 } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
-import { getMunicipioData, getAllMunicipiosData } from '@/lib/municipios-data'
+import { getMunicipio, getMunicipiosVisibles } from '@/lib/municipios'
 import { JsonLd, breadcrumbSchema, faqSchema, webPageSchema } from '@/components/seo/JsonLd'
 import { formatPrice, TYPE_LABELS } from '@/lib/utils'
 import type { Property, PropertyMedia } from '@/types'
@@ -13,7 +13,7 @@ import type { Property, PropertyMedia } from '@/types'
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
 export async function generateStaticParams() {
-  const data = getAllMunicipiosData()
+  const data = await getMunicipiosVisibles()
   return data.map(m => ({ slug: m.slug }))
 }
 
@@ -23,7 +23,7 @@ export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> }
 ): Promise<Metadata> {
   const { slug } = await params
-  const m = getMunicipioData(slug)
+  const m = await getMunicipio(slug)
   if (!m) return { title: 'Municipio no encontrado | Su Finca Raíz' }
 
   const title = `Fincas y Propiedades en ${m.name}, Cundinamarca | Su Finca Raíz`
@@ -103,7 +103,7 @@ export default async function MunicipioPage(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params
-  const data = getMunicipioData(slug)
+  const data = await getMunicipio(slug)
   if (!data) notFound()
 
   const { properties } = await getMunicipalityProperties(slug)
@@ -225,6 +225,28 @@ export default async function MunicipioPage(
 
           {/* ── COLUMNA PRINCIPAL ── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: '2.5rem' }}>
+
+            {/* Recorrido 360° del parque principal — solo si el municipio tiene enlace */}
+            {data.tour360_url && (
+              <section style={{ background: '#0D2D5E', borderRadius: 16, overflow: 'hidden' }}>
+                <div style={{ padding: '1.5rem 1.75rem 1rem' }}>
+                  <p style={{ color: '#E8B92F', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
+                    Experiencia inmersiva
+                  </p>
+                  <h2 style={{ color: '#fff', fontWeight: 800, fontSize: '1.15rem' }}>Recorrido 360° del parque principal</h2>
+                </div>
+                <iframe
+                  src={data.tour360_url}
+                  title={`Recorrido 360° del parque principal de ${data.name}`}
+                  width="100%"
+                  height="460"
+                  style={{ border: 'none', display: 'block' }}
+                  allow="vr; xr; accelerometer; gyroscope; autoplay; fullscreen"
+                  allowFullScreen
+                  loading="lazy"
+                />
+              </section>
+            )}
 
             {/* Descripción + stats rápidas */}
             <section style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '2rem 2rem' }}>

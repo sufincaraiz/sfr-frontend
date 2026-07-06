@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { MapPin, Phone, Mail } from 'lucide-react';
-import { getAllMunicipiosData } from '@/lib/municipios-data';
+import { getMunicipiosVisibles } from '@/lib/municipios';
 
 const PROPERTY_LINKS = [
   { href: '/propiedades?tipo=finca',                    label: 'Fincas en venta' },
@@ -24,9 +24,6 @@ const LEGAL_LINKS = [
   { href: '/politica-de-cookies',        label: 'Política de cookies' },
   { href: '/eliminacion-de-datos',       label: 'Eliminación de datos' },
 ];
-
-// Municipios derivados de la data real (solo los que tienen página /municipios/[slug])
-const MUNICIPIOS = getAllMunicipiosData().map(m => ({ name: m.name, slug: m.slug }));
 
 // SVG icons para redes sociales no incluidas en Lucide
 function IconInstagram() {
@@ -71,7 +68,10 @@ const SOCIAL_LINKS = [
   { href: 'https://www.youtube.com/@sufincaraiz_lavega', label: 'YouTube', Icon: IconYouTube },
 ];
 
-export function Footer() {
+export async function Footer() {
+  // Municipios visibles desde la BD (editables desde /admin/municipios)
+  const MUNICIPIOS = (await getMunicipiosVisibles()).map(m => ({ name: m.name, slug: m.slug }));
+
   return (
     <footer style={{ background: '#0D2D5E', color: 'rgba(255,255,255,0.8)' }}>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-16">

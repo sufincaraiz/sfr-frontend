@@ -13,8 +13,28 @@ model Municipality {
   id           String     @id @default(uuid())
   slug         String     @unique
   name         String
-  province     String     @default("Cundinamarca")
+  province     String     @default("Cundinamarca") // departamento
   demand_score Int        @default(0)
+  // ── Contenido editable desde el admin (migrado desde municipios-data.ts) ──
+  provincia           String?  @default("Gualivá") // subregión/provincia
+  distancia_bogota_km Int?
+  tiempo_bogota_min   Int?
+  altitud_msnm        Int?
+  temp_min            Int?
+  temp_max            Int?
+  descripcion_seo     String?  @db.Text
+  historia            String?  @db.Text
+  clima               String?  @db.Text
+  turismo             String?  @db.Text
+  inversion           String?  @db.Text
+  og_image            String?  // imagen del hero
+  geo_lat             Float?
+  geo_lng             Float?
+  wikipedia_url       String?
+  faqs                Json?    // [{ question, answer }]
+  tour360_url         String?  // enlace del recorrido 360 del parque principal (Panoee)
+  oculto              Boolean  @default(false)
+  updated_at          DateTime @default(now()) @updatedAt
   veredas      Vereda[]
   properties   Property[]
 

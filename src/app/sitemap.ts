@@ -2,7 +2,7 @@ import type { MetadataRoute } from 'next'
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { getAllPosts } from '@/lib/blog'
-import { getAllMunicipiosData } from '@/lib/municipios-data'
+import { getMunicipiosVisibles } from '@/lib/municipios'
 import { getAllVeredasData } from '@/lib/veredas-data'
 import { BLOG_CATEGORIES, type BlogCategorySlug } from '@/types/blog'
 
@@ -41,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }))
 
   // ── 3. Municipios ──────────────────────────────────────────────────────────
-  const municipioRoutes: MetadataRoute.Sitemap = getAllMunicipiosData().map(m => ({
+  const municipioRoutes: MetadataRoute.Sitemap = (await getMunicipiosVisibles()).map(m => ({
     url:             `${SITE_URL}/municipios/${m.slug}`,
     lastModified:    new Date(),
     changeFrequency: 'monthly',

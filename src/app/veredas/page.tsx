@@ -4,7 +4,6 @@ import Image from 'next/image'
 import { MapPin, Clock, Thermometer, ChevronRight, Home } from 'lucide-react'
 import { SITE_URL } from '@/lib/site'
 import { getAllVeredasData, getVeredasByMunicipio } from '@/lib/veredas-data'
-import { getMunicipioData } from '@/lib/municipios-data'
 import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -41,6 +40,8 @@ export default function VeredasIndexPage() {
 
   // Agrupar por municipio
   const municipios = [...new Set(todasVeredas.map(v => v.municipio_slug))]
+  // Nombre del municipio desde la propia data de veredas (evita depender del módulo de municipios)
+  const nombrePorSlug = new Map(todasVeredas.map(v => [v.municipio_slug, v.municipio_name]))
 
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },
@@ -110,7 +111,7 @@ export default function VeredasIndexPage() {
           {/* Por municipio */}
           {municipios.map(muniSlug => {
             const veredas = getVeredasByMunicipio(muniSlug)
-            const muni = getMunicipioData(muniSlug)
+            const muniName = nombrePorSlug.get(muniSlug) ?? muniSlug
             if (!veredas.length) return null
 
             return (
@@ -119,14 +120,14 @@ export default function VeredasIndexPage() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ width: 4, height: 24, background: '#E8B92F', borderRadius: 2 }} />
                     <h2 style={{ color: '#0D2D5E', fontWeight: 900, fontSize: '1.2rem', margin: 0 }}>
-                      Veredas de {muni?.name ?? muniSlug}
+                      Veredas de {muniName}
                     </h2>
                     <span style={{ background: '#F1F5F9', color: '#64748B', fontSize: '0.75rem', fontWeight: 700, padding: '2px 10px', borderRadius: 20 }}>
                       {veredas.length} veredas
                     </span>
                   </div>
                   <Link href={`/municipios/${muniSlug}`} style={{ color: '#1B56A1', fontSize: '0.84rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    Guía de {muni?.name ?? muniSlug} <ChevronRight size={14} />
+                    Guía de {muniName} <ChevronRight size={14} />
                   </Link>
                 </div>
 

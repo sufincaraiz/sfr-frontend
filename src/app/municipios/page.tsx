@@ -3,7 +3,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { MapPin, Clock, Thermometer, ChevronRight, Home } from 'lucide-react'
 import { SITE_URL } from '@/lib/site'
-import { getAllMunicipiosData } from '@/lib/municipios-data'
+import { getMunicipiosVisibles } from '@/lib/municipios'
 import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -38,8 +38,8 @@ export const metadata: Metadata = {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function MunicipiosIndexPage() {
-  const municipios = getAllMunicipiosData()
+export default async function MunicipiosIndexPage() {
+  const municipios = await getMunicipiosVisibles()
 
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },
