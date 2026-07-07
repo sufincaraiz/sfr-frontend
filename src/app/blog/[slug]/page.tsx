@@ -6,6 +6,7 @@ import { Home, ChevronRight, Calendar, Clock, User, Tag, Mail } from 'lucide-rea
 import { SITE_URL } from '@/lib/site'
 import { getPost, getAllPostSlugs, getRelatedPosts } from '@/lib/blog'
 import { ArticleContent } from '@/components/blog/ArticleContent'
+import { renderInline } from '@/lib/richtext'
 import { ArticleCard, CategoryBadge, TagBadge } from '@/components/blog/ArticleCard'
 import { JsonLd, breadcrumbSchema, articleSchema, howToSchema, webPageSchema } from '@/components/seo/JsonLd'
 
@@ -166,7 +167,7 @@ export default async function BlogPostPage(
             {post.community ? (
               <div className="community-content" style={{ color: '#334155', fontSize: '1.02rem', lineHeight: 1.85 }}>
                 {post.content.split(/\n{2,}/).map((para, i) => (
-                  <p key={i} style={{ marginBottom: '1.1rem', whiteSpace: 'pre-wrap' }}>{para}</p>
+                  <p key={i} style={{ marginBottom: '1.1rem', whiteSpace: 'pre-wrap', textAlign: 'justify', hyphens: 'auto', WebkitHyphens: 'auto' }}>{renderInline(para)}</p>
                 ))}
               </div>
             ) : (

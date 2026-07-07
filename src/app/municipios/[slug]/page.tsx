@@ -6,6 +6,7 @@ import { Home, ChevronRight, MapPin, Thermometer, Clock, TrendingUp, Mountain, T
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { getMunicipio, getMunicipiosVisibles } from '@/lib/municipios'
+import { RichText, renderInline } from '@/lib/richtext'
 import { JsonLd, breadcrumbSchema, faqSchema, webPageSchema } from '@/components/seo/JsonLd'
 import { formatPrice, TYPE_LABELS } from '@/lib/utils'
 import type { Property, PropertyMedia } from '@/types'
@@ -250,9 +251,7 @@ export default async function MunicipioPage(
 
             {/* Descripción + stats rápidas */}
             <section style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '2rem 2rem' }}>
-              <p className="sfr-speakable" style={{ color: '#475569', lineHeight: 1.8, fontSize: '1rem', marginBottom: '1.5rem' }}>
-                {data.descripcion_seo}
-              </p>
+              <RichText text={data.descripcion_seo} className="sfr-speakable" style={{ color: '#475569', lineHeight: 1.8, fontSize: '1rem', marginBottom: '1.5rem' }} />
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(160px,1fr))', gap: 12 }}>
                 <StatCard icon={<Clock size={18} />} label="Desde Bogotá" value={`${data.tiempo_bogota_min} min / ${data.distancia_bogota_km} km`} />
                 <StatCard icon={<Mountain size={18} />} label="Altitud" value={`${data.altitud_msnm.toLocaleString('es-CO')} msnm`} />
@@ -263,22 +262,22 @@ export default async function MunicipioPage(
 
             {/* Historia */}
             <Section title="Historia" icon={<Trees size={20} />}>
-              <p style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }}>{data.historia}</p>
+              <RichText text={data.historia} style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }} />
             </Section>
 
             {/* Clima */}
             <Section title="Clima" icon={<Thermometer size={20} />}>
-              <p style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }}>{data.clima}</p>
+              <RichText text={data.clima} style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }} />
             </Section>
 
             {/* Turismo */}
             <Section title="Turismo" icon={<Trees size={20} />}>
-              <p style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }}>{data.turismo}</p>
+              <RichText text={data.turismo} style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }} />
             </Section>
 
             {/* Inversión inmobiliaria */}
             <Section title="Inversión Inmobiliaria" icon={<TrendingUp size={20} />} accent>
-              <p style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }}>{data.inversion}</p>
+              <RichText text={data.inversion} style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }} />
               <Link
                 href={`/propiedades?municipio=${data.name}`}
                 style={{
@@ -309,8 +308,8 @@ export default async function MunicipioPage(
                         {faq.question}
                         <span style={{ color: '#1B56A1', fontSize: '1.2rem', lineHeight: 1, flexShrink: 0, marginLeft: 8 }}>+</span>
                       </summary>
-                      <div style={{ padding: '0 1.25rem 1rem', color: '#475569', lineHeight: 1.75, fontSize: '0.9rem' }}>
-                        {faq.answer}
+                      <div style={{ padding: '0 1.25rem 1rem', color: '#475569', lineHeight: 1.75, fontSize: '0.9rem', textAlign: 'justify', hyphens: 'auto', WebkitHyphens: 'auto', whiteSpace: 'pre-wrap' }}>
+                        {renderInline(faq.answer)}
                       </div>
                     </details>
                   ))}

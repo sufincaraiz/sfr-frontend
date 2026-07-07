@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, Plus, Save, X, Pencil, Eye, EyeOff, Upload, MapPin, ExternalLink, Trash2 } from 'lucide-react';
+import { RichTextarea } from '@/components/ui/RichTextarea';
 
 interface Faq { question: string; answer: string }
 interface Muni {
@@ -192,11 +193,11 @@ export default function AdminMunicipiosPage() {
           </div>
 
           {/* Contenido */}
-          <div><label style={labelS}>Descripción (intro, la de arriba)</label><textarea value={form.descripcion_seo} onChange={e => set('descripcion_seo', e.target.value)} rows={3} style={taS} /></div>
-          <div><label style={labelS}>Historia</label><textarea value={form.historia} onChange={e => set('historia', e.target.value)} rows={4} style={taS} /></div>
-          <div><label style={labelS}>Clima</label><textarea value={form.clima} onChange={e => set('clima', e.target.value)} rows={4} style={taS} /></div>
-          <div><label style={labelS}>Turismo</label><textarea value={form.turismo} onChange={e => set('turismo', e.target.value)} rows={4} style={taS} /></div>
-          <div><label style={labelS}>Inversión inmobiliaria</label><textarea value={form.inversion} onChange={e => set('inversion', e.target.value)} rows={4} style={taS} /></div>
+          <div><label style={labelS}>Descripción (intro, la de arriba)</label><RichTextarea value={form.descripcion_seo} onChange={v => set('descripcion_seo', v)} rows={3} style={taS} /></div>
+          <div><label style={labelS}>Historia</label><RichTextarea value={form.historia} onChange={v => set('historia', v)} rows={4} style={taS} hint={false} /></div>
+          <div><label style={labelS}>Clima</label><RichTextarea value={form.clima} onChange={v => set('clima', v)} rows={4} style={taS} hint={false} /></div>
+          <div><label style={labelS}>Turismo</label><RichTextarea value={form.turismo} onChange={v => set('turismo', v)} rows={4} style={taS} hint={false} /></div>
+          <div><label style={labelS}>Inversión inmobiliaria</label><RichTextarea value={form.inversion} onChange={v => set('inversion', v)} rows={4} style={taS} hint={false} /></div>
 
           {/* FAQs */}
           <div>

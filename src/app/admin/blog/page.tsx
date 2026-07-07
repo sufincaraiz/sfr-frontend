@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { Loader2, Plus, Save, X, Pencil, Trash2, Upload, PenSquare, ExternalLink, Send } from 'lucide-react';
 import { cloudinaryOptimize, cloudinarySquare } from '@/lib/utils';
+import { RichTextarea } from '@/components/ui/RichTextarea';
 
 interface Articulo {
   id: string; slug: string; title: string; excerpt: string | null;
@@ -173,7 +174,7 @@ export default function AdminBlogPage() {
 
           <div>
             <label style={labelS}>Contenido del post *</label>
-            <textarea value={form.content} onChange={e => set('content', e.target.value)} required rows={14} style={{ ...inputS, resize: 'vertical', minHeight: 280, lineHeight: 1.6 }} placeholder="Escribe aquí tu artículo. Separa los párrafos con una línea en blanco." />
+            <RichTextarea value={form.content} onChange={v => set('content', v)} required rows={14} style={{ ...inputS, resize: 'vertical', minHeight: 280, lineHeight: 1.6 }} placeholder="Escribe aquí tu artículo. Separa los párrafos con una línea en blanco." />
           </div>
 
           <div>

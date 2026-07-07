@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Upload, X, Loader2, Send, CheckCircle2, AlertCircle, LogOut } from 'lucide-react';
 import { cloudinaryOptimize, cloudinarySquare } from '@/lib/utils';
+import { RichTextarea } from '@/components/ui/RichTextarea';
 
 const CLOUD  = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
 const PRESET = 'sufincaraiz_properties';
@@ -169,7 +170,7 @@ export function EscribirForm() {
         {/* Detalles del post */}
         <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', padding: '1.5rem' }}>
           <label style={labelStyle}>Detalles del post *</label>
-          <textarea value={content} onChange={e => setContent(e.target.value)} required rows={14}
+          <RichTextarea value={content} onChange={setContent} required rows={14}
             placeholder="Escribe aquí tu artículo, mensaje o historia. Separa los párrafos con una línea en blanco."
             style={{ ...inputStyle, resize: 'vertical', minHeight: 280, lineHeight: 1.6 }} />
         </div>

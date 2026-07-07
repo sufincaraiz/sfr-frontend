@@ -22,7 +22,7 @@ const components: MDXComponents = {
 
   // Párrafos y texto
   p: (props) => (
-    <p style={{ color: '#374151', lineHeight: 1.85, fontSize: '1rem', marginBottom: '1.25rem' }} {...props} />
+    <p style={{ color: '#374151', lineHeight: 1.85, fontSize: '1rem', marginBottom: '1.25rem', textAlign: 'justify', hyphens: 'auto', WebkitHyphens: 'auto' }} {...props} />
   ),
   strong: (props) => (
     <strong style={{ color: '#0D2D5E', fontWeight: 700 }} {...props} />
