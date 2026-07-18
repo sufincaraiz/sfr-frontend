@@ -86,6 +86,7 @@ model Property {
   // Media embeds
   video_url        String?
   virtual_tour_url String?
+  modelo3d_url     String?   // URL a un modelo 3D .glb (fotogrametría con dron)
   // Relations
   municipality     Municipality    @relation(fields: [municipality_id], references: [id])
   vereda           Vereda?         @relation(fields: [vereda_id], references: [id])

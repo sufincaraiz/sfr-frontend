@@ -75,6 +75,7 @@ export interface Property {
   // Embeds
   video_url?: string | null;
   virtual_tour_url?: string | null;
+  modelo3d_url?: string | null;
 }
 
 export interface PropertyFeature {

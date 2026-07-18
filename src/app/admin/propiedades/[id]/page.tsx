@@ -33,6 +33,9 @@ export default function EditarPropiedadPage() {
   const router = useRouter();
   const { id } = useParams<{ id: string }>();
   const fileRef = useRef<HTMLInputElement>(null);
+  const modelRef = useRef<HTMLInputElement>(null);
+  const [up3d, setUp3d] = useState(false);
+  const [err3d, setErr3d] = useState('');
   const [data,    setData]    = useState<Record<string, unknown> | null>(null);
   const [form,    setForm]    = useState<Record<string, string>>({});
   const [media,   setMedia]   = useState<MediaItem[]>([]);
@@ -64,6 +67,7 @@ export default function EditarPropiedadPage() {
           meta_description: d.meta_description ?? '',
           video_url:        d.video_url ?? '',
           virtual_tour_url: d.virtual_tour_url ?? '',
+          modelo3d_url:     d.modelo3d_url ?? '',
         });
         // Media ordenada (la primera = portada)
         const imgs = (d.media ?? [])
@@ -96,6 +100,32 @@ export default function EditarPropiedadPage() {
     if (fileRef.current) fileRef.current.value = '';
   };
 
+  // ── Subida del modelo 3D (.glb) a Cloudinary como archivo raw ───────────────
+  const upload3dModel = async (file: File) => {
+    setErr3d('');
+    const name = file.name.toLowerCase();
+    if (!name.endsWith('.glb') && !name.endsWith('.gltf')) {
+      setErr3d('El modelo debe ser un archivo .glb (o .gltf). Convierte tu .fbx a .glb primero.');
+      if (modelRef.current) modelRef.current.value = '';
+      return;
+    }
+    setUp3d(true);
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', PRESET);
+    fd.append('folder', 'modelos3d');
+    try {
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/auto/upload`, { method: 'POST', body: fd });
+      const d = await res.json();
+      if (d.secure_url) set('modelo3d_url', d.secure_url);
+      else setErr3d(d.error?.message ?? 'No se pudo subir el modelo (revisa el tamaño; puede exceder el límite de Cloudinary). Como alternativa, pega la URL del .glb.');
+    } catch {
+      setErr3d('Error de conexión al subir el modelo.');
+    }
+    setUp3d(false);
+    if (modelRef.current) modelRef.current.value = '';
+  };
+
   const removeMedia = (i: number) => setMedia(prev => prev.filter((_, idx) => idx !== i));
   const setCover    = (i: number) => setMedia(prev => {
     const n = [...prev]; const [it] = n.splice(i, 1);
@@ -125,6 +155,7 @@ export default function EditarPropiedadPage() {
           parking:      parseInt(form['parking'] ?? '0') || 0,
           video_url:        form['video_url']?.trim() || null,
           virtual_tour_url: form['virtual_tour_url']?.trim() || null,
+          modelo3d_url:     form['modelo3d_url']?.trim() || null,
           media,  // orden actual; la primera = portada
         }),
       });
@@ -269,6 +300,27 @@ export default function EditarPropiedadPage() {
           </Field>
           <Field label="URL del Tour 360° / embed (opcional — Panoee, Kuula, etc.)">
             <input value={form.virtual_tour_url} onChange={e => set('virtual_tour_url', e.target.value)} placeholder="https://app.panoee.com/embed/…" style={inputStyle} />
+          </Field>
+
+          {/* Modelo 3D (fotogrametría) */}
+          <Field label="Modelo 3D del terreno (opcional — se muestra debajo del tour 360)">
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+              <input value={form.modelo3d_url} onChange={e => set('modelo3d_url', e.target.value)} placeholder="Sube un .glb o pega su URL" style={{ ...inputStyle, flex: 1, minWidth: 220 }} />
+              <input ref={modelRef} type="file" accept=".glb,.gltf,model/gltf-binary" style={{ display: 'none' }} onChange={e => e.target.files?.[0] && upload3dModel(e.target.files[0])} />
+              <button type="button" onClick={() => modelRef.current?.click()} disabled={up3d}
+                style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 16px', borderRadius: 9, border: '2px dashed #CBD5E1', background: '#F8FAFC', color: '#64748B', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                {up3d ? <Loader2 size={15} style={{ animation: 'spin 1s linear infinite' }} /> : <Upload size={15} />}
+                {up3d ? 'Subiendo…' : 'Subir .glb'}
+              </button>
+              {form.modelo3d_url && (
+                <button type="button" onClick={() => set('modelo3d_url', '')}
+                  style={{ background: 'none', border: 'none', color: '#DC2626', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}>Quitar</button>
+              )}
+            </div>
+            {err3d && <p style={{ color: '#DC2626', fontSize: '0.75rem', marginTop: 6 }}>⚠️ {err3d}</p>}
+            <p style={{ color: '#94A3B8', fontSize: '0.72rem', marginTop: 6 }}>
+              Formato <b>.glb</b> (convierte tu <b>.fbx</b> a .glb con Blender). El visitante podrá girar y hacer zoom al modelo.
+            </p>
           </Field>
         </div>
       </div>

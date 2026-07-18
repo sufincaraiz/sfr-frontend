@@ -7,6 +7,7 @@ import { Home, MapPin, Bed, Bath, Car, Maximize2, Layers, ChevronRight } from 'l
 import { prisma } from '@/lib/prisma';
 import { formatPrice, TYPE_LABELS } from '@/lib/utils';
 import { GaleriaLightbox } from '@/components/propiedades/GaleriaLightbox';
+import { Modelo3D } from '@/components/propiedades/Modelo3D';
 import { FormContactoPropiedad } from '@/components/propiedades/FormContactoPropiedad';
 import { JsonLd, breadcrumbSchema, propertySchema } from '@/components/seo/JsonLd';
 import { RelatedProperties } from '@/components/propiedades/RelatedProperties';
@@ -55,6 +56,7 @@ async function getProperty(slug: string) {
     meta_description: raw.meta_description ?? undefined,
     video_url:        raw.video_url ?? null,
     virtual_tour_url: raw.virtual_tour_url ?? null,
+    modelo3d_url:     raw.modelo3d_url ?? null,
     municipality:     raw.municipality ?? undefined,
     media:            raw.media as PropertyMedia[],
     features:         raw.features as PropertyFeature[],
@@ -149,6 +151,8 @@ export default async function PropiedadDetallePage(
   const tourUrl = p.virtual_tour_url ?? p.media?.find(m => m.type === 'tour360' && m.tour360_embed_url)?.tour360_embed_url ?? null;
   // Video de YouTube (si la propiedad lo tiene)
   const youtubeUrl = youtubeEmbedUrl(p.video_url);
+  // Modelo 3D (fotogrametría .glb) — solo si la propiedad lo tiene
+  const modelo3dUrl = p.modelo3d_url ?? null;
 
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },
@@ -259,6 +263,19 @@ export default async function PropiedadDetallePage(
                   allowFullScreen
                   loading="lazy"
                 />
+              </section>
+            )}
+
+            {/* Modelo 3D — debajo del tour 360 */}
+            {modelo3dUrl && (
+              <section style={{ background: '#0D2D5E', borderRadius: 16, overflow: 'hidden' }}>
+                <div style={{ padding: '1.5rem 1.75rem 1rem' }}>
+                  <p style={{ color: '#E8B92F', fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 2, marginBottom: 4 }}>
+                    Vista 3D
+                  </p>
+                  <h2 style={{ color: '#fff', fontWeight: 800, fontSize: '1.1rem' }}>Modelo 3D del terreno</h2>
+                </div>
+                <Modelo3D src={modelo3dUrl} alt={`Modelo 3D de ${title}`} />
               </section>
             )}
 
