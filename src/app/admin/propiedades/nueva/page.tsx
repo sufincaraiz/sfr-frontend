@@ -1,9 +1,11 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, X, Save, Loader2 } from 'lucide-react';
 import { MUNICIPALITIES, PROPERTY_TYPES } from '@/lib/utils';
+
+const OTRO = '__otro__';
 
 const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
 const PRESET = 'sufincaraiz_properties';
@@ -54,6 +56,19 @@ export default function NuevaPropiedadPage() {
   const [uploading,  setUploading]  = useState(false);
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState('');
+  const [munis,      setMunis]      = useState<string[]>(MUNICIPALITIES.map(m => m.label));
+  const [nuevoMuni,  setNuevoMuni]  = useState('');
+
+  // Municipios desde la BD (incluye ocultos, para poder reasignar) + opción "Otro".
+  useEffect(() => {
+    fetch('/api/admin/municipios')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const names: string[] = (d?.municipios ?? []).map((m: { name: string }) => m.name);
+        if (names.length) setMunis([...new Set(names)]);
+      })
+      .catch(() => {});
+  }, []);
 
   const set = (k: string, v: string | boolean) => setForm(f => ({ ...f, [k]: v }));
 
@@ -87,6 +102,8 @@ export default function NuevaPropiedadPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title.trim()) { setError('El título es obligatorio'); return; }
+    const municipio = form.municipality_name === OTRO ? nuevoMuni.trim() : form.municipality_name;
+    if (!municipio || municipio.length < 2) { setError('Escribe el nombre del municipio.'); return; }
     setSaving(true); setError('');
     try {
       const features: { key: string; value: string }[] = [];
@@ -99,7 +116,7 @@ export default function NuevaPropiedadPage() {
       const payload = {
         title:           form.title,
         type:            form.type,
-        municipality_name: form.municipality_name,
+        municipality_name: municipio,
         status:          form.status,
         price_cop:       form.price_cop ? parseInt(form.price_cop) : 0,
         area_lot_m2:     form.area_lot_m2  ? parseFloat(form.area_lot_m2)  : null,
@@ -155,8 +172,18 @@ export default function NuevaPropiedadPage() {
           </Field>
           <Field label="Municipio" required>
             <select value={form.municipality_name} onChange={e => set('municipality_name', e.target.value)} style={inputStyle}>
-              {MUNICIPALITIES.map(m => <option key={m.value} value={m.label}>{m.label}</option>)}
+              {munis.map(name => <option key={name} value={name}>{name}</option>)}
+              <option value={OTRO}>➕ Otro municipio…</option>
             </select>
+            {form.municipality_name === OTRO && (
+              <input
+                value={nuevoMuni}
+                onChange={e => setNuevoMuni(e.target.value)}
+                placeholder="Nombre del municipio (ej. Albán)"
+                autoFocus
+                style={{ ...inputStyle, marginTop: 8 }}
+              />
+            )}
           </Field>
           <Field label="Estado">
             <select value={form.status} onChange={e => set('status', e.target.value)} style={inputStyle}>

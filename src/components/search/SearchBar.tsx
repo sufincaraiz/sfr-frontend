@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
 import { MUNICIPALITIES, PROPERTY_TYPES } from '@/lib/utils';
@@ -9,11 +9,23 @@ interface SearchBarProps {
   compact?: boolean;
 }
 
+// Lista inicial (SSR) como respaldo; se reemplaza con la de la BD al montar.
+const MUNI_FALLBACK = MUNICIPALITIES.map(m => ({ name: m.label, slug: m.value }));
+
 export function SearchBar({ compact = false }: SearchBarProps) {
   const router = useRouter();
   const [tipo,      setTipo]      = useState('');
   const [municipio, setMunicipio] = useState('');
   const [precioMax, setPrecioMax] = useState('');
+  const [municipios, setMunicipios] = useState<{ name: string; slug: string }[]>(MUNI_FALLBACK);
+
+  // Municipios reales desde la BD (visibles o con propiedades).
+  useEffect(() => {
+    fetch('/api/municipios')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.municipios?.length) setMunicipios(d.municipios); })
+      .catch(() => {});
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,8 +90,8 @@ export function SearchBar({ compact = false }: SearchBarProps) {
           }}
         >
           <option value="">Municipio</option>
-          {MUNICIPALITIES.map((m) => (
-            <option key={m.value} value={m.value}>{m.label}</option>
+          {municipios.map((m) => (
+            <option key={m.slug} value={m.name}>{m.name}</option>
           ))}
         </select>
 
@@ -145,8 +157,8 @@ export function SearchBar({ compact = false }: SearchBarProps) {
               className="w-full bg-white rounded-lg px-3 py-2.5 text-sm font-semibold outline-none" style={{ color: '#2C2C2C', border: '1.5px solid #1B56A1' }}
             >
               <option value="">Todos los municipios</option>
-              {MUNICIPALITIES.map((m) => (
-                <option key={m.value} value={m.value}>{m.label}</option>
+              {municipios.map((m) => (
+                <option key={m.slug} value={m.name}>{m.name}</option>
               ))}
             </select>
           </div>

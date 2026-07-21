@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
+import { resolveMunicipality } from '@/lib/municipality-resolve'
 
 export async function GET(request: NextRequest) {
   const session = await requireRole(['admin'])
@@ -52,11 +53,13 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
 
-    // Buscar municipality_id por nombre
-    const muni = await prisma.municipality.findFirst({
-      where: { name: { contains: data.municipality_name, mode: 'insensitive' } },
-    })
-    if (!muni) return NextResponse.json({ error: 'Municipio no encontrado' }, { status: 400 })
+    // Resolver municipio por nombre; si no existe, se crea (oculto)
+    let muni: { id: string; name: string; slug: string }
+    try {
+      muni = await resolveMunicipality(data.municipality_name)
+    } catch {
+      return NextResponse.json({ error: 'Municipio inválido' }, { status: 400 })
+    }
 
     const baseSlug = `${data.type}-${slugify(data.title)}-${slugify(muni.name)}-cundinamarca`
     // Ensure unique slug

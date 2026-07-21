@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
+import { resolveMunicipality } from '@/lib/municipality-resolve'
 
 // Revalida las páginas estáticas afectadas por un cambio de propiedad,
 // para que las ediciones del admin se reflejen de inmediato en la web pública.
@@ -44,10 +45,8 @@ export async function PUT(
     if (data.price_cop !== undefined) updateData.price_cop = BigInt(data.price_cop || 0)
 
     if (municipality_name) {
-      const muni = await prisma.municipality.findFirst({
-        where: { name: { contains: municipality_name, mode: 'insensitive' } },
-      })
-      if (muni) updateData.municipality_id = muni.id
+      const muni = await resolveMunicipality(municipality_name)
+      updateData.municipality_id = muni.id
     }
 
     // Actualizar media si se envía

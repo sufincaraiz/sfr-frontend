@@ -7,6 +7,7 @@ import { MUNICIPALITIES, PROPERTY_TYPES, formatPrice } from '@/lib/utils';
 
 const CLOUD  = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
 const PRESET = 'sufincaraiz_properties';
+const OTRO   = '__otro__';
 
 interface MediaItem { url: string; alt_text: string }
 
@@ -36,6 +37,18 @@ export default function EditarPropiedadPage() {
   const modelRef = useRef<HTMLInputElement>(null);
   const [up3d, setUp3d] = useState(false);
   const [err3d, setErr3d] = useState('');
+  const [munis, setMunis] = useState<string[]>(MUNICIPALITIES.map(m => m.label));
+  const [nuevoMuni, setNuevoMuni] = useState('');
+
+  useEffect(() => {
+    fetch('/api/admin/municipios')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const names: string[] = (d?.municipios ?? []).map((m: { name: string }) => m.name);
+        if (names.length) setMunis([...new Set(names)]);
+      })
+      .catch(() => {});
+  }, []);
   const [data,    setData]    = useState<Record<string, unknown> | null>(null);
   const [form,    setForm]    = useState<Record<string, string>>({});
   const [media,   setMedia]   = useState<MediaItem[]>([]);
@@ -140,6 +153,8 @@ export default function EditarPropiedadPage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    const municipio = form.municipality_name === OTRO ? nuevoMuni.trim() : form.municipality_name;
+    if (!municipio || municipio.length < 2) { setError('Escribe el nombre del municipio.'); return; }
     setSaving(true); setError(''); setSuccess('');
     try {
       const res = await fetch(`/api/admin/properties/${id}`, {
@@ -147,6 +162,7 @@ export default function EditarPropiedadPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
+          municipality_name: municipio,
           price_cop:    parseInt(form['price_cop'] ?? '0') || 0,
           area_lot_m2:  form['area_lot_m2']  ? parseFloat(form['area_lot_m2'])  : null,
           area_built_m2: form['area_built_m2'] ? parseFloat(form['area_built_m2']) : null,
@@ -222,8 +238,12 @@ export default function EditarPropiedadPage() {
           </Field>
           <Field label="Municipio">
             <select value={form.municipality_name} onChange={e => set('municipality_name', e.target.value)} style={inputStyle}>
-              {MUNICIPALITIES.map(m => <option key={m.value} value={m.label}>{m.label}</option>)}
+              {munis.map(name => <option key={name} value={name}>{name}</option>)}
+              <option value={OTRO}>➕ Otro municipio…</option>
             </select>
+            {form.municipality_name === OTRO && (
+              <input value={nuevoMuni} onChange={e => setNuevoMuni(e.target.value)} placeholder="Nombre del municipio (ej. Albán)" autoFocus style={{ ...inputStyle, marginTop: 8 }} />
+            )}
           </Field>
           <Field label="Estado">
             <select value={form.status} onChange={e => set('status', e.target.value)} style={inputStyle}>
