@@ -9,7 +9,7 @@ import { slugify } from '@/lib/utils'
  */
 export async function resolveMunicipality(
   rawName: string,
-): Promise<{ id: string; name: string; slug: string }> {
+): Promise<{ id: string; name: string; slug: string; created: boolean }> {
   const name = (rawName ?? '').trim()
   if (name.length < 2) throw new Error('Nombre de municipio inválido')
 
@@ -18,11 +18,11 @@ export async function resolveMunicipality(
     where: { OR: [{ name: { equals: name, mode: 'insensitive' } }, { slug }] },
     select: { id: true, name: true, slug: true },
   })
-  if (found) return found
+  if (found) return { ...found, created: false }
 
   const created = await prisma.municipality.create({
     data: { name, slug, provincia: 'Gualivá', oculto: true },
     select: { id: true, name: true, slug: true },
   })
-  return created
+  return { ...created, created: true }
 }

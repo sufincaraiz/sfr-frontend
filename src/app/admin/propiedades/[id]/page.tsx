@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
-import { Save, Loader2, ArrowLeft, Trash2, Upload, X, Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Save, Loader2, ArrowLeft, Trash2, Upload, X, Star, ChevronLeft, ChevronRight, MapPin, ArrowRight } from 'lucide-react';
 import { MUNICIPALITIES, PROPERTY_TYPES, formatPrice } from '@/lib/utils';
 
 const CLOUD  = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
@@ -39,6 +39,7 @@ export default function EditarPropiedadPage() {
   const [err3d, setErr3d] = useState('');
   const [munis, setMunis] = useState<string[]>(MUNICIPALITIES.map(m => m.label));
   const [nuevoMuni, setNuevoMuni] = useState('');
+  const [muniCreado, setMuniCreado] = useState<{ name: string; slug: string } | null>(null);
 
   useEffect(() => {
     fetch('/api/admin/municipios')
@@ -179,6 +180,13 @@ export default function EditarPropiedadPage() {
       const saved = await res.json();
       setData(prev => ({ ...(prev ?? {}), ...saved }));
       setSuccess('✅ Propiedad actualizada correctamente');
+      if (saved.municipality_created) {
+        setMuniCreado({ name: saved.municipality_new_name ?? municipio, slug: saved.municipality_slug });
+        // Reflejar el municipio ya existente en el desplegable y limpiar "Otro".
+        setForm(f => ({ ...f, municipality_name: saved.municipality_new_name ?? municipio }));
+        setNuevoMuni('');
+        if (!munis.includes(saved.municipality_new_name ?? municipio)) setMunis(prev => [...prev, saved.municipality_new_name ?? municipio]);
+      }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setSaving(false);
@@ -217,6 +225,20 @@ export default function EditarPropiedadPage() {
 
       {success && <div style={{ background: '#F0FDF4', border: '1px solid #86EFAC', borderRadius: 10, padding: '12px 16px', color: '#15803D', fontWeight: 700 }}>{success}</div>}
       {error   && <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '12px 16px', color: '#DC2626', fontWeight: 700 }}>⚠️ {error}</div>}
+
+      {muniCreado && (
+        <div style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 12, padding: '1rem 1.25rem', display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+          <MapPin size={20} style={{ color: '#1B56A1', flexShrink: 0 }} />
+          <p style={{ color: '#1D4ED8', fontSize: '0.86rem', lineHeight: 1.5, margin: 0, flex: 1, minWidth: 200 }}>
+            Se creó el municipio <strong>{muniCreado.name}</strong> (oculto). Ya aparece en el filtro del inicio.
+            ¿Le agregas su página de contenido?
+          </p>
+          <button type="button" onClick={() => router.push(`/admin/municipios?edit=${muniCreado.slug}`)}
+            style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#1B56A1', color: '#fff', fontWeight: 800, fontSize: '0.82rem', padding: '9px 16px', borderRadius: 9, border: 'none', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            Completar {muniCreado.name} <ArrowRight size={14} />
+          </button>
+        </div>
+      )}
 
       {/* Precio actual */}
       <div style={{ background: '#EFF6FF', borderRadius: 12, padding: '1rem 1.25rem', display: 'flex', gap: 12, alignItems: 'center' }}>

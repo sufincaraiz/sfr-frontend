@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Upload, X, Save, Loader2 } from 'lucide-react';
+import { Upload, X, Save, Loader2, CheckCircle2, MapPin, ArrowRight } from 'lucide-react';
 import { MUNICIPALITIES, PROPERTY_TYPES } from '@/lib/utils';
 
 const OTRO = '__otro__';
@@ -58,6 +58,7 @@ export default function NuevaPropiedadPage() {
   const [error,      setError]      = useState('');
   const [munis,      setMunis]      = useState<string[]>(MUNICIPALITIES.map(m => m.label));
   const [nuevoMuni,  setNuevoMuni]  = useState('');
+  const [muniCreado, setMuniCreado] = useState<{ name: string; slug: string } | null>(null);
 
   // Municipios desde la BD (incluye ocultos, para poder reasignar) + opción "Otro".
   useEffect(() => {
@@ -146,6 +147,12 @@ export default function NuevaPropiedadPage() {
         setError(d.error ?? 'Error al guardar');
         return;
       }
+      const saved = await res.json().catch(() => ({}));
+      // Si se creó un municipio nuevo, mostramos aviso con acceso directo a completarlo.
+      if (saved.municipality_created) {
+        setMuniCreado({ name: saved.municipality_new_name ?? municipio, slug: saved.municipality_slug });
+        return;
+      }
       router.push('/admin/propiedades');
     } catch (err) {
       setError('Error de conexión');
@@ -154,6 +161,40 @@ export default function NuevaPropiedadPage() {
       setSaving(false);
     }
   };
+
+  if (muniCreado) {
+    return (
+      <div style={{ maxWidth: 620, margin: '0 auto' }}>
+        <div style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '2rem', textAlign: 'center' }}>
+          <CheckCircle2 size={48} color="#15803D" style={{ margin: '0 auto 0.75rem' }} />
+          <h2 style={{ color: '#0D2D5E', fontWeight: 900, fontSize: '1.3rem', marginBottom: 6 }}>¡Propiedad publicada!</h2>
+          <p style={{ color: '#475569', fontSize: '0.92rem', lineHeight: 1.6 }}>
+            Se creó el municipio <strong style={{ color: '#0D2D5E' }}>{muniCreado.name}</strong> y ya aparece en el
+            filtro del inicio. Está <strong>oculto</strong> como página, hasta que completes su contenido.
+          </p>
+
+          <div style={{ background: '#EFF6FF', border: '1.5px solid #BFDBFE', borderRadius: 12, padding: '1rem 1.25rem', margin: '1.25rem 0', textAlign: 'left', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+            <MapPin size={20} style={{ color: '#1B56A1', flexShrink: 0, marginTop: 2 }} />
+            <p style={{ color: '#1D4ED8', fontSize: '0.85rem', lineHeight: 1.55, margin: 0 }}>
+              ¿Quieres que <strong>{muniCreado.name}</strong> tenga su propia página (descripción, historia, recorrido 360°)?
+              Complétala en Municipios y desactiva “Ocultar”.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <button type="button" onClick={() => router.push(`/admin/municipios?edit=${muniCreado.slug}`)}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, background: '#1B56A1', color: '#fff', fontWeight: 800, fontSize: '0.9rem', padding: '11px 20px', borderRadius: 10, border: 'none', cursor: 'pointer' }}>
+              Completar {muniCreado.name} <ArrowRight size={15} />
+            </button>
+            <button type="button" onClick={() => router.push('/admin/propiedades')}
+              style={{ background: '#fff', color: '#64748B', fontWeight: 700, fontSize: '0.9rem', padding: '11px 20px', borderRadius: 10, border: '1.5px solid #E2E8F0', cursor: 'pointer' }}>
+              Ir al listado
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 900 }}>

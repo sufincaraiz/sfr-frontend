@@ -44,9 +44,15 @@ export async function PUT(
     const updateData: any = { ...rest }
     if (data.price_cop !== undefined) updateData.price_cop = BigInt(data.price_cop || 0)
 
+    let muniCreated = false
+    let muniSlug: string | undefined
+    let muniName: string | undefined
     if (municipality_name) {
       const muni = await resolveMunicipality(municipality_name)
       updateData.municipality_id = muni.id
+      muniCreated = muni.created
+      muniSlug = muni.slug
+      muniName = muni.name
     }
 
     // Actualizar media si se envía
@@ -76,7 +82,13 @@ export async function PUT(
       include: { municipality: true, media: true },
     })
     revalidatePropertyPaths(updated.slug)
-    return NextResponse.json({ ...updated, price_cop: Number(updated.price_cop) })
+    return NextResponse.json({
+      ...updated,
+      price_cop: Number(updated.price_cop),
+      municipality_created: muniCreated,
+      municipality_slug: muniSlug,
+      municipality_new_name: muniName,
+    })
   } catch (err) {
     console.error('[PUT /api/admin/properties/[id]]', err)
     return NextResponse.json({ error: 'Error al actualizar' }, { status: 500 })

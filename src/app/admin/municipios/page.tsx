@@ -76,6 +76,16 @@ export default function AdminMunicipiosPage() {
   };
   const cerrar = () => { setForm(EMPTY); setShowForm(false); };
 
+  // Acceso directo desde el formulario de propiedad: /admin/municipios?edit=<slug>
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get('edit');
+    if (slug && !showForm && list.length) {
+      const m = list.find(x => x.slug === slug);
+      if (m) { editar(m); window.history.replaceState(null, '', '/admin/municipios'); }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [list]);
+
   const subirImagen = async (file: File) => {
     setUpImg(true);
     const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', PRESET); fd.append('folder', 'municipios');

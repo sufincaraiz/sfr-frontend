@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
     const data = await request.json()
 
     // Resolver municipio por nombre; si no existe, se crea (oculto)
-    let muni: { id: string; name: string; slug: string }
+    let muni: { id: string; name: string; slug: string; created: boolean }
     try {
       muni = await resolveMunicipality(data.municipality_name)
     } catch {
@@ -96,7 +96,13 @@ export async function POST(request: NextRequest) {
       include: { municipality: true, media: true },
     })
 
-    return NextResponse.json({ ...property, price_cop: Number(property.price_cop) }, { status: 201 })
+    return NextResponse.json({
+      ...property,
+      price_cop: Number(property.price_cop),
+      municipality_created: muni.created,
+      municipality_slug: muni.slug,
+      municipality_new_name: muni.name,
+    }, { status: 201 })
   } catch (err) {
     console.error('[POST /api/admin/properties]', err)
     return NextResponse.json({ error: 'Error al crear propiedad' }, { status: 500 })
