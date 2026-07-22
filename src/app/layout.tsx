@@ -117,7 +117,7 @@ export const metadata: Metadata = {
   // ── Favicon / ícono de pestaña ──────────────────────────────────────────────
   icons: {
     icon:     '/icon.png',
-    shortcut: '/icon.png',
+    shortcut: '/favicon.ico',
     apple:    '/icon.png',
   },
 };
