@@ -20,6 +20,7 @@ const BaseSchema = z.object({
   temp_min:            z.number().int().min(-10).max(50).nullable().optional(),
   temp_max:            z.number().int().min(-10).max(50).nullable().optional(),
   descripcion_seo:     z.string().trim().max(2000).optional().or(z.literal('')),
+  meta_description:    z.string().trim().max(320).optional().or(z.literal('')),
   historia:            z.string().trim().max(6000).optional().or(z.literal('')),
   clima:               z.string().trim().max(6000).optional().or(z.literal('')),
   turismo:             z.string().trim().max(6000).optional().or(z.literal('')),
@@ -67,6 +68,7 @@ export async function POST(req: NextRequest) {
         temp_min: d.temp_min ?? null,
         temp_max: d.temp_max ?? null,
         descripcion_seo: d.descripcion_seo || null,
+        meta_description: d.meta_description || null,
         historia: d.historia || null,
         clima: d.clima || null,
         turismo: d.turismo || null,
@@ -111,6 +113,7 @@ export async function PUT(req: NextRequest) {
   if (d.temp_min !== undefined) data.temp_min = d.temp_min
   if (d.temp_max !== undefined) data.temp_max = d.temp_max
   if (d.descripcion_seo !== undefined) data.descripcion_seo = text(d.descripcion_seo)
+  if (d.meta_description !== undefined) data.meta_description = text(d.meta_description)
   if (d.historia !== undefined) data.historia = text(d.historia)
   if (d.clima !== undefined) data.clima = text(d.clima)
   if (d.turismo !== undefined) data.turismo = text(d.turismo)

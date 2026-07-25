@@ -8,7 +8,7 @@ interface Faq { question: string; answer: string }
 interface Muni {
   id: string; slug: string; name: string; provincia: string | null;
   distancia_bogota_km: number | null; tiempo_bogota_min: number | null; altitud_msnm: number | null;
-  temp_min: number | null; temp_max: number | null; descripcion_seo: string | null;
+  temp_min: number | null; temp_max: number | null; descripcion_seo: string | null; meta_description: string | null;
   historia: string | null; clima: string | null; turismo: string | null; inversion: string | null;
   og_image: string | null; geo_lat: number | null; geo_lng: number | null; wikipedia_url: string | null;
   faqs: unknown; tour360_url: string | null; oculto: boolean;
@@ -17,7 +17,7 @@ interface Form {
   id?: string; slug: string; name: string; provincia: string;
   distancia_bogota_km: string; tiempo_bogota_min: string; altitud_msnm: string; temp_min: string; temp_max: string;
   geo_lat: string; geo_lng: string;
-  descripcion_seo: string; historia: string; clima: string; turismo: string; inversion: string;
+  descripcion_seo: string; meta_description: string; historia: string; clima: string; turismo: string; inversion: string;
   og_image: string; tour360_url: string; wikipedia_url: string; faqs: Faq[]; oculto: boolean;
 }
 
@@ -25,7 +25,7 @@ const EMPTY: Form = {
   slug: '', name: '', provincia: 'Gualivá',
   distancia_bogota_km: '', tiempo_bogota_min: '', altitud_msnm: '', temp_min: '', temp_max: '',
   geo_lat: '', geo_lng: '',
-  descripcion_seo: '', historia: '', clima: '', turismo: '', inversion: '',
+  descripcion_seo: '', meta_description: '', historia: '', clima: '', turismo: '', inversion: '',
   og_image: '', tour360_url: '', wikipedia_url: '', faqs: [], oculto: false,
 };
 
@@ -68,7 +68,7 @@ export default function AdminMunicipiosPage() {
       distancia_bogota_km: str(m.distancia_bogota_km), tiempo_bogota_min: str(m.tiempo_bogota_min),
       altitud_msnm: str(m.altitud_msnm), temp_min: str(m.temp_min), temp_max: str(m.temp_max),
       geo_lat: str(m.geo_lat), geo_lng: str(m.geo_lng),
-      descripcion_seo: m.descripcion_seo ?? '', historia: m.historia ?? '', clima: m.clima ?? '',
+      descripcion_seo: m.descripcion_seo ?? '', meta_description: m.meta_description ?? '', historia: m.historia ?? '', clima: m.clima ?? '',
       turismo: m.turismo ?? '', inversion: m.inversion ?? '', og_image: m.og_image ?? '',
       tour360_url: m.tour360_url ?? '', wikipedia_url: m.wikipedia_url ?? '', faqs: asFaqs(m.faqs), oculto: m.oculto,
     });
@@ -103,7 +103,7 @@ export default function AdminMunicipiosPage() {
     distancia_bogota_km: numOrNull(form.distancia_bogota_km), tiempo_bogota_min: numOrNull(form.tiempo_bogota_min),
     altitud_msnm: numOrNull(form.altitud_msnm), temp_min: numOrNull(form.temp_min), temp_max: numOrNull(form.temp_max),
     geo_lat: numOrNull(form.geo_lat), geo_lng: numOrNull(form.geo_lng),
-    descripcion_seo: form.descripcion_seo, historia: form.historia, clima: form.clima, turismo: form.turismo, inversion: form.inversion,
+    descripcion_seo: form.descripcion_seo, meta_description: form.meta_description, historia: form.historia, clima: form.clima, turismo: form.turismo, inversion: form.inversion,
     og_image: form.og_image, tour360_url: form.tour360_url, wikipedia_url: form.wikipedia_url,
     faqs: form.faqs.filter(f => f.question.trim() || f.answer.trim()), oculto: form.oculto,
   });
@@ -204,6 +204,14 @@ export default function AdminMunicipiosPage() {
 
           {/* Contenido */}
           <div><label style={labelS}>Descripción (intro, la de arriba)</label><RichTextarea value={form.descripcion_seo} onChange={v => set('descripcion_seo', v)} rows={3} style={taS} /></div>
+          <div>
+            <label style={labelS}>Meta description (Google) — {form.meta_description.length}/155</label>
+            <textarea value={form.meta_description} onChange={e => set('meta_description', e.target.value)} rows={2} maxLength={320} style={taS}
+              placeholder="Texto que sale en Google bajo el título. Déjalo vacío para usar el automático (oferta + distancia/clima + CTA)." />
+            <p style={{ color: '#94A3B8', fontSize: '0.72rem', marginTop: 5 }}>
+              Ideal ~150 caracteres. Si lo dejas <b>vacío</b>, se genera solo con los datos del municipio.
+            </p>
+          </div>
           <div><label style={labelS}>Historia</label><RichTextarea value={form.historia} onChange={v => set('historia', v)} rows={4} style={taS} hint={false} /></div>
           <div><label style={labelS}>Clima</label><RichTextarea value={form.clima} onChange={v => set('clima', v)} rows={4} style={taS} hint={false} /></div>
           <div><label style={labelS}>Turismo</label><RichTextarea value={form.turismo} onChange={v => set('turismo', v)} rows={4} style={taS} hint={false} /></div>

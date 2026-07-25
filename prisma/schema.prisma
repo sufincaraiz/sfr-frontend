@@ -23,6 +23,7 @@ model Municipality {
   temp_min            Int?
   temp_max            Int?
   descripcion_seo     String?  @db.Text
+  meta_description    String?  @db.Text // meta description SEO (~150 car.); vacío = autogenerada
   historia            String?  @db.Text
   clima               String?  @db.Text
   turismo             String?  @db.Text

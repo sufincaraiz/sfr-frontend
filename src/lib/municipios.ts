@@ -11,6 +11,7 @@ export interface Municipio {
   altitud_msnm: number
   temperatura_c: { min: number; max: number }
   descripcion_seo: string
+  meta_description: string | null
   historia: string
   clima: string
   turismo: string
@@ -34,6 +35,7 @@ function mapMunicipio(m: any): Municipio {
     altitud_msnm: m.altitud_msnm ?? 0,
     temperatura_c: { min: m.temp_min ?? 0, max: m.temp_max ?? 0 },
     descripcion_seo: m.descripcion_seo ?? '',
+    meta_description: m.meta_description ?? null,
     historia: m.historia ?? '',
     clima: m.clima ?? '',
     turismo: m.turismo ?? '',

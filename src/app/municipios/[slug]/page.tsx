@@ -27,8 +27,19 @@ export async function generateMetadata(
   const m = await getMunicipio(slug)
   if (!m) return { title: 'Municipio no encontrado' }
 
-  const title = `Fincas y Propiedades en ${m.name}, Cundinamarca`
-  const description = m.descripcion_seo
+  // Título orientado a la intención de búsqueda ("fincas/lotes en venta <muni>").
+  const title = `Fincas y Lotes en Venta en ${m.name}, Cundinamarca`
+
+  // Meta description corta y "clicable" (~150 car.) con datos reales + CTA, en vez
+  // del descripcion_seo largo que Google trunca. El descripcion_seo sigue como
+  // intro visible en la página.
+  const ctxBits: string[] = []
+  if (m.tiempo_bogota_min) ctxBits.push(`a ${m.tiempo_bogota_min} min de Bogotá`)
+  if (m.temperatura_c.min && m.temperatura_c.max) ctxBits.push(`clima ${m.temperatura_c.min}–${m.temperatura_c.max} °C`)
+  const ctx = ctxBits.length ? ` ${ctxBits.join(', ').replace(/^./, c => c.toUpperCase())}.` : ''
+  const autoDescription = `Fincas, lotes y casas campestres en venta en ${m.name}, Cundinamarca.${ctx} Asesórate gratis con expertos locales.`
+  // Meta description manual del admin si existe; si no, la autogenerada.
+  const description = m.meta_description?.trim() || autoDescription
 
   return {
     title,
