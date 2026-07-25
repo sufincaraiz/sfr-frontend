@@ -9,7 +9,7 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: 'Municipios del Gualivá, Cundinamarca | Su Finca Raíz',
+  title: 'Municipios del Gualivá, Cundinamarca',
   description:
     'Explora los mejores municipios del Gualivá para comprar finca raíz: La Vega, ' +
     'Villeta, Nocaima, Sasaima y más. Información de clima, turismo, inversión y ' +

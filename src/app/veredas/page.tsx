@@ -9,7 +9,7 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: 'Veredas del Gualivá, Cundinamarca — Finca Raíz | Su Finca Raíz',
+  title: 'Veredas del Gualivá, Cundinamarca — Finca Raíz',
   description:
     'Guía completa de las veredas de La Vega, Sasaima y el Gualivá para inversión ' +
     'en finca raíz: Bulucaima, El Cural, Guarumal, Tabacal y más. Clima, acceso, ' +

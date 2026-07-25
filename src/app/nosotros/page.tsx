@@ -12,7 +12,7 @@ import { JsonLd, breadcrumbSchema, faqSchema } from '@/components/seo/JsonLd';
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: 'Nosotros — Centro de Negocios Inmobiliarios en La Vega | Su Finca Raíz',
+  title: 'Nosotros — Centro de Negocios Inmobiliarios en La Vega',
   description:
     'Conoce a Su Finca Raíz: tecnología inmersiva (recorridos 360°, drones), ' +
     'blindaje legal y conocimiento del territorio para comprar y vender fincas, ' +

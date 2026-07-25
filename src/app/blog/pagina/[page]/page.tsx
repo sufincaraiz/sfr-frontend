@@ -25,7 +25,7 @@ export async function generateMetadata(
   const { page } = await params
   const n = parseInt(page, 10)
   return {
-    title: `Blog — Página ${n} | Su Finca Raíz`,
+    title: `Blog — Página ${n}`,
     description: `Artículos sobre finca raíz en el Gualivá, Cundinamarca. Página ${n}.`,
     alternates: { canonical: `${SITE_URL}/blog/pagina/${n}` },
     robots: { index: false },   // paginación no indexada directamente

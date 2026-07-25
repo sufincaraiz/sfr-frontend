@@ -4,7 +4,7 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd';
 import { LegalLayout } from '@/components/legal/LegalLayout';
 
 export const metadata: Metadata = {
-  title: 'Eliminación de Datos Personales | Su Finca Raíz',
+  title: 'Eliminación de Datos Personales',
   description:
     'Cómo solicitar la eliminación de tus datos personales en Su Finca Raíz, conforme a la ' +
     'Ley 1581 de 2012 de Colombia y a las políticas de Meta (WhatsApp).',

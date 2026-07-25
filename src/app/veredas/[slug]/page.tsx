@@ -26,16 +26,16 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await params
   const v = getVeredaData(slug)
-  if (!v) return { title: 'Vereda no encontrada | Su Finca Raíz' }
+  if (!v) return { title: 'Vereda no encontrada' }
 
-  const title = `Fincas y Lotes en Vereda ${v.name}, ${v.municipio_name}, Cundinamarca | Su Finca Raíz`
+  const title = `Fincas y Lotes en Vereda ${v.name}, ${v.municipio_name}, Cundinamarca`
 
   return {
     title,
     description: v.descripcion_seo,
     alternates: { canonical: `${SITE_URL}/veredas/${slug}` },
     openGraph: {
-      title,
+      title: `${title} | Su Finca Raíz`,
       description: v.descripcion_seo,
       url: `${SITE_URL}/veredas/${slug}`,
       type: 'website',

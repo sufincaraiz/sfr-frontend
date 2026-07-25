@@ -4,7 +4,7 @@ import { getBlogWriterSession } from '@/lib/auth';
 import { EscribirForm } from './EscribirForm';
 
 export const metadata: Metadata = {
-  title: 'Escribe tu post | Blog de la Comunidad — Su Finca Raíz',
+  title: 'Escribe tu post — Blog de la Comunidad',
   robots: { index: false, follow: false },
 };
 

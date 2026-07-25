@@ -8,7 +8,7 @@ import { VenderForm } from './VenderForm';
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: 'Vende tu finca en La Vega, Cundinamarca | Su Finca Raíz',
+  title: 'Vende tu finca en La Vega, Cundinamarca',
   description:
     'Vende tu finca, lote o casa campestre en La Vega y el Gualivá con respaldo experto: ' +
     'recorridos 360°, seguridad legal y marketing digital segmentado. Valoración gratis.',

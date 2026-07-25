@@ -25,9 +25,9 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await params
   const m = await getMunicipio(slug)
-  if (!m) return { title: 'Municipio no encontrado | Su Finca Raíz' }
+  if (!m) return { title: 'Municipio no encontrado' }
 
-  const title = `Fincas y Propiedades en ${m.name}, Cundinamarca | Su Finca Raíz`
+  const title = `Fincas y Propiedades en ${m.name}, Cundinamarca`
   const description = m.descripcion_seo
 
   return {
@@ -37,7 +37,7 @@ export async function generateMetadata(
       canonical: `${SITE_URL}/municipios/${slug}`,
     },
     openGraph: {
-      title,
+      title: `${title} | Su Finca Raíz`,
       description,
       url: `${SITE_URL}/municipios/${slug}`,
       type: 'website',

@@ -4,7 +4,7 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd';
 import { LegalLayout } from '@/components/legal/LegalLayout';
 
 export const metadata: Metadata = {
-  title: 'Términos y Condiciones de Uso | Su Finca Raíz',
+  title: 'Términos y Condiciones de Uso',
   description:
     'Términos y condiciones de uso del portal sufincaraiz.com: objeto, propiedad ' +
     'intelectual, uso del Agente IA Mac, exención de responsabilidad y jurisdicción.',

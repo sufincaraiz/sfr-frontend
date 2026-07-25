@@ -22,7 +22,7 @@ export async function generateMetadata(
   const { tag } = await params
   const decoded = decodeURIComponent(tag)
   return {
-    title: `Artículos sobre "${decoded}" | Blog Su Finca Raíz`,
+    title: `Artículos sobre "${decoded}" — Blog`,
     description: `Todos los artículos etiquetados con "${decoded}" en el blog de Su Finca Raíz.`,
     alternates: { canonical: `${SITE_URL}/blog/tags/${tag}` },
     robots: { index: false },   // tags no se indexan directamente

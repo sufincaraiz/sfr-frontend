@@ -14,7 +14,7 @@ const COVER = '/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg';
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: 'Guía de Inversión Inmobiliaria en La Vega y el Gualivá | Su Finca Raíz',
+  title: 'Guía de Inversión Inmobiliaria en La Vega y el Gualivá',
   description:
     'Guía definitiva para invertir en lotes, fincas, quintas y apartamentos en La Vega, ' +
     'Cundinamarca y el corredor del Gualivá: valorización, nichos y rentabilidad (ROI).',

@@ -22,10 +22,10 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { categoria } = await params
   const name = BLOG_CATEGORIES[categoria as BlogCategorySlug]
-  if (!name) return { title: 'Categoría no encontrada | Su Finca Raíz' }
+  if (!name) return { title: 'Categoría no encontrada' }
 
   return {
-    title: `${name} — Blog | Su Finca Raíz`,
+    title: `${name} — Blog`,
     description: `Artículos sobre ${name.toLowerCase()} en finca raíz del Gualivá, Cundinamarca.`,
     alternates: { canonical: `${SITE_URL}/blog/categorias/${categoria}` },
     openGraph: {

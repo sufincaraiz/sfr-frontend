@@ -10,7 +10,7 @@ import type { Business } from '@/lib/directorio';
 export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
-  title: 'Directorio de Negocios Recomendados en La Vega | Su Finca Raíz',
+  title: 'Directorio de Negocios Recomendados en La Vega',
   description:
     'Directorio de negocios locales recomendados en La Vega y la región del Gualivá, Cundinamarca: ' +
     'restaurantes, ferreterías, droguerías, viveros y más, con WhatsApp y ubicación.',

@@ -8,7 +8,7 @@ import { JsonLd, breadcrumbSchema, glossarySchema, webPageSchema } from '@/compo
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: 'Glosario de Finca Raíz en Colombia — Términos Inmobiliarios | Su Finca Raíz',
+  title: 'Glosario de Finca Raíz en Colombia — Términos Inmobiliarios',
   description:
     'Significado de los términos más importantes del mercado inmobiliario colombiano: ' +
     'certificado de tradición, escrituración, promesa de compraventa, arras, POT, ' +

@@ -23,10 +23,13 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await params
   const post = await getPost(slug)
-  if (!post) return { title: 'Artículo no encontrado | Su Finca Raíz' }
+  if (!post) return { title: 'Artículo no encontrado' }
+
+  // Recorta la marca si el título guardado ya la incluye (la plantilla la agrega).
+  const cleanTitle = post.title.replace(/\s*\|\s*Su Finca Ra[íi]z\s*$/i, '').trim()
 
   return {
-    title: `${post.title} | Su Finca Raíz`,
+    title: cleanTitle,
     description: post.excerpt,
     alternates: { canonical: `${SITE_URL}/blog/${slug}` },
     robots: post.noindex ? { index: false } : undefined,

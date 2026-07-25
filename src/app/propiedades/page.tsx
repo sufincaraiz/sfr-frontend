@@ -10,7 +10,7 @@ import { TYPE_LABELS }        from '@/lib/utils';
 import type { Property }      from '@/types';
 
 export const metadata: Metadata = {
-  title: 'Propiedades en Venta | La Vega Cundinamarca | Su Finca Raíz',
+  title: 'Propiedades en Venta en La Vega y el Gualivá, Cundinamarca',
   description: 'Fincas, lotes, casas campestres, condominios y apartamentos en venta en La Vega, Cundinamarca. Más de 24 propiedades verificadas. ☎ 321 882 6730.',
   alternates: {
     canonical: `${SITE_URL}/propiedades`,

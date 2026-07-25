@@ -4,7 +4,7 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd';
 import { LegalLayout } from '@/components/legal/LegalLayout';
 
 export const metadata: Metadata = {
-  title: 'Política de Cookies | Su Finca Raíz',
+  title: 'Política de Cookies',
   description:
     'Política de cookies de sufincaraiz.com: qué son, qué tipos usamos (necesarias, ' +
     'rendimiento, funcionalidad y multimedia) y cómo afectan tu navegación.',

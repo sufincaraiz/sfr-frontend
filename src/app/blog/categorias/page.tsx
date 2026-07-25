@@ -8,7 +8,7 @@ import { CategoryBadge } from '@/components/blog/ArticleCard'
 import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 
 export const metadata: Metadata = {
-  title: 'Categorías del Blog | Su Finca Raíz',
+  title: 'Categorías del Blog',
   description: 'Explora los artículos por categoría: mercado inmobiliario, guías de compra, inversión rural, trámites y vivir en Cundinamarca.',
   alternates: { canonical: `${SITE_URL}/blog/categorias` },
 }

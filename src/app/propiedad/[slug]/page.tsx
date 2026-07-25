@@ -85,14 +85,17 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await params;
   const p = await getProperty(slug);
-  if (!p) return { title: 'Propiedad no encontrada | Su Finca Raíz' };
+  if (!p) return { title: 'Propiedad no encontrada' };
 
-  const title = p.meta_title ?? p.title ?? `${TYPE_LABELS[p.type]} en ${p.municipality?.name ?? 'La Vega'}`;
+  // La marca la agrega la plantilla del layout; si el meta_title guardado en BD ya
+  // la trae al final (importaciones antiguas), la recortamos para no duplicarla.
+  const rawTitle = p.meta_title ?? p.title ?? `${TYPE_LABELS[p.type]} en ${p.municipality?.name ?? 'La Vega'}`;
+  const title = rawTitle.replace(/\s*\|\s*Su Finca Ra[íi]z\s*$/i, '').trim();
   const description = p.meta_description ?? p.short_description ?? `${TYPE_LABELS[p.type]} en venta en ${p.municipality?.name ?? 'La Vega'}, Cundinamarca. ${formatPrice(p.price_cop)}.`;
   const img = p.media?.find(m => m.is_primary) ?? p.media?.[0];
 
   return {
-    title: `${title} | Su Finca Raíz`,
+    title,
     description,
     alternates: {
       canonical: `${SITE_URL}/propiedad/${slug}`,

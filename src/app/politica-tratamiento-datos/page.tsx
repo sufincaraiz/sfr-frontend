@@ -4,7 +4,7 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd';
 import { LegalLayout } from '@/components/legal/LegalLayout';
 
 export const metadata: Metadata = {
-  title: 'Política de Tratamiento de Datos Personales | Su Finca Raíz',
+  title: 'Política de Tratamiento de Datos Personales',
   description:
     'Política de tratamiento y protección de datos personales de Su Finca Raíz en ' +
     'cumplimiento de la Ley 1581 de 2012 y el Decreto 1377 de 2013 (Habeas Data, Colombia).',

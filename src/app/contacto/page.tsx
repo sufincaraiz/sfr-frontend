@@ -6,7 +6,7 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd';
 import { ContactoForm } from './ContactoForm';
 
 export const metadata: Metadata = {
-  title: 'Contáctanos — Asesoría inmobiliaria en La Vega | Su Finca Raíz',
+  title: 'Contáctanos — Asesoría inmobiliaria en La Vega',
   description:
     'Hablemos. Asesoría gratis para comprar, vender o invertir en fincas, lotes y ' +
     'casas campestres en La Vega y el Gualivá, Cundinamarca. WhatsApp +57 321 882 6730.',

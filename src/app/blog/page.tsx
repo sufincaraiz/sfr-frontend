@@ -11,7 +11,7 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {
-  title: 'Blog Inmobiliario — Fincas y Propiedades en Cundinamarca | Su Finca Raíz',
+  title: 'Blog Inmobiliario — Fincas y Propiedades en Cundinamarca',
   description:
     'Guías de compra, análisis de mercado, valorización, trámites y tips para ' +
     'invertir en finca raíz rural en La Vega y el Gualivá, Cundinamarca.',
