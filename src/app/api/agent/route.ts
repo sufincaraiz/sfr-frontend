@@ -1,24 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { runMac } from '@/lib/agent/runMac'
-
-// ─── Rate limiter (in-memory, per sessionId) ─────────────────────────────────
-
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
-const RATE_LIMIT = 20
-const RATE_WINDOW_MS = 60_000
-
-function checkRateLimit(sessionId: string): boolean {
-  const now = Date.now()
-  const entry = rateLimitMap.get(sessionId)
-  if (!entry || now > entry.resetAt) {
-    rateLimitMap.set(sessionId, { count: 1, resetAt: now + RATE_WINDOW_MS })
-    return true
-  }
-  if (entry.count >= RATE_LIMIT) return false
-  entry.count++
-  return true
-}
+import { checkRateLimit } from '@/lib/agent/ratelimit'
 
 // ─── Input schema ─────────────────────────────────────────────────────────────
 
@@ -46,10 +29,17 @@ export async function POST(req: NextRequest) {
 
   const { sessionId, message, channel } = parsed.data
 
-  // 2. Rate limit
-  if (!checkRateLimit(sessionId)) {
+  // 2. Rate limit distribuido (Upstash Redis) — por IP y por sesión. Falla cerrado.
+  //    IP desde x-forwarded-for (primer valor); en Next.js 15 NextRequest.ip ya no
+  //    existe. Sin header → "unknown" (no se desactiva el límite).
+  const xff = req.headers.get('x-forwarded-for')
+  const ip = xff?.split(',')[0]?.trim() || 'unknown'
+  const { ok } = await checkRateLimit(ip, sessionId)
+  if (!ok) {
+    // Misma forma que una respuesta normal ({ reply, ... }) para que el widget lo
+    // renderice como un mensaje de Mac (el widget lee data.reply, no data.error).
     return NextResponse.json(
-      { error: 'Demasiados mensajes. Por favor espera un momento.' },
+      { reply: 'Estás enviando mensajes muy rápido. Espera un momento y seguimos con calma. 🏡', properties: [] },
       { status: 429 }
     )
   }
