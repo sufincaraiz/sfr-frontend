@@ -33,13 +33,50 @@ const nextConfig: NextConfig = {
 
   // ── Redirects SEO ──────────────────────────────────────────────────────────
   async redirects() {
+    // Municipios de la región (slug → nombre) para las landing de tipo+municipio.
+    const MUNIS: [string, string][] = [
+      ['la-vega', 'La Vega'], ['nimaima', 'Nimaima'], ['nocaima', 'Nocaima'],
+      ['quebradanegra', 'Quebradanegra'], ['sasaima', 'Sasaima'], ['vergara', 'Vergara'], ['villeta', 'Villeta'],
+    ]
+    // Prefijo de URL antigua → valor de `tipo` en /propiedades.
+    const TYPES: [string, string][] = [
+      ['fincas-en-venta', 'finca'], ['lotes-en-venta', 'lote'],
+      ['casas-campestres-en-venta', 'casa'], ['condominios-campestres', 'condominio'],
+    ]
+
+    // Landing legacy de tipo (+ municipio) → filtro real de /propiedades.
+    const landing = TYPES.flatMap(([prefix, tipo]) => [
+      { source: `/${prefix}`, destination: `/propiedades?tipo=${tipo}`, permanent: true },
+      ...MUNIS.map(([mslug, mname]) => ({
+        source: `/${prefix}-${mslug}-cundinamarca`,
+        destination: `/propiedades?tipo=${tipo}&municipio=${encodeURIComponent(mname)}`,
+        permanent: true,
+      })),
+    ])
+
+    // Propiedades con slug viejo (prefijo de tipo duplicado, `$`→"dollar") → slug actual.
+    const propiedades: [string, string][] = [
+      ['casa-casa-alameda-la-vega-cundinamarca', 'casa-alameda-la-vega-cundinamarca'],
+      ['casa-casa-central-1-cuadra-del-rey-la-vega-cundinamarca', 'casa-central-1-cuadra-del-rey-la-vega-cundinamarca'],
+      ['casa-casa-lote-san-antonio-la-vega-cundinamarca', 'casa-lote-san-antonio-la-vega-cundinamarca'],
+      ['casa-lvc-015-casa-lote-la-paloma-dollar280-la-vega-cundinamarca', 'casa-lvc-015-casa-lote-la-paloma-280-la-vega-cundinamarca'],
+      ['condominio-condominio-oeste-la-vega-cundinamarca', 'condominio-oeste-la-vega-cundinamarca'],
+      ['finca-finca-bulucaima-dollar800-la-vega-cundinamarca', 'finca-bulucaima-800-la-vega-cundinamarca'],
+      ['finca-finca-el-cural-andres-la-vega-cundinamarca', 'finca-el-cural-andres-la-vega-cundinamarca'],
+      ['finca-finca-la-alborada-la-vega-cundinamarca', 'finca-la-alborada-la-vega-cundinamarca'],
+      ['finca-finca-la-huerta-golf-la-vega-cundinamarca', 'finca-la-huerta-golf-la-vega-cundinamarca'],
+      ['finca-finca-llano-grande-alquiler-la-vega-cundinamarca', 'finca-llano-grande-alquiler-la-vega-cundinamarca'],
+      ['lote-lote-petaquero-la-vega-cundinamarca', 'lote-petaquero-la-vega-cundinamarca'],
+    ]
+    const props = propiedades.map(([from, to]) => ({
+      source: `/propiedad/${from}`, destination: `/propiedad/${to}`, permanent: true,
+    }))
+
     return [
-      {
-        // Ruta legacy — redirige permanentemente a la nueva URL canónica
-        source:      '/inmuebles',
-        destination: '/propiedades',
-        permanent:   true,
-      },
+      { source: '/inmuebles', destination: '/propiedades', permanent: true },
+      { source: '/fincas-en-venta/la-vega', destination: `/propiedades?tipo=finca&municipio=${encodeURIComponent('La Vega')}`, permanent: true },
+      ...landing,
+      ...props,
     ]
   },
 

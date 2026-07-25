@@ -155,10 +155,10 @@ export default async function MunicipioPage(
   })
 
   const TIPO_LINKS = [
-    { slug: 'fincas-en-venta', label: 'Fincas en Venta' },
-    { slug: 'lotes-en-venta', label: 'Lotes en Venta' },
-    { slug: 'casas-campestres-en-venta', label: 'Casas Campestres' },
-    { slug: 'condominios-campestres', label: 'Condominios' },
+    { tipo: 'finca',      label: 'Fincas en Venta' },
+    { tipo: 'lote',       label: 'Lotes en Venta' },
+    { tipo: 'casa',       label: 'Casas Campestres' },
+    { tipo: 'condominio', label: 'Condominios' },
   ]
 
   return (
@@ -356,8 +356,8 @@ export default async function MunicipioPage(
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {TIPO_LINKS.map(t => (
                   <Link
-                    key={t.slug}
-                    href={`/${t.slug}-${slug}-cundinamarca`}
+                    key={t.tipo}
+                    href={`/propiedades?tipo=${t.tipo}&municipio=${encodeURIComponent(data.name)}`}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '0.6rem 0.9rem', borderRadius: 8, border: '1px solid #E2E8F0',
