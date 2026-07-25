@@ -268,6 +268,24 @@ model Message {
   @@map("messages")
 }
 
+/// Base de conocimiento de Mac: fichas de información que se inyectan en su
+/// prompt en cada conversación (promociones, formas de pago, FAQ, políticas).
+/// Se administra en /admin/mac — no requiere desplegar para actualizarse.
+model MacKnowledge {
+  id         String   @id @default(uuid())
+  titulo     String
+  contenido  String   @db.Text
+  categoria  String   @default("General")
+  activo     Boolean  @default(true)
+  orden      Int      @default(0)
+  vigente_hasta DateTime?  // opcional: se ignora automáticamente al vencer (promos)
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  @@index([activo, orden])
+  @@map("mac_knowledge")
+}
+
 // ─── Admin ──────────────────────────────────────────────────────────────────
 
 model Admin {

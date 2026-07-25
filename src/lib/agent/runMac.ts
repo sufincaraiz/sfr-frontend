@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
 import { MAC_SYSTEM_PROMPT } from '@/lib/agent/prompt'
+import { bloqueConocimiento } from '@/lib/agent/knowledge'
 import { MAC_TOOLS, executeTool, type ToolInput } from '@/lib/agent/tools'
 import type { MessageParam, ToolUseBlock, ContentBlock } from '@anthropic-ai/sdk/resources/messages'
 
@@ -14,6 +15,21 @@ export interface RunMacResult {
 }
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+
+/**
+ * Ni el widget de la web ni WhatsApp renderizan markdown: los ** y ## se ven
+ * literales. El prompt ya pide texto plano, pero el modelo recae; esto lo
+ * garantiza. En WhatsApp la negrita existe con un solo asterisco, así que allí
+ * se traduce en vez de borrarse.
+ */
+function aTextoPlano(texto: string, channel: MacChannel): string {
+  const negrita = channel === 'WHATSAPP' ? '*$1*' : '$1'
+  return texto
+    .replace(/\*\*([\s\S]+?)\*\*/g, negrita)
+    .replace(/__([\s\S]+?)__/g, negrita)
+    .replace(/^#{1,6}\s*/gm, '')
+    .replace(/^\s*[-*]\s+/gm, '• ')
+}
 
 /**
  * Núcleo de Mac, reutilizable por cualquier canal (web, WhatsApp, …): upsert de
@@ -64,7 +80,9 @@ export async function runMac(
   if (conversation.status === 'ESCALATED') {
     contextLines.push('Esta conversación ya fue escalada al asesor humano. Informa al cliente que el especialista lo contactará pronto.')
   }
-  const systemPrompt = `${MAC_SYSTEM_PROMPT}\n\n# Contexto de sesión\n${contextLines.join('\n')}`
+  // Base de conocimiento editable desde /admin/mac (promociones, FAQ, políticas)
+  const conocimiento = await bloqueConocimiento()
+  const systemPrompt = `${MAC_SYSTEM_PROMPT}${conocimiento}\n\n# Contexto de sesión\n${contextLines.join('\n')}`
 
   // 5. Loop agéntico (máx 5 iteraciones)
   let reply = ''
@@ -121,9 +139,7 @@ export async function runMac(
     history.push({ role: 'user', content: toolResultMessages })
   }
 
-  if (!reply) {
-    reply = 'Disculpa, tuve un problema procesando tu mensaje. ¿Podrías repetirlo?'
-  }
+  reply = reply ? aTextoPlano(reply, channel) : 'Disculpa, tuve un problema procesando tu mensaje. ¿Podrías repetirlo?'
 
   // 6. Guardar la respuesta del asistente
   try {

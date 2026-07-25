@@ -41,6 +41,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
   { prefix: '/admin/propiedades/nueva',   label: 'Nueva Propiedad',     icon: 'PlusCircle',      roles: ['admin'] },
   { prefix: '/admin/crm',                 label: 'CRM',                 icon: 'Contact',         roles: ['admin', 'asistente_crm'] },
   { prefix: '/admin/leads',               label: 'Leads',               icon: 'Users',           roles: ['admin'] },
+  { prefix: '/admin/mac',                 label: 'Mac (IA)',            icon: 'Bot',             roles: ['admin'] },
   { prefix: '/admin/propuesta-comercial', label: 'Propuesta comercial', icon: 'FileText',        roles: ['admin'] },
   { prefix: '/admin/directorio',          label: 'Directorio',          icon: 'Store',           roles: ['admin'] },
   { prefix: '/admin/municipios',          label: 'Municipios',          icon: 'MapPin',          roles: ['admin'] },

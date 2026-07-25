@@ -9,12 +9,13 @@ export const MAC_TOOLS: Tool[] = [
   {
     name: 'buscar_propiedades',
     description:
-      'Busca propiedades disponibles en la base de datos. Úsala siempre que el cliente mencione qué busca. Nunca recomiendes propiedades sin llamarla primero.',
+      'Busca propiedades disponibles en la base de datos. Úsala siempre que el cliente mencione qué busca. Nunca recomiendes propiedades sin llamarla primero. Los filtros son flexibles: si no hay coincidencias exactas, la herramienta relaja los criterios sola y te avisa en el campo "aviso".',
     input_schema: {
       type: 'object',
       properties: {
-        municipio:  { type: 'string', description: 'Nombre del municipio (ej. "La Vega")' },
-        tipo:       { type: 'string', description: 'Tipo: lote | casa | finca | cabaña | apartamento | condominio' },
+        municipio:  { type: 'string', description: 'Nombre del municipio (ej. "La Vega", "Albán"). Tildes y mayúsculas no importan.' },
+        tipo:       { type: 'string', description: 'Tipo tal como lo dijo el cliente: lote | casa | finca | cabaña | apartamento | condominio | local. Se interpreta con sinónimos (parcela, terreno, chalet, apto…).' },
+        texto:      { type: 'string', description: 'Palabras clave del cliente cuando no encajan en los otros filtros: nombre del proyecto o condominio ("La Rivera", "Senderos del Bosque"), vereda, o características ("piscina", "vista", "río"). Busca en título y descripción.' },
         precioMin:  { type: 'number', description: 'Precio mínimo en COP' },
         precioMax:  { type: 'number', description: 'Precio máximo en COP' },
         areaMin:    { type: 'number', description: 'Área mínima en m²' },
@@ -23,6 +24,12 @@ export const MAC_TOOLS: Tool[] = [
       },
       required: [],
     },
+  },
+  {
+    name: 'resumen_portafolio',
+    description:
+      'Devuelve el inventario real y actualizado: cuántas propiedades hay disponibles, por tipo, por municipio, el rango de precios y las más recientes. Úsala cuando el cliente pregunte de forma general ("¿qué tienen?", "¿qué hay nuevo?", "¿en qué municipios trabajan?") o cuando necesites saber si vale la pena filtrar. Nunca afirmes cifras de inventario sin llamarla.',
+    input_schema: { type: 'object', properties: {}, required: [] },
   },
   {
     name: 'detalle_propiedad',
@@ -69,7 +76,7 @@ export const MAC_TOOLS: Tool[] = [
     input_schema: {
       type: 'object',
       properties: {
-        motivo:  { type: 'string', description: 'LEAD_CALIENTE | LLAMADA_PREFERIDA | VISITA | VENDEDOR | PROPIEDAD_FUERA_CATALOGO | ALIADO_BROKER | CLIENTE_MOLESTO' },
+        motivo:  { type: 'string', description: 'LEAD_CALIENTE | LLAMADA_PREFERIDA | VISITA | VENDEDOR | PROPIEDAD_FUERA_CATALOGO | ALIADO_BROKER | CLIENTE_MOLESTO | CONSULTA_ESPECIAL (pregunta cuya respuesta no tienes: promociones, descuentos, permutas, financiación puntual, documentos de un predio…)' },
         resumen: { type: 'string', description: 'Síntesis de la conversación y datos clave del lead' },
       },
       required: ['motivo', 'resumen'],
@@ -82,6 +89,7 @@ export const MAC_TOOLS: Tool[] = [
 interface BuscarInput {
   municipio?: string
   tipo?: string
+  texto?: string
   precioMin?: number
   precioMax?: number
   areaMin?: number
@@ -119,6 +127,56 @@ interface SolicitarInput {
 
 export type ToolInput = BuscarInput | DetalleInput | LeadInput | SolicitarInput
 
+// ─── Normalización de criterios ───────────────────────────────────────────────
+// El cliente escribe "cabaña", "Finca", "Alban", "terreno"… y la BD guarda
+// etiquetas fijas en minúscula y con tilde. Sin normalizar, el filtro exacto
+// devolvía 0 resultados y Mac respondía que no había nada (aunque sí hubiera).
+
+/** minúsculas, sin tildes, sin espacios sobrantes */
+function norm(s: string): string {
+  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
+}
+
+/** Sinónimos del cliente → tipos reales de la BD (Property.type). */
+const TIPO_SINONIMOS: Record<string, string[]> = {
+  finca: ['finca'], fincas: ['finca'], hacienda: ['finca'], parcela: ['finca'],
+  campo: ['finca'], 'finca de recreo': ['finca'], quinta: ['finca'],
+  lote: ['lote', 'condominio'], lotes: ['lote', 'condominio'],
+  terreno: ['lote', 'condominio'], terrenos: ['lote', 'condominio'],
+  predio: ['lote', 'condominio'], tierra: ['lote', 'condominio'],
+  casa: ['casa', 'condominio'], casas: ['casa', 'condominio'],
+  vivienda: ['casa', 'condominio', 'apartamento'],
+  'casa campestre': ['casa', 'condominio', 'finca'],
+  chalet: ['casa', 'condominio'],
+  cabana: ['casa', 'condominio', 'finca'], cabanas: ['casa', 'condominio', 'finca'],
+  apartamento: ['apartamento'], apartamentos: ['apartamento'],
+  apto: ['apartamento'], apartaestudio: ['apartamento'],
+  condominio: ['condominio'], condominios: ['condominio'], conjunto: ['condominio'],
+  local: ['local'], locales: ['local'],
+}
+
+/** Devuelve los tipos de BD que corresponden a lo que dijo el cliente (null = no reconocido). */
+function tiposDesde(entrada: string): string[] | null {
+  const n = norm(entrada)
+  if (TIPO_SINONIMOS[n]) return TIPO_SINONIMOS[n]
+  // coincidencia parcial: "lote campestre", "casa en condominio", "finca grande"…
+  const hit = Object.keys(TIPO_SINONIMOS).find(k => n.includes(k))
+  return hit ? TIPO_SINONIMOS[hit]! : null
+}
+
+/** ids de municipios cuyo nombre coincide con lo que dijo el cliente, ignorando tildes. */
+async function municipioIds(entrada: string): Promise<string[]> {
+  const n = norm(entrada)
+  const todos = await prisma.municipality.findMany({ select: { id: true, name: true } })
+  return todos.filter(m => norm(m.name).includes(n) || n.includes(norm(m.name))).map(m => m.id)
+}
+
+const PROP_INCLUDE = {
+  municipality: { select: { name: true, slug: true } },
+  vereda:       { select: { name: true } },
+  media:        { where: { is_primary: true }, take: 1 },
+} as const
+
 async function buscarPropiedades(input: BuscarInput) {
   const limite = Math.min(input.limite ?? 6, 10)
 
@@ -129,54 +187,113 @@ async function buscarPropiedades(input: BuscarInput) {
     input.ordenar === 'precio_desc' ? { price_cop: 'desc' as const } :
                                       { updated_at: 'desc' as const }
 
-  const where: Record<string, unknown> = { status: 'available' }
-  if (input.tipo) where['type'] = input.tipo
-  if (input.precioMin !== undefined || input.precioMax !== undefined) {
-    where['price_cop'] = {}
-    if (input.precioMin !== undefined) (where['price_cop'] as Record<string, unknown>)['gte'] = BigInt(input.precioMin)
-    if (input.precioMax !== undefined) (where['price_cop'] as Record<string, unknown>)['lte'] = BigInt(input.precioMax)
+  // Nombre largo a propósito: con "totalDisponibles" a secas el modelo lo leía
+  // como "cuántas hay de lo que el cliente preguntó" e inventaba cifras.
+  const totalDisponiblesEnTodoElPortafolio = await prisma.property.count({ where: { status: 'available' } })
+
+  // ── Criterios, cada uno como filtro independiente y descartable ────────────
+  const criterios: Array<{ nombre: string; where: Record<string, unknown> }> = []
+
+  if (input.tipo) {
+    const tipos = tiposDesde(input.tipo)
+    if (tipos) criterios.push({ nombre: `tipo ${input.tipo}`, where: { type: { in: tipos } } })
+    // Si el tipo no se reconoce (ej. "casa lote"), no se filtra: se usa como texto.
   }
-  if (input.areaMin !== undefined) where['area_lot_m2'] = { gte: input.areaMin }
+
+  // Zona pedida fuera de nuestra cobertura: se muestran opciones igual, pero Mac
+  // debe decirlo con claridad para no dar a entender que operamos allí.
+  let zonaFuera: string | null = null
   if (input.municipio) {
-    where['municipality'] = { name: { contains: input.municipio, mode: 'insensitive' } }
+    const ids = await municipioIds(input.municipio)
+    if (ids.length) criterios.push({ nombre: `municipio ${input.municipio}`, where: { municipality_id: { in: ids } } })
+    else zonaFuera = input.municipio
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const properties = await (prisma.property.findMany as any)({
-    where,
-    include: {
-      municipality: { select: { name: true, slug: true } },
-      vereda:       { select: { name: true } },
-      media:        { where: { is_primary: true }, take: 1 },
-    },
-    orderBy,
-    take: limite,
-  }) as Array<Parameters<typeof formatProperty>[0]>
-
-  if (properties.length === 0) {
-    // fallback: broader search without filters for suggestions
-    const sugerencias = await prisma.property.findMany({
-      where: { status: 'available' },
-      include: {
-        municipality: { select: { name: true, slug: true } },
-        media: { where: { is_primary: true }, take: 1 },
+  const libre = [input.texto, tiposDesde(input.tipo ?? '') ? null : input.tipo]
+    .filter((s): s is string => !!s && s.trim().length >= 3)
+  if (libre.length) {
+    criterios.push({
+      nombre: `búsqueda "${libre.join(' ')}"`,
+      where: {
+        OR: libre.flatMap(t => [
+          { title:             { contains: t, mode: 'insensitive' } },
+          { short_description: { contains: t, mode: 'insensitive' } },
+          { description:       { contains: t, mode: 'insensitive' } },
+          { vereda:            { name: { contains: t, mode: 'insensitive' } } },
+        ]),
       },
-      orderBy: { updated_at: 'desc' },
-      take: 3,
     })
-    return {
-      resultados: [],
-      sugerencias: sugerencias.map(formatProperty),
-      mensaje: 'No encontré propiedades con esos criterios exactos. Te comparto algunas opciones disponibles:',
-    }
   }
 
-  return { resultados: properties.map(formatProperty), sugerencias: [] }
+  if (input.precioMin !== undefined || input.precioMax !== undefined) {
+    const rango: Record<string, bigint> = {}
+    if (input.precioMin !== undefined) rango['gte'] = BigInt(Math.round(input.precioMin))
+    if (input.precioMax !== undefined) rango['lte'] = BigInt(Math.round(input.precioMax))
+    criterios.push({ nombre: 'rango de precio', where: { price_cop: rango } })
+  }
+
+  if (input.areaMin !== undefined) {
+    criterios.push({ nombre: 'área mínima', where: { area_lot_m2: { gte: input.areaMin } } })
+  }
+
+  // ── Relajación progresiva: se sueltan los criterios menos importantes ──────
+  // (área → precio → texto → municipio → tipo) antes de rendirse. Así una
+  // propiedad nueva o etiquetada distinto nunca queda invisible.
+  const orden = ['área mínima', 'rango de precio']
+  const prioridad = (n: string) => (orden.indexOf(n) >= 0 ? orden.indexOf(n) : n.startsWith('búsqueda') ? 2 : n.startsWith('municipio') ? 3 : 4)
+  const activos = [...criterios].sort((a, b) => prioridad(a.nombre) - prioridad(b.nombre))
+
+  const descartados: string[] = []
+  for (;;) {
+    const where = { status: 'available', AND: activos.map(c => c.where) }
+    const found = await prisma.property.findMany({ where, include: PROP_INCLUDE, orderBy, take: limite })
+
+    if (found.length > 0) {
+      const avisos: string[] = []
+      if (zonaFuera) {
+        avisos.push(
+          `NO tenemos propiedades en ${zonaFuera}: no operamos esa zona. Dilo con claridad y ofrece estas opciones de nuestra región (Gualivá, Cundinamarca) como alternativa. Nunca las presentes como si estuvieran en ${zonaFuera}.`,
+        )
+      }
+      if (descartados.length) {
+        avisos.push(
+          `No había coincidencias exactas, así que amplié la búsqueda ignorando: ${descartados.join(', ')}. Dile al cliente con honestidad que son las opciones más cercanas a lo que pidió.`,
+        )
+      }
+      return {
+        resultados: found.map(formatProperty),
+        totalEncontrados: found.length,
+        sugerencias: [],
+        totalDisponiblesEnTodoElPortafolio,
+        nota: 'Los "resultados" son las ÚNICAS propiedades que puedes mencionar. "totalDisponiblesEnTodoElPortafolio" es el catálogo completo de Su Finca Raíz en todos los municipios: NUNCA lo presentes como la cantidad disponible de lo que el cliente preguntó, ni de un proyecto o condominio en particular.',
+        ...(avisos.length && { aviso: avisos.join(' ') }),
+      }
+    }
+
+    const siguiente = activos.shift()
+    if (!siguiente) break
+    descartados.push(siguiente.nombre)
+  }
+
+  // Sin nada que mostrar ni relajando todo: el portafolio está vacío.
+  return {
+    resultados: [],
+    totalEncontrados: 0,
+    sugerencias: [],
+    totalDisponiblesEnTodoElPortafolio,
+    aviso: 'No hay propiedades disponibles en el catálogo en línea en este momento. Conecta al cliente con el especialista (solicitar_asesor, motivo PROPIEDAD_FUERA_CATALOGO).',
+  }
+}
+
+/** ¿Se cargó o actualizó en los últimos 30 días? Sirve para que Mac destaque novedades. */
+function esReciente(fecha: Date): boolean {
+  return Date.now() - fecha.getTime() < 30 * 24 * 60 * 60 * 1000
 }
 
 function formatProperty(p: {
   id: string; slug: string; title: string | null; type: string
   price_cop: bigint; area_lot_m2: number | null; area_built_m2: number | null
+  short_description?: string | null; updated_at?: Date
   municipality: { name: string; slug: string }
   vereda?: { name: string } | null
   media?: Array<{ url: string; alt_text: string }>
@@ -191,8 +308,37 @@ function formatProperty(p: {
     precio:       Number(p.price_cop),
     precioFormateado: `$${Number(p.price_cop).toLocaleString('es-CO')}`,
     areaCOP:      p.area_lot_m2 ?? p.area_built_m2 ?? null,
+    resumen:      p.short_description?.slice(0, 220) ?? null,
+    nueva:        p.updated_at ? esReciente(p.updated_at) : false,
     fotoPrincipal: p.media?.[0]?.url ?? null,
     urlFicha:     `${SITE_URL}/propiedad/${p.slug}`,
+  }
+}
+
+/** Inventario real, para que Mac nunca improvise cifras ni ignore lo recién cargado. */
+async function resumenPortafolio() {
+  const where = { status: 'available' }
+  const [total, porTipo, agregados, recientes, municipios] = await Promise.all([
+    prisma.property.count({ where }),
+    prisma.property.groupBy({ by: ['type'], where, _count: { type: true } }),
+    prisma.property.aggregate({ where, _min: { price_cop: true }, _max: { price_cop: true } }),
+    prisma.property.findMany({ where, include: PROP_INCLUDE, orderBy: { updated_at: 'desc' }, take: 5 }),
+    prisma.municipality.findMany({
+      select: { name: true, _count: { select: { properties: true } } },
+      orderBy: { name: 'asc' },
+    }),
+  ])
+
+  const cop = (v: bigint | null) => (v === null ? null : `$${Number(v).toLocaleString('es-CO')}`)
+
+  return {
+    totalDisponiblesEnTodoElPortafolio: total,
+    porTipo: Object.fromEntries(porTipo.map(t => [t.type, t._count.type])),
+    porMunicipio: Object.fromEntries(municipios.filter(m => m._count.properties > 0).map(m => [m.name, m._count.properties])),
+    precioDesde: cop(agregados._min.price_cop),
+    precioHasta: cop(agregados._max.price_cop),
+    masRecientes: recientes.map(formatProperty),
+    nota: 'Estas son TODAS las propiedades publicadas en línea. "masRecientes" son las 5 últimas actualizadas, sin importar la fecha: no digas "de esta semana" ni inventes cuándo se publicaron. "nueva: true" significa cargada o actualizada en los últimos 30 días. Si el cliente busca algo que no está aquí, escala con solicitar_asesor (motivo PROPIEDAD_FUERA_CATALOGO): el especialista maneja propiedades que aún no se publican.',
   }
 }
 
@@ -200,17 +346,31 @@ async function detallePropiedad(input: DetalleInput) {
   const where = input.slug ? { slug: input.slug } : input.id ? { id: input.id } : null
   if (!where) return { error: 'Se requiere slug o id' }
 
-  const p = await prisma.property.findUnique({
-    where: where as { slug: string } | { id: string },
-    include: {
-      municipality: { select: { name: true, slug: true } },
-      vereda:       { select: { name: true } },
-      media:        { orderBy: { order: 'asc' } },
-      features:     true,
-    },
-  })
+  const include = {
+    municipality: { select: { name: true, slug: true } },
+    vereda:       { select: { name: true } },
+    media:        { orderBy: { order: 'asc' as const } },
+    features:     true,
+  }
 
-  if (!p) return { error: 'Propiedad no encontrada' }
+  const p = await prisma.property.findUnique({ where: where as { slug: string } | { id: string }, include })
+
+  if (!p) {
+    // El slug pudo llegar incompleto o mal copiado: se sugieren coincidencias
+    // en vez de responder "no existe" y dejar al cliente sin salida.
+    const pista = input.slug ?? input.id ?? ''
+    const parecidas = await prisma.property.findMany({
+      where: { status: 'available', OR: [
+        { slug:  { contains: pista.split('-').slice(0, 3).join('-'), mode: 'insensitive' } },
+        { title: { contains: pista.replace(/-/g, ' '), mode: 'insensitive' } },
+      ] },
+      include: PROP_INCLUDE,
+      take: 3,
+    })
+    return parecidas.length
+      ? { error: 'No encontré esa ficha exacta', parecidas: parecidas.map(formatProperty) }
+      : { error: 'Propiedad no encontrada. Usa buscar_propiedades o resumen_portafolio antes de afirmar que no existe.' }
+  }
 
   return {
     id:           p.id,
@@ -341,6 +501,9 @@ export async function executeTool(
     switch (name) {
       case 'buscar_propiedades':
         result = await buscarPropiedades(input as BuscarInput)
+        break
+      case 'resumen_portafolio':
+        result = await resumenPortafolio()
         break
       case 'detalle_propiedad':
         result = await detallePropiedad(input as DetalleInput)
