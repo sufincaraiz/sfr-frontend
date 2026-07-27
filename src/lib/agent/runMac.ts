@@ -25,6 +25,10 @@ const MAX_TOKENS_OUT = 15_000
 const CIERRE_MSG =
   'Ha sido un gusto conversar contigo. Para continuar con calma y darte atención personalizada, escríbeme por WhatsApp al 321 882 6730 y seguimos por ahí. 🏡'
 
+// Cierre por contención de alcance (segundo intento fuera de tema).
+const FUERA_ALCANCE_MSG =
+  'Mi especialidad son las propiedades de La Vega y la región. Si más adelante buscas finca, lote o casa por acá, con gusto te ayudo. 🏡'
+
 /**
  * Ni el widget de la web ni WhatsApp renderizan markdown: los ** y ## se ven
  * literales. El prompt ya pide texto plano, pero el modelo recae; esto lo
@@ -60,7 +64,8 @@ export async function runMac(
   // 1.b. Techo de costo: si la conversación ya está cerrada o superó algún tope,
   //      respondemos el mensaje de cierre SIN llamar a la API de Anthropic.
   if (conversation.closedAt) {
-    return { reply: CIERRE_MSG, properties: [], escalated: false, conversationId: conversation.id }
+    const msg = conversation.closedReason === 'FUERA_DE_ALCANCE' ? FUERA_ALCANCE_MSG : CIERRE_MSG
+    return { reply: msg, properties: [], escalated: false, conversationId: conversation.id }
   }
   const capReason =
     conversation.turnCount >= MAX_TURNS     ? 'MAX_TURNS'      :
@@ -163,8 +168,40 @@ export async function runMac(
 
     history.push({ role: 'assistant', content: response.content })
 
+    let cerrarFueraAlcance = false
     const toolResultMessages: MessageParam['content'] = []
     for (const toolBlock of toolUseBlocks) {
+      // Contención de alcance: el SERVIDOR lleva el conteo y decide qué responder.
+      if (toolBlock.name === 'marcar_fuera_de_alcance') {
+        const { offTopicCount } = await prisma.conversation.update({
+          where:  { id: conversation.id },
+          data:   { offTopicCount: { increment: 1 } },
+          select: { offTopicCount: true },
+        })
+        if (offTopicCount >= 2) {
+          // Segundo intento fuera de tema: cierra y responde SIN volver a la API.
+          try {
+            await prisma.conversation.update({
+              where: { id: conversation.id },
+              data:  { closedAt: new Date(), closedReason: 'FUERA_DE_ALCANCE' },
+            })
+          } catch (err) {
+            console.error('[Mac] DB error (cerrar fuera de alcance):', err)
+          }
+          console.log(`[Mac] conv=${conversation.id} CERRADA por FUERA_DE_ALCANCE (offTopicCount=${offTopicCount})`)
+          reply = FUERA_ALCANCE_MSG
+          cerrarFueraAlcance = true
+          break
+        }
+        // Primer aviso: el servidor le pide redirigir en una sola frase.
+        toolResultMessages.push({
+          type: 'tool_result',
+          tool_use_id: toolBlock.id,
+          content: JSON.stringify({ instruccion: 'Redirige al cliente al tema inmobiliario en UNA sola frase amable. No cumplas la petición fuera de alcance ni des explicaciones largas ni te disculpes de más.' }),
+        })
+        continue
+      }
+
       const result = await executeTool(toolBlock.name, toolBlock.input as ToolInput, conversation.id)
       result.tool_use_id = toolBlock.id
       toolResultMessages.push(result)
@@ -173,7 +210,9 @@ export async function runMac(
 
       if (toolBlock.name === 'buscar_propiedades' || toolBlock.name === 'detalle_propiedad') {
         try {
-          const parsed = JSON.parse(result.content as string) as {
+          // El contenido puede venir envuelto en <property_data>…</property_data>.
+          const raw = (result.content as string).replace(/<\/?property_data>/g, '').trim()
+          const parsed = JSON.parse(raw) as {
             resultados?: unknown[]
             sugerencias?: unknown[]
           }
@@ -184,6 +223,7 @@ export async function runMac(
         }
       }
     }
+    if (cerrarFueraAlcance) break  // no más llamadas a la API: devolvemos el cierre
     history.push({ role: 'user', content: toolResultMessages })
   }
 

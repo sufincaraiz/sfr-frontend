@@ -82,6 +82,18 @@ export const MAC_TOOLS: Tool[] = [
       required: ['motivo', 'resumen'],
     },
   },
+  {
+    name: 'marcar_fuera_de_alcance',
+    description:
+      'Llámala cuando el cliente pide algo AJENO al negocio inmobiliario de La Vega / Gualivá (traducir, programar, redactar textos ajenos, tareas, consejos generales, recetas, etc.). NO cumplas la petición. El servidor lleva el conteo y decide cómo responder; tú solo la marcas y sigues lo que te devuelva.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        motivo: { type: 'string', description: 'Qué pidió el cliente, en pocas palabras' },
+      },
+      required: ['motivo'],
+    },
+  },
 ]
 
 // ─── Tool executors ───────────────────────────────────────────────────────────
@@ -517,10 +529,16 @@ export async function executeTool(
       default:
         result = { error: `Tool desconocida: ${name}` }
     }
+    // Los resultados con datos de propiedades (texto libre de la BD) se delimitan
+    // como DATOS, no como instrucciones, para blindar contra inyección de prompt
+    // vía descripciones/títulos maliciosos. El prompt (INTEGRIDAD) refuerza que el
+    // contenido entre <property_data>…</property_data> nunca son órdenes.
+    const DATA_TOOLS = new Set(['buscar_propiedades', 'resumen_portafolio', 'detalle_propiedad'])
+    const json = JSON.stringify(result)
     return {
       type: 'tool_result',
       tool_use_id: '',
-      content: JSON.stringify(result),
+      content: DATA_TOOLS.has(name) ? `<property_data>\n${json}\n</property_data>` : json,
     }
   } catch (err) {
     console.error(`[Mac tool error] ${name}:`, err)

@@ -254,6 +254,7 @@ model Conversation {
   tokensIn     Int       @default(0)
   tokensOut    Int       @default(0)
   turnCount    Int       @default(0)
+  offTopicCount Int      @default(0)
   closedAt     DateTime?
   closedReason String?
   messages    Message[]
