@@ -539,6 +539,22 @@ export default function MacChatWidget() {
                 <Send size={15} color="#0D2D5E" strokeWidth={2.5} />
               </button>
             </div>
+
+            {/* Aviso de tratamiento de datos — Ley 1581/2012 (siempre visible) */}
+            <p
+              className="shrink-0 text-center"
+              style={{ fontSize: '0.62rem', lineHeight: 1.3, color: 'rgba(255,255,255,0.4)', background: '#091F42', padding: '0 12px 8px', margin: 0 }}
+            >
+              Al escribir aceptas nuestra{' '}
+              <a
+                href="/politica-tratamiento-datos"
+                target="_blank"
+                rel="noopener"
+                style={{ color: 'rgba(232,185,47,0.85)', textDecoration: 'underline' }}
+              >
+                política de tratamiento de datos
+              </a>
+            </p>
           </div>
         </>
       )}

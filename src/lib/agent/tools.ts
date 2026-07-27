@@ -416,6 +416,10 @@ async function crearOActualizarLead(input: LeadInput, conversationId: string) {
 
   const qualEnum = (input.qualification as LeadQualification | undefined) ?? undefined
 
+  // Ley 1581/2012: registra el consentimiento la PRIMERA vez que se capta un dato
+  // de contacto (nombre, teléfono o correo). Si ya existe, no se sobrescribe.
+  const captaContacto = Boolean(input.nombre || input.telefono || input.email)
+
   if (conv.leadId && conv.lead) {
     const updated = await prisma.lead.update({
       where: { id: conv.leadId },
@@ -423,6 +427,7 @@ async function crearOActualizarLead(input: LeadInput, conversationId: string) {
         ...(input.nombre    && { name: input.nombre }),
         ...(input.telefono  && { phone: input.telefono }),
         ...(input.email     && { email: input.email }),
+        ...(captaContacto && !conv.lead.consentAt && { consentAt: new Date() }),
         ...(qualEnum        && { qualification: qualEnum }),
         ...(input.budgetMin !== undefined && { budgetMin: input.budgetMin }),
         ...(input.budgetMax !== undefined && { budgetMax: input.budgetMax }),
@@ -449,6 +454,7 @@ async function crearOActualizarLead(input: LeadInput, conversationId: string) {
       email:   input.email     ?? '',
       channel: conv.channel.toLowerCase(),
       qualification: qualEnum ?? 'SIN_CALIFICAR',
+      ...(captaContacto && { consentAt: new Date() }),
       ...(input.budgetMin !== undefined && { budgetMin: input.budgetMin }),
       ...(input.budgetMax !== undefined && { budgetMax: input.budgetMax }),
       ...(input.interestType  && { interestType: input.interestType }),

@@ -190,6 +190,7 @@ model Lead {
   nextAction        String?
   nextActionDate    DateTime?
   lastContactAt     DateTime?
+  consentAt         DateTime?         // Ley 1581/2012: 1ª vez que se capta un dato de contacto
   property          Property?         @relation(fields: [property_id], references: [id], onDelete: SetNull)
   agent             Agent?            @relation(fields: [assigned_agent_id], references: [id])
   conversations     Conversation[]
