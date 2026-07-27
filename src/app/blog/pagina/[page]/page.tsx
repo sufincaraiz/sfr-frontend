@@ -10,11 +10,18 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
+export const revalidate = 3600
+
 export async function generateStaticParams() {
-  const { totalPages } = await getPaginatedPosts(1, POSTS_PER_PAGE)
-  return Array.from({ length: Math.max(0, totalPages - 1) }, (_, i) => ({
-    page: String(i + 2), // pages 2..N (page 1 is /blog)
-  }))
+  try {
+    const { totalPages } = await getPaginatedPosts(1, POSTS_PER_PAGE)
+    return Array.from({ length: Math.max(0, totalPages - 1) }, (_, i) => ({
+      page: String(i + 2), // pages 2..N (page 1 is /blog)
+    }))
+  } catch (err) {
+    console.warn('[generateStaticParams /blog/pagina/[page]] BD no disponible en build; se generará bajo demanda:', err instanceof Error ? err.message : err)
+    return []
+  }
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────

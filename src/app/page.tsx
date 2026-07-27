@@ -49,6 +49,10 @@ export const metadata: Metadata = {
   },
 };
 
+// Consulta la BD (propiedades destacadas). ISR: si un build ocurre con la BD caída,
+// la home se rellena bajo demanda en vez de quedar congelada sin destacadas.
+export const revalidate = 3600;
+
 // ─── Fetch propiedades destacadas ─────────────────────────────────────────────
 const FEATURED_COUNT = 14;  // 2 filas de 7 para los carruseles de la home
 
@@ -61,63 +65,70 @@ async function getFeaturedProperties(): Promise<Property[]> {
   // por fecha y luego intercalamos por tipo (round-robin) para no llenar las 6
   // tarjetas con un solo tipo. Si un tipo se agota, las rondas siguientes lo
   // saltan y completan con los demás hasta llegar a 6.
-  const rows = await prisma.property.findMany({
-    where:   { status: 'available' },
-    orderBy: [{ published_at: 'desc' }],
-    include: {
-      municipality: { select: { id: true, slug: true, name: true, province: true, demand_score: true } },
-      media:        { orderBy: { order: 'asc' }, take: 6 },
-    },
-  });
+  // Si la BD no responde en build (Railway en frío, P1001), degradamos a home sin
+  // destacadas en vez de tumbar el prerender de la portada. Se rellena bajo demanda (ISR).
+  try {
+    const rows = await prisma.property.findMany({
+      where:   { status: 'available' },
+      orderBy: [{ published_at: 'desc' }],
+      include: {
+        municipality: { select: { id: true, slug: true, name: true, province: true, demand_score: true } },
+        media:        { orderBy: { order: 'asc' }, take: 6 },
+      },
+    });
 
-  // Agrupar por tipo conservando el orden por fecha dentro de cada grupo
-  const byType = new Map<string, typeof rows>();
-  for (const r of rows) {
-    const list = byType.get(r.type) ?? [];
-    list.push(r);
-    byType.set(r.type, list);
-  }
-
-  // Round-robin: una propiedad de cada tipo por ronda hasta llenar FEATURED_COUNT
-  const queues = [...byType.values()];
-  const selected: typeof rows = [];
-  let exhausted = false;
-  while (selected.length < FEATURED_COUNT && !exhausted) {
-    exhausted = true;
-    for (const q of queues) {
-      if (selected.length >= FEATURED_COUNT) break;
-      const next = q.shift();
-      if (next) { selected.push(next); exhausted = false; }
+    // Agrupar por tipo conservando el orden por fecha dentro de cada grupo
+    const byType = new Map<string, typeof rows>();
+    for (const r of rows) {
+      const list = byType.get(r.type) ?? [];
+      list.push(r);
+      byType.set(r.type, list);
     }
-  }
 
-  return selected.map(r => ({
-    id:                r.id,
-    slug:              r.slug,
-    type:              r.type as Property['type'],
-    transaction_type:  'venta' as const,
-    municipality_id:   r.municipality_id,
-    vereda_id:         r.vereda_id,
-    address_visible:   r.address_visible,
-    price_cop:         Number(r.price_cop),
-    area_lot_m2:       r.area_lot_m2,
-    area_built_m2:     r.area_built_m2,
-    bedrooms:          r.bedrooms,
-    bathrooms:         r.bathrooms,
-    parking:           r.parking,
-    year_built:        r.year_built,
-    status:            r.status as Property['status'],
-    geo_lat:           r.geo_lat,
-    geo_lng:           r.geo_lng,
-    published_at:      r.published_at.toISOString(),
-    updated_at:        r.updated_at.toISOString(),
-    title:             r.title ?? undefined,
-    short_description: r.short_description ?? undefined,
-    meta_title:        r.meta_title ?? undefined,
-    meta_description:  r.meta_description ?? undefined,
-    municipality:      r.municipality ?? undefined,
-    media:             r.media as Property['media'],
-  }));
+    // Round-robin: una propiedad de cada tipo por ronda hasta llenar FEATURED_COUNT
+    const queues = [...byType.values()];
+    const selected: typeof rows = [];
+    let exhausted = false;
+    while (selected.length < FEATURED_COUNT && !exhausted) {
+      exhausted = true;
+      for (const q of queues) {
+        if (selected.length >= FEATURED_COUNT) break;
+        const next = q.shift();
+        if (next) { selected.push(next); exhausted = false; }
+      }
+    }
+
+    return selected.map(r => ({
+      id:                r.id,
+      slug:              r.slug,
+      type:              r.type as Property['type'],
+      transaction_type:  'venta' as const,
+      municipality_id:   r.municipality_id,
+      vereda_id:         r.vereda_id,
+      address_visible:   r.address_visible,
+      price_cop:         Number(r.price_cop),
+      area_lot_m2:       r.area_lot_m2,
+      area_built_m2:     r.area_built_m2,
+      bedrooms:          r.bedrooms,
+      bathrooms:         r.bathrooms,
+      parking:           r.parking,
+      year_built:        r.year_built,
+      status:            r.status as Property['status'],
+      geo_lat:           r.geo_lat,
+      geo_lng:           r.geo_lng,
+      published_at:      r.published_at.toISOString(),
+      updated_at:        r.updated_at.toISOString(),
+      title:             r.title ?? undefined,
+      short_description: r.short_description ?? undefined,
+      meta_title:        r.meta_title ?? undefined,
+      meta_description:  r.meta_description ?? undefined,
+      municipality:      r.municipality ?? undefined,
+      media:             r.media as Property['media'],
+    }));
+  } catch (err) {
+    console.warn('[getFeaturedProperties] BD no disponible; home sin destacadas:', err instanceof Error ? err.message : err);
+    return [];
+  }
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────

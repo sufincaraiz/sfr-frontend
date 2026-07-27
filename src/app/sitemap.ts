@@ -6,6 +6,10 @@ import { getMunicipiosVisibles } from '@/lib/municipios'
 import { getAllVeredasData } from '@/lib/veredas-data'
 import { BLOG_CATEGORIES, type BlogCategorySlug } from '@/types/blog'
 
+// Consulta la BD (propiedades). ISR: si un build ocurre con la BD caída, el sitemap
+// se regenera bajo demanda en vez de tumbar el build.
+export const revalidate = 3600
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   // ── 1. Rutas estáticas core ────────────────────────────────────────────────
@@ -28,11 +32,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   ]
 
   // ── 2. Propiedades disponibles ─────────────────────────────────────────────
-  const properties = await prisma.property.findMany({
-    where:   { status: 'available' },
-    select:  { slug: true, updated_at: true },
-    orderBy: { updated_at: 'desc' },
-  })
+  // Si la BD no responde en build (P1001), degradamos a sitemap sin propiedades en
+  // vez de tumbar el build; se regenera bajo demanda (ISR).
+  let properties: { slug: string; updated_at: Date }[] = []
+  try {
+    properties = await prisma.property.findMany({
+      where:   { status: 'available' },
+      select:  { slug: true, updated_at: true },
+      orderBy: { updated_at: 'desc' },
+    })
+  } catch (err) {
+    console.warn('[sitemap] BD no disponible; sitemap sin propiedades:', err instanceof Error ? err.message : err)
+  }
   const propertyRoutes: MetadataRoute.Sitemap = properties.map(p => ({
     url:             `${SITE_URL}/propiedad/${p.slug}`,
     lastModified:    p.updated_at,

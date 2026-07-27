@@ -49,17 +49,33 @@ function mapMunicipio(m: any): Municipio {
   }
 }
 
-/** Un municipio público por slug. Devuelve null si no existe o está oculto. */
+/** Un municipio público por slug. Devuelve null si no existe, está oculto o la BD no responde. */
 export async function getMunicipio(slug: string): Promise<Municipio | null> {
-  const m = await prisma.municipality.findFirst({ where: { slug, oculto: false } })
-  return m ? mapMunicipio(m) : null
+  // También lo consumen las páginas de veredas (params estáticos que SÍ se prerenderizan)
+  // para mostrar el municipio padre. Si la BD no responde en build, devolvemos null en
+  // vez de tumbar el prerender.
+  try {
+    const m = await prisma.municipality.findFirst({ where: { slug, oculto: false } })
+    return m ? mapMunicipio(m) : null
+  } catch (err) {
+    console.warn(`[getMunicipio ${slug}] BD no disponible; devolviendo null:`, err instanceof Error ? err.message : err)
+    return null
+  }
 }
 
 /** Todos los municipios VISIBLES (no ocultos), ordenados por demanda y nombre. */
 export async function getMunicipiosVisibles(): Promise<Municipio[]> {
-  const rows = await prisma.municipality.findMany({
-    where: { oculto: false },
-    orderBy: [{ demand_score: 'desc' }, { name: 'asc' }],
-  })
-  return rows.map(mapMunicipio)
+  // Lo usa el Footer (en TODAS las páginas), el sitemap y el listado. Si la BD no
+  // responde (p. ej. Railway en frío durante el build de Vercel), degradamos a lista
+  // vacía en vez de tumbar el render de cada página estática.
+  try {
+    const rows = await prisma.municipality.findMany({
+      where: { oculto: false },
+      orderBy: [{ demand_score: 'desc' }, { name: 'asc' }],
+    })
+    return rows.map(mapMunicipio)
+  } catch (err) {
+    console.warn('[getMunicipiosVisibles] BD no disponible; devolviendo lista vacía:', err instanceof Error ? err.message : err)
+    return []
+  }
 }

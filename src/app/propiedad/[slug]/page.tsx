@@ -74,8 +74,13 @@ function youtubeEmbedUrl(url: string | null | undefined): string | null {
 // ─── SSG ────────────────────────────────────────────────────────────────────
 
 export async function generateStaticParams() {
-  const slugs = await prisma.property.findMany({ select: { slug: true }, where: { status: 'available' } });
-  return slugs.map(s => ({ slug: s.slug }));
+  try {
+    const slugs = await prisma.property.findMany({ select: { slug: true }, where: { status: 'available' } });
+    return slugs.map(s => ({ slug: s.slug }));
+  } catch (err) {
+    console.warn('[generateStaticParams /propiedad/[slug]] BD no disponible en build; se generará bajo demanda:', err instanceof Error ? err.message : err);
+    return [];
+  }
 }
 
 // ─── Metadata ────────────────────────────────────────────────────────────────

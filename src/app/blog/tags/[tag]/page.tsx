@@ -9,9 +9,16 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
+export const revalidate = 3600
+
 export async function generateStaticParams() {
-  const tags = await getAllTags()
-  return tags.map(({ tag }) => ({ tag: encodeURIComponent(tag.toLowerCase()) }))
+  try {
+    const tags = await getAllTags()
+    return tags.map(({ tag }) => ({ tag: encodeURIComponent(tag.toLowerCase()) }))
+  } catch (err) {
+    console.warn('[generateStaticParams /blog/tags/[tag]] BD no disponible en build; se generará bajo demanda:', err instanceof Error ? err.message : err)
+    return []
+  }
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────

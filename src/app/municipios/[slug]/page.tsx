@@ -13,9 +13,17 @@ import type { Property, PropertyMedia } from '@/types'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
+// ISR: red de seguridad además de la revalidación on-demand al editar en el admin.
+export const revalidate = 3600
+
 export async function generateStaticParams() {
-  const data = await getMunicipiosVisibles()
-  return data.map(m => ({ slug: m.slug }))
+  try {
+    const data = await getMunicipiosVisibles()
+    return data.map(m => ({ slug: m.slug }))
+  } catch (err) {
+    console.warn('[generateStaticParams /municipios/[slug]] BD no disponible en build; se generará bajo demanda:', err instanceof Error ? err.message : err)
+    return []
+  }
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────

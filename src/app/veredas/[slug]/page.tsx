@@ -15,6 +15,10 @@ import type { Property, PropertyMedia } from '@/types'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
+// La página consulta la BD (propiedades del municipio). ISR: si un build ocurre con
+// la BD caída, se rellena bajo demanda en vez de quedar congelada sin propiedades.
+export const revalidate = 3600
+
 export async function generateStaticParams() {
   return getAllVeredasData().map(v => ({ slug: v.slug }))
 }
@@ -50,20 +54,23 @@ export async function generateMetadata(
 // ─── Data ────────────────────────────────────────────────────────────────────
 
 async function getVeredaProperties(municipioSlug: string) {
-  const muni = await prisma.municipality.findFirst({ where: { slug: municipioSlug } })
-  if (!muni) return []
+  // Query inline con BD: si Railway no responde en build (P1001), degradamos a
+  // sin propiedades en vez de tumbar el prerender de la vereda (params estáticos).
+  try {
+    const muni = await prisma.municipality.findFirst({ where: { slug: municipioSlug } })
+    if (!muni) return []
 
-  const raw = await prisma.property.findMany({
-    where: { municipality_id: muni.id, status: 'available' },
-    orderBy: { published_at: 'desc' },
-    take: 4,
-    include: {
-      municipality: true,
-      media: { where: { is_primary: true }, take: 1 },
-    },
-  })
+    const raw = await prisma.property.findMany({
+      where: { municipality_id: muni.id, status: 'available' },
+      orderBy: { published_at: 'desc' },
+      take: 4,
+      include: {
+        municipality: true,
+        media: { where: { is_primary: true }, take: 1 },
+      },
+    })
 
-  return raw.map(r => ({
+    return raw.map(r => ({
     id: r.id,
     slug: r.slug,
     type: r.type as Property['type'],
@@ -89,7 +96,11 @@ async function getVeredaProperties(municipioSlug: string) {
       ? { id: r.municipality.id, slug: r.municipality.slug, name: r.municipality.name, province: r.municipality.province, demand_score: r.municipality.demand_score }
       : undefined,
     media: r.media as PropertyMedia[],
-  }))
+    }))
+  } catch (err) {
+    console.warn(`[getVeredaProperties ${municipioSlug}] BD no disponible; sin propiedades:`, err instanceof Error ? err.message : err)
+    return []
+  }
 }
 
 // ─── Page ─────────────────────────────────────────────────────────────────────

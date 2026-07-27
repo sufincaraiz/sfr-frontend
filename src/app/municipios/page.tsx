@@ -6,6 +6,10 @@ import { SITE_URL } from '@/lib/site'
 import { getMunicipiosVisibles } from '@/lib/municipios'
 import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 
+// Consulta la BD (municipios). ISR: si un build ocurre con la BD caída, se rellena
+// bajo demanda en vez de quedar congelada con lista vacía.
+export const revalidate = 3600
+
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
 export const metadata: Metadata = {

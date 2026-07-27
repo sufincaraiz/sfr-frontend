@@ -12,8 +12,15 @@ import { JsonLd, breadcrumbSchema, articleSchema, howToSchema, webPageSchema } f
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
+export const revalidate = 3600
+
 export async function generateStaticParams() {
-  return await getAllPostSlugs()
+  try {
+    return await getAllPostSlugs()
+  } catch (err) {
+    console.warn('[generateStaticParams /blog/[slug]] BD no disponible en build; se generará bajo demanda:', err instanceof Error ? err.message : err)
+    return []
+  }
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
