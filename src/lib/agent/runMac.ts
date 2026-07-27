@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { MAC_SYSTEM_PROMPT } from '@/lib/agent/prompt'
 import { bloqueConocimiento } from '@/lib/agent/knowledge'
 import { MAC_TOOLS, executeTool, type ToolInput } from '@/lib/agent/tools'
+import { consultarExperto, MAX_EXPERT_CALLS } from '@/lib/agent/expert'
 import type { MessageParam, ToolUseBlock, ContentBlock, TextBlockParam } from '@anthropic-ai/sdk/resources/messages'
 
 export type MacChannel = 'WEB' | 'WHATSAPP' | 'TELEGRAM' | 'APP'
@@ -135,6 +136,7 @@ export async function runMac(
   let escalated = false
   let turnTokensIn = 0
   let turnTokensOut = 0
+  let expertConsultedByModel = false
   const collectedProperties: unknown[] = []
   const MAX_ITERATIONS = 5
 
@@ -207,6 +209,7 @@ export async function runMac(
       toolResultMessages.push(result)
 
       if (toolBlock.name === 'solicitar_asesor') escalated = true
+      if (toolBlock.name === 'consultar_experto') expertConsultedByModel = true
 
       if (toolBlock.name === 'buscar_propiedades' || toolBlock.name === 'detalle_propiedad') {
         try {
@@ -225,6 +228,78 @@ export async function runMac(
     }
     if (cerrarFueraAlcance) break  // no más llamadas a la API: devolvemos el cierre
     history.push({ role: 'user', content: toolResultMessages })
+  }
+
+  // 5.a bis. Escalamiento AUTOMÁTICO: si el lead quedó CALIENTE y el modelo no pidió
+  // el análisis por su cuenta, consultamos a Opus para elaborar la recomendación
+  // final. Se rige por el mismo tope (MAX_EXPERT_CALLS) y contabilidad aparte.
+  if (!expertConsultedByModel && reply.trim()) {
+    try {
+      const fresh = await prisma.conversation.findUnique({
+        where:  { id: conversation.id },
+        select: {
+          expertCallCount: true,
+          lead: { select: { name: true, qualification: true, budgetMin: true, budgetMax: true, interestType: true, interestZone: true, timeframe: true, financing: true } },
+        },
+      })
+      const lf = fresh?.lead
+      if (lf?.qualification === 'CALIENTE' && (fresh?.expertCallCount ?? 0) < MAX_EXPERT_CALLS) {
+        const ctx: string[] = []
+        if (lf.name && lf.name !== 'Sin nombre') ctx.push(`Cliente: ${lf.name}`)
+        if (lf.budgetMin != null || lf.budgetMax != null) ctx.push(`Presupuesto (COP): ${lf.budgetMin ?? '?'} – ${lf.budgetMax ?? '?'}`)
+        if (lf.interestType) ctx.push(`Tipo de interés: ${lf.interestType}`)
+        if (lf.interestZone) ctx.push(`Zona de interés: ${lf.interestZone}`)
+        if (lf.timeframe)    ctx.push(`Tiempos: ${lf.timeframe}`)
+        if (lf.financing)    ctx.push(`Forma de pago: ${lf.financing}`)
+        const propsVistas = collectedProperties
+          .slice(0, 6)
+          .map((p) => {
+            const o = p as { titulo?: string; municipio?: string; precioFormateado?: string }
+            return o?.titulo ? `- ${o.titulo}${o.municipio ? ` (${o.municipio})` : ''}${o.precioFormateado ? ` — ${o.precioFormateado}` : ''}` : null
+          })
+          .filter((s): s is string => !!s)
+        if (propsVistas.length) ctx.push(`Propiedades mostradas en la conversación:\n${propsVistas.join('\n')}`)
+
+        const exp = await consultarExperto(
+          {
+            pregunta: 'Elabora la recomendación final de inversión para este cliente calificado como CALIENTE: cuál de las opciones vistas encaja mejor con su perfil y por qué, y qué debería confirmar con el especialista antes de decidir.',
+            contexto: ctx.join('\n') || '(sin datos estructurados; usa el historial de la conversación)',
+          },
+          conversation.id,
+          'AUTO_CALIENTE',
+        )
+
+        if (exp.analisis) {
+          history.push({ role: 'assistant', content: reply })
+          history.push({
+            role: 'user',
+            content:
+              'Instrucción interna del sistema (no es un mensaje del cliente): un analista experto preparó esta recomendación. ' +
+              'Comunícala al cliente CON TU PROPIA VOZ de Mac (cálido, mensajes cortos, texto plano, sin markdown), integrándola de forma natural con lo que ya le dijiste. ' +
+              'No reveles que consultaste a otro sistema ni la copies literal.\n\n' +
+              exp.analisis,
+          })
+          const r2 = await anthropic.messages.create({
+            model:      'claude-haiku-4-5',
+            max_tokens: 1024,
+            system:     systemBlocks,
+            messages:   history,
+          })
+          const u2 = r2.usage
+          turnTokensIn  += (u2.input_tokens ?? 0) + (u2.cache_creation_input_tokens ?? 0) + (u2.cache_read_input_tokens ?? 0)
+          turnTokensOut += (u2.output_tokens ?? 0)
+          const t2 = r2.content
+            .filter((b): b is Extract<ContentBlock, { type: 'text' }> => b.type === 'text')
+            .map((b) => b.text)
+            .join('\n')
+          if (t2.trim()) reply = t2
+        }
+      }
+    } catch (err) {
+      // El escalamiento automático nunca debe romper el turno: si algo falla,
+      // se conserva la respuesta original de Mac.
+      console.error('[Mac] error en escalamiento automático (CALIENTE):', err)
+    }
   }
 
   reply = reply ? aTextoPlano(reply, channel) : 'Disculpa, tuve un problema procesando tu mensaje. ¿Podrías repetirlo?'

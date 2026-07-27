@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
+import { consultarExperto } from '@/lib/agent/expert'
 import type { Tool, ToolResultBlockParam } from '@anthropic-ai/sdk/resources/messages'
 import type { LeadQualification } from '@prisma/client'
 
@@ -94,6 +95,19 @@ export const MAC_TOOLS: Tool[] = [
       required: ['motivo'],
     },
   },
+  {
+    name: 'consultar_experto',
+    description:
+      'Consulta al analista experto de Su Finca Raíz. Úsala SOLO cuando el cliente pida análisis de inversión o rentabilidad, pregunte por normativa POT/EOT o usos del suelo, compare tres o más propiedades, o requiera un razonamiento que excede una respuesta comercial estándar. No la uses para preguntas simples de precio, ubicación o disponibilidad.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        pregunta: { type: 'string', description: 'La consulta técnica en detalle' },
+        contexto: { type: 'string', description: 'Datos relevantes ya recogidos en la conversación (presupuesto, zona de interés, propiedades vistas)' },
+      },
+      required: ['pregunta', 'contexto'],
+    },
+  },
 ]
 
 // ─── Tool executors ───────────────────────────────────────────────────────────
@@ -137,7 +151,12 @@ interface SolicitarInput {
   resumen: string
 }
 
-export type ToolInput = BuscarInput | DetalleInput | LeadInput | SolicitarInput
+interface ExpertoInput {
+  pregunta?: string
+  contexto?: string
+}
+
+export type ToolInput = BuscarInput | DetalleInput | LeadInput | SolicitarInput | ExpertoInput
 
 // ─── Normalización de criterios ───────────────────────────────────────────────
 // El cliente escribe "cabaña", "Finca", "Alban", "terreno"… y la BD guarda
@@ -531,6 +550,9 @@ export async function executeTool(
         break
       case 'solicitar_asesor':
         result = await solicitarAsesor(input as SolicitarInput, conversationId)
+        break
+      case 'consultar_experto':
+        result = await consultarExperto(input as ExpertoInput, conversationId, 'MODELO')
         break
       default:
         result = { error: `Tool desconocida: ${name}` }

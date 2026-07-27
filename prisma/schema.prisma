@@ -258,6 +258,11 @@ model Conversation {
   offTopicCount Int      @default(0)
   closedAt     DateTime?
   closedReason String?
+  // Escalamiento al modelo experto (Opus). Se contabilizan APARTE de los tokens de
+  // Haiku porque el costo por token es muy distinto y hay que verlos por separado.
+  expertCallCount Int    @default(0)
+  expertTokensIn  Int    @default(0)
+  expertTokensOut Int    @default(0)
   messages    Message[]
 
   @@unique([channel, externalId])

@@ -3,6 +3,10 @@ import { z } from 'zod'
 import { runMac } from '@/lib/agent/runMac'
 import { checkRateLimit } from '@/lib/agent/ratelimit'
 
+// La consulta al modelo experto (Opus) puede tardar hasta ~30 s, más los turnos de
+// Haiku. Ampliamos el límite de la función para que no se corte a mitad de turno.
+export const maxDuration = 60
+
 // ─── Input schema ─────────────────────────────────────────────────────────────
 
 const RequestSchema = z.object({
