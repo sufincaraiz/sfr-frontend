@@ -8,11 +8,15 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 /** Máximo de consultas a Opus por conversación (guardarraíl de costo). */
 export const MAX_EXPERT_CALLS = 2
 
-/** Timeout duro de la llamada a Opus. Puede tardar más que un turno normal. */
-const EXPERT_TIMEOUT_MS = 30_000
+/**
+ * Timeout duro de la llamada a Opus. Con el pensamiento activo el razonamiento tarda
+ * más, así que damos 45 s (antes 30 s con thinking apagado). El widget mantiene el
+ * indicador de escritura toda la espera; la ruta usa maxDuration acorde.
+ */
+const EXPERT_TIMEOUT_MS = 45_000
 
-/** Tope de salida del experto (sobrio y acotado). */
-const EXPERT_MAX_TOKENS = 2000
+/** Tope de salida del experto: pensamiento + texto. 4000 deja ~2000 para el brief. */
+const EXPERT_MAX_TOKENS = 4000
 
 // Personalidad propia: analista técnico y sobrio de la región del Gualivá. NO es
 // Mac ni habla con el cliente; produce un análisis interno que Mac transmite luego
@@ -98,22 +102,28 @@ export async function consultarExperto(
   const userContent = `Consulta del asesor comercial:\n${pregunta}\n\nContexto recogido en la conversación:\n${contexto}`
 
   try {
-    // Opus 5: pensamiento DESACTIVADO a propósito. max_tokens=2000 es tope duro de
-    // (pensamiento + texto); con el pensamiento activo (default en Opus 5) el análisis
-    // se truncaría. Sin herramientas, así que la respuesta sale como texto directo.
+    // Opus 5 razona antes de responder: el pensamiento es justo lo que aporta valor en
+    // análisis de inversión y normativa POT/EOT. En Opus 5 NO existe budget_tokens
+    // (devuelve 400): el presupuesto de razonamiento se controla con thinking adaptativo
+    // + effort. Con max_tokens=4000 y effort "medium", el modelo razona con holgura y
+    // deja espacio amplio (~2000 tokens) para el texto final del brief. Sin herramientas
+    // en esta llamada, la respuesta sale como texto directo.
     const response = await anthropic.messages.create(
       {
-        model:      'claude-opus-5',
-        max_tokens: EXPERT_MAX_TOKENS,
-        thinking:   { type: 'disabled' },
-        system:     EXPERT_SYSTEM_PROMPT,
-        messages:   [{ role: 'user', content: userContent }],
+        model:         'claude-opus-5',
+        max_tokens:    EXPERT_MAX_TOKENS,
+        thinking:      { type: 'adaptive' },
+        output_config: { effort: 'medium' },
+        system:        EXPERT_SYSTEM_PROMPT,
+        messages:      [{ role: 'user', content: userContent }],
       },
       { signal: AbortSignal.timeout(EXPERT_TIMEOUT_MS), maxRetries: 0 },
     )
 
     const usage = response.usage
     const inTok  = (usage.input_tokens ?? 0) + (usage.cache_creation_input_tokens ?? 0) + (usage.cache_read_input_tokens ?? 0)
+    // output_tokens ya incluye los tokens de PENSAMIENTO + los de TEXTO: la API los
+    // factura juntos como output. Así el costo real de Opus queda bien registrado.
     const outTok = usage.output_tokens ?? 0
 
     const analisis = response.content

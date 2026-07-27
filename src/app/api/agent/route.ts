@@ -3,9 +3,10 @@ import { z } from 'zod'
 import { runMac } from '@/lib/agent/runMac'
 import { checkRateLimit } from '@/lib/agent/ratelimit'
 
-// La consulta al modelo experto (Opus) puede tardar hasta ~30 s, más los turnos de
-// Haiku. Ampliamos el límite de la función para que no se corte a mitad de turno.
-export const maxDuration = 60
+// La consulta al modelo experto (Opus, con pensamiento activo) puede tardar hasta
+// ~45 s, y en el escalamiento automático se suma el turno de Haiku que la comunica.
+// Ampliamos el límite de la función para que no se corte a mitad de turno.
+export const maxDuration = 90
 
 // ─── Input schema ─────────────────────────────────────────────────────────────
 
