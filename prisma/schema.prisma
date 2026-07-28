@@ -191,6 +191,8 @@ model Lead {
   nextActionDate    DateTime?
   lastContactAt     DateTime?
   consentAt         DateTime?         // Ley 1581/2012: 1ª vez que se capta un dato de contacto
+  summary           String?           @db.Text  // Resumen de la conversación para el asesor (se genera una vez, al captar el lead)
+  summaryAt         DateTime?         // Cuándo se generó el resumen
   property          Property?         @relation(fields: [property_id], references: [id], onDelete: SetNull)
   agent             Agent?            @relation(fields: [assigned_agent_id], references: [id])
   conversations     Conversation[]

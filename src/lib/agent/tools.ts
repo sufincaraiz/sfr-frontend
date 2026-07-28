@@ -1,8 +1,11 @@
+import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { consultarExperto } from '@/lib/agent/expert'
 import type { Tool, ToolResultBlockParam } from '@anthropic-ai/sdk/resources/messages'
 import type { LeadQualification } from '@prisma/client'
+
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
 // ─── Tool definitions (schema for Anthropic) ─────────────────────────────────
 
@@ -426,6 +429,75 @@ async function detallePropiedad(input: DetalleInput) {
   }
 }
 
+const RESUMEN_SYSTEM =
+  'Resume esta conversación de un lead inmobiliario en 3-4 frases para que un asesor sepa ' +
+  'con quién va a hablar antes de llamar. Incluye: qué busca el cliente (tipo de inmueble, ' +
+  'zona, presupuesto si lo dio), qué preguntó, y cualquier señal de interés o urgencia. ' +
+  'Español, directo, sin saludos ni relleno.'
+
+/**
+ * Genera el resumen de la conversación con UNA llamada corta a Haiku (barata, sin
+ * razonamiento) y lo guarda en el lead. Los tokens se suman a los de Haiku de la
+ * conversación (tokensIn/tokensOut), NO aparte. Es un extra: si falla, se registra con
+ * console.warn y NO rompe la captura del lead (summary queda null).
+ */
+async function generarResumenLead(leadId: string, conversationId: string): Promise<void> {
+  try {
+    const mensajes = await prisma.message.findMany({
+      where:   { conversationId },
+      orderBy: { createdAt: 'asc' },
+      take:    50,
+      select:  { role: true, content: true },
+    })
+    if (mensajes.length === 0) return
+
+    const transcript = mensajes
+      .map((m) => `${m.role === 'USER' ? 'Cliente' : 'Mac'}: ${m.content}`)
+      .join('\n')
+
+    const resp = await anthropic.messages.create(
+      {
+        model:      'claude-haiku-4-5',
+        max_tokens: 300,
+        system:     RESUMEN_SYSTEM,
+        messages:   [{ role: 'user', content: transcript }],
+      },
+      { signal: AbortSignal.timeout(20_000), maxRetries: 1 },
+    )
+
+    // Contabilidad: los tokens del resumen se suman a los de Haiku de la conversación.
+    const u = resp.usage
+    const inTok  = (u.input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0) + (u.cache_read_input_tokens ?? 0)
+    const outTok = u.output_tokens ?? 0
+    try {
+      await prisma.conversation.update({
+        where: { id: conversationId },
+        data:  { tokensIn: { increment: inTok }, tokensOut: { increment: outTok } },
+      })
+    } catch (err) {
+      console.error('[Mac] DB error (tokens del resumen):', err)
+    }
+
+    const texto = resp.content
+      .filter((b): b is Extract<typeof b, { type: 'text' }> => b.type === 'text')
+      .map((b) => b.text)
+      .join('\n')
+      .trim()
+    if (!texto) {
+      console.warn(`[Mac] resumen vacío para lead=${leadId} (tokens in/out=${inTok}/${outTok})`)
+      return
+    }
+
+    await prisma.lead.update({
+      where: { id: leadId },
+      data:  { summary: texto, summaryAt: new Date() },
+    })
+    console.log(`[Mac] resumen de conversación generado para lead=${leadId} (tokens in/out=${inTok}/${outTok})`)
+  } catch (err) {
+    console.warn('[Mac] no se pudo generar el resumen del lead:', err instanceof Error ? err.message : err)
+  }
+}
+
 async function crearOActualizarLead(input: LeadInput, conversationId: string) {
   const conv = await prisma.conversation.findUnique({
     where: { id: conversationId },
@@ -462,6 +534,10 @@ async function crearOActualizarLead(input: LeadInput, conversationId: string) {
         lastContactAt: new Date(),
       },
     })
+    // Resumen para el asesor: una sola vez, al captar contacto y si aún no lo tiene.
+    if (captaContacto && !conv.lead.summary) {
+      await generarResumenLead(updated.id, conversationId)
+    }
     return { ok: true, leadId: updated.id, action: 'updated' }
   }
 
@@ -493,6 +569,11 @@ async function crearOActualizarLead(input: LeadInput, conversationId: string) {
     where: { id: conversationId },
     data: { leadId: lead.id },
   })
+
+  // Resumen para el asesor: lead nuevo captado con contacto → se genera una vez.
+  if (captaContacto) {
+    await generarResumenLead(lead.id, conversationId)
+  }
 
   return { ok: true, leadId: lead.id, action: 'created' }
 }
