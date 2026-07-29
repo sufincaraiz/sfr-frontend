@@ -498,6 +498,19 @@ async function generarResumenLead(leadId: string, conversationId: string): Promi
   }
 }
 
+/**
+ * Deriva el teléfono del lead a partir del externalId de una conversación de WhatsApp.
+ * Meta (Cloud API) entrega el wa_id como dígitos CON indicativo de país, sin "+" ni
+ * sufijo (ej: "573001234567" → CO, "34600123456" → ES, "14155551234" → US). Conservamos
+ * el indicativo que YA trae y devolvemos E.164 (con "+"). NUNCA se agrega ni se adivina
+ * un país. Es defensivo ante variantes ("@c.us"/"@s.whatsapp.net", espacios, "+" previo).
+ * Devuelve null si no parece un número válido (8–15 dígitos, rango E.164).
+ */
+function telefonoWhatsappE164(externalId: string): string | null {
+  const digits = externalId.replace(/@.*$/, '').replace(/\D/g, '')
+  return digits.length >= 8 && digits.length <= 15 ? `+${digits}` : null
+}
+
 async function crearOActualizarLead(input: LeadInput, conversationId: string) {
   const conv = await prisma.conversation.findUnique({
     where: { id: conversationId },
@@ -511,12 +524,23 @@ async function crearOActualizarLead(input: LeadInput, conversationId: string) {
   // de contacto (nombre, teléfono o correo). Si ya existe, no se sobrescribe.
   const captaContacto = Boolean(input.nombre || input.telefono || input.email)
 
+  // WhatsApp: el número del cliente ES el canal (externalId), con su indicativo de país.
+  // Solo lo usamos como teléfono si el cliente NO dio uno propio en la conversación; si
+  // dio un número (aunque sea sin indicativo), ese manda y se guarda tal cual, sin tocar.
+  const waPhone =
+    conv.channel === 'WHATSAPP' && !input.telefono
+      ? telefonoWhatsappE164(conv.externalId)
+      : null
+
   if (conv.leadId && conv.lead) {
     const updated = await prisma.lead.update({
       where: { id: conv.leadId },
       data: {
         ...(input.nombre    && { name: input.nombre }),
         ...(input.telefono  && { phone: input.telefono }),
+        // WhatsApp: rellena el teléfono con el número del canal solo si el lead aún no
+        // tiene uno (no sobrescribe un número que el cliente haya dado antes).
+        ...(waPhone && !conv.lead.phone && { phone: waPhone }),
         ...(input.email     && { email: input.email }),
         ...(captaContacto && !conv.lead.consentAt && { consentAt: new Date() }),
         ...(qualEnum        && { qualification: qualEnum }),
@@ -545,7 +569,7 @@ async function crearOActualizarLead(input: LeadInput, conversationId: string) {
   const lead = await prisma.lead.create({
     data: {
       name:    input.nombre    ?? 'Sin nombre',
-      phone:   input.telefono  ?? '',
+      phone:   input.telefono  ?? waPhone ?? '',
       email:   input.email     ?? '',
       channel: conv.channel.toLowerCase(),
       qualification: qualEnum ?? 'SIN_CALIFICAR',
