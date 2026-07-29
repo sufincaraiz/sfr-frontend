@@ -2,6 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { consultarExperto } from '@/lib/agent/expert'
+import { enviarAlertaLeadWhatsApp } from '@/lib/whatsapp'
 import type { Tool, ToolResultBlockParam } from '@anthropic-ai/sdk/resources/messages'
 import type { LeadQualification } from '@prisma/client'
 
@@ -441,7 +442,7 @@ const RESUMEN_SYSTEM =
  * conversación (tokensIn/tokensOut), NO aparte. Es un extra: si falla, se registra con
  * console.warn y NO rompe la captura del lead (summary queda null).
  */
-async function generarResumenLead(leadId: string, conversationId: string): Promise<void> {
+async function generarResumenLead(leadId: string, conversationId: string): Promise<string | null> {
   try {
     const mensajes = await prisma.message.findMany({
       where:   { conversationId },
@@ -449,7 +450,7 @@ async function generarResumenLead(leadId: string, conversationId: string): Promi
       take:    50,
       select:  { role: true, content: true },
     })
-    if (mensajes.length === 0) return
+    if (mensajes.length === 0) return null
 
     const transcript = mensajes
       .map((m) => `${m.role === 'USER' ? 'Cliente' : 'Mac'}: ${m.content}`)
@@ -485,7 +486,7 @@ async function generarResumenLead(leadId: string, conversationId: string): Promi
       .trim()
     if (!texto) {
       console.warn(`[Mac] resumen vacío para lead=${leadId} (tokens in/out=${inTok}/${outTok})`)
-      return
+      return null
     }
 
     await prisma.lead.update({
@@ -493,8 +494,10 @@ async function generarResumenLead(leadId: string, conversationId: string): Promi
       data:  { summary: texto, summaryAt: new Date() },
     })
     console.log(`[Mac] resumen de conversación generado para lead=${leadId} (tokens in/out=${inTok}/${outTok})`)
+    return texto
   } catch (err) {
     console.warn('[Mac] no se pudo generar el resumen del lead:', err instanceof Error ? err.message : err)
+    return null
   }
 }
 
@@ -560,7 +563,9 @@ async function crearOActualizarLead(input: LeadInput, conversationId: string) {
     })
     // Resumen para el asesor: una sola vez, al captar contacto y si aún no lo tiene.
     if (captaContacto && !conv.lead.summary) {
-      await generarResumenLead(updated.id, conversationId)
+      const resumen = await generarResumenLead(updated.id, conversationId)
+      // Alerta al asesor por WhatsApp (dormida si no hay ALERT_WHATSAPP_TO). No bloqueante.
+      if (resumen) await enviarAlertaLeadWhatsApp(updated.name, updated.phone, resumen)
     }
     return { ok: true, leadId: updated.id, action: 'updated' }
   }
@@ -596,7 +601,9 @@ async function crearOActualizarLead(input: LeadInput, conversationId: string) {
 
   // Resumen para el asesor: lead nuevo captado con contacto → se genera una vez.
   if (captaContacto) {
-    await generarResumenLead(lead.id, conversationId)
+    const resumen = await generarResumenLead(lead.id, conversationId)
+    // Alerta al asesor por WhatsApp (dormida si no hay ALERT_WHATSAPP_TO). No bloqueante.
+    if (resumen) await enviarAlertaLeadWhatsApp(lead.name, lead.phone, resumen)
   }
 
   return { ok: true, leadId: lead.id, action: 'created' }
