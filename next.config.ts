@@ -10,6 +10,17 @@ const nextConfig: NextConfig = {
   // Elimina el header X-Powered-By: Next.js (seguridad + bytes)
   poweredByHeader: false,
 
+  // Incluye los MDX del blog (content/blog) en el bundle de las funciones serverless que
+  // los leen. Sin esto, fs.readdirSync(content/blog) no encuentra los archivos en runtime
+  // (/var/task), y los 3 artículos MDX oficiales desaparecerían del sitemap/blog al
+  // revalidar (ISR). Son 3 archivos pequeños: el peso extra es despreciable.
+  outputFileTracingIncludes: {
+    '/': ['./content/blog/**/*'],
+    '/sitemap.xml': ['./content/blog/**/*'],
+    '/blog': ['./content/blog/**/*'],
+    '/blog/**': ['./content/blog/**/*'],
+  },
+
   images: {
     // Loader de Cloudinary: la optimización/redimensión la hace Cloudinary por URL
     // (f_auto, q_auto, w_, c_limit), NO el optimizador de Vercel → elimina el peaje

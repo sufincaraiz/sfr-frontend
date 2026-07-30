@@ -16,12 +16,6 @@ const POSTS_PER_PAGE = 12
 
 // ─── Helpers internos ────────────────────────────────────────────────────────
 
-function ensureContentDir() {
-  if (!fs.existsSync(CONTENT_DIR)) {
-    fs.mkdirSync(CONTENT_DIR, { recursive: true })
-  }
-}
-
 function parsePost(slug: string, raw: string): PostMeta {
   const { data } = matter(raw)
   const fm = data as Record<string, unknown>
@@ -52,15 +46,25 @@ function parsePost(slug: string, raw: string): PostMeta {
   }
 }
 
-/** Posts de archivos MDX/MD (artículos oficiales). */
+/**
+ * Posts de archivos MDX/MD (artículos oficiales). Resiliente: si el directorio no existe
+ * o no se puede leer (p. ej. en runtime serverless donde content/blog podría no estar
+ * disponible), degrada a [] SIN lanzar. NUNCA crea directorios en runtime: /var/task es
+ * solo lectura en Vercel y el mkdir producía ENOENT.
+ */
 function getMdxPosts(): PostMeta[] {
-  ensureContentDir()
-  const files = fs.readdirSync(CONTENT_DIR).filter(f => f.endsWith('.mdx') || f.endsWith('.md'))
-  return files.map(file => {
-    const slug = file.replace(/\.mdx?$/, '')
-    const raw  = fs.readFileSync(path.join(CONTENT_DIR, file), 'utf-8')
-    return parsePost(slug, raw)
-  })
+  try {
+    if (!fs.existsSync(CONTENT_DIR)) return []
+    const files = fs.readdirSync(CONTENT_DIR).filter(f => f.endsWith('.mdx') || f.endsWith('.md'))
+    return files.map(file => {
+      const slug = file.replace(/\.mdx?$/, '')
+      const raw  = fs.readFileSync(path.join(CONTENT_DIR, file), 'utf-8')
+      return parsePost(slug, raw)
+    })
+  } catch (err) {
+    console.warn('[blog] no se pudieron leer los MDX de content/blog; se omiten:', err instanceof Error ? err.message : err)
+    return []
+  }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -115,17 +119,22 @@ export async function getAllPosts(): Promise<PostMeta[]> {
 
 /** Un post con su contenido (MDX o texto plano de comunidad). */
 export async function getPost(slug: string): Promise<Post | null> {
-  ensureContentDir()
-  const candidates = [
-    path.join(CONTENT_DIR, `${slug}.mdx`),
-    path.join(CONTENT_DIR, `${slug}.md`),
-  ]
-  const filePath = candidates.find(f => fs.existsSync(f))
-  if (filePath) {
-    const raw = fs.readFileSync(filePath, 'utf-8')
-    const { content } = matter(raw)
-    const meta = parsePost(slug, raw)
-    return { ...meta, content }
+  // Lee el MDX si existe; si el archivo no está o no se puede leer, cae a la BD.
+  // Nunca crea directorios (evita ENOENT en runtime serverless).
+  try {
+    const candidates = [
+      path.join(CONTENT_DIR, `${slug}.mdx`),
+      path.join(CONTENT_DIR, `${slug}.md`),
+    ]
+    const filePath = candidates.find(f => fs.existsSync(f))
+    if (filePath) {
+      const raw = fs.readFileSync(filePath, 'utf-8')
+      const { content } = matter(raw)
+      const meta = parsePost(slug, raw)
+      return { ...meta, content }
+    }
+  } catch (err) {
+    console.warn(`[blog] no se pudo leer el MDX "${slug}"; se intenta en BD:`, err instanceof Error ? err.message : err)
   }
 
   // Si no es MDX, buscar en la tabla de comunidad
