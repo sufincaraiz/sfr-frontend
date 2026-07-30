@@ -11,12 +11,27 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   images: {
-    // AVIF primero (30-50% más ligero que WebP), WebP como fallback
+    // Loader de Cloudinary: la optimización/redimensión la hace Cloudinary por URL
+    // (f_auto, q_auto, w_, c_limit), NO el optimizador de Vercel → elimina el peaje
+    // doble y deja de consumir cupo de Image Optimization. Las URLs no-Cloudinary
+    // (logos locales, etc.) el loader las devuelve intactas (guard).
+    // OJO: en Next 15 hace falta loader:'custom' EXPLÍCITO además de loaderFile; sin él
+    // Next deja loader en 'default' y sigue usando /_next/image (el optimizador de Vercel).
+    loader: 'custom',
+    loaderFile: './src/lib/cloudinary-loader.ts',
+
+    // AVIF primero (30-50% más ligero que WebP), WebP como fallback.
+    // Nota: con loader de Cloudinary la negociación de formato la hace f_auto; este
+    // campo queda inerte para las imágenes de Cloudinary.
     formats: ['image/avif', 'image/webp'],
 
-    // Cache de imágenes optimizadas — 60s mínimo en CDN
-    minimumCacheTTL: 60,
+    // Cache de imágenes optimizadas en el optimizador de Vercel — 31 días. Con el
+    // loader de Cloudinary ninguna imagen pasa por ese optimizador, así que este
+    // valor queda prácticamente inerte; se sube igual por robustez.
+    minimumCacheTTL: 2678400,
 
+    // Inerte con loaderFile (Next ignora remotePatterns para imágenes con loader
+    // custom); se deja como documentación de los hosts de imagen usados.
     remotePatterns: [
       { protocol: 'https', hostname: 'images.unsplash.com' },
       { protocol: 'https', hostname: 'res.cloudinary.com' },
