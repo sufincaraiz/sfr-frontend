@@ -117,13 +117,14 @@ const nextConfig: NextConfig = {
 
   // ── Headers de seguridad ────────────────────────────────────────────────────
   async headers() {
-    // Content-Security-Policy en modo REPORT-ONLY: reporta violaciones en la consola del
-    // navegador SIN bloquear nada. Construida contra los recursos reales del sitio:
-    // Cloudinary (imágenes/video/upload), Panoee + Pannellum/jsdelivr (tours 360),
-    // Google Maps + OpenStreetMap + YouTube (iframes), Google Fonts (propuestas).
-    // 'unsafe-inline' en script-src es necesario por los scripts inline de Next.js (App
-    // Router, sin nonce) — endurecer con nonce es una mejora posterior.
-    const cspReportOnly = [
+    // Content-Security-Policy en modo BLOQUEO (enforcing): las violaciones ahora SÍ
+    // bloquean el recurso. Verificada previamente en Report-Only (consola limpia).
+    // Construida contra los recursos reales del sitio: Cloudinary (imágenes/video/upload),
+    // Panoee + Pannellum/jsdelivr (tours 360), Google Maps + OpenStreetMap + YouTube
+    // (iframes), Google Fonts (propuestas). 'unsafe-inline' en script-src es necesario por
+    // los scripts inline de Next.js (App Router, sin nonce) — endurecer con nonce es una
+    // mejora posterior.
+    const csp = [
       "default-src 'self'",
       "base-uri 'self'",
       "object-src 'none'",
@@ -153,8 +154,8 @@ const nextConfig: NextConfig = {
           { key: 'Permissions-Policy',      value: 'camera=(), microphone=(), geolocation=(self), interest-cohort=()' },
           // Fuerza HTTPS por 2 años, incluyendo subdominios, en la lista preload
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
-          // CSP en modo REPORT-ONLY: no bloquea, solo reporta en consola (aún no en modo bloqueo)
-          { key: 'Content-Security-Policy-Report-Only', value: cspReportOnly },
+          // CSP en modo BLOQUEO (enforcing): verificada en Report-Only con consola limpia.
+          { key: 'Content-Security-Policy', value: csp },
         ],
       },
     ]
