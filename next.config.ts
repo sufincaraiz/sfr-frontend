@@ -150,8 +150,11 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options',         value: 'SAMEORIGIN' },
           // Solo envía el origen (sin path ni query) en requests cross-origin
           { key: 'Referrer-Policy',         value: 'strict-origin-when-cross-origin' },
-          // Desactiva APIs de hardware no usadas (geolocation permitida solo al propio sitio)
-          { key: 'Permissions-Policy',      value: 'camera=(), microphone=(), geolocation=(self), interest-cohort=()' },
+          // Desactiva APIs de hardware no usadas. geolocation solo al propio sitio.
+          // xr-spatial-tracking (WebXR/VR): habilitado para el sitio y delegado a los
+          // orígenes de Panoee (tours 360 en iframe). Sin listar esos orígenes, el iframe
+          // cross-origin no puede usar VR aunque tenga allow="xr-spatial-tracking".
+          { key: 'Permissions-Policy',      value: 'camera=(), microphone=(), geolocation=(self), interest-cohort=(), xr-spatial-tracking=(self "https://tour.panoee.net" "https://app.panoee.com" "https://panoee.com")' },
           // Fuerza HTTPS por 2 años, incluyendo subdominios, en la lista preload
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
           // CSP en modo BLOQUEO (enforcing): verificada en Report-Only con consola limpia.

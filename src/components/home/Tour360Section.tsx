@@ -164,7 +164,7 @@ export function Tour360Section() {
               width="100%"
               height="500px"
               scrolling="no"
-              allow="vr; xr; accelerometer; gyroscope; autoplay"
+              allow="xr-spatial-tracking; accelerometer; gyroscope; autoplay"
               allowFullScreen
               loading="eager"
               style={{ display: 'block' }}

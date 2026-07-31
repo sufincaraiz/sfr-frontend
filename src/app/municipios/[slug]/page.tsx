@@ -261,7 +261,7 @@ export default async function MunicipioPage(
                   width="100%"
                   height="460"
                   style={{ border: 'none', display: 'block' }}
-                  allow="vr; xr; accelerometer; gyroscope; autoplay; fullscreen"
+                  allow="xr-spatial-tracking; accelerometer; gyroscope; autoplay; fullscreen"
                   allowFullScreen
                   loading="lazy"
                 />

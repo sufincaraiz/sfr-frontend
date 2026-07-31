@@ -128,7 +128,7 @@ export function AboutUs() {
               src="https://tour.panoee.net/iframe/lavegac"
               title="Tour Virtual 360° — La Vega, Cundinamarca · Su Finca Raíz"
               scrolling="no"
-              allow="vr; xr; accelerometer; gyroscope; autoplay"
+              allow="xr-spatial-tracking; accelerometer; gyroscope; autoplay"
               allowFullScreen
               loading="lazy"
               style={{
