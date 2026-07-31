@@ -615,9 +615,23 @@ async function solicitarAsesor(input: SolicitarInput, conversationId: string) {
     include: { lead: true },
   })
 
+  // Una sola escalación por conversación: si ya se notificó al asesor, NO se vuelve a
+  // notificar (evita notificaciones ilimitadas). Se le indica al modelo que no reintente.
+  if (conv?.escalatedAt) {
+    console.log(`[Mac → Asesor] Escalación IGNORADA (ya escalado el ${conv.escalatedAt.toISOString()}) | Conv: ${conversationId}`)
+    return {
+      ok: true,
+      yaEscalado: true,
+      instruccion:
+        'El asesor humano YA fue notificado de esta conversación. NO vuelvas a escalar ni a llamar esta herramienta. ' +
+        'Confirma al cliente, con naturalidad, que un especialista lo contactará pronto y que no debe repetir nada.',
+    }
+  }
+
+  // Marca la escalación (escalatedAt) en la misma operación que fija el estado ESCALATED.
   await prisma.conversation.update({
     where: { id: conversationId },
-    data: { status: 'ESCALATED' },
+    data: { status: 'ESCALATED', escalatedAt: new Date() },
   })
 
   if (conv?.leadId) {
