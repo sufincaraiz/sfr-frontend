@@ -117,6 +117,28 @@ const nextConfig: NextConfig = {
 
   // ── Headers de seguridad ────────────────────────────────────────────────────
   async headers() {
+    // Content-Security-Policy en modo REPORT-ONLY: reporta violaciones en la consola del
+    // navegador SIN bloquear nada. Construida contra los recursos reales del sitio:
+    // Cloudinary (imágenes/video/upload), Panoee + Pannellum/jsdelivr (tours 360),
+    // Google Maps + OpenStreetMap + YouTube (iframes), Google Fonts (propuestas).
+    // 'unsafe-inline' en script-src es necesario por los scripts inline de Next.js (App
+    // Router, sin nonce) — endurecer con nonce es una mejora posterior.
+    const cspReportOnly = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'self'",
+      "form-action 'self'",
+      "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net",
+      "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
+      "font-src 'self' https://fonts.gstatic.com data:",
+      "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://plus.unsplash.com https://tour.panoee.net",
+      "media-src 'self' https://res.cloudinary.com",
+      "connect-src 'self' https://api.cloudinary.com https://res.cloudinary.com",
+      "frame-src 'self' https://www.google.com https://www.openstreetmap.org https://www.youtube.com https://tour.panoee.net https://app.panoee.com https://panoee.com",
+      "worker-src 'self' blob:",
+    ].join('; ')
+
     return [
       {
         source: '/:path*',
@@ -127,10 +149,12 @@ const nextConfig: NextConfig = {
           { key: 'X-Frame-Options',         value: 'SAMEORIGIN' },
           // Solo envía el origen (sin path ni query) en requests cross-origin
           { key: 'Referrer-Policy',         value: 'strict-origin-when-cross-origin' },
-          // Desactiva APIs de hardware no usadas
-          { key: 'Permissions-Policy',      value: 'camera=(), microphone=(), geolocation=()' },
+          // Desactiva APIs de hardware no usadas (geolocation permitida solo al propio sitio)
+          { key: 'Permissions-Policy',      value: 'camera=(), microphone=(), geolocation=(self), interest-cohort=()' },
           // Fuerza HTTPS por 2 años, incluyendo subdominios, en la lista preload
           { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
+          // CSP en modo REPORT-ONLY: no bloquea, solo reporta en consola (aún no en modo bloqueo)
+          { key: 'Content-Security-Policy-Report-Only', value: cspReportOnly },
         ],
       },
     ]
