@@ -4,6 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { Home, ChevronRight, Calendar, Clock, User, Tag, Mail } from 'lucide-react'
 import { SITE_URL } from '@/lib/site'
+import { ogImageUrl, ogImageMeta } from '@/lib/og-image'
 import { getPost, getAllPostSlugs, getRelatedPosts } from '@/lib/blog'
 import { ArticleContent } from '@/components/blog/ArticleContent'
 import { renderInline } from '@/lib/richtext'
@@ -51,9 +52,17 @@ export async function generateMetadata(
       authors: [post.author ?? 'Su Finca Raíz'],
       section: post.category_name,
       tags: post.tags,
-      images: post.cover_image
-        ? [{ url: `${SITE_URL}${post.cover_image}`, width: 1200, height: 630, alt: post.cover_alt ?? post.title }]
-        : [{ url: `${SITE_URL}/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg`, width: 1200, height: 630 }],
+      // Antes se concatenaba `${SITE_URL}${post.cover_image}`, lo que producía
+      // URLs rotas ("…sufincaraiz.comhttps//res.cloudinary.com/…") en los
+      // artículos de BD, cuya portada ya es absoluta. `ogImageUrl` resuelve
+      // ambos casos (Cloudinary absoluta y ruta relativa de los MDX).
+      images: ogImageMeta(post.cover_image, post.cover_alt ?? post.title),
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: post.title,
+      description: post.excerpt,
+      images: [ogImageUrl(post.cover_image)],
     },
   }
 }

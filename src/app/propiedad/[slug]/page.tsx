@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { SITE_URL } from '@/lib/site';
+import { ogImageUrl, ogImageMeta } from '@/lib/og-image';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Home, MapPin, Bed, Bath, Car, Maximize2, Layers, ChevronRight } from 'lucide-react';
@@ -100,7 +101,12 @@ export async function generateMetadata(
   const rawTitle = p.meta_title ?? p.title ?? `${tipoLabel(p.type, labels)} en ${p.municipality?.name ?? 'La Vega'}`;
   const title = rawTitle.replace(/\s*\|\s*Su Finca Ra[íi]z\s*$/i, '').trim();
   const description = p.meta_description ?? p.short_description ?? `${tipoLabel(p.type, labels)} en venta en ${p.municipality?.name ?? 'La Vega'}, Cundinamarca. ${formatPrice(p.price_cop)}.`;
+  // Portada de la propiedad para la preview al compartir. `ogImageUrl` la
+  // reduce a 1200x630 (los originales pesan ~400-500 KB y WhatsApp los descarta)
+  // y cae a la imagen del sitio si la propiedad no tuviera fotos.
   const img = p.media?.find(m => m.is_primary) ?? p.media?.[0];
+  const ogImage = ogImageUrl(img?.url);
+  const ogTitle = `${title} | Su Finca Raíz`;
 
   return {
     title,
@@ -109,12 +115,20 @@ export async function generateMetadata(
       canonical: `${SITE_URL}/propiedad/${slug}`,
     },
     openGraph: {
-      title: `${title} | Su Finca Raíz`,
+      title: ogTitle,
       description,
       url: `${SITE_URL}/propiedad/${slug}`,
-      images: img ? [{ url: img.url, width: 1200, height: 630 }] : [],
+      images: ogImageMeta(img?.url, img?.alt_text || title),
       type: 'website',
       locale: 'es_CO',
+    },
+    // Sin este bloque se heredaba el twitter:image del layout (la panorámica
+    // genérica de La Vega), que es a lo que caían los scrapers.
+    twitter: {
+      card: 'summary_large_image',
+      title: ogTitle,
+      description,
+      images: [ogImage],
     },
   };
 }
