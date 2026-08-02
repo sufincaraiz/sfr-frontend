@@ -6,7 +6,8 @@ import { PropiedadesGrid }    from '@/components/propiedades/PropiedadesGrid';
 import { FiltrosPropiedades } from '@/components/propiedades/FiltrosPropiedades';
 import { Paginacion }         from '@/components/propiedades/Paginacion';
 import { SkeletonCards }      from '@/components/propiedades/SkeletonCards';
-import { TYPE_LABELS }        from '@/lib/utils';
+import { tipoPlural }         from '@/lib/property-types';
+import { getTiposPropiedad, getTipoPlurales } from '@/lib/property-types.server';
 import type { Property }      from '@/types';
 
 export const metadata: Metadata = {
@@ -91,11 +92,15 @@ export default async function PropiedadesPage({
 }: {
   searchParams: Promise<SearchParams>;
 }) {
-  const sp   = await searchParams;
-  const data = await fetchProperties(sp);
+  const sp = await searchParams;
+  const [data, tipos, plurales] = await Promise.all([
+    fetchProperties(sp),
+    getTiposPropiedad(),
+    getTipoPlurales(),
+  ]);
 
   const heading = sp.tipo
-    ? `${TYPE_LABELS[sp.tipo] ?? sp.tipo}s en Venta${sp.municipio ? ` en ${sp.municipio}` : ' en Cundinamarca'}`
+    ? `${tipoPlural(sp.tipo, plurales)} en Venta${sp.municipio ? ` en ${sp.municipio}` : ' en Cundinamarca'}`
     : `Propiedades en Venta${sp.municipio ? ` en ${sp.municipio}` : ' · La Vega y el Gualivá'}`;
 
   return (
@@ -121,7 +126,7 @@ export default async function PropiedadesPage({
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
         {/* Filtros */}
         <Suspense fallback={null}>
-          <FiltrosPropiedades />
+          <FiltrosPropiedades tipos={tipos.map(t => ({ value: t.slug, label: t.label }))} />
         </Suspense>
 
         {/* Grid */}

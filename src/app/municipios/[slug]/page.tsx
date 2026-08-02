@@ -8,7 +8,9 @@ import { SITE_URL } from '@/lib/site'
 import { getMunicipio, getMunicipiosVisibles } from '@/lib/municipios'
 import { RichText, renderInline } from '@/lib/richtext'
 import { JsonLd, breadcrumbSchema, faqSchema, webPageSchema } from '@/components/seo/JsonLd'
-import { formatPrice, TYPE_LABELS } from '@/lib/utils'
+import { formatPrice } from '@/lib/utils'
+import { tipoLabel } from '@/lib/property-types'
+import { getTipoLabels } from '@/lib/property-types.server'
 import type { Property, PropertyMedia } from '@/types'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
@@ -127,6 +129,7 @@ export default async function MunicipioPage(
   if (!data) notFound()
 
   const { properties } = await getMunicipalityProperties(slug)
+  const tipoLabels = await getTipoLabels()
 
   const canonicalUrl = `${SITE_URL}/municipios/${slug}`
 
@@ -342,7 +345,7 @@ export default async function MunicipioPage(
                 <SectionHeader title={`Propiedades disponibles en ${data.name}`} icon={<Building2 size={20} />} />
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '1.25rem', marginTop: '1.25rem' }}>
                   {properties.map((p, i) => (
-                    <PropCard key={p.id} property={p} priority={i < 3} />
+                    <PropCard key={p.id} property={p} priority={i < 3} labels={tipoLabels} />
                   ))}
                 </div>
                 {properties.length >= 6 && (
@@ -499,9 +502,9 @@ function DataRow({ label, value }: { label: string; value: string }) {
 
 type PropProperty = Property & { media: PropertyMedia[] }
 
-function PropCard({ property, priority }: { property: PropProperty; priority: boolean }) {
+function PropCard({ property, priority, labels }: { property: PropProperty; priority: boolean; labels?: Record<string, string> }) {
   const img = property.media?.find(m => m.is_primary) ?? property.media?.[0]
-  const typeLabel = TYPE_LABELS[property.type] ?? property.type
+  const typeLabel = tipoLabel(property.type, labels)
 
   return (
     <Link

@@ -101,6 +101,23 @@ model Property {
   @@map("properties")
 }
 
+/// Catálogo editable de tipos de inmueble. `slug` es exactamente el string que
+/// se guarda en `Property.type`, así que la tabla es puramente descriptiva: no
+/// hay FK y los datos existentes siguen funcionando sin tocarse. Sirve para
+/// alimentar los selectores (admin y filtros públicos), poner etiquetas bonitas
+/// y permitir que el admin agregue un tipo nuevo desde el formulario ("Otro…").
+model TipoPropiedad {
+  id         String   @id @default(uuid())
+  slug       String   @unique // valor guardado en Property.type (ej. "lote-campestre")
+  label      String // singular, para fichas y chips ("Lote campestre")
+  plural     String? // para títulos y headings ("Lotes campestres"); vacío = label + "s"
+  orden      Int      @default(100)
+  oculto     Boolean  @default(false) // fuera de los selectores, sin borrar el histórico
+  updated_at DateTime @default(now()) @updatedAt
+
+  @@map("property_types")
+}
+
 model PropertyFeature {
   id            String   @id @default(uuid())
   property_id   String

@@ -18,12 +18,23 @@ export function SearchBar({ compact = false }: SearchBarProps) {
   const [municipio, setMunicipio] = useState('');
   const [precioMax, setPrecioMax] = useState('');
   const [municipios, setMunicipios] = useState<{ name: string; slug: string }[]>(MUNI_FALLBACK);
+  const [tipos, setTipos] = useState(PROPERTY_TYPES);
 
   // Municipios reales desde la BD (visibles o con propiedades).
   useEffect(() => {
     fetch('/api/municipios')
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.municipios?.length) setMunicipios(d.municipios); })
+      .catch(() => {});
+  }, []);
+
+  // Tipos de inmueble desde la BD (incluye los que cree el admin).
+  useEffect(() => {
+    fetch('/api/property-types')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        if (d?.tipos?.length) setTipos(d.tipos.map((t: { slug: string; label: string }) => ({ value: t.slug, label: t.label })));
+      })
       .catch(() => {});
   }, []);
 
@@ -68,7 +79,7 @@ export function SearchBar({ compact = false }: SearchBarProps) {
           }}
         >
           <option value="">Tipo</option>
-          {PROPERTY_TYPES.map((t) => (
+          {tipos.map((t) => (
             <option key={t.value} value={t.value}>{t.label}</option>
           ))}
         </select>
@@ -140,7 +151,7 @@ export function SearchBar({ compact = false }: SearchBarProps) {
               className="w-full bg-white rounded-lg px-3 py-2.5 text-sm font-semibold outline-none" style={{ color: '#2C2C2C', border: '1.5px solid #1B56A1' }}
             >
               <option value="">Todos los tipos</option>
-              {PROPERTY_TYPES.map((t) => (
+              {tipos.map((t) => (
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>

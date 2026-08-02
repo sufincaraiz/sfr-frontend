@@ -3,6 +3,7 @@ import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { resolveMunicipality } from '@/lib/municipality-resolve'
+import { resolveTipoPropiedad } from '@/lib/property-types.server'
 
 // Revalida las páginas estáticas afectadas por un cambio de propiedad,
 // para que las ediciones del admin se reflejen de inmediato en la web pública.
@@ -38,11 +39,24 @@ export async function PUT(
   const { id } = await params
   try {
     const data = await request.json()
-    const { municipality_name, media, features, ...rest } = data
+    const { municipality_name, type_label, media, features, ...rest } = data
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const updateData: any = { ...rest }
     if (data.price_cop !== undefined) updateData.price_cop = BigInt(data.price_cop || 0)
+
+    // Tipo escrito a mano ("Otro tipo…"): se crea en el catálogo si no existe.
+    let tipoCreado: { slug: string; label: string; created: boolean } | null = null
+    if (type_label) {
+      try {
+        tipoCreado = await resolveTipoPropiedad(type_label)
+        updateData.type = tipoCreado.slug
+      } catch {
+        return NextResponse.json({ error: 'Tipo de inmueble inválido' }, { status: 400 })
+      }
+    } else if (rest.type === '') {
+      delete updateData.type // no pisar el tipo actual con vacío
+    }
 
     let muniCreated = false
     let muniSlug: string | undefined
@@ -88,6 +102,8 @@ export async function PUT(
       municipality_created: muniCreated,
       municipality_slug: muniSlug,
       municipality_new_name: muniName,
+      type_created: tipoCreado?.created ?? false,
+      type_new_label: tipoCreado?.label ?? null,
     })
   } catch (err) {
     console.error('[PUT /api/admin/properties/[id]]', err)

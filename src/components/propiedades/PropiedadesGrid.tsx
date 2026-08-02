@@ -4,7 +4,8 @@ import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Bed, Bath, Maximize2, MapPin, Eye } from 'lucide-react';
-import { formatPrice, TYPE_LABELS, cloudinarySquare } from '@/lib/utils';
+import { formatPrice, cloudinarySquare } from '@/lib/utils';
+import { tipoLabel } from '@/lib/property-types';
 import type { Property } from '@/types';
 
 interface Props {
@@ -74,7 +75,7 @@ export function PropiedadesGrid({ properties }: Props) {
 
 function PropCard({ property: p, priority }: { property: Property; priority?: boolean }) {
   const img      = p.media?.find(m => m.is_primary) ?? p.media?.[0];
-  const typeLabel = TYPE_LABELS[p.type] ?? p.type;
+  const typeLabel = tipoLabel(p.type);
   const href     = `/propiedad/${p.slug}`;
 
   return (

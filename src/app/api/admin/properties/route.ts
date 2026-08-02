@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
 import { resolveMunicipality } from '@/lib/municipality-resolve'
+import { resolveTipoPropiedad } from '@/lib/property-types.server'
 
 export async function GET(request: NextRequest) {
   const session = await requireRole(['admin'])
@@ -61,16 +62,31 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Municipio inválido' }, { status: 400 })
     }
 
-    const baseSlug = `${data.type}-${slugify(data.title)}-${slugify(muni.name)}-cundinamarca`
+    // Tipo: si el admin escribió uno nuevo ("Otro tipo…") se crea en el catálogo
+    // y se usa su slug; si no, se conserva el valor del selector.
+    let tipoSlug: string = data.type
+    let tipoCreado: { slug: string; label: string; created: boolean } | null = null
+    if (data.type_label) {
+      try {
+        tipoCreado = await resolveTipoPropiedad(data.type_label)
+        tipoSlug = tipoCreado.slug
+      } catch {
+        return NextResponse.json({ error: 'Tipo de inmueble inválido' }, { status: 400 })
+      }
+    }
+    if (!tipoSlug) return NextResponse.json({ error: 'Falta el tipo de inmueble' }, { status: 400 })
+
+    const baseSlug = `${tipoSlug}-${slugify(data.title)}-${slugify(muni.name)}-cundinamarca`
     // Ensure unique slug
     const existing = await prisma.property.count({ where: { slug: { startsWith: baseSlug } } })
     const slug = existing > 0 ? `${baseSlug}-${Date.now()}` : baseSlug
 
-    const { municipality_name, media, features, ...rest } = data
+    const { municipality_name, type_label, media, features, ...rest } = data
 
     const property = await prisma.property.create({
       data: {
         ...rest,
+        type: tipoSlug,
         slug,
         municipality_id: muni.id,
         price_cop: BigInt(data.price_cop || 0),
@@ -102,6 +118,8 @@ export async function POST(request: NextRequest) {
       municipality_created: muni.created,
       municipality_slug: muni.slug,
       municipality_new_name: muni.name,
+      type_created: tipoCreado?.created ?? false,
+      type_new_label: tipoCreado?.label ?? null,
     }, { status: 201 })
   } catch (err) {
     console.error('[POST /api/admin/properties]', err)

@@ -10,7 +10,9 @@ import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { getVeredaData, getAllVeredasData } from '@/lib/veredas-data'
 import { JsonLd, breadcrumbSchema, faqSchema } from '@/components/seo/JsonLd'
-import { formatPrice, TYPE_LABELS } from '@/lib/utils'
+import { formatPrice } from '@/lib/utils'
+import { tipoLabel } from '@/lib/property-types'
+import { getTipoLabels } from '@/lib/property-types.server'
 import type { Property, PropertyMedia } from '@/types'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
@@ -113,6 +115,7 @@ export default async function VeredaPage(
   if (!v) notFound()
 
   const properties = await getVeredaProperties(v.municipio_slug)
+  const tipoLabels = await getTipoLabels()
 
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },
@@ -262,7 +265,7 @@ export default async function VeredaPage(
                   </h2>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(270px,1fr))', gap: '1.1rem' }}>
-                  {properties.map((p, i) => <PropCard key={p.id} property={p} priority={i < 2} />)}
+                  {properties.map((p, i) => <PropCard key={p.id} property={p} priority={i < 2} labels={tipoLabels} />)}
                 </div>
                 <div style={{ marginTop: '1.25rem', textAlign: 'center' }}>
                   <Link
@@ -506,9 +509,9 @@ function SideRow({ label, value }: { label: string; value: string }) {
 
 type P = Property & { media: PropertyMedia[] }
 
-function PropCard({ property, priority }: { property: P; priority: boolean }) {
+function PropCard({ property, priority, labels }: { property: P; priority: boolean; labels?: Record<string, string> }) {
   const img = property.media?.[0]
-  const typeLabel = TYPE_LABELS[property.type] ?? property.type
+  const typeLabel = tipoLabel(property.type, labels)
   return (
     <Link href={`/propiedad/${property.slug}`} style={{ display: 'block', background: '#fff', borderRadius: 14, overflow: 'hidden', border: '1px solid #E2E8F0', textDecoration: 'none' }} className="prop-card">
       <div style={{ position: 'relative', aspectRatio: '4/3', background: '#F1F5F9', overflow: 'hidden' }}>

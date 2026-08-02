@@ -5,7 +5,8 @@ import { useEffect, useState, useCallback } from 'react';
 import useEmblaCarousel from 'embla-carousel-react';
 import AutoScroll from 'embla-carousel-auto-scroll';
 import { Bed, Bath, Maximize2, MapPin, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
-import { formatPrice, TYPE_LABELS, cloudinarySquare } from '@/lib/utils';
+import { formatPrice, cloudinarySquare } from '@/lib/utils';
+import { tipoLabel } from '@/lib/property-types';
 import type { Property } from '@/types';
 
 interface FeaturedPropertiesProps {
@@ -16,7 +17,7 @@ interface FeaturedPropertiesProps {
 
 function PropertyCard({ property }: { property: Property }) {
   const primaryImage = property.media?.find((m) => m.is_primary && m.type === 'image') ?? property.media?.[0];
-  const typeLabel    = TYPE_LABELS[property.type] ?? property.type;
+  const typeLabel    = tipoLabel(property.type);
   const href = `/propiedad/${property.slug}`;
 
   const hectareas =

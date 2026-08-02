@@ -59,6 +59,8 @@ export default function NuevaPropiedadPage() {
   const [munis,      setMunis]      = useState<string[]>(MUNICIPALITIES.map(m => m.label));
   const [nuevoMuni,  setNuevoMuni]  = useState('');
   const [muniCreado, setMuniCreado] = useState<{ name: string; slug: string } | null>(null);
+  const [tipos,      setTipos]      = useState(PROPERTY_TYPES);
+  const [nuevoTipo,  setNuevoTipo]  = useState('');
 
   // Municipios desde la BD (incluye ocultos, para poder reasignar) + opción "Otro".
   useEffect(() => {
@@ -67,6 +69,17 @@ export default function NuevaPropiedadPage() {
       .then(d => {
         const names: string[] = (d?.municipios ?? []).map((m: { name: string }) => m.name);
         if (names.length) setMunis([...new Set(names)]);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Tipos de inmueble desde la BD (incluye ocultos) + opción "Otro".
+  useEffect(() => {
+    fetch('/api/admin/property-types')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const lista = (d?.tipos ?? []).map((t: { slug: string; label: string }) => ({ value: t.slug, label: t.label }));
+        if (lista.length) setTipos(lista);
       })
       .catch(() => {});
   }, []);
@@ -105,6 +118,8 @@ export default function NuevaPropiedadPage() {
     if (!form.title.trim()) { setError('El título es obligatorio'); return; }
     const municipio = form.municipality_name === OTRO ? nuevoMuni.trim() : form.municipality_name;
     if (!municipio || municipio.length < 2) { setError('Escribe el nombre del municipio.'); return; }
+    const tipoNuevo = form.type === OTRO ? nuevoTipo.trim() : '';
+    if (form.type === OTRO && tipoNuevo.length < 2) { setError('Escribe el nombre del tipo de inmueble.'); return; }
     setSaving(true); setError('');
     try {
       const features: { key: string; value: string }[] = [];
@@ -116,7 +131,8 @@ export default function NuevaPropiedadPage() {
 
       const payload = {
         title:           form.title,
-        type:            form.type,
+        type:            form.type === OTRO ? '' : form.type,
+        type_label:      tipoNuevo || undefined, // tipo nuevo escrito a mano; el API lo crea
         municipality_name: municipio,
         status:          form.status,
         price_cop:       form.price_cop ? parseInt(form.price_cop) : 0,
@@ -208,8 +224,18 @@ export default function NuevaPropiedadPage() {
           </Field>
           <Field label="Tipo de propiedad" required>
             <select value={form.type} onChange={e => set('type', e.target.value)} style={inputStyle}>
-              {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              {tipos.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              <option value={OTRO}>➕ Otro tipo…</option>
             </select>
+            {form.type === OTRO && (
+              <input
+                value={nuevoTipo}
+                onChange={e => setNuevoTipo(e.target.value)}
+                placeholder="Nombre del tipo (ej. Bodega)"
+                autoFocus
+                style={{ ...inputStyle, marginTop: 8 }}
+              />
+            )}
           </Field>
           <Field label="Municipio" required>
             <select value={form.municipality_name} onChange={e => set('municipality_name', e.target.value)} style={inputStyle}>

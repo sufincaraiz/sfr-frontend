@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { PlusCircle, Eye, Pencil, Search, RefreshCw } from 'lucide-react';
-import { formatPrice, TYPE_LABELS } from '@/lib/utils';
+import { formatPrice } from '@/lib/utils';
+import { tipoLabel } from '@/lib/property-types';
 
 interface PropRow {
   id: string; slug: string; title: string | null; type: string;
@@ -130,7 +131,7 @@ export default function AdminPropiedadesPage() {
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px', color: '#64748B', whiteSpace: 'nowrap' }}>{p.municipality?.name ?? '—'}</td>
-                    <td style={{ padding: '10px 14px', color: '#475569', whiteSpace: 'nowrap' }}>{TYPE_LABELS[p.type] ?? p.type}</td>
+                    <td style={{ padding: '10px 14px', color: '#475569', whiteSpace: 'nowrap' }}>{tipoLabel(p.type)}</td>
                     <td style={{ padding: '10px 14px', color: '#0D2D5E', fontWeight: 700, whiteSpace: 'nowrap' }}>{formatPrice(p.price_cop)}</td>
                     <td style={{ padding: '10px 14px' }}>
                       <span style={{ background: s.bg, color: s.color, fontWeight: 700, fontSize: '0.72rem', padding: '3px 10px', borderRadius: 20 }}>

@@ -40,6 +40,8 @@ export default function EditarPropiedadPage() {
   const [munis, setMunis] = useState<string[]>(MUNICIPALITIES.map(m => m.label));
   const [nuevoMuni, setNuevoMuni] = useState('');
   const [muniCreado, setMuniCreado] = useState<{ name: string; slug: string } | null>(null);
+  const [tipos, setTipos] = useState(PROPERTY_TYPES);
+  const [nuevoTipo, setNuevoTipo] = useState('');
 
   useEffect(() => {
     fetch('/api/admin/municipios')
@@ -47,6 +49,16 @@ export default function EditarPropiedadPage() {
       .then(d => {
         const names: string[] = (d?.municipios ?? []).map((m: { name: string }) => m.name);
         if (names.length) setMunis([...new Set(names)]);
+      })
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch('/api/admin/property-types')
+      .then(r => r.ok ? r.json() : null)
+      .then(d => {
+        const lista = (d?.tipos ?? []).map((t: { slug: string; label: string }) => ({ value: t.slug, label: t.label }));
+        if (lista.length) setTipos(lista);
       })
       .catch(() => {});
   }, []);
@@ -156,6 +168,8 @@ export default function EditarPropiedadPage() {
     e.preventDefault();
     const municipio = form.municipality_name === OTRO ? nuevoMuni.trim() : form.municipality_name;
     if (!municipio || municipio.length < 2) { setError('Escribe el nombre del municipio.'); return; }
+    const tipoNuevo = form.type === OTRO ? nuevoTipo.trim() : '';
+    if (form.type === OTRO && tipoNuevo.length < 2) { setError('Escribe el nombre del tipo de inmueble.'); return; }
     setSaving(true); setError(''); setSuccess('');
     try {
       const res = await fetch(`/api/admin/properties/${id}`, {
@@ -164,6 +178,8 @@ export default function EditarPropiedadPage() {
         body: JSON.stringify({
           ...form,
           municipality_name: municipio,
+          type:       form.type === OTRO ? '' : form.type,
+          type_label: tipoNuevo || undefined,
           price_cop:    parseInt(form['price_cop'] ?? '0') || 0,
           area_lot_m2:  form['area_lot_m2']  ? parseFloat(form['area_lot_m2'])  : null,
           area_built_m2: form['area_built_m2'] ? parseFloat(form['area_built_m2']) : null,
@@ -186,6 +202,14 @@ export default function EditarPropiedadPage() {
         setForm(f => ({ ...f, municipality_name: saved.municipality_new_name ?? municipio }));
         setNuevoMuni('');
         if (!munis.includes(saved.municipality_new_name ?? municipio)) setMunis(prev => [...prev, saved.municipality_new_name ?? municipio]);
+      }
+      if (saved.type) {
+        // Refleja el tipo resuelto (nuevo o existente) en el desplegable.
+        setForm(f => ({ ...f, type: saved.type }));
+        setNuevoTipo('');
+        if (!tipos.some(t => t.value === saved.type)) {
+          setTipos(prev => [...prev, { value: saved.type, label: saved.type_new_label ?? saved.type }]);
+        }
       }
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
@@ -255,8 +279,12 @@ export default function EditarPropiedadPage() {
           <Field label="Título"><input value={form.title} onChange={e => set('title', e.target.value)} required style={inputStyle} /></Field>
           <Field label="Tipo">
             <select value={form.type} onChange={e => set('type', e.target.value)} style={inputStyle}>
-              {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              {tipos.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              <option value={OTRO}>➕ Otro tipo…</option>
             </select>
+            {form.type === OTRO && (
+              <input value={nuevoTipo} onChange={e => setNuevoTipo(e.target.value)} placeholder="Nombre del tipo (ej. Bodega)" autoFocus style={{ ...inputStyle, marginTop: 8 }} />
+            )}
           </Field>
           <Field label="Municipio">
             <select value={form.municipality_name} onChange={e => set('municipality_name', e.target.value)} style={inputStyle}>

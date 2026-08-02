@@ -173,12 +173,19 @@ function norm(s: string): string {
 }
 
 /** Sinónimos del cliente → tipos reales de la BD (Property.type). */
+const LOTES = ['lote', 'lote-urbano', 'lote-campestre', 'lote-rural', 'condominio']
+
 const TIPO_SINONIMOS: Record<string, string[]> = {
   finca: ['finca'], fincas: ['finca'], hacienda: ['finca'], parcela: ['finca'],
   campo: ['finca'], 'finca de recreo': ['finca'], quinta: ['finca'],
-  lote: ['lote', 'condominio'], lotes: ['lote', 'condominio'],
-  terreno: ['lote', 'condominio'], terrenos: ['lote', 'condominio'],
-  predio: ['lote', 'condominio'], tierra: ['lote', 'condominio'],
+  // "lote" a secas abarca los subtipos: el catálogo los separa (lote urbano /
+  // campestre / rural), pero el cliente casi nunca los distingue al preguntar.
+  lote: LOTES, lotes: LOTES,
+  terreno: LOTES, terrenos: LOTES,
+  predio: LOTES, tierra: LOTES,
+  'lote urbano': ['lote-urbano', 'lote'],
+  'lote campestre': ['lote-campestre', 'lote', 'condominio'],
+  'lote rural': ['lote-rural', 'lote'],
   casa: ['casa', 'condominio'], casas: ['casa', 'condominio'],
   vivienda: ['casa', 'condominio', 'apartamento'],
   'casa campestre': ['casa', 'condominio', 'finca'],
@@ -194,8 +201,12 @@ const TIPO_SINONIMOS: Record<string, string[]> = {
 function tiposDesde(entrada: string): string[] | null {
   const n = norm(entrada)
   if (TIPO_SINONIMOS[n]) return TIPO_SINONIMOS[n]
-  // coincidencia parcial: "lote campestre", "casa en condominio", "finca grande"…
-  const hit = Object.keys(TIPO_SINONIMOS).find(k => n.includes(k))
+  // Coincidencia parcial: "lote campestre en La Vega", "casa en condominio"…
+  // Se prueba de la clave más larga a la más corta, para que "lote campestre"
+  // gane sobre "lote" y "casa campestre" sobre "casa".
+  const hit = Object.keys(TIPO_SINONIMOS)
+    .sort((a, b) => b.length - a.length)
+    .find(k => n.includes(k))
   return hit ? TIPO_SINONIMOS[hit]! : null
 }
 

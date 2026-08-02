@@ -5,7 +5,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Home, MapPin, Bed, Bath, Car, Maximize2, Layers, ChevronRight } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
-import { formatPrice, TYPE_LABELS } from '@/lib/utils';
+import { formatPrice } from '@/lib/utils';
+import { tipoLabel } from '@/lib/property-types';
+import { getTipoLabels } from '@/lib/property-types.server';
 import { GaleriaLightbox } from '@/components/propiedades/GaleriaLightbox';
 import { Modelo3D } from '@/components/propiedades/Modelo3D';
 import { FormContactoPropiedad } from '@/components/propiedades/FormContactoPropiedad';
@@ -94,9 +96,10 @@ export async function generateMetadata(
 
   // La marca la agrega la plantilla del layout; si el meta_title guardado en BD ya
   // la trae al final (importaciones antiguas), la recortamos para no duplicarla.
-  const rawTitle = p.meta_title ?? p.title ?? `${TYPE_LABELS[p.type]} en ${p.municipality?.name ?? 'La Vega'}`;
+  const labels = await getTipoLabels();
+  const rawTitle = p.meta_title ?? p.title ?? `${tipoLabel(p.type, labels)} en ${p.municipality?.name ?? 'La Vega'}`;
   const title = rawTitle.replace(/\s*\|\s*Su Finca Ra[íi]z\s*$/i, '').trim();
-  const description = p.meta_description ?? p.short_description ?? `${TYPE_LABELS[p.type]} en venta en ${p.municipality?.name ?? 'La Vega'}, Cundinamarca. ${formatPrice(p.price_cop)}.`;
+  const description = p.meta_description ?? p.short_description ?? `${tipoLabel(p.type, labels)} en venta en ${p.municipality?.name ?? 'La Vega'}, Cundinamarca. ${formatPrice(p.price_cop)}.`;
   const img = p.media?.find(m => m.is_primary) ?? p.media?.[0];
 
   return {
@@ -136,7 +139,7 @@ export default async function PropiedadDetallePage(
   const p = await getProperty(slug);
   if (!p) notFound();
 
-  const typeLabel  = TYPE_LABELS[p.type] ?? p.type;
+  const typeLabel  = tipoLabel(p.type, await getTipoLabels());
   const muni       = p.municipality?.name ?? 'La Vega';
   const title      = p.title ?? `${typeLabel} en ${muni}`;
   const banner     = p.media?.find(m => m.is_primary) ?? p.media?.[0];

@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import { PlusCircle, Eye, ArrowRight, PenSquare } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { requireRole } from '@/lib/auth';
-import { formatPrice, TYPE_LABELS } from '@/lib/utils';
+import { formatPrice } from '@/lib/utils';
+import { tipoLabel } from '@/lib/property-types';
 import { DashboardArticles, type DashArticle } from './DashboardArticles';
 
 export const dynamic = 'force-dynamic';
@@ -137,7 +138,7 @@ export default async function DashboardPage() {
                       </span>
                     </td>
                     <td style={{ padding: '10px 14px', color: '#64748B', whiteSpace: 'nowrap' }}>{p.municipality.name}</td>
-                    <td style={{ padding: '10px 14px', color: '#475569', whiteSpace: 'nowrap' }}>{TYPE_LABELS[p.type] ?? p.type}</td>
+                    <td style={{ padding: '10px 14px', color: '#475569', whiteSpace: 'nowrap' }}>{tipoLabel(p.type)}</td>
                     <td style={{ padding: '10px 14px', color: '#0D2D5E', fontWeight: 700, whiteSpace: 'nowrap' }}>{formatPrice(Number(p.price_cop))}</td>
                     <td style={{ padding: '10px 14px' }}>{statusBadge(p.status)}</td>
                     <td style={{ padding: '10px 14px' }}>

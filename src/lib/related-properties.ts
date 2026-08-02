@@ -1,5 +1,6 @@
 import { prisma } from './prisma'
-import { TYPE_LABELS } from './utils'
+import { tipoLabel } from './property-types'
+import { getTipoLabels } from './property-types.server'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -33,9 +34,9 @@ export interface RelatedGroups {
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function toCard(raw: any): RelatedCard {
+function toCard(raw: any, labels?: Record<string, string>): RelatedCard {
   const img = (raw.media as { url: string; alt_text: string }[] | undefined)?.[0]
-  const typeLabel = (TYPE_LABELS as Record<string, string>)[raw.type as string] ?? raw.type
+  const typeLabel = tipoLabel(raw.type as string, labels)
   const defaultTitle = `${typeLabel} en ${(raw.municipality as { name: string } | undefined)?.name ?? ''}`
   return {
     slug:              raw.slug as string,
@@ -118,20 +119,21 @@ export async function getRelatedProperties(params: {
 
   // ── Deduplication ────────────────────────────────────────────────────────────
   const shownSlugs = new Set<string>([currentSlug])
+  const labels = await getTipoLabels()
 
   // 1. municipio: up to 4
   const municipio = rawMunicipio.slice(0, 4).map(r => {
     shownSlugs.add(r.slug)
-    return toCard(r)
+    return toCard(r, labels)
   })
 
   // 2. vereda: up to 3, skip any already in municipio section
   const veredaFiltered = rawVereda.filter(r => !shownSlugs.has(r.slug)).slice(0, 3)
   veredaFiltered.forEach(r => shownSlugs.add(r.slug))
-  const vereda = veredaFiltered.map(toCard)
+  const vereda = veredaFiltered.map(r => toCard(r, labels))
 
   // 3. tipo: up to 4, skip anything already shown above
-  const tipo = rawTipo.filter(r => !shownSlugs.has(r.slug)).slice(0, 4).map(toCard)
+  const tipo = rawTipo.filter(r => !shownSlugs.has(r.slug)).slice(0, 4).map(r => toCard(r, labels))
 
   return {
     municipio,
@@ -141,7 +143,7 @@ export async function getRelatedProperties(params: {
     municipio_slug:  municipalitySlug,
     vereda_name:     veredaRecord?.name ?? null,
     vereda_slug:     veredaRecord?.slug ?? null,
-    tipo_label:      (TYPE_LABELS as Record<string, string>)[type] ?? type,
+    tipo_label:      tipoLabel(type, labels),
     tipo_slug:       type,
   }
 }

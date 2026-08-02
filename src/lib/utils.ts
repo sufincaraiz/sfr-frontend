@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { DEFAULT_TIPOS } from './property-types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -64,14 +65,13 @@ export const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   sold:      { label: 'Vendida',    color: 'bg-stone text-white' },
 };
 
-export const TYPE_LABELS: Record<string, string> = {
-  finca:       'Finca',
-  lote:        'Lote',
-  casa:        'Casa campestre',
-  apartamento: 'Apartamento',
-  condominio:  'Condominio',
-  local:       'Local comercial',
-};
+// Los tipos de inmueble ahora viven en la tabla `property_types`. Lo que queda
+// aquí es el respaldo estático (DEFAULT_TIPOS), que se usa en SSR y si la BD
+// no responde. Para etiquetar un tipo usa `tipoLabel()` de '@/lib/property-types',
+// que además maneja los tipos creados desde el admin.
+export const TYPE_LABELS: Record<string, string> = Object.fromEntries(
+  DEFAULT_TIPOS.map(t => [t.slug, t.label]),
+);
 
 export const MUNICIPALITIES = [
   { value: 'la-vega',    label: 'La Vega' },
@@ -82,11 +82,5 @@ export const MUNICIPALITIES = [
   { value: 'supata',     label: 'Supatá' },
 ];
 
-export const PROPERTY_TYPES = [
-  { value: 'finca',       label: 'Finca' },
-  { value: 'lote',        label: 'Lote' },
-  { value: 'casa',        label: 'Casa campestre' },
-  { value: 'apartamento', label: 'Apartamento' },
-  { value: 'condominio',  label: 'Condominio' },
-  { value: 'local',       label: 'Local comercial' },
-];
+/** Respaldo estático para los selectores (se reemplaza con la lista de la BD). */
+export const PROPERTY_TYPES = DEFAULT_TIPOS.map(t => ({ value: t.slug, label: t.label }));

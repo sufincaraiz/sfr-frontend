@@ -1,5 +1,12 @@
 export type PropertyStatus = 'available' | 'reserved' | 'sold';
-export type PropertyType = 'finca' | 'lote' | 'casa' | 'apartamento' | 'condominio' | 'local';
+// Los tipos ya no son un conjunto cerrado: viven en la tabla `property_types` y
+// el admin puede agregar los suyos. Las variantes listadas quedan solo como
+// autocompletado; `(string & {})` deja pasar cualquier slug del catálogo.
+export type PropertyType =
+  | 'finca' | 'lote' | 'lote-urbano' | 'lote-campestre' | 'lote-rural'
+  | 'casa' | 'apartamento' | 'condominio' | 'local'
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  | (string & {});
 export type Tour360Type = 'self_hosted' | 'embed';
 
 export interface Municipality {

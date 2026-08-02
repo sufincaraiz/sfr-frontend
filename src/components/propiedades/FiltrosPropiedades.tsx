@@ -4,6 +4,7 @@ import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { useCallback } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
 import { PROPERTY_TYPES } from '@/lib/utils';
+import { tipoLabel } from '@/lib/property-types';
 
 const MUNICIPIOS = [
   { value: 'La Vega',       label: 'La Vega' },
@@ -23,7 +24,12 @@ const PRECIOS = [
   { value: '2000000000',  label: 'Hasta $2.000 millones' },
 ];
 
-export function FiltrosPropiedades() {
+interface FiltrosProps {
+  /** Tipos desde la BD; si no llegan, se usa el respaldo estático. */
+  tipos?: { value: string; label: string }[];
+}
+
+export function FiltrosPropiedades({ tipos = PROPERTY_TYPES }: FiltrosProps) {
   const router      = useRouter();
   const pathname    = usePathname();
   const searchParams = useSearchParams();
@@ -89,7 +95,7 @@ export function FiltrosPropiedades() {
             }}
           >
             <option value="">Todos los tipos</option>
-            {PROPERTY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+            {tipos.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
           </select>
         </div>
 
@@ -133,7 +139,7 @@ export function FiltrosPropiedades() {
 
       {hasFilters && (
         <div style={{ marginTop: '0.75rem', display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-          {tipo      && <Chip label={`Tipo: ${PROPERTY_TYPES.find(t=>t.value===tipo)?.label ?? tipo}`} onRemove={() => update('tipo','')} />}
+          {tipo      && <Chip label={`Tipo: ${tipos.find(t=>t.value===tipo)?.label ?? tipoLabel(tipo)}`} onRemove={() => update('tipo','')} />}
           {municipio && <Chip label={`Municipio: ${municipio}`} onRemove={() => update('municipio','')} />}
           {maxPrecio && <Chip label={`Hasta: ${PRECIOS.find(p=>p.value===maxPrecio)?.label}`} onRemove={() => update('maxPrecio','')} />}
         </div>
