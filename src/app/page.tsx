@@ -8,6 +8,7 @@ import { Tour360Section }     from '@/components/home/Tour360Section';
 import { AboutUs }            from '@/components/home/AboutUs';
 import { FAQ }                from '@/components/home/FAQ';
 import { GuiaInversionBanner } from '@/components/home/GuiaInversionBanner';
+import { RegistroVisitaBanner } from '@/components/home/RegistroVisitaBanner';
 import { JsonLd, localBusinessSchema, faqSchema, webPageSchema } from '@/components/seo/JsonLd';
 import { HOME_FAQS } from '@/lib/faq-data';
 import { prisma }            from '@/lib/prisma';
@@ -154,6 +155,7 @@ export default async function HomePage() {
 
       <Hero />
       <FeaturedProperties properties={featuredProperties} />
+      <RegistroVisitaBanner />
       <Tour360Section />
       <StatsSection />
       <GuiaInversionBanner />

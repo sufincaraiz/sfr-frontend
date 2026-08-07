@@ -362,6 +362,30 @@ model Article {
   @@map("articles")
 }
 
+/// Registro de visitas a inmuebles (control de ingreso y seguridad).
+/// Contiene datos personales sensibles (cédula), así que cada fila guarda la
+/// PRUEBA del consentimiento: el momento exacto y las dos autorizaciones por
+/// separado, como exige la Ley 1581 de 2012 (Habeas Data).
+model Visita {
+  id                    String   @id @default(uuid())
+  createdAt             DateTime @default(now())
+  nombresCompletos      String
+  cedula                String
+  inmuebleReferencia    String // texto libre: referencia o nombre que escribe el visitante
+  correo                String
+  celular               String
+  municipioOrigen       String
+  // ── Prueba del consentimiento ──
+  consentAt             DateTime // cuándo aceptó
+  consentPolitica       Boolean  @default(false) // casilla 1: política de tratamiento
+  consentControlIngreso Boolean  @default(false) // casilla 2: control de ingreso y seguridad
+  ip                    String? // trazabilidad de seguridad; puede faltar
+
+  @@index([createdAt])
+  @@index([cedula])
+  @@map("visitas")
+}
+
 model Business {
   id              String   @id @default(uuid())
   nombre          String
