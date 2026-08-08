@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, Search, RefreshCw, ExternalLink, Home, Users, ShieldAlert, X, Clock, Trash2 } from 'lucide-react';
+import { EnlacesDueno, type EnlaceRow } from './EnlacesDueno';
 
 interface VisitaRow {
   id: string;
@@ -25,6 +26,7 @@ interface Grupo {
   esOtro: boolean;
   titulo: string;
   municipio: string | null;
+  propiedadId: string | null;
   propiedadSlug: string | null;
   totalVisitas: number;
   visitas: VisitaRow[];
@@ -52,6 +54,7 @@ export default function AdminVisitasPage() {
   const [buscar, setBuscar]   = useState('');
   const [aplicado, setAplicado] = useState({ desde: '', hasta: '', buscar: '' });
   const [retencion, setRetencion] = useState<Retencion>({ proximasAVencer: 0, yaVencidas: 0 });
+  const [enlaces, setEnlaces]     = useState<EnlaceRow[]>([]);
   const [purgando, setPurgando]   = useState(false);
   // `ok: false` pinta el aviso en rojo — un fallo de la limpieza no puede
   // parecerse a un éxito, o el admin creería que la retención ya se cumplió.
@@ -76,7 +79,19 @@ export default function AdminVisitasPage() {
     }
   }, [aplicado]);
 
+  // Los enlaces se piden aparte de las visitas: no dependen de los filtros de
+  // fecha ni de búsqueda, y se refrescan solos al generar o revocar uno.
+  const cargarEnlaces = useCallback(async () => {
+    try {
+      const res = await fetch('/api/admin/visitas/enlaces');
+      if (!res.ok) return;
+      const d = await res.json();
+      setEnlaces(d.enlaces ?? []);
+    } catch { /* el listado de visitas sigue sirviendo aunque esto falle */ }
+  }, []);
+
   useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => { cargarEnlaces(); }, [cargarEnlaces]);
 
   // Respaldo manual del cron diario: borra las visitas de más de 2 años. Se
   // confirma antes porque es un borrado definitivo y no se puede deshacer.
@@ -310,6 +325,17 @@ export default function AdminVisitasPage() {
                 </tbody>
               </table>
             </div>
+
+            {/* Enlace privado del dueño. Solo para propiedades del catálogo: un
+                inmueble "Otro" es de un colega y no tiene dueño a quien darle
+                acceso desde aquí. */}
+            {g.propiedadId && (
+              <EnlacesDueno
+                propiedadId={g.propiedadId}
+                enlaces={enlaces.filter(e => e.propiedadId === g.propiedadId)}
+                onCambio={cargarEnlaces}
+              />
+            )}
           </div>
         ))
       )}

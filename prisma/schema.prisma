@@ -95,6 +95,7 @@ model Property {
   features         PropertyFeature[]
   leads            Lead[]
   visitas          Visita[]
+  enlacesVisitantes EnlaceVisitantes[]
 
   @@index([municipality_id, status, price_cop])
   @@index([vereda_id, status])
@@ -443,4 +444,34 @@ model SearchLog {
   created_at  DateTime @default(now())
 
   @@map("search_logs")
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Enlace privado para que el DUEÑO de una propiedad vea quién la visitó.
+//
+// La URL lleva un token largo aleatorio (la parte secreta) y encima pide un PIN
+// que define el admin. Dos factores porque detrás hay cédulas: si el enlace se
+// reenvía por WhatsApp sin querer, el PIN todavía protege los datos.
+//
+// El PIN se guarda SOLO hasheado con bcrypt — no hay forma de recuperarlo ni de
+// mostrarlo. Si el dueño lo olvida, el admin genera un enlace nuevo.
+//
+// onDelete: Cascade (a diferencia de Visita, que usa SetNull): si la propiedad
+// se borra del catálogo, el enlace del dueño pierde todo sentido y debe morir
+// con ella. Lo que se preserva es el registro de la visita, no el acceso.
+// ─────────────────────────────────────────────────────────────────────────────
+model EnlaceVisitantes {
+  id               String   @id @default(uuid())
+  createdAt        DateTime @default(now())
+  propiedadId      String
+  propiedad        Property @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+  token            String   @unique // 32 bytes aleatorios en base64url; parte secreta de la URL
+  pinHash          String // bcrypt del PIN. NUNCA en texto plano
+  expiraAt         DateTime // createdAt + 1 año
+  revocado         Boolean  @default(false) // apagado manual desde el admin
+  ultimoAcceso     DateTime? // trazabilidad: cuándo lo usó el dueño
+  intentosFallidos Int      @default(0) // acumulado; al llegar al tope el enlace se bloquea
+
+  @@index([propiedadId])
+  @@map("enlaces_visitantes")
 }

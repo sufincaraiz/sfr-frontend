@@ -69,6 +69,7 @@ export async function GET(req: NextRequest) {
     esOtro: boolean
     titulo: string
     municipio: string | null
+    propiedadId: string | null // null en los "Otro": no pueden tener enlace de dueño
     propiedadSlug: string | null
     visitas: typeof visitas
     ultimaVisita: string
@@ -87,6 +88,7 @@ export async function GET(req: NextRequest) {
         esOtro: !v.propiedadId,
         titulo: v.propiedad?.title ?? v.inmuebleReferencia,
         municipio: v.propiedad?.municipality?.name ?? null,
+        propiedadId: v.propiedadId,
         propiedadSlug: v.propiedad?.slug ?? null,
         visitas: [],
         ultimaVisita: v.createdAt.toISOString(),
