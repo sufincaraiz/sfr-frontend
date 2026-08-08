@@ -12,6 +12,9 @@ const VisitaSchema = z.object({
   // Solo dígitos. Las cédulas colombianas van de 6 a 10 dígitos; se deja margen.
   cedula:             z.string().trim().regex(/^\d{6,12}$/, 'Cédula inválida'),
   inmuebleReferencia: z.string().trim().min(2, 'Referencia requerida').max(200),
+  // Del catálogo: llega el id de la propiedad. "Otro": llega null y esOtro=true.
+  propiedadId:        z.string().uuid().nullable().optional(),
+  esOtro:             z.boolean().optional().default(false),
   correo:             z.string().trim().email('Correo inválido').max(160),
   // Se acepta el formato que escriba la gente (espacios, guiones, +57) y se
   // exige que queden entre 7 y 15 dígitos reales.
@@ -64,10 +67,27 @@ export async function POST(req: NextRequest) {
   const d = parsed.data
 
   try {
+    // El id del inmueble lo manda el cliente, así que se verifica contra el
+    // catálogo antes de guardarlo: si no existe se degrada a "otro" en vez de
+    // reventar con un error de llave foránea. La referencia de texto ya viene
+    // con el título, así que el registro no pierde legibilidad.
+    let propiedadId: string | null = null
+    let esOtro = d.esOtro
+    if (!d.esOtro && d.propiedadId) {
+      const existe = await prisma.property.findUnique({
+        where:  { id: d.propiedadId },
+        select: { id: true },
+      })
+      if (existe) propiedadId = existe.id
+      else esOtro = true
+    }
+
     await prisma.visita.create({
       data: {
         nombresCompletos:      d.nombresCompletos,
         cedula:                d.cedula,
+        propiedadId,
+        esOtro,
         inmuebleReferencia:    d.inmuebleReferencia,
         correo:                d.correo,
         celular:               d.celular,

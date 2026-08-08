@@ -94,6 +94,7 @@ model Property {
   media            PropertyMedia[]
   features         PropertyFeature[]
   leads            Lead[]
+  visitas          Visita[]
 
   @@index([municipality_id, status, price_cop])
   @@index([vereda_id, status])
@@ -371,7 +372,15 @@ model Visita {
   createdAt             DateTime @default(now())
   nombresCompletos      String
   cedula                String
-  inmuebleReferencia    String // texto libre: referencia o nombre que escribe el visitante
+  // ── Inmueble visitado ──
+  // `propiedadId` apunta al catálogo cuando el visitante elige una propiedad
+  // nuestra. `inmuebleReferencia` SIEMPRE se llena: guarda el título elegido o
+  // el texto libre si marcó "Otro". Así el registro sigue siendo legible aunque
+  // la propiedad se borre del catálogo (la FK queda en NULL, el título no).
+  propiedadId           String?
+  propiedad             Property? @relation(fields: [propiedadId], references: [id], onDelete: SetNull)
+  inmuebleReferencia    String // título de la propiedad elegida, o texto libre si esOtro
+  esOtro                Boolean  @default(false) // inmueble no listado (de un colega)
   correo                String
   celular               String
   municipioOrigen       String
@@ -383,6 +392,7 @@ model Visita {
 
   @@index([createdAt])
   @@index([cedula])
+  @@index([propiedadId]) // agrupación por inmueble en /admin/visitas
   @@map("visitas")
 }
 

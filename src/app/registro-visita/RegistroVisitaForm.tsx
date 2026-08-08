@@ -4,21 +4,26 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Send, AlertCircle, CheckCircle2, ShieldCheck } from 'lucide-react';
 import type { RegistroVisitaContent } from '@/lib/registro-visita';
+import { SelectorInmueble, type SeleccionInmueble } from './SelectorInmueble';
+import type { PropiedadOpcion } from './page';
 
 type Estado = 'idle' | 'loading' | 'ok' | 'error';
 
-/** Orden de los campos. Las etiquetas vienen del contenido editable. */
-const ORDEN = [
-  { k: 'nombresCompletos',   type: 'text',  mode: undefined },
-  { k: 'cedula',             type: 'text',  mode: 'numeric' },
-  { k: 'inmuebleReferencia', type: 'text',  mode: undefined },
-  { k: 'correo',             type: 'email', mode: undefined },
-  { k: 'celular',            type: 'tel',   mode: 'tel' },
-  { k: 'municipioOrigen',    type: 'text',  mode: undefined },
+// El inmueble no está en estas listas: tiene su propio selector, que se
+// renderiza entre los campos de ANTES y los de DESPUES.
+const ANTES = [
+  { k: 'nombresCompletos', type: 'text', mode: undefined },
+  { k: 'cedula',           type: 'text', mode: 'numeric' },
+] as const;
+
+const DESPUES = [
+  { k: 'correo',          type: 'email', mode: undefined },
+  { k: 'celular',         type: 'tel',   mode: 'tel' },
+  { k: 'municipioOrigen', type: 'text',  mode: undefined },
 ] as const;
 
 const VACIO = {
-  nombresCompletos: '', cedula: '', inmuebleReferencia: '',
+  nombresCompletos: '', cedula: '',
   correo: '', celular: '', municipioOrigen: '',
 };
 
@@ -32,8 +37,16 @@ const labelStyle: React.CSSProperties = {
   fontSize: '0.8rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: 6,
 };
 
-export function RegistroVisitaForm({ contenido }: { contenido: RegistroVisitaContent }) {
+export function RegistroVisitaForm({
+  contenido,
+  propiedades,
+}: {
+  contenido: RegistroVisitaContent;
+  propiedades: PropiedadOpcion[];
+}) {
   const [form, setForm] = useState<Record<string, string>>(VACIO);
+  const [inmueble, setInmueble] = useState<SeleccionInmueble>(null);
+  const [textoOtro, setTextoOtro] = useState('');
   const [politica, setPolitica] = useState(false);
   const [controlIngreso, setControlIngreso] = useState(false);
   const [estado, setEstado] = useState<Estado>('idle');
@@ -49,18 +62,35 @@ export function RegistroVisitaForm({ contenido }: { contenido: RegistroVisitaCon
 
   const enviar = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!inmueble) {
+      setError('Selecciona el inmueble que vas a visitar.');
+      setEstado('error');
+      return;
+    }
+    if (inmueble.tipo === 'otro' && textoOtro.trim().length < 2) {
+      setError('Escribe la referencia del inmueble que vas a visitar.');
+      setEstado('error');
+      return;
+    }
     if (!ambasCasillas) {
       setError('Debes aceptar las dos autorizaciones para poder registrarte.');
       setEstado('error');
       return;
     }
     setEstado('loading'); setError('');
+
+    // Del catálogo: se guarda el vínculo y el título. "Otro": solo el texto.
+    const datosInmueble = inmueble.tipo === 'catalogo'
+      ? { propiedadId: inmueble.id, inmuebleReferencia: inmueble.titulo, esOtro: false }
+      : { propiedadId: null, inmuebleReferencia: textoOtro.trim(), esOtro: true };
+
     try {
       const res = await fetch('/api/visitas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...form,
+          ...datosInmueble,
           consentPolitica: politica,
           consentControlIngreso: controlIngreso,
         }),
@@ -115,7 +145,45 @@ export function RegistroVisitaForm({ contenido }: { contenido: RegistroVisitaCon
         boxShadow: '0 4px 24px rgba(27,86,161,0.07)',
       }}
     >
-      {ORDEN.map(c => {
+      {[...ANTES].map(c => {
+        const textos = contenido.campos[c.k];
+        return (
+          <div key={c.k}>
+            <label htmlFor={`v-${c.k}`} style={labelStyle}>
+              {textos.label} <span style={{ color: '#EF4444' }}>*</span>
+            </label>
+            <input
+              id={`v-${c.k}`}
+              type={c.type}
+              inputMode={c.mode}
+              value={form[c.k] ?? ''}
+              onChange={set(c.k)}
+              placeholder={textos.placeholder}
+              required
+              autoComplete="off"
+              style={inputStyle}
+            />
+          </div>
+        );
+      })}
+
+      {/* Inmueble: selector del catálogo con buscador, u "Otro" para los que
+          no son nuestros (de un colega). */}
+      <div>
+        <label style={labelStyle}>
+          {contenido.campos.inmuebleReferencia.label} <span style={{ color: '#EF4444' }}>*</span>
+        </label>
+        <SelectorInmueble
+          propiedades={propiedades}
+          seleccion={inmueble}
+          onSeleccion={setInmueble}
+          textoOtro={textoOtro}
+          onTextoOtro={setTextoOtro}
+          placeholder={contenido.campos.inmuebleReferencia.placeholder}
+        />
+      </div>
+
+      {[...DESPUES].map(c => {
         const textos = contenido.campos[c.k];
         return (
           <div key={c.k}>

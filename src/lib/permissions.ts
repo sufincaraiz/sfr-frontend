@@ -46,6 +46,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
   { prefix: '/admin/directorio',          label: 'Directorio',          icon: 'Store',           roles: ['admin'] },
   { prefix: '/admin/municipios',          label: 'Municipios',          icon: 'MapPin',          roles: ['admin'] },
   { prefix: '/admin/tipos',               label: 'Tipos de inmueble',   icon: 'Tags',            roles: ['admin'] },
+  { prefix: '/admin/visitas',             label: 'Visitas',             icon: 'UserCheck',       roles: ['admin'] },
   { prefix: '/admin/registro-visita',     label: 'Registro de visita',  icon: 'ClipboardCheck',  roles: ['admin'] },
   { prefix: '/admin/blog',                label: 'Blog',                icon: 'PenSquare',       roles: ['admin', 'autor_blog'] },
   { prefix: '/admin/usuarios',            label: 'Usuarios',            icon: 'Shield',          roles: ['admin'] },

@@ -90,6 +90,10 @@ export default function PoliticaDatosPage() {
           se recoge mediante casillas de aceptación en el formulario de registro. El visitante
           conserva en todo momento los derechos descritos en el numeral 4.
         </p>
+        <p>
+          Los datos del registro de visitas se conservan por un máximo de dos (2) años contados
+          desde la fecha de la visita, tras lo cual son eliminados de forma automática.
+        </p>
 
         <h2>4. Derechos de los Titulares (Habeas Data)</h2>
         <p>Como titular de la información, usted tiene derecho a:</p>

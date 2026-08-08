@@ -39,8 +39,41 @@ async function getContenido(): Promise<RegistroVisitaContent> {
   }
 }
 
+export interface PropiedadOpcion {
+  id: string;
+  titulo: string;
+  municipio: string;
+}
+
+/**
+ * Catálogo para el selector. Solo propiedades disponibles: registrar una visita
+ * a algo ya vendido no tiene sentido, y si aparece hay que usar "Otro".
+ * Resiliente igual que el contenido: si falla, el selector queda vacío y el
+ * visitante puede escribir la referencia con "Otro".
+ */
+async function getPropiedades(): Promise<PropiedadOpcion[]> {
+  try {
+    const rows = await prisma.property.findMany({
+      where: { status: 'available' },
+      orderBy: [{ published_at: 'desc' }],
+      select: {
+        id: true, title: true, slug: true, type: true,
+        municipality: { select: { name: true } },
+      },
+    });
+    return rows.map(r => ({
+      id: r.id,
+      titulo: r.title ?? r.slug,
+      municipio: r.municipality?.name ?? '',
+    }));
+  } catch (err) {
+    console.warn('[registro-visita] no se pudo leer el catálogo:', err instanceof Error ? err.message : err);
+    return [];
+  }
+}
+
 export default async function RegistroVisitaPage() {
-  const c = await getContenido();
+  const [c, propiedades] = await Promise.all([getContenido(), getPropiedades()]);
 
   return (
     <main style={{ background: '#F8FAFC', minHeight: '100vh' }}>
@@ -75,7 +108,7 @@ export default async function RegistroVisitaPage() {
           </p>
         </div>
 
-        <RegistroVisitaForm contenido={c} />
+        <RegistroVisitaForm contenido={c} propiedades={propiedades} />
 
         <div style={{
           display: 'flex', gap: 9, alignItems: 'flex-start',
