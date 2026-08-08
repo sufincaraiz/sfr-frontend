@@ -9,6 +9,13 @@ out/
 .env*
 !.env.example
 
+# Copias de seguridad de la base — contienen datos personales (cédulas).
+# Ley 1581/2012: no pueden acabar en el repositorio ni en GitHub.
+backups/
+*.sql
+*.sql.gz
+*.dump
+
 # OS / Editor
 .DS_Store
 Thumbs.db
