@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { estadoRetencion } from '@/lib/retencion-visitas'
+import type { RespuestaVisitasAdmin } from '@/lib/visitas-admin'
 
 // Listado interno de visitas, AGRUPADO POR INMUEBLE. Es la vista de la casa:
 // devuelve todos los datos del visitante (incluida la cédula), así que exige rol
@@ -106,7 +107,9 @@ export async function GET(req: NextRequest) {
     return b.ultimaVisita.localeCompare(a.ultimaVisita)
   })
 
-  return NextResponse.json({
+  // El tipo explícito es la red de seguridad: si a este literal le falta un
+  // campo de GrupoAdmin, el build falla en vez de dejar la UI a medias.
+  const respuesta: RespuestaVisitasAdmin = {
     total: visitas.length,
     truncado: visitas.length === TOPE,
     retencion,
@@ -115,6 +118,7 @@ export async function GET(req: NextRequest) {
       esOtro: g.esOtro,
       titulo: g.titulo,
       municipio: g.municipio,
+      propiedadId: g.propiedadId,
       propiedadSlug: g.propiedadSlug,
       totalVisitas: g.visitas.length,
       visitas: g.visitas.map(v => ({
@@ -129,5 +133,7 @@ export async function GET(req: NextRequest) {
         consentAt: v.consentAt.toISOString(),
       })),
     })),
-  })
+  }
+
+  return NextResponse.json(respuesta)
 }

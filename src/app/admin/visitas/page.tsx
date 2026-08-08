@@ -3,34 +3,13 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, Search, RefreshCw, ExternalLink, Home, Users, ShieldAlert, X, Clock, Trash2 } from 'lucide-react';
 import { EnlacesDueno, type EnlaceRow } from './EnlacesDueno';
-
-interface VisitaRow {
-  id: string;
-  createdAt: string;
-  nombresCompletos: string;
-  cedula: string;
-  correo: string;
-  celular: string;
-  municipioOrigen: string;
-  inmuebleReferencia: string;
-  consentAt: string;
-}
-
-interface Retencion {
-  proximasAVencer: number; // entre 22 y 24 meses: se acercan al límite
-  yaVencidas: number;      // pasaron los 2 años y siguen ahí (el cron no corrió)
-}
-
-interface Grupo {
-  clave: string;
-  esOtro: boolean;
-  titulo: string;
-  municipio: string | null;
-  propiedadId: string | null;
-  propiedadSlug: string | null;
-  totalVisitas: number;
-  visitas: VisitaRow[];
-}
+// Los tipos vienen del módulo compartido con la ruta que produce esta respuesta:
+// así el servidor no puede dejar de mandar un campo que aquí se usa.
+import type {
+  GrupoAdmin as Grupo,
+  RetencionAdmin as Retencion,
+  RespuestaVisitasAdmin,
+} from '@/lib/visitas-admin';
 
 const inputS: React.CSSProperties = {
   padding: '9px 12px', border: '1.5px solid #E2E8F0', borderRadius: 9,
@@ -69,7 +48,7 @@ export default function AdminVisitasPage() {
       if (aplicado.buscar) params.set('buscar', aplicado.buscar);
       const res = await fetch(`/api/admin/visitas?${params}`);
       if (res.status === 401 || res.status === 403) { window.location.href = '/admin/login'; return; }
-      const d = await res.json();
+      const d: RespuestaVisitasAdmin = await res.json();
       setGrupos(d.grupos ?? []);
       setTotal(d.total ?? 0);
       setTrunc(!!d.truncado);
