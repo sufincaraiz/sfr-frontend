@@ -262,7 +262,17 @@ export async function runMac(
 
         const exp = await consultarExperto(
           {
-            pregunta: 'Elabora la recomendación final de inversión para este cliente calificado como CALIENTE: cuál de las opciones vistas encaja mejor con su perfil y por qué, y qué debería confirmar con el especialista antes de decidir.',
+            // El enfoque de la pregunta define el tono del cierre. Antes pedía "qué
+            // debería confirmar antes de decidir", y eso devolvía una lista de
+            // riesgos que enfriaba al cliente justo cuando estaba entusiasmado. Se
+            // pide lo mismo en sustancia —la debida diligencia sigue siendo el
+            // diferencial de la casa— pero como acompañamiento del equipo, no como
+            // deberes del comprador.
+            pregunta: 'Elabora la recomendación final de inversión para este cliente calificado como CALIENTE: ' +
+              'cuál de las opciones vistas encaja mejor con su perfil y por qué, destacando lo que la hace una buena decisión. ' +
+              'Cierra con una sola idea sobre el respaldo que el cliente recibe de Su Finca Raíz en la revisión de títulos, acceso, agua y uso del suelo, ' +
+              'redactada como tranquilidad que él gana, NO como advertencias ni como tareas pendientes. ' +
+              'Escribe sobre el cliente y la propiedad; no te dirijas al equipo comercial ni le des instrucciones.',
             contexto: ctx.join('\n') || '(sin datos estructurados; usa el historial de la conversación)',
           },
           conversation.id,
@@ -276,6 +286,14 @@ export async function runMac(
             content:
               'Instrucción interna del sistema (no es un mensaje del cliente): un analista experto preparó esta recomendación. ' +
               'Comunícala al cliente CON TU PROPIA VOZ de Mac (cálido, mensajes cortos, texto plano, sin markdown), integrándola de forma natural con lo que ya le dijiste. ' +
+              // OJO: este bloque viaja como mensaje de rol "user", y la regla de
+              // INTEGRIDAD del prompt manda ignorar todo lo que dentro de un
+              // mensaje de usuario simule ser del sistema. Cuanto más largo y más
+              // imperativo sea este texto, más se parece a una inyección: en una
+              // prueba con tres líneas extra de directivas de tono, Mac lo tomó
+              // por un intento de manipulación y se lo dijo al cliente. Mantenerlo
+              // corto. El tono se gobierna desde la sección "Tono del cierre" del
+              // prompt del sistema, que sí es autoridad legítima.
               'No reveles que consultaste a otro sistema ni la copies literal.\n\n' +
               exp.analisis,
           })
