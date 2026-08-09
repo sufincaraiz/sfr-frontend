@@ -1,72 +1,72 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
-import { X, ChevronLeft, ChevronRight, ZoomIn } from 'lucide-react';
+import { ZoomIn } from 'lucide-react';
+import Lightbox from 'yet-another-react-lightbox';
+import Zoom from 'yet-another-react-lightbox/plugins/zoom';
+import Counter from 'yet-another-react-lightbox/plugins/counter';
+import Thumbnails from 'yet-another-react-lightbox/plugins/thumbnails';
+import 'yet-another-react-lightbox/styles.css';
+import 'yet-another-react-lightbox/plugins/counter.css';
+import 'yet-another-react-lightbox/plugins/thumbnails.css';
+import cloudinaryLoader from '@/lib/cloudinary-loader';
 import type { PropertyMedia } from '@/types';
 
 interface Props { media: PropertyMedia[] }
 
-const SWIPE_THRESHOLD = 55; // px para cambiar de foto
+// ─────────────────────────────────────────────────────────────────────────────
+// El visor a pantalla completa usa yet-another-react-lightbox, la misma librería
+// que ya movía el lightbox de eventos. Sustituye a un carrusel propio que tenía
+// dos problemas de raíz:
+//
+//   • Renderizaba UNA sola foto (`imgs[idx]`), así que la descarga empezaba en el
+//     momento del deslizamiento y el usuario se comía la latencia entera. Aquí
+//     `preload: 2` mantiene 5 slides montados (2 atrás, la actual y 2 adelante),
+//     de modo que al deslizar la siguiente foto ya está descargada.
+//
+//   • Ponía `touch-action: none` y leía `e.clientX` de un único puntero, así que
+//     un pellizco de dos dedos se interpretaba como arrastre y cambiaba de foto.
+//     El plugin Zoom distingue un dedo (navegar) de dos (ampliar) por sí solo.
+//
+// ANCHO DE LAS FOTOS: solo dos variantes, móvil y escritorio. Medimos que una
+// transformación nueva de Cloudinary tarda ~1.3 s en generarse y ~20 ms una vez
+// cacheada; pedir un ancho distinto por cada tamaño de pantalla fragmentaría la
+// caché y multiplicaría esas esperas en frío. Con dos anchos, ambos se calientan
+// enseguida y se quedan así. Los originales rondan los 1080 px y `c_limit` no
+// agranda, de modo que 1280 entrega la foto completa sin pesar de más.
+// ─────────────────────────────────────────────────────────────────────────────
+
+const ANCHO_MOVIL = 828;
+const ANCHO_ESCRITORIO = 1280;
 
 export function GaleriaLightbox({ media }: Props) {
   const [open, setOpen] = useState(false);
-  const [idx,  setIdx]  = useState(0);
-  const [dragDx, setDragDx] = useState(0);
-  const dragging = useRef<{ startX: number; dx: number; active: boolean }>({ startX: 0, dx: 0, active: false });
-  const stripRef = useRef<HTMLDivElement>(null);
+  const [idx, setIdx] = useState(0);
+  const [ancho, setAncho] = useState(ANCHO_ESCRITORIO);
 
-  const imgs = media.filter(m => m.type === 'image');
+  const imgs = useMemo(() => media.filter(m => m.type === 'image'), [media]);
   const banner = imgs[0];
-  const rest   = imgs.slice(1, 7); // máx 6 en el grid de preview
+  const rest = imgs.slice(1, 7); // máx 6 en el grid de preview
 
-  const prev = useCallback(() => setIdx(i => (i - 1 + imgs.length) % imgs.length), [imgs.length]);
-  const next = useCallback(() => setIdx(i => (i + 1) % imgs.length), [imgs.length]);
-
-  // Teclado + bloqueo de scroll mientras el visor está abierto
+  // El ancho se decide una vez, en el cliente. En el servidor no hay viewport,
+  // y de todos modos el visor solo existe tras una interacción.
   useEffect(() => {
-    if (!open) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape')     setOpen(false);
-      if (e.key === 'ArrowLeft')  prev();
-      if (e.key === 'ArrowRight') next();
-    };
-    window.addEventListener('keydown', handler);
-    document.body.style.overflow = 'hidden';
-    return () => { window.removeEventListener('keydown', handler); document.body.style.overflow = ''; };
-  }, [open, prev, next]);
+    const px = window.innerWidth * (window.devicePixelRatio || 1);
+    setAncho(px <= ANCHO_MOVIL ? ANCHO_MOVIL : ANCHO_ESCRITORIO);
+  }, []);
 
-  // Auto-centrar la miniatura activa en la tira, con animación
-  useEffect(() => {
-    if (!open) return;
-    const el = stripRef.current?.children[idx] as HTMLElement | undefined;
-    el?.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-  }, [idx, open]);
+  const slides = useMemo(
+    () => imgs.map((m, i) => ({
+      src: cloudinaryLoader({ src: m.url, width: ancho }),
+      alt: m.alt_text || `Foto ${i + 1}`,
+    })),
+    [imgs, ancho]
+  );
 
   if (!banner) return null;
 
   const openAt = (i: number) => { setIdx(i); setOpen(true); };
-
-  // ── Swipe / arrastre (Pointer Events: unifica touch + mouse) ──
-  const onDown = (e: React.PointerEvent) => {
-    if (imgs.length < 2) return;
-    dragging.current = { startX: e.clientX, dx: 0, active: true };
-    try { (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId); } catch { /* algunos navegadores/edge cases */ }
-  };
-  const onMove = (e: React.PointerEvent) => {
-    if (!dragging.current.active) return;
-    const dx = e.clientX - dragging.current.startX;
-    dragging.current.dx = dx;      // ref = fuente de verdad para onUp
-    setDragDx(dx);                 // estado = solo para el feedback visual
-  };
-  const onUp = () => {
-    if (!dragging.current.active) return;
-    const dx = dragging.current.dx; // siempre el último delta, sin depender del re-render
-    dragging.current.active = false;
-    setDragDx(0);
-    if (dx > SWIPE_THRESHOLD) prev();
-    else if (dx < -SWIPE_THRESHOLD) next();
-  };
 
   return (
     <>
@@ -120,102 +120,36 @@ export function GaleriaLightbox({ media }: Props) {
         </button>
       )}
 
-      {/* ── Visor / carrusel táctil ── */}
-      {open && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.94)', zIndex: 9999, display: 'flex', flexDirection: 'column' }}
-          onClick={e => { if (e.target === e.currentTarget) setOpen(false); }}
-        >
-          {/* Barra superior: contador + cerrar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 16px', flexShrink: 0 }}>
-            <span style={{ color: '#fff', fontSize: '0.9rem', fontWeight: 700, background: 'rgba(255,255,255,0.12)', padding: '5px 12px', borderRadius: 999 }}>
-              {idx + 1} / {imgs.length}
-            </span>
-            <button onClick={() => setOpen(false)} aria-label="Cerrar" style={{ background: 'rgba(255,255,255,0.12)', border: 'none', borderRadius: '50%', width: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff' }}>
-              <X size={22} />
-            </button>
-          </div>
-
-          {/* Área principal: imagen con swipe/arrastre + flechas */}
-          <div style={{ position: 'relative', flex: 1, minHeight: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            {imgs.length > 1 && (
-              <button onClick={prev} aria-label="Anterior" style={arrowStyle('left')}>
-                <ChevronLeft size={26} />
-              </button>
-            )}
-
-            <div
-              onPointerDown={onDown}
-              onPointerMove={onMove}
-              onPointerUp={onUp}
-              onPointerCancel={onUp}
-              style={{
-                position: 'relative', width: '92vw', maxWidth: 1200, height: '100%',
-                touchAction: 'none', cursor: imgs.length > 1 ? (dragging.current.active ? 'grabbing' : 'grab') : 'default',
-                transform: `translateX(${dragDx}px)`,
-                transition: dragging.current.active ? 'none' : 'transform 0.2s ease',
-              }}
-            >
-              {imgs[idx] && (
-                <Image
-                  src={imgs[idx].url}
-                  alt={imgs[idx].alt_text || `Foto ${idx + 1}`}
-                  fill
-                  priority
-                  draggable={false}
-                  style={{ objectFit: 'contain', pointerEvents: 'none', userSelect: 'none' }}
-                  sizes="92vw"
-                />
-              )}
-            </div>
-
-            {imgs.length > 1 && (
-              <button onClick={next} aria-label="Siguiente" style={arrowStyle('right')}>
-                <ChevronRight size={26} />
-              </button>
-            )}
-          </div>
-
-          {/* Tira de miniaturas (animada, lazy, tap para saltar) */}
-          {imgs.length > 1 && (
-            <div
-              ref={stripRef}
-              style={{
-                flexShrink: 0, display: 'flex', gap: 8, overflowX: 'auto', padding: '12px 16px calc(12px + env(safe-area-inset-bottom))',
-                scrollbarWidth: 'none', WebkitOverflowScrolling: 'touch',
-              }}
-            >
-              {imgs.map((m, i) => {
-                const activa = i === idx;
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => setIdx(i)}
-                    aria-label={`Ir a la foto ${i + 1}`}
-                    style={{
-                      position: 'relative', flexShrink: 0, width: 78, height: 56, borderRadius: 8, overflow: 'hidden',
-                      border: activa ? '2px solid #E8B92F' : '2px solid transparent',
-                      opacity: activa ? 1 : 0.55, cursor: 'pointer', padding: 0, background: '#111',
-                      transform: activa ? 'scale(1)' : 'scale(0.94)', transition: 'opacity 0.2s, transform 0.2s, border-color 0.2s',
-                    }}
-                  >
-                    <Image src={m.url} alt="" fill loading="lazy" style={{ objectFit: 'cover' }} sizes="78px" />
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+      {/* ── Visor a pantalla completa ── */}
+      <Lightbox
+        open={open}
+        close={() => setOpen(false)}
+        index={idx}
+        on={{ view: ({ index }) => setIdx(index) }}
+        slides={slides}
+        plugins={[Zoom, Counter, Thumbnails]}
+        // preload: 2 → mantiene montadas (2·2+1) = 5 fotos. Es lo que elimina la
+        // espera al deslizar: la siguiente ya está descargada.
+        carousel={{ preload: 2, finite: false, imageFit: 'contain' }}
+        // Un dedo navega, dos dedos amplían. Los botones de lupa +/− los añade el
+        // plugin a la barra superior, así que también hay zoom sin gestos.
+        zoom={{
+          maxZoomPixelRatio: 3,
+          zoomInMultiplier: 2,
+          doubleClickMaxStops: 2,
+          scrollToZoom: true, // rueda del ratón y trackpad en escritorio
+        }}
+        counter={{ container: { style: { top: 'unset', bottom: 'unset' } } }}
+        thumbnails={{
+          position: 'bottom', width: 80, height: 56, borderRadius: 6,
+          border: 2, borderColor: '#E8B92F', gap: 8, padding: 0,
+          imageFit: 'cover', vignette: false,
+        }}
+        controller={{ closeOnBackdropClick: true }}
+        labels={{ Next: 'Siguiente', Previous: 'Anterior', Close: 'Cerrar', 'Zoom in': 'Acercar', 'Zoom out': 'Alejar' }}
+        styles={{ container: { backgroundColor: 'rgba(0,0,0,0.94)' } }}
+        animation={{ fade: 250, swipe: 300 }}
+      />
     </>
   );
-}
-
-function arrowStyle(side: 'left' | 'right'): React.CSSProperties {
-  return {
-    position: 'absolute', top: '50%', transform: 'translateY(-50%)', [side]: 10,
-    zIndex: 2, background: 'rgba(255,255,255,0.14)', border: 'none', borderRadius: '50%',
-    width: 46, height: 46, display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', color: '#fff',
-  } as React.CSSProperties;
 }

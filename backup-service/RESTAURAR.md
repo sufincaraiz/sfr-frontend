@@ -83,11 +83,16 @@ $gz.CopyTo($out); $gz.Dispose(); $out.Dispose(); $in.Dispose()
 Queda `sfr-backup.sql`. Comprueba en tres segundos que está entero:
 
 ```bash
-tail -n 3 sfr-backup.sql
+tail -n 8 sfr-backup.sql
 ```
 
-Debe terminar con **`-- PostgreSQL database dump complete`**. Si no, el archivo
-está cortado: usa el respaldo de la semana anterior.
+Entre esas líneas debe aparecer **`-- PostgreSQL database dump complete`**. Si no
+está, el archivo está cortado: usa el respaldo de la semana anterior.
+
+> **Ocho líneas, no tres.** En PostgreSQL 18 el dump no termina en ese marcador:
+> después va una línea `\unrestrict <código>`, que `pg_dump` añade para que un
+> nombre de objeto malicioso no pueda inyectar meta-comandos durante la
+> restauración. Ver solo `\unrestrict` al final es lo normal, no un archivo roto.
 
 ---
 
