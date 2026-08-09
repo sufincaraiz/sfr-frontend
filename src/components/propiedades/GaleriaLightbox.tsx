@@ -139,7 +139,30 @@ export function GaleriaLightbox({ media }: Props) {
           doubleClickMaxStops: 2,
           scrollToZoom: true, // rueda del ratón y trackpad en escritorio
         }}
-        counter={{ container: { style: { top: 'unset', bottom: 'unset' } } }}
+        // Centrado ABAJO, que es la única banda libre: las flechas van a media
+        // altura en los costados y los botones de zoom/cerrar arriba a la
+        // derecha. Arriba centrado no cabe — en pantallas de 320 px el contador
+        // se metía bajo el primer botón.
+        //
+        // `bottom` se mide contra .yarl__container, que termina justo donde
+        // empieza la tira de miniaturas, así que el contador queda encima de
+        // ella sin necesidad de calcular su altura.
+        //
+        // (El CSS del plugin ancla en top:0/left:0. Antes puse el eje vertical
+        // en "unset", lo que lo dejaba SIN anclaje y lo hacía caer sobre la
+        // flecha izquierda: ese era el defecto reportado.)
+        counter={{
+          container: {
+            style: {
+              top: 'unset', bottom: 12, left: '50%', right: 'unset',
+              transform: 'translateX(-50%)', margin: 0,
+              padding: '5px 13px', borderRadius: 999,
+              background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+              color: '#fff', fontSize: '0.85rem', fontWeight: 700, lineHeight: 1.45,
+              filter: 'none', // el fondo ya da contraste; sobra la sombra por defecto
+            },
+          },
+        }}
         thumbnails={{
           position: 'bottom', width: 80, height: 56, borderRadius: 6,
           border: 2, borderColor: '#E8B92F', gap: 8, padding: 0,
