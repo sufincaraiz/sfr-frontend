@@ -3,7 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { Save, Loader2, ArrowLeft, Trash2, Upload, X, Star, ChevronLeft, ChevronRight, MapPin, ArrowRight } from 'lucide-react';
-import { MUNICIPALITIES, PROPERTY_TYPES, formatPrice } from '@/lib/utils';
+import { PROPERTY_TYPES, formatPrice } from '@/lib/utils';
+import { MUNICIPIOS_PROVINCIA } from '@/lib/datos-oficiales';
 
 const CLOUD  = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
 const PRESET = 'sufincaraiz_properties';
@@ -37,7 +38,7 @@ export default function EditarPropiedadPage() {
   const modelRef = useRef<HTMLInputElement>(null);
   const [up3d, setUp3d] = useState(false);
   const [err3d, setErr3d] = useState('');
-  const [munis, setMunis] = useState<string[]>(MUNICIPALITIES.map(m => m.label));
+  const [munis, setMunis] = useState<string[]>([...MUNICIPIOS_PROVINCIA]);
   const [nuevoMuni, setNuevoMuni] = useState('');
   const [muniCreado, setMuniCreado] = useState<{ name: string; slug: string } | null>(null);
   const [tipos, setTipos] = useState(PROPERTY_TYPES);

@@ -3,7 +3,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Upload, X, Save, Loader2, CheckCircle2, MapPin, ArrowRight } from 'lucide-react';
-import { MUNICIPALITIES, PROPERTY_TYPES } from '@/lib/utils';
+import { PROPERTY_TYPES } from '@/lib/utils';
+import { MUNICIPIOS_PROVINCIA } from '@/lib/datos-oficiales';
 
 const OTRO = '__otro__';
 
@@ -56,7 +57,7 @@ export default function NuevaPropiedadPage() {
   const [uploading,  setUploading]  = useState(false);
   const [saving,     setSaving]     = useState(false);
   const [error,      setError]      = useState('');
-  const [munis,      setMunis]      = useState<string[]>(MUNICIPALITIES.map(m => m.label));
+  const [munis,      setMunis]      = useState<string[]>([...MUNICIPIOS_PROVINCIA]);
   const [nuevoMuni,  setNuevoMuni]  = useState('');
   const [muniCreado, setMuniCreado] = useState<{ name: string; slug: string } | null>(null);
   const [tipos,      setTipos]      = useState(PROPERTY_TYPES);

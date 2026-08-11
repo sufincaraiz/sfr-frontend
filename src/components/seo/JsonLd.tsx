@@ -1,4 +1,5 @@
 import { SITE_URL } from '@/lib/site';
+import { MUNICIPIOS_PROVINCIA } from '@/lib/datos-oficiales';
 
 interface JsonLdProps {
   data: Record<string, unknown> | Record<string, unknown>[];
@@ -81,27 +82,29 @@ export function localBusinessSchema() {
           },
         ],
 
-        // ── Zona de cobertura — 10 municipios del Gualivá ────────────────────
-        areaServed: [
-          {
-            '@type': 'City',
-            name:    'La Vega',
-            containedInPlace: {
-              '@type': 'AdministrativeArea',
-              name:    'Cundinamarca',
-              containedInPlace: { '@type': 'Country', name: 'Colombia' },
-            },
+        // ── Zona de cobertura — los DOCE de la Provincia del Gualivá ─────────
+        //
+        // Se genera desde MUNICIPIOS_PROVINCIA, nunca a mano. La lista anterior
+        // estaba escrita aquí y declaraba diez municipios, dos de los cuales NO
+        // son del Gualivá: El Peñón (Provincia de Rionegro) y Guayabal de
+        // Síquima (Magdalena Centro). A la vez omitía La Peña, Nimaima,
+        // Quebradanegra y Albán, que sí lo son.
+        //
+        // Declarar cobertura donde no se opera y omitirla donde sí es doblemente
+        // costoso: confunde la resolución de entidad y deja fuera las consultas
+        // («inmobiliarias en Útica») que se querían capturar.
+        //
+        // Cada municipio lleva su jerarquía completa: un modelo que resuelve
+        // «Villeta» necesita saber que es la de Cundinamarca, Colombia.
+        areaServed: MUNICIPIOS_PROVINCIA.map(nombre => ({
+          '@type': 'City',
+          name:    nombre,
+          containedInPlace: {
+            '@type': 'AdministrativeArea',
+            name:    'Provincia del Gualivá, Cundinamarca',
+            containedInPlace: { '@type': 'Country', name: 'Colombia' },
           },
-          { '@type': 'City', name: 'Sasaima' },
-          { '@type': 'City', name: 'Nocaima' },
-          { '@type': 'City', name: 'Villeta' },
-          { '@type': 'City', name: 'San Francisco' },
-          { '@type': 'City', name: 'Supatá' },
-          { '@type': 'City', name: 'El Peñón' },
-          { '@type': 'City', name: 'Útica' },
-          { '@type': 'City', name: 'Vergara' },
-          { '@type': 'City', name: 'Guayabal de Síquima' },
-        ],
+        })),
 
         // ── Catálogo de servicios ─────────────────────────────────────────────
         hasOfferCatalog: {

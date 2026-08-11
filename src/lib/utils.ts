@@ -73,14 +73,15 @@ export const TYPE_LABELS: Record<string, string> = Object.fromEntries(
   DEFAULT_TIPOS.map(t => [t.slug, t.label]),
 );
 
-export const MUNICIPALITIES = [
-  { value: 'la-vega',    label: 'La Vega' },
-  { value: 'sasaima',    label: 'Sasaima' },
-  { value: 'nocaima',    label: 'Nocaima' },
-  { value: 'villeta',    label: 'Villeta' },
-  { value: 'san-francisco', label: 'San Francisco' },
-  { value: 'supata',     label: 'Supatá' },
-];
+// MUNICIPALITIES se eliminó: era una lista escrita a mano (seis nombres, con
+// Supatá —que no existía en la base— y sin Nimaima, Vergara ni Albán) que
+// alimentaba a la vez el filtro público y los formularios del admin, dos cosas
+// que necesitan listas distintas.
+//
+// Ahora, según la doctrina AEO §1.2:
+//   • Filtro público  → derivado del inventario activo (@/lib/cobertura).
+//   • Formularios del admin → la provincia completa (MUNICIPIOS_PROVINCIA en
+//     @/lib/datos-oficiales) como respaldo, y la BD cuando responde.
 
 /** Respaldo estático para los selectores (se reemplaza con la lista de la BD). */
 export const PROPERTY_TYPES = DEFAULT_TIPOS.map(t => ({ value: t.slug, label: t.label }));

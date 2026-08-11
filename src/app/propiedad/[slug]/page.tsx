@@ -9,6 +9,7 @@ import { prisma } from '@/lib/prisma';
 import { formatPrice } from '@/lib/utils';
 import { tipoLabel } from '@/lib/property-types';
 import { getTipoLabels } from '@/lib/property-types.server';
+import { urlDeMunicipio } from '@/lib/cobertura';
 import { GaleriaLightbox } from '@/components/propiedades/GaleriaLightbox';
 import { Modelo3D } from '@/components/propiedades/Modelo3D';
 import { FormContactoPropiedad } from '@/components/propiedades/FormContactoPropiedad';
@@ -155,6 +156,11 @@ export default async function PropiedadDetallePage(
 
   const typeLabel  = tipoLabel(p.type, await getTipoLabels());
   const muni       = p.municipality?.name ?? 'La Vega';
+  // Enlaza a la página del municipio SOLO si está publicada; si no, al catálogo
+  // filtrado. Sin esta guarda, una propiedad de un municipio sin contenido —hoy
+  // Albán— apuntaría a /municipios/alban, que devuelve 404. Además codifica el
+  // parámetro, que antes iba con el espacio literal ("?municipio=La Vega").
+  const urlMuni    = await urlDeMunicipio(muni, p.municipality?.slug ?? '');
   const title      = p.title ?? `${typeLabel} en ${muni}`;
   const banner     = p.media?.find(m => m.is_primary) ?? p.media?.[0];
 
@@ -244,7 +250,7 @@ export default async function PropiedadDetallePage(
           <ChevronRight size={13} />
           <Link href="/propiedades" style={{ color: '#64748B', textDecoration: 'none' }}>Propiedades</Link>
           <ChevronRight size={13} />
-          <Link href={`/propiedades?municipio=${muni}`} style={{ color: '#64748B', textDecoration: 'none' }}>{muni}</Link>
+          <Link href={urlMuni} style={{ color: '#64748B', textDecoration: 'none' }}>{muni}</Link>
           <ChevronRight size={13} />
           <span style={{ color: '#0D2D5E', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{title}</span>
         </nav>

@@ -8,6 +8,7 @@ import { Paginacion }         from '@/components/propiedades/Paginacion';
 import { SkeletonCards }      from '@/components/propiedades/SkeletonCards';
 import { tipoPlural }         from '@/lib/property-types';
 import { getTiposPropiedad, getTipoPlurales } from '@/lib/property-types.server';
+import { getMunicipiosConInventario } from '@/lib/cobertura';
 import type { Property }      from '@/types';
 
 export const metadata: Metadata = {
@@ -93,10 +94,11 @@ export default async function PropiedadesPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
-  const [data, tipos, plurales] = await Promise.all([
+  const [data, tipos, plurales, municipios] = await Promise.all([
     fetchProperties(sp),
     getTiposPropiedad(),
     getTipoPlurales(),
+    getMunicipiosConInventario(), // derivado del inventario, no una lista fija
   ]);
 
   const heading = sp.tipo
@@ -126,7 +128,10 @@ export default async function PropiedadesPage({
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
         {/* Filtros */}
         <Suspense fallback={null}>
-          <FiltrosPropiedades tipos={tipos.map(t => ({ value: t.slug, label: t.label }))} />
+          <FiltrosPropiedades
+            tipos={tipos.map(t => ({ value: t.slug, label: t.label }))}
+            municipios={municipios.map(m => ({ value: m.name, label: m.name }))}
+          />
         </Suspense>
 
         {/* Grid */}

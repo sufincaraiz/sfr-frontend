@@ -3,14 +3,19 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Search } from 'lucide-react';
-import { MUNICIPALITIES, PROPERTY_TYPES } from '@/lib/utils';
+import { PROPERTY_TYPES } from '@/lib/utils';
 
 interface SearchBarProps {
   compact?: boolean;
 }
 
-// Lista inicial (SSR) como respaldo; se reemplaza con la de la BD al montar.
-const MUNI_FALLBACK = MUNICIPALITIES.map(m => ({ name: m.label, slug: m.value }));
+// Sin respaldo escrito a mano: el filtro se llena con los municipios que tienen
+// inventario activo, que llegan de /api/municipios al montar.
+//
+// Antes había seis nombres fijos aquí. Ofrecer un municipio sin propiedades hace
+// que el usuario filtre y no encuentre nada, que es peor que no ofrecerlo; y
+// además contradice la regla de no mantener listas de municipios a mano.
+const MUNI_FALLBACK: { name: string; slug: string }[] = [];
 
 export function SearchBar({ compact = false }: SearchBarProps) {
   const router = useRouter();

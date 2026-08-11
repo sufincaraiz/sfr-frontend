@@ -6,14 +6,12 @@ import { Search, SlidersHorizontal } from 'lucide-react';
 import { PROPERTY_TYPES } from '@/lib/utils';
 import { tipoLabel } from '@/lib/property-types';
 
-const MUNICIPIOS = [
-  { value: 'La Vega',       label: 'La Vega' },
-  { value: 'Sasaima',       label: 'Sasaima' },
-  { value: 'Nocaima',       label: 'Nocaima' },
-  { value: 'Villeta',       label: 'Villeta' },
-  { value: 'Quebradanegra', label: 'Quebradanegra' },
-  { value: 'Nimaima',       label: 'Nimaima' },
-];
+// La lista de municipios ya NO se escribe aquí. Llega por props, derivada del
+// inventario activo (doctrina AEO §1.2): un municipio entra al filtro cuando
+// tiene propiedades y sale cuando deja de tenerlas.
+//
+// Antes había seis nombres fijos que incluían municipios sin una sola propiedad
+// (filtrar por ellos devolvía vacío) y omitían otros que sí la tenían.
 
 const PRECIOS = [
   { value: '',             label: 'Sin límite' },
@@ -27,9 +25,11 @@ const PRECIOS = [
 interface FiltrosProps {
   /** Tipos desde la BD; si no llegan, se usa el respaldo estático. */
   tipos?: { value: string; label: string }[];
+  /** Municipios con inventario activo, derivados en el servidor. */
+  municipios?: { value: string; label: string }[];
 }
 
-export function FiltrosPropiedades({ tipos = PROPERTY_TYPES }: FiltrosProps) {
+export function FiltrosPropiedades({ tipos = PROPERTY_TYPES, municipios = [] }: FiltrosProps) {
   const router      = useRouter();
   const pathname    = usePathname();
   const searchParams = useSearchParams();
@@ -114,7 +114,7 @@ export function FiltrosPropiedades({ tipos = PROPERTY_TYPES }: FiltrosProps) {
             }}
           >
             <option value="">Todos los municipios</option>
-            {MUNICIPIOS.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+            {municipios.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
           </select>
         </div>
 
