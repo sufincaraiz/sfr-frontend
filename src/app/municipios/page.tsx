@@ -15,9 +15,11 @@ export const revalidate = 3600
 export const metadata: Metadata = {
   title: 'Municipios del Gualivá, Cundinamarca',
   description:
-    'Explora los mejores municipios del Gualivá para comprar finca raíz: La Vega, ' +
-    'Villeta, Nocaima, Sasaima y más. Información de clima, turismo, inversión y ' +
-    'propiedades disponibles cerca de Bogotá.',
+    // Sin enumerar municipios en prosa (doctrina §1.2): una lista escrita a
+    // mano dentro de un texto envejece igual que una en código, y el «y más»
+    // deja indefinida justo la cobertura que interesa declarar con precisión.
+    'Los doce municipios de la Provincia del Gualivá, Cundinamarca, para comprar ' +
+    'finca raíz cerca de Bogotá: clima, turismo, inversión y propiedades disponibles.',
   alternates: {
     canonical: `${SITE_URL}/municipios`,
   },
@@ -89,8 +91,8 @@ export default async function MunicipiosIndexPage() {
             Municipios para invertir cerca de Bogotá
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.82)', maxWidth: 600, margin: '0 auto', lineHeight: 1.7, fontSize: '1.05rem' }}>
-            La Vega, Villeta, Nocaima, Sasaima y más. Todos a menos de 2 horas de Bogotá
-            con fincas, lotes y casas campestres en clima primaveral.
+            Los doce municipios de la Provincia del Gualivá, todos a menos de 2 horas
+            de Bogotá, con fincas, lotes y casas campestres en clima primaveral.
           </p>
         </div>
 

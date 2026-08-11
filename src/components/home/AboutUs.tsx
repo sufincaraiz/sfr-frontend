@@ -3,14 +3,19 @@
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { ArrowRight } from 'lucide-react';
+import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
 
 const FACTS = [
+  // ⚠ PROVISIONAL: este «150» no está sustentado y además choca con
+  // DATOS_OFICIALES.familiasAtendidas (150), que cuenta otra cosa. Pendiente de
+  // confirmar cuál es el número real de operaciones cerradas.
   'Más de 150 propiedades vendidas en la región',
-  '8 municipios de cobertura en el Gualivá',
+  `${DATOS_OFICIALES.municipiosProvincia} municipios de cobertura en el Gualivá`,
   'Tours virtuales 360° en propiedades seleccionadas',
   'Acompañamiento legal completo en cada transacción',
   'Fotografía aérea con drones profesionales',
-  '98 % de clientes satisfechos con el proceso de compra',
+  // Retirado «98 % de clientes satisfechos»: sin encuesta que lo respalde.
+  // Ver la nota en lib/datos-oficiales.ts.
 ];
 
 export function AboutUs() {

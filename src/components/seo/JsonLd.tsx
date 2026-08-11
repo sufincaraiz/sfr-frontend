@@ -27,7 +27,22 @@ export function localBusinessSchema() {
         '@id': `${SITE_URL}/#organization`,
 
         name: 'Su Finca Raíz',
-        alternateName: 'Inmobiliaria Su Finca Raíz',
+        // El alternateName lleva anclaje geográfico a propósito: es la forma que
+        // un modelo puede usar para distinguir esta entidad de la inmobiliaria
+        // homónima del Oriente Antioqueño (Rionegro, sufincaraiz.co).
+        alternateName: ['Su Finca Raíz — La Vega', 'Inmobiliaria Su Finca Raíz La Vega'],
+
+        // ── Identificador registral ──────────────────────────────────────────
+        // La matrícula mercantil es el desambiguador más fuerte disponible: es
+        // un número único de registro público que la otra empresa no comparte.
+        identifier: {
+          '@type': 'PropertyValue',
+          propertyID: 'Matrícula Mercantil (Cámara de Comercio, Colombia)',
+          value: '199483',
+        },
+        // TODO: foundingDate — pendiente del dato real de Leonel. Es lo único de
+        // este bloque que no se puede derivar ni verificar desde el repositorio,
+        // y publicar un año inventado sería peor que omitirlo.
         slogan: 'La primera inmobiliaria inteligente de La Vega y el Gualivá',
         description:
           'Su Finca Raíz — la primera inmobiliaria inteligente de La Vega, ' +
@@ -118,8 +133,12 @@ export function localBusinessSchema() {
                 name:          'Venta de Fincas en La Vega y el Gualivá',
                 description:
                   'Fincas productivas y de recreo desde 1 hasta 50 hectáreas. ' +
-                  'Acceso vial, agua y servicios. Municipios: La Vega, Sasaima, ' +
-                  'Nocaima, Villeta, San Francisco y más.',
+                  // Sin enumerar municipios en prosa: una lista escrita a mano
+                  // dentro de un texto envejece igual que una en código, y el
+                  // «y más» dejaba la cobertura indefinida justo donde interesa
+                  // que sea precisa.
+                  'Acceso vial, agua y servicios en los doce municipios de la ' +
+                  'Provincia del Gualivá, Cundinamarca.',
               },
             },
             {
@@ -187,6 +206,18 @@ export function localBusinessSchema() {
         ],
 
         // ── Perfiles en redes sociales (señal de autoridad de marca) ──────────
+        // ── sameAs: «estos perfiles soy yo» ──────────────────────────────────
+        // Es el campo más importante contra la fragmentación de identidad y
+        // contra el homónimo antioqueño: le dice al modelo qué perfiles externos
+        // pertenecen a ESTA entidad y no a la otra.
+        //
+        // TODO: faltan las señales de mayor peso y no se pueden inventar —
+        // requieren las URLs reales de Leonel:
+        //   • Ficha de Google Business Profile (la corroboración nº 1)
+        //   • Perfil en Fincaraiz
+        //   • Perfil en Metrocuadrado
+        //   • Sitios de Conarc y MOX, para el enlazado cruzado del consorcio
+        // Con solo las cuatro redes sociales, este campo rinde la mitad.
         sameAs: [
           'https://www.instagram.com/sufincaraizlavega/',
           'https://www.facebook.com/inmobiliariasufincaraiz',

@@ -41,8 +41,24 @@ export const DATOS_OFICIALES = {
   /** PROVISIONAL — venía de StatsSection.tsx. Sin fuente documentada. */
   familiasAtendidas: 150,
 
-  /** PROVISIONAL — venía de StatsSection.tsx. Sin encuesta que lo respalde. */
-  satisfaccionPct: 98,
+  // ── Satisfacción: RETIRADA del sitio ───────────────────────────────────────
+  // Había un «98 % de clientes que nos recomiendan» escrito a mano, sin encuesta
+  // ni metodología detrás. Se retiró por dos razones que apuntan al mismo sitio:
+  //
+  //   • Es una afirmación publicitaria cuantitativa sin soporte verificable
+  //     (Ley 1480 de 2011, Estatuto del Consumidor).
+  //   • Un modelo generativo que no encuentra corroboración de una cifra baja la
+  //     confianza en TODAS las demás cifras del sitio. Una métrica inventada
+  //     cuesta más de lo que aporta.
+  //
+  // El reemplazo natural, cuando exista, es la calificación real y el número de
+  // reseñas de Google Business Profile: dato de tercero, verificable y con
+  // metodología pública. Ahí sí se puede publicar, y además marcar como
+  // AggregateRating en el JSON-LD.
+  /** TODO: calificación media de Google Business Profile (ej. 4.8). */
+  googleRating: null as number | null,
+  /** TODO: número de reseñas en Google Business Profile. */
+  googleReviewCount: null as number | null,
 
   /** Fecha de corte de estas cifras. Se actualiza al confirmarlas. */
   actualizado: '2026-08-10',

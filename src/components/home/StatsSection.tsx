@@ -8,10 +8,14 @@ import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
 //
 // El municipio pasa de 8 a 12: la cobertura declarada es la Provincia del
 // Gualivá completa, no los municipios con inventario del día.
+// Tres tarjetas, no cuatro. Se retiró «98 % de clientes que nos recomiendan»:
+// no hay encuesta que lo sustente, y una cifra de satisfacción sin metodología
+// es una afirmación publicitaria cuantitativa sin soporte. Su lugar lo ocupará
+// la calificación de Google Business Profile cuando exista — dato de tercero y
+// verificable. Ver DATOS_OFICIALES.googleRating.
 const STATS = [
   { icon: '🏡', value: DATOS_OFICIALES.familiasAtendidas,    suffix: '+', label: 'Familias que encontraron su finca' },
   { icon: '📍', value: DATOS_OFICIALES.municipiosProvincia,  suffix: '',  label: 'Municipios del Gualivá' },
-  { icon: '⭐', value: DATOS_OFICIALES.satisfaccionPct,      suffix: '%', label: 'Clientes que nos recomiendan' },
   { icon: '🏆', value: DATOS_OFICIALES.aniosOperacion,       suffix: '',  label: 'Años en el territorio' },
 ];
 
@@ -82,7 +86,7 @@ export function StatsSection() {
       className="py-16 px-4 sm:px-6 lg:px-8"
     >
       <div className="mx-auto max-w-5xl">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
           {STATS.map((stat, i) => (
             <div
               key={stat.label}
