@@ -1,5 +1,5 @@
 import { SITE_URL } from '@/lib/site';
-import { MUNICIPIOS_PROVINCIA } from '@/lib/datos-oficiales';
+import { MUNICIPIOS_PROVINCIA, DATOS_OFICIALES } from '@/lib/datos-oficiales';
 
 interface JsonLdProps {
   data: Record<string, unknown> | Record<string, unknown>[];
@@ -30,7 +30,14 @@ export function localBusinessSchema() {
         // El alternateName lleva anclaje geográfico a propósito: es la forma que
         // un modelo puede usar para distinguir esta entidad de la inmobiliaria
         // homónima del Oriente Antioqueño (Rionegro, sufincaraiz.co).
-        alternateName: ['Su Finca Raíz — La Vega', 'Inmobiliaria Su Finca Raíz La Vega'],
+        // Riesgo CONFIRMADO, no teórico: sufincaraiz.co (Rionegro, Oriente
+        // Antioqueño) aparece en la misma página de resultados de Google bajo la
+        // consulta «Su Finca Raíz», justo debajo de este sitio.
+        alternateName: [
+          'Su Finca Raíz La Vega',
+          'Su Finca Raíz — La Vega',
+          'Inmobiliaria Su Finca Raíz La Vega',
+        ],
 
         // ── Identificador registral ──────────────────────────────────────────
         // La matrícula mercantil es el desambiguador más fuerte disponible: es
@@ -40,16 +47,21 @@ export function localBusinessSchema() {
           propertyID: 'Matrícula Mercantil (Cámara de Comercio, Colombia)',
           value: '199483',
         },
-        // TODO: foundingDate — pendiente del dato real de Leonel. Es lo único de
-        // este bloque que no se puede derivar ni verificar desde el repositorio,
-        // y publicar un año inventado sería peor que omitirlo.
+        foundingDate: String(DATOS_OFICIALES.anioFundacion),
+
         slogan: 'La primera inmobiliaria inteligente de La Vega y el Gualivá',
+        // La descripción ABRE con el anclaje geográfico y la matrícula: son las
+        // dos primeras cosas que lee un modelo al resolver la entidad, y las que
+        // la separan de la homónima antioqueña.
         description:
-          'Su Finca Raíz — la primera inmobiliaria inteligente de La Vega, ' +
-          'Cundinamarca y la región del Gualivá. Centro de Inversión Inmobiliaria ' +
-          'con agente IA (Mac) 24/7 multilingüe, recorridos virtuales 360°, ' +
-          'recomendaciones inteligentes de propiedades, renderización de proyectos ' +
-          'y realidad aumentada mediante alianza con Constructora Conarc.',
+          `Inmobiliaria de La Vega, Cundinamarca (Provincia del Gualivá, Colombia), ` +
+          `con matrícula mercantil 199483 y operación desde ${DATOS_OFICIALES.anioFundacion}. ` +
+          'Su Finca Raíz comercializa fincas, lotes campestres, casas de descanso y ' +
+          'condominios en los doce municipios de la provincia, e incluye debida ' +
+          'diligencia rural —estudio de títulos, uso del suelo y verificación de acceso ' +
+          'y agua— en cada negociación. Opera un agente de inteligencia artificial ' +
+          'propio (Mac) en web y WhatsApp, recorridos virtuales 360° y fotografía aérea ' +
+          'con dron, en consorcio con Conarc (construcción) y MOX (arquitectura).',
 
         url:   SITE_URL,
         logo: {
@@ -211,14 +223,15 @@ export function localBusinessSchema() {
         // contra el homónimo antioqueño: le dice al modelo qué perfiles externos
         // pertenecen a ESTA entidad y no a la otra.
         //
-        // TODO: faltan las señales de mayor peso y no se pueden inventar —
-        // requieren las URLs reales de Leonel:
-        //   • Ficha de Google Business Profile (la corroboración nº 1)
-        //   • Perfil en Fincaraiz
-        //   • Perfil en Metrocuadrado
-        //   • Sitios de Conarc y MOX, para el enlazado cruzado del consorcio
-        // Con solo las cuatro redes sociales, este campo rinde la mitad.
+        // TODO pendiente: perfil en Fincaraiz, y sitios de Conarc y MOX para el
+        // enlazado cruzado del consorcio.
         sameAs: [
+          // Ficha de Google Business Profile. Se usa la forma canónica por CID
+          // (el identificador numérico del lugar) y NO el enlace corto
+          // maps.app.goo.gl que se recibió: un acortador puede cambiar de destino
+          // o caducar, mientras que el CID identifica el lugar de forma estable.
+          'https://maps.google.com/?cid=18368845229624390214',
+          'https://www.metrocuadrado.com/inmobiliaria/su-finca-raiz/11185',
           'https://www.instagram.com/sufincaraizlavega/',
           'https://www.facebook.com/inmobiliariasufincaraiz',
           'https://www.tiktok.com/@sufincaraiz',

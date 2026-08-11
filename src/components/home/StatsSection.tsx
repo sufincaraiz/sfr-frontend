@@ -8,15 +8,17 @@ import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
 //
 // El municipio pasa de 8 a 12: la cobertura declarada es la Provincia del
 // Gualivá completa, no los municipios con inventario del día.
-// Tres tarjetas, no cuatro. Se retiró «98 % de clientes que nos recomiendan»:
-// no hay encuesta que lo sustente, y una cifra de satisfacción sin metodología
-// es una afirmación publicitaria cuantitativa sin soporte. Su lugar lo ocupará
-// la calificación de Google Business Profile cuando exista — dato de tercero y
-// verificable. Ver DATOS_OFICIALES.googleRating.
+// El «98 % de clientes que nos recomiendan» se sustituyó por la calificación
+// real de Google Business Profile: dato de tercero, verificable por cualquiera
+// y con metodología pública. Va con su fuente citada, nunca el número solo.
+//
+// La calificación NO se marca como aggregateRating en JSON-LD: las directrices
+// de Google prohíben el marcado de reseñas autorreferenciales y arriesga la
+// elegibilidad de resultados enriquecidos de todo el dominio. Texto visible sí,
+// schema no.
 const STATS = [
-  { icon: '🏡', value: DATOS_OFICIALES.familiasAtendidas,    suffix: '+', label: 'Familias que encontraron su finca' },
-  { icon: '📍', value: DATOS_OFICIALES.municipiosProvincia,  suffix: '',  label: 'Municipios del Gualivá' },
-  { icon: '🏆', value: DATOS_OFICIALES.aniosOperacion,       suffix: '',  label: 'Años en el territorio' },
+  { icon: '📍', value: DATOS_OFICIALES.municipiosProvincia, suffix: '', label: 'Municipios del Gualivá' },
+  { icon: '🏆', value: DATOS_OFICIALES.aniosOperacion,      suffix: '', label: `Años en el territorio (desde ${DATOS_OFICIALES.anioFundacion})` },
 ];
 
 export function StatsSection() {
@@ -87,6 +89,21 @@ export function StatsSection() {
     >
       <div className="mx-auto max-w-5xl">
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-8">
+          {/* Calificación de Google: NO es un contador animado ni lleva schema.
+              Se escribe entera en el servidor, con la fuente citada al lado. */}
+          <div data-stat-card className="flex flex-col items-center text-center gap-2">
+            <span className="text-3xl mb-1" aria-hidden="true">⭐</span>
+            <div
+              className="font-sans font-bold"
+              style={{ fontSize: 'clamp(2.2rem, 5vw, 3rem)', color: '#E8B92F', lineHeight: 1 }}
+            >
+              {DATOS_OFICIALES.googleRating.toFixed(1).replace('.', ',')}
+            </div>
+            <p className="font-sans font-semibold text-sm text-white/80 text-center" style={{ maxWidth: 150 }}>
+              {DATOS_OFICIALES.googleRatingTexto}
+            </p>
+          </div>
+
           {STATS.map((stat, i) => (
             <div
               key={stat.label}

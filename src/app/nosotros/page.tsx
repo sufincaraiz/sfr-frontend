@@ -7,6 +7,7 @@ import {
   Bot, Sparkles, Lightbulb, Layers, Building2,
 } from 'lucide-react';
 import { SITE_URL } from '@/lib/site';
+import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
 import { JsonLd, breadcrumbSchema, faqSchema } from '@/components/seo/JsonLd';
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -163,6 +164,18 @@ export default function NosotrosPage() {
               Fusionamos el conocimiento profundo del territorio con tecnología inmersiva
               de vanguardia y un riguroso blindaje legal para proteger tu inversión.
             </h2>
+            {/* Datos verificables en el HTML servido, con su fuente citada.
+                La calificación NO lleva marcado aggregateRating a propósito: las
+                directrices de Google prohíben el marcado de reseñas
+                autorreferenciales y arriesga los resultados enriquecidos de todo
+                el dominio. Texto visible sí, schema no. */}
+            <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '0.95rem', fontWeight: 600, marginTop: 18, display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap' }}>
+              <span>Inmobiliaria de La Vega, Cundinamarca · Matrícula mercantil 199483</span>
+              <span aria-hidden="true">·</span>
+              <span>En operación desde {DATOS_OFICIALES.anioFundacion}</span>
+              <span aria-hidden="true">·</span>
+              <span>{DATOS_OFICIALES.googleRatingTexto}</span>
+            </p>
           </div>
         </section>
 

@@ -16,17 +16,21 @@
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const DATOS_OFICIALES = {
-  /** PROVISIONAL — venía de StatsSection.tsx. Sin fuente documentada. */
-  aniosOperacion: 10,
+  /** Año de fundación. Confirmado por el titular. */
+  anioFundacion: 2018,
 
-  /** PROVISIONAL — derivado de aniosOperacion (2026 − 10). Confirmar el año real. */
-  anioFundacion: 2016,
+  /** Años de operación cumplidos. Confirmado: 8 a agosto de 2026.
+   *  Antes el código decía 10 y el sitio «+8 años»: se unifica en 8. */
+  aniosOperacion: 8,
 
-  /** TODO: requiere dato de Leonel. No existía en el sitio; no se inventa. */
-  propiedadesGestionadas: null as number | null,
-
-  /** TODO: requiere dato de Leonel. No existía en el sitio; no se inventa. */
-  operacionesCerradas: null as number | null,
+  // Propiedades gestionadas, operaciones cerradas y familias atendidas NO viven
+  // aquí como constantes: se derivan de la base en @/lib/cifras-derivadas, junto
+  // con la metodología que debe publicarse a su lado.
+  //
+  // ⚠ La base solo contiene registros desde el 9 de junio de 2026. Cualquier
+  // cifra derivada cuenta la era del catálogo digital, NO los ocho años de
+  // operación de la empresa. Publicarlas sin decirlo las convierte en una
+  // subestimación engañosa.
 
   // ── Cobertura ──────────────────────────────────────────────────────────────
   // Los DOCE municipios de la Provincia del Gualivá. NO es provisional ni sale de
@@ -38,27 +42,22 @@ export const DATOS_OFICIALES = {
   // aquí porque cambian solas. El texto público de cobertura usa siempre esta.
   municipiosProvincia: 12,
 
-  /** PROVISIONAL — venía de StatsSection.tsx. Sin fuente documentada. */
-  familiasAtendidas: 150,
-
-  // ── Satisfacción: RETIRADA del sitio ───────────────────────────────────────
-  // Había un «98 % de clientes que nos recomiendan» escrito a mano, sin encuesta
-  // ni metodología detrás. Se retiró por dos razones que apuntan al mismo sitio:
+  // ── Reputación: Google Business Profile ────────────────────────────────────
+  // Sustituye al «98 % de clientes que nos recomiendan», que se retiró por no
+  // tener encuesta ni metodología detrás. Esto sí es dato de tercero,
+  // verificable por cualquiera y con metodología pública.
   //
-  //   • Es una afirmación publicitaria cuantitativa sin soporte verificable
-  //     (Ley 1480 de 2011, Estatuto del Consumidor).
-  //   • Un modelo generativo que no encuentra corroboración de una cifra baja la
-  //     confianza en TODAS las demás cifras del sitio. Una métrica inventada
-  //     cuesta más de lo que aporta.
-  //
-  // El reemplazo natural, cuando exista, es la calificación real y el número de
-  // reseñas de Google Business Profile: dato de tercero, verificable y con
-  // metodología pública. Ahí sí se puede publicar, y además marcar como
-  // AggregateRating en el JSON-LD.
-  /** TODO: calificación media de Google Business Profile (ej. 4.8). */
-  googleRating: null as number | null,
-  /** TODO: número de reseñas en Google Business Profile. */
-  googleReviewCount: null as number | null,
+  // ⚠ NO MARCAR COMO aggregateRating EN JSON-LD. Las directrices de Google
+  // prohíben el marcado de reseñas autorreferenciales —una organización que
+  // publica su propia calificación— y hacerlo pone en riesgo la elegibilidad de
+  // resultados enriquecidos de TODO el dominio, no solo de esa página.
+  // Va como TEXTO VISIBLE en el HTML servido, siempre citando la fuente.
+  /** Calificación media en Google Business Profile. Perfil verificado. */
+  googleRating: 5.0,
+  /** Número de opiniones en Google Business Profile. */
+  googleReviewCount: 26,
+  /** Cómo debe citarse siempre esta cifra: nunca el número solo. */
+  googleRatingTexto: '5,0 sobre 26 opiniones en Google',
 
   /** Fecha de corte de estas cifras. Se actualiza al confirmarlas. */
   actualizado: '2026-08-10',

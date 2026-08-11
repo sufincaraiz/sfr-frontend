@@ -6,16 +6,16 @@ import { ArrowRight } from 'lucide-react';
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
 
 const FACTS = [
-  // ⚠ PROVISIONAL: este «150» no está sustentado y además choca con
-  // DATOS_OFICIALES.familiasAtendidas (150), que cuenta otra cosa. Pendiente de
-  // confirmar cuál es el número real de operaciones cerradas.
-  'Más de 150 propiedades vendidas en la región',
+  // Se retiró «Más de 150 propiedades vendidas»: no hay fuente que lo sustente
+  // y la base solo registra el catálogo digital desde junio de 2026, así que
+  // tampoco es derivable. Pendiente de un dato con respaldo.
+  `Operando en el Gualivá desde ${DATOS_OFICIALES.anioFundacion}`,
   `${DATOS_OFICIALES.municipiosProvincia} municipios de cobertura en el Gualivá`,
   'Tours virtuales 360° en propiedades seleccionadas',
   'Acompañamiento legal completo en cada transacción',
   'Fotografía aérea con drones profesionales',
-  // Retirado «98 % de clientes satisfechos»: sin encuesta que lo respalde.
-  // Ver la nota en lib/datos-oficiales.ts.
+  // Sustituye al «98 % de clientes satisfechos», que no tenía encuesta detrás.
+  `Calificación de ${DATOS_OFICIALES.googleRatingTexto}`,
 ];
 
 export function AboutUs() {
