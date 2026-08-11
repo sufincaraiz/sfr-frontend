@@ -1,12 +1,18 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
 
+// Las cifras vienen de la fuente única (doctrina AEO §2). Antes estaban escritas
+// a mano aquí, que es exactamente lo que la doctrina prohíbe.
+//
+// El municipio pasa de 8 a 12: la cobertura declarada es la Provincia del
+// Gualivá completa, no los municipios con inventario del día.
 const STATS = [
-  { icon: '🏡', value: 150, suffix: '+', label: 'Familias que encontraron su finca' },
-  { icon: '📍', value: 8,   suffix: '',  label: 'Municipios del Gualivá' },
-  { icon: '⭐', value: 98,  suffix: '%', label: 'Clientes que nos recomiendan' },
-  { icon: '🏆', value: 10,  suffix: '',  label: 'Años en el territorio' },
+  { icon: '🏡', value: DATOS_OFICIALES.familiasAtendidas,    suffix: '+', label: 'Familias que encontraron su finca' },
+  { icon: '📍', value: DATOS_OFICIALES.municipiosProvincia,  suffix: '',  label: 'Municipios del Gualivá' },
+  { icon: '⭐', value: DATOS_OFICIALES.satisfaccionPct,      suffix: '%', label: 'Clientes que nos recomiendan' },
+  { icon: '🏆', value: DATOS_OFICIALES.aniosOperacion,       suffix: '',  label: 'Años en el territorio' },
 ];
 
 export function StatsSection() {
@@ -88,7 +94,12 @@ export function StatsSection() {
                 className="font-sans font-bold"
                 style={{ fontSize: 'clamp(2.2rem, 5vw, 3rem)', color: '#E8B92F', lineHeight: 1 }}
               >
-                <span data-counter={i}>0</span>
+                {/* El valor REAL se renderiza en el servidor. Antes había un "0"
+                    incrustado y la cifra solo aparecía tras la animación en el
+                    navegador: un rastreador leía "0 Años en el territorio".
+                    La animación es solo un efecto sobre un nodo que ya trae el
+                    texto correcto; sin JavaScript, la cifra sigue ahí. */}
+                <span data-counter={i}>{stat.value}</span>
                 <span>{stat.suffix}</span>
               </div>
               <p
