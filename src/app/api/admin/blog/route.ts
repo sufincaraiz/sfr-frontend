@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
+import { notificarIndexNow, urlsDeArticulo } from '@/lib/indexnow'
 
 const BLOG_ROLES = ['admin', 'autor_blog']
 
@@ -72,6 +73,7 @@ export async function POST(req: NextRequest) {
   })
   revalidatePath('/blog')
   revalidatePath(`/blog/${slug}`)
+  void notificarIndexNow(urlsDeArticulo(slug), `artículo publicado ${slug}`)
   return NextResponse.json({ ok: true, slug }, { status: 201 })
 }
 
@@ -102,6 +104,7 @@ export async function PUT(req: NextRequest) {
   await prisma.article.update({ where: { id }, data })
   revalidatePath('/blog')
   revalidatePath(`/blog/${target.slug}`)
+  void notificarIndexNow(urlsDeArticulo(target.slug), `artículo actualizado ${target.slug}`)
   return NextResponse.json({ ok: true })
 }
 

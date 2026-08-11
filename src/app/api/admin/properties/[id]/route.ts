@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { resolveMunicipality } from '@/lib/municipality-resolve'
 import { resolveTipoPropiedad } from '@/lib/property-types.server'
+import { notificarIndexNow, urlsDePropiedad } from '@/lib/indexnow'
 
 // Revalida las páginas estáticas afectadas por un cambio de propiedad,
 // para que las ediciones del admin se reflejen de inmediato en la web pública.
@@ -96,6 +97,12 @@ export async function PUT(
       include: { municipality: true, media: true },
     })
     revalidatePropertyPaths(updated.slug)
+    // Aviso a IndexNow: indexación en minutos en vez de semanas. No se espera
+    // (void) porque un fallo suyo nunca puede retrasar ni romper la publicación.
+    void notificarIndexNow(
+      urlsDePropiedad(updated.slug, updated.municipality?.slug),
+      `propiedad actualizada ${updated.slug}`,
+    )
     return NextResponse.json({
       ...updated,
       price_cop: Number(updated.price_cop),

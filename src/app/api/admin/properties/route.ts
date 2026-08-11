@@ -4,6 +4,7 @@ import { requireRole } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
 import { resolveMunicipality } from '@/lib/municipality-resolve'
 import { resolveTipoPropiedad } from '@/lib/property-types.server'
+import { notificarIndexNow, urlsDePropiedad } from '@/lib/indexnow'
 
 export async function GET(request: NextRequest) {
   const session = await requireRole(['admin'])
@@ -111,6 +112,15 @@ export async function POST(request: NextRequest) {
       },
       include: { municipality: true, media: true },
     })
+
+    // Aviso a IndexNow. Incluye la página del municipio: publicar la PRIMERA
+    // propiedad de un municipio lo mete en el filtro del buscador y cambia su
+    // página, así que es justo cuando conviene que Bing la vuelva a leer.
+    // Es la promoción automática de la doctrina §1.2.
+    void notificarIndexNow(
+      urlsDePropiedad(property.slug, property.municipality?.slug),
+      `propiedad publicada ${property.slug}`,
+    )
 
     return NextResponse.json({
       ...property,

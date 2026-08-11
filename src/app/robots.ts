@@ -63,7 +63,17 @@ export default function robots(): MetadataRoute.Robots {
         disallow: PRIVADAS,
       },
     ],
-    sitemap: `${SITE_URL}/sitemap.xml`,
+    // Se declaran el índice y todos los segmentos. El índice basta para un
+    // rastreador que lo siga, pero declararlos todos ayuda a los que no lo hacen
+    // y deja la estructura visible en Search Console.
+    sitemap: [
+      `${SITE_URL}/sitemap.xml`,
+      `${SITE_URL}/sitemap-paginas.xml`,
+      `${SITE_URL}/sitemap-propiedades.xml`,
+      `${SITE_URL}/sitemap-municipios.xml`,
+      `${SITE_URL}/sitemap-blog.xml`,
+      `${SITE_URL}/sitemap-imagenes.xml`,
+    ],
     host: SITE_URL,
   }
 }

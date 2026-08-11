@@ -4,6 +4,8 @@ import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
+import { notificarIndexNow } from '@/lib/indexnow'
+import { municipioTienePagina } from '@/lib/cobertura'
 
 const FaqSchema = z.object({
   question: z.string().trim().max(300),
@@ -129,6 +131,19 @@ export async function PUT(req: NextRequest) {
   try {
     const m = await prisma.municipality.update({ where: { id }, data })
     revalidar(m.slug)
+
+    // PROMOCIÓN AUTOMÁTICA (doctrina §1.2). Terminar de escribir el contenido de
+    // un municipio publica su página sola —la lista se deriva, nadie la toca— y
+    // ese es el momento de avisar a los buscadores. Solo se notifica si la página
+    // quedó efectivamente publicada: avisar de una URL que devuelve 404 gasta
+    // credibilidad con el rastreador.
+    if (await municipioTienePagina(m.slug)) {
+      void notificarIndexNow(
+        [`/municipios/${m.slug}`, '/municipios'],
+        `municipio publicado ${m.slug}`,
+      )
+    }
+
     return NextResponse.json({ ok: true })
   } catch (err) {
     if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002')
