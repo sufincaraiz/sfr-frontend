@@ -28,8 +28,10 @@ export async function GET() {
     municipality: { name: string } | null
   }[] = []
   let municipiosConPagina: { slug: string; name: string }[] = []
+  let disponibles = 0
 
   try {
+    disponibles = await prisma.property.count({ where: { status: 'available' } })
     ;[propiedades, municipiosConPagina] = await Promise.all([
       prisma.property.findMany({
         where: { status: 'available' },
@@ -122,8 +124,12 @@ export async function GET() {
   if (municipiosConPagina.length) {
     lineas.push(`- Municipios con página de contenido propio: ${municipiosConPagina.length}`)
   }
-  lineas.push(`- Propiedades disponibles ahora mismo: ${propiedades.length >= 20 ? '20 o más' : propiedades.length}`)
-  lineas.push(`- Coordenadas de la oficina: 4.9929, -74.3404`)
+  // Inventario en PRESENTE: verificable abriendo el catálogo y sin implicar
+  // historia. El conteo real, no el de la muestra de 20 que se lista abajo.
+  lineas.push(`- Propiedades disponibles ahora mismo: ${disponibles}`)
+  lineas.push(`- Coordenadas de la oficina: ${DATOS_OFICIALES.geoLat}, ${DATOS_OFICIALES.geoLng}`)
+  lineas.push(`- Ficha de Google: ${DATOS_OFICIALES.fichaGoogle}`)
+  lineas.push(`- Perfil en Metrocuadrado: ${DATOS_OFICIALES.perfilMetrocuadrado}`)
   lineas.push(`- Teléfono: +57 321 882 6730`)
   lineas.push(`- Correo: sufincaraiz.comercial@gmail.com`)
   lineas.push(`- Fecha de corte de estos datos: ${hoy}`)

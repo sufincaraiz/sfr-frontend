@@ -35,6 +35,36 @@ export interface CifraDerivada {
 
 const hoy = () => new Date().toISOString().slice(0, 10)
 
+// ─────────────────────────────────────────────────────────────────────────────
+// INVENTARIO EN PRESENTE — la única familia de cifras segura por definición.
+//
+// Doctrina §2, regla de tiempo verbal: una cifra en presente describe un estado
+// verificable ahora mismo (se comprueba abriendo el catálogo) y no implica
+// ninguna historia. Las acumuladas sí, y por eso quedan fuera.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Propiedades disponibles ahora mismo. 0 si la base no responde. */
+export async function contarPropiedadesDisponibles(): Promise<number> {
+  return conFallback(() => prisma.property.count({ where: { status: 'available' } }), 0)
+}
+
+/**
+ * Frase de inventario lista para meta descriptions y textos de servicio.
+ *
+ * Redondea a la decena inferior («Más de 30» con 34) por dos razones: no obliga
+ * a redesplegar cada vez que entra o sale una propiedad, y «más de N» sigue
+ * siendo cierto mientras el inventario no baje de esa decena.
+ *
+ * Si no hay dato —base caída o catálogo vacío— devuelve una frase SIN cifra.
+ * Nunca «0 propiedades disponibles»: un cero aquí es peor que no decir nada.
+ */
+export async function fraseInventario(): Promise<string> {
+  const n = await contarPropiedadesDisponibles()
+  if (n <= 0) return 'Fincas, lotes y casas campestres verificados'
+  if (n < 10) return `${n} propiedad${n === 1 ? '' : 'es'} disponible${n === 1 ? '' : 's'}`
+  return `Más de ${Math.floor(n / 10) * 10} propiedades disponibles`
+}
+
 async function conFallback<T>(fn: () => Promise<T>, porDefecto: T): Promise<T> {
   try {
     return await fn()

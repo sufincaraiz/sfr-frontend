@@ -89,8 +89,12 @@ export function localBusinessSchema() {
         // ── Coordenadas GPS exactas — La Vega, Cundinamarca ──────────────────
         geo: {
           '@type':    'GeoCoordinates',
-          latitude:   4.9929,
-          longitude: -74.3404,
+          // Las de la ficha de Google Business Profile, que es la que Google usa
+          // para resolver la entidad. Las anteriores estaban 837 m al suroeste y
+          // contradecían a Google: una discrepancia de ubicación entre lo que
+          // dice el sitio y lo que dice la ficha debilita la resolución local.
+          latitude:  DATOS_OFICIALES.geoLat,
+          longitude: DATOS_OFICIALES.geoLng,
         },
 
         // ── Horario de atención ───────────────────────────────────────────────

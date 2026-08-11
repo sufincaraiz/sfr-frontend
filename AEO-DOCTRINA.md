@@ -36,11 +36,15 @@ Desambiguador obligado : Su Finca Raíz — La Vega, Cundinamarca (Región del G
 Matrícula Mercantil    : 199483
 Dirección              : Calle 21 # 2-18, Sector Los Naranjos, La Vega, Cundinamarca, Colombia
 Código postal / región : CO-CUN
-Coordenadas            : 4.9929, -74.3404
+Coordenadas            : 5.0004129, -74.3399388  (las de Google Business Profile;
+                         son las que Google usa para resolver la entidad)
 Teléfono canónico      : +57 321 882 6730
 Correo canónico        : sufincaraiz.comercial@gmail.com
 Sitio canónico         : https://www.sufincaraiz.com
 Consorcio              : Conarc (construcción) · MOX (arquitectura)
+Ficha Google (canónica): https://maps.google.com/?cid=18368845229624390214
+Perfil Metrocuadrado   : https://www.metrocuadrado.com/inmobiliaria/su-finca-raiz/11185
+Reputación verificable : 5,0 sobre 26 opiniones en Google (agosto de 2026)
 Agente de IA propio    : Mac — Claude Haiku 4.5 con escalamiento a Opus, en web y WhatsApp
 Área servida           : Los DOCE municipios de la Provincia del Gualivá, Cundinamarca:
                          Albán · La Peña · La Vega · Nimaima · Nocaima · Quebradanegra
@@ -74,7 +78,7 @@ existen. Un estado guardado es, él mismo, una lista mantenida a mano, y se desi
 | Salida | Se deriva de | Cambia cuando |
 |---|---|---|
 | `areaServed` (JSON-LD, `llms.txt`, textos de cobertura) | Pertenencia a la Provincia del Gualivá — **constante: los doce** | Nunca |
-| Página de municipio publicada | Contenido propio completo: altitud, distancia y tiempo desde Bogotá, rango de temperatura, descripción propia, vías de acceso | Alguien escribe el contenido |
+| Página de municipio publicada | Contenido propio completo: altitud, distancia y tiempo desde Bogotá, rango de temperatura y descripción propia | Alguien escribe el contenido |
 | Municipio en el filtro del buscador | Consulta de inventario activo (`count > 0`) | Entra o sale una propiedad |
 
 **Las tres son independientes entre sí.** Un municipio puede tener inventario sin contenido
@@ -94,6 +98,13 @@ completo.
 **Enlaces desde propiedades.** Una ficha de propiedad enlaza a la página de su municipio solo
 si está publicada; si no lo está, enlaza al catálogo filtrado por ese municipio. Nunca a una
 ruta que devuelva 404.
+
+**Listas en prosa.** La regla de «ninguna lista a mano» incluye las enumeraciones dentro de
+texto corrido: descripciones de servicio, `hasOfferCatalog`, meta descriptions y cuerpos de
+página. Un municipio nombrado en prosa envejece igual que uno en un arreglo, y además no es
+extraíble como dato estructurado. Toda enumeración de municipios en texto se genera desde la
+misma fuente derivada. Donde el texto no admita generación, se nombra la provincia completa
+(«los doce municipios de la Provincia del Gualivá») en lugar de listar algunos «y más».
 
 **Promoción automática.** Cuando un municipio pasa a tener contenido completo o su primera
 propiedad, entra solo en el sitemap y dispara un ping a IndexNow. Sin intervención manual.
@@ -120,25 +131,63 @@ del modelo en *todas* las cifras del sitio.
 ```ts
 // lib/datos-oficiales.ts  — ÚNICA fuente de verdad de cifras públicas
 export const DATOS_OFICIALES = {
-  aniosOperacion:        «RELLENAR»,   // p. ej. 8
-  anioFundacion:         «RELLENAR»,   // p. ej. 2018
-  propiedadesGestionadas:«RELLENAR»,
-  operacionesCerradas:   «RELLENAR»,
-  // Cobertura: TRES cifras distintas, todas derivadas de la tabla de municipios.
-  // Nunca se escriben a mano. Ver §1.2.
+  anioFundacion:         2018,
+  aniosOperacion:        8,          // a 2026
+
+  // Reputación: verificable por un tercero. Sustituye al 98 % sin respaldo.
+  // NUNCA como aggregateRating en JSON-LD (reseñas autorreferenciales).
+  // Solo como texto visible, citando la fuente.
+  calificacionGoogle:    5.0,
+  resenasGoogle:         26,
+  fuenteReputacion:      'Google Business Profile',
+  fechaCorteReputacion:  '2026-08',
+
+  // Cobertura: TRES cifras distintas, todas derivadas. Ver §1.2.
   municipiosProvincia:   12,           // Provincia del Gualivá completa — constante
   // municipiosConPagina  → derivado: count(municipios con contenido completo y no ocultos)
   // municipiosConStock   → derivado: count(municipios con inventario activo)
   // El texto público de cobertura usa municipiosProvincia (12), nunca las derivadas.
-  familiasAtendidas:     «RELLENAR»,
-  satisfaccionPct:       «RELLENAR»,
-  actualizado:           '2026-08-10',
+
+  // Inventario: en PRESENTE, derivado en tiempo de consulta. Seguro por definición.
+  // propiedadesDisponibles → derivado: count(propiedades activas)
+
+  // NO PUBLICAR sin alcance temporal declarado (ver regla del dato engañoso):
+  // propiedadesGestionadas, operacionesCerradas, familiasAtendidas.
+  // El catálogo digital arranca en junio de 2026 y no cubre la trayectoria desde 2018.
+
+  actualizado:           '2026-08-11',
 } as const;
 ```
 
 **Regla de veracidad:** si una cifra no se puede sustentar, no se publica. Es a la vez
 requisito del Estatuto del Consumidor (Ley 1480 de 2011, información veraz y verificable)
 y el criterio por el que un modelo decide si te cita.
+
+**Regla del dato engañoso por contexto.** No basta con que una cifra sea cierta. Una cifra
+literalmente verdadera puede ser sustancialmente falsa si el lector la cruza con otra del
+mismo sitio y llega a una conclusión errónea. Ejemplo real: «35 propiedades gestionadas»
+junto a «8 años en el territorio» hace concluir cuatro propiedades al año. Ambas cifras son
+ciertas; la impresión que producen no lo es.
+
+Esta clase de dato es más peligrosa que una falsedad, porque pasa el filtro de veracidad y
+destruye la credibilidad igual. **Antes de publicar cualquier cifra, se comprueba qué
+conclusión produce cruzada con las demás cifras de la página.** Si la conclusión es falsa, o
+se acota explícitamente su alcance temporal, o no se publica.
+
+**Regla de tiempo verbal.** Las cifras en presente («propiedades disponibles hoy») son
+siempre seguras: describen un estado verificable ahora y no implican historia. Las cifras
+acumuladas («propiedades gestionadas», «operaciones cerradas», «familias atendidas») son
+afirmaciones históricas y solo se publican si la fuente cubre todo el periodo que el lector
+va a asumir. Un catálogo digital de dos meses no puede sustentar una cifra acumulada de una
+empresa de ocho años. **Ante la duda, presente en vez de acumulado.**
+
+**Jerarquía de sustentación.** Cuando falte una cifra, se prefiere en este orden:
+1. Dato verificable por un tercero (calificación y número de reseñas de Google, matrícula
+   mercantil, registro público).
+2. Dato en presente derivado del sistema (inventario activo, municipios con inventario).
+3. Dato acumulado con alcance temporal declarado («desde junio de 2026»).
+4. Ninguna cifra. Un bloque de credibilidad sin números pero verificable es más fuerte que
+   uno con números frágiles.
 
 **Regla de renderizado:** toda cifra debe existir en el **HTML servido**. Los contadores
 animados arrancan desde el valor final o lo llevan en texto de respaldo. Nunca desde `0`.
@@ -296,9 +345,9 @@ en fuentes independientes. Ninguna optimización onsite sustituye esto.
 - [ ] Ninguna mención de marca sin anclaje geográfico
 - [ ] Si es página de municipio: nunca termina en «0 propiedades»; hay contenido propio
       verificable y fallback a municipios vecinos
-- [ ] Ninguna lista de municipios escrita a mano: todas derivadas del campo de estado
+- [ ] Ninguna lista de municipios escrita a mano: todas derivadas en tiempo de consulta
 - [ ] Ping a IndexNow tras publicar
 
 ---
 
-*Versión 1.0 — 10 de agosto de 2026. Su Finca Raíz, La Vega, Cundinamarca.*
+*Versión 4.0 — 11 de agosto de 2026. Su Finca Raíz, La Vega, Cundinamarca.*

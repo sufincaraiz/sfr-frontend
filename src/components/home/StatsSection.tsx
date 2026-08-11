@@ -97,7 +97,7 @@ export function StatsSection() {
               className="font-sans font-bold"
               style={{ fontSize: 'clamp(2.2rem, 5vw, 3rem)', color: '#E8B92F', lineHeight: 1 }}
             >
-              {DATOS_OFICIALES.googleRating.toFixed(1).replace('.', ',')}
+              {DATOS_OFICIALES.calificacionGoogle.toFixed(1).replace('.', ',')}
             </div>
             <p className="font-sans font-semibold text-sm text-white/80 text-center" style={{ maxWidth: 150 }}>
               {DATOS_OFICIALES.googleRatingTexto}

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/site';
+import { fraseInventario } from '@/lib/cifras-derivadas';
 import { Hero }               from '@/components/home/Hero';
 import { FeaturedProperties } from '@/components/home/FeaturedProperties';
 import { StatsSection }       from '@/components/home/StatsSection';
@@ -18,15 +19,25 @@ import type { Property }      from '@/types';
 // ─── Metadata específica de la homepage ───────────────────────────────────────
 // Máx. 60 chars ↓ (53 chars)
 // "Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz"
-// Máx. 155 chars ↓ (146 chars)
+// Máx. 155 chars ↓
 // "Compra fincas, lotes y casas campestres en La Vega, Cundinamarca.
-//  +100 propiedades verificadas a 2 h de Bogotá. Asesórate gratis: ☎ 321 882 6730."
+//  Más de N propiedades disponibles a 2 h de Bogotá. Asesórate gratis: ☎ 321 882 6730."
 
-export const metadata: Metadata = {
+// La descripción lleva el inventario REAL y en presente, derivado de la base en
+// cada revalidación. Antes decía «+100 propiedades verificadas» con 34 en el
+// catálogo, y es lo primero que lee un motor generativo: una cifra inflada ahí
+// contamina la credibilidad de todo lo demás que diga el sitio.
+//
+// «Más de 30» se redondea a la decena inferior para no envejecer con cada alta o
+// baja, y si la base no responde la frase sale sin cifra en vez de decir cero.
+export async function generateMetadata(): Promise<Metadata> {
+  const inventario = await fraseInventario()
+
+  return {
   title: 'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
   description:
     'Compra fincas, lotes y casas campestres en La Vega, Cundinamarca. ' +
-    '+100 propiedades verificadas a 2 h de Bogotá. Asesórate gratis: ☎ 321 882 6730.',
+    `${inventario} a 2 h de Bogotá. Asesórate gratis: ☎ 321 882 6730.`,
 
   alternates: {
     canonical: SITE_URL,
@@ -35,8 +46,7 @@ export const metadata: Metadata = {
   openGraph: {
     title:       'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
     description:
-      'Fincas, lotes y casas campestres en La Vega y el Gualivá. ' +
-      '+100 propiedades verificadas a solo 2 horas de Bogotá.',
+      `Fincas, lotes y casas campestres en La Vega y el Gualivá. ${inventario} a solo 2 horas de Bogotá.`,
     url:    SITE_URL,
     images: [
       {
@@ -48,7 +58,14 @@ export const metadata: Metadata = {
       },
     ],
   },
-};
+
+  twitter: {
+    title:       'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
+    description: `Fincas, lotes y casas campestres en La Vega y el Gualivá, Cundinamarca. ${inventario}.`,
+    images:      ['/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg'],
+  },
+  }
+}
 
 // Consulta la BD (propiedades destacadas). ISR: si un build ocurre con la BD caída,
 // la home se rellena bajo demanda en vez de quedar congelada sin destacadas.
@@ -134,7 +151,10 @@ async function getFeaturedProperties(): Promise<Property[]> {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default async function HomePage() {
-  const featuredProperties = await getFeaturedProperties();
+  const [featuredProperties, inventario] = await Promise.all([
+    getFeaturedProperties(),
+    fraseInventario(),
+  ]);
 
   return (
     <>
@@ -147,7 +167,7 @@ export default async function HomePage() {
       <JsonLd data={webPageSchema({
         url:                 SITE_URL,
         name:                'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
-        description:         'Compra fincas, lotes y casas campestres en La Vega, Cundinamarca. +100 propiedades verificadas a 2 h de Bogotá.',
+        description:         `Compra fincas, lotes y casas campestres en La Vega, Cundinamarca. ${inventario} a 2 h de Bogotá.`,
         speakable_selectors: ['.sfr-speakable', 'h1', '#preguntas-frecuentes'],
         about_name:          'Finca raíz en La Vega, Cundinamarca',
         about_same_as:       'https://es.wikipedia.org/wiki/La_Vega_(Cundinamarca)',

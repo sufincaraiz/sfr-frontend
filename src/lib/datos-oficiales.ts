@@ -53,11 +53,26 @@ export const DATOS_OFICIALES = {
   // resultados enriquecidos de TODO el dominio, no solo de esa página.
   // Va como TEXTO VISIBLE en el HTML servido, siempre citando la fuente.
   /** Calificación media en Google Business Profile. Perfil verificado. */
-  googleRating: 5.0,
+  calificacionGoogle: 5.0,
   /** Número de opiniones en Google Business Profile. */
-  googleReviewCount: 26,
+  resenasGoogle: 26,
+  fuenteReputacion: 'Google Business Profile',
+  fechaCorteReputacion: '2026-08',
   /** Cómo debe citarse siempre esta cifra: nunca el número solo. */
   googleRatingTexto: '5,0 sobre 26 opiniones en Google',
+
+  // ── Ubicación ──────────────────────────────────────────────────────────────
+  // Las coordenadas son las de la ficha de Google Business Profile, no las del
+  // domicilio catastral: son las que Google usa para resolver la entidad, y la
+  // ficha está verificada y administrada por el titular. Las anteriores estaban
+  // 837 m al suroeste y contradecían a Google, que es la fuente que un modelo
+  // consulta para ubicar el negocio.
+  geoLat: 5.0004129,
+  geoLng: -74.3399388,
+
+  /** Ficha canónica de Google, por CID: estable frente a acortadores. */
+  fichaGoogle: 'https://maps.google.com/?cid=18368845229624390214',
+  perfilMetrocuadrado: 'https://www.metrocuadrado.com/inmobiliaria/su-finca-raiz/11185',
 
   /** Fecha de corte de estas cifras. Se actualiza al confirmarlas. */
   actualizado: '2026-08-10',

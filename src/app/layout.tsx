@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Montserrat } from 'next/font/google';
 import './globals.css';
+import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { WhatsAppFloat } from '@/components/layout/WhatsAppFloat';
@@ -30,8 +31,11 @@ export const metadata: Metadata = {
   },
 
   description:
-    'Compra fincas, lotes y casas campestres en La Vega, Cundinamarca. ' +
-    '+100 propiedades verificadas a 2 h de Bogotá. Asesórate gratis: ☎ 321 882 6730.',
+    // Sin cifra de inventario: este es el respaldo GLOBAL, lo heredan las páginas
+    // que no definen la suya, y no puede afirmar un conteo que envejece en cada
+    // publicación. La cifra real, en presente y derivada, va en la portada.
+    'Compra fincas, lotes y casas campestres verificados en La Vega, Cundinamarca, ' +
+    'a 2 h de Bogotá. Asesórate gratis: ☎ 321 882 6730.',
 
   // ── Keywords (señal secundaria, útil para Bing/Yahoo) ───────────────────────
   keywords: [
@@ -57,8 +61,8 @@ export const metadata: Metadata = {
     url: SITE_URL,
     title: 'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
     description:
-      'Fincas, lotes y casas campestres en La Vega y el Gualivá. ' +
-      '+100 propiedades verificadas a solo 2 horas de Bogotá.',
+      'Fincas, lotes y casas campestres verificados en La Vega y el Gualivá, ' +
+      'a solo 2 horas de Bogotá.',
     images: [
       {
         url: '/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg',
@@ -75,8 +79,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
     description:
-      'Fincas, lotes y casas campestres en La Vega y el Gualivá, Cundinamarca. ' +
-      '+100 propiedades verificadas.',
+      'Fincas, lotes y casas campestres verificados en La Vega y el Gualivá, Cundinamarca.',
     images: ['/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg'],
   },
 
@@ -129,8 +132,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/* Geo tags para SEO local */}
         <meta name="geo.region"      content="CO-CUN" />
         <meta name="geo.placename"   content="La Vega, Cundinamarca, Colombia" />
-        <meta name="geo.position"    content="4.9929;-74.3404" />
-        <meta name="ICBM"            content="4.9929, -74.3404" />
+        {/* Coordenadas desde la fuente única: son las de la ficha de Google
+            Business Profile, que es la que Google usa para resolver la entidad. */}
+        <meta name="geo.position"    content={`${DATOS_OFICIALES.geoLat};${DATOS_OFICIALES.geoLng}`} />
+        <meta name="ICBM"            content={`${DATOS_OFICIALES.geoLat}, ${DATOS_OFICIALES.geoLng}`} />
         {/* WhatsApp Business — número de teléfono */}
         <meta name="business:contact_data:phone_number" content="+573218826730" />
         <meta name="business:contact_data:website"      content={SITE_URL} />
