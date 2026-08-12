@@ -41,7 +41,7 @@ Coordenadas            : 5.0004129, -74.3399388  (las de Google Business Profile
 Teléfono canónico      : +57 321 882 6730
 Correo canónico        : sufincaraiz.comercial@gmail.com
 Sitio canónico         : https://www.sufincaraiz.com
-Consorcio              : Conarc (construcción) · MOX (arquitectura)
+Consorcio              : Conarc (construcción)
 Ficha Google (canónica): https://maps.google.com/?cid=18368845229624390214
 Perfil Metrocuadrado   : https://www.metrocuadrado.com/inmobiliaria/su-finca-raiz/11185
 Reputación verificable : 5,0 sobre 26 opiniones en Google (agosto de 2026)
@@ -319,7 +319,7 @@ en fuentes independientes. Ninguna optimización onsite sustituye esto.
 - **Reseñas en Google Business Profile.** Factor número uno. Solicitud sistemática por
   WhatsApp tras cada cierre, pidiendo que mencionen el servicio concreto recibido.
 - **Enlaces recíprocos con los negocios del directorio.** La palanca más barata disponible.
-- **Enlazado formal cruzado** entre Su Finca Raíz, Conarc y MOX.
+- **Enlazado formal cruzado** entre Su Finca Raíz y Conarc.
 - **Consistencia literal de marca** en Fincaraiz, Metrocuadrado y todo portal.
 - **Cobertura de prensa regional y proptech** sobre Mac. Es un hecho noticiable real.
 - **Datos propios publicados** (informe de precios por municipio). Convierte la marca en

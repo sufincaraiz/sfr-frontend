@@ -61,7 +61,7 @@ export function localBusinessSchema() {
           'diligencia rural —estudio de títulos, uso del suelo y verificación de acceso ' +
           'y agua— en cada negociación. Opera un agente de inteligencia artificial ' +
           'propio (Mac) en web y WhatsApp, recorridos virtuales 360° y fotografía aérea ' +
-          'con dron, en consorcio con Conarc (construcción) y MOX (arquitectura).',
+          'con dron, en consorcio con Conarc (construcción).',
 
         url:   SITE_URL,
         logo: {
@@ -227,7 +227,7 @@ export function localBusinessSchema() {
         // contra el homónimo antioqueño: le dice al modelo qué perfiles externos
         // pertenecen a ESTA entidad y no a la otra.
         //
-        // TODO pendiente: perfil en Fincaraiz, y sitios de Conarc y MOX para el
+        // TODO pendiente: perfil en Fincaraiz, y sitio de Conarc para el
         // enlazado cruzado del consorcio.
         sameAs: [
           // Ficha de Google Business Profile. Se usa la forma canónica por CID
