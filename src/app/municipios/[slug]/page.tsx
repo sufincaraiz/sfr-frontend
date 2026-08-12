@@ -8,6 +8,7 @@ import { SITE_URL } from '@/lib/site'
 import { getMunicipio, getMunicipiosVisibles } from '@/lib/municipios'
 import { RichText, renderInline } from '@/lib/richtext'
 import { JsonLd, breadcrumbSchema, faqSchema, webPageSchema } from '@/components/seo/JsonLd'
+import { DatosVerificables } from '@/components/aeo/DatosVerificables'
 import { formatPrice } from '@/lib/utils'
 import { tipoLabel } from '@/lib/property-types'
 import { getTipoLabels } from '@/lib/property-types.server'
@@ -395,19 +396,26 @@ export default async function MunicipioPage(
             </div>
 
             {/* Datos rápidos */}
-            <div style={{ background: '#0D2D5E', borderRadius: 16, padding: '1.5rem', color: '#fff' }}>
-              <p style={{ fontWeight: 800, fontSize: '0.85rem', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: 0.5, color: '#E8B92F' }}>
-                Datos del municipio
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, fontSize: '0.85rem' }}>
-                <DataRow label="Departamento" value="Cundinamarca" />
-                <DataRow label="Provincia" value={data.provincia} />
-                <DataRow label="Altitud" value={`${data.altitud_msnm.toLocaleString('es-CO')} msnm`} />
-                <DataRow label="Temperatura" value={`${data.temperatura_c.min}–${data.temperatura_c.max} °C`} />
-                <DataRow label="Distancia Bogotá" value={`${data.distancia_bogota_km} km`} />
-                <DataRow label="Tiempo en auto" value={`~${data.tiempo_bogota_min} minutos`} />
-              </div>
-            </div>
+            {/* Tabla HTML real, no una rejilla de <div>: los modelos extraen la
+                relación etiqueta→valor del marcado, no de la posición visual.
+                Lleva su fecha de corte, que es la de última edición del contenido.
+
+                Sin tamaño de muestra a propósito: altitud, distancia y clima son
+                datos geográficos, no observaciones estadísticas. Declarar una
+                muestra aquí sería ruido. */}
+            <DatosVerificables
+              titulo={`Datos de ${data.name}, Cundinamarca`}
+              fuente="Su Finca Raíz, con datos geográficos del municipio"
+              fechaCorte={data.updated_at.toISOString().slice(0, 10)}
+              filas={[
+                { etiqueta: 'Departamento',     valor: 'Cundinamarca' },
+                { etiqueta: 'Provincia',        valor: data.provincia },
+                { etiqueta: 'Altitud',          valor: data.altitud_msnm.toLocaleString('es-CO'), unidad: 'msnm' },
+                { etiqueta: 'Temperatura',      valor: `${data.temperatura_c.min}–${data.temperatura_c.max}`, unidad: '°C' },
+                { etiqueta: 'Distancia a Bogotá', valor: data.distancia_bogota_km, unidad: 'km' },
+                { etiqueta: 'Tiempo en auto',   valor: `~${data.tiempo_bogota_min}`, unidad: 'minutos' },
+              ]}
+            />
 
             {/* CTA contacto */}
             <div style={{ background: '#F0FDF4', borderRadius: 16, border: '1.5px solid #BBF7D0', padding: '1.5rem' }}>
@@ -488,15 +496,6 @@ function Section({ title, icon, children, accent }: { title: string; icon: React
       <SectionHeader title={title} icon={icon} />
       <div style={{ marginTop: '1rem' }}>{children}</div>
     </section>
-  )
-}
-
-function DataRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 8 }}>
-      <span style={{ color: 'rgba(255,255,255,0.6)' }}>{label}</span>
-      <strong style={{ color: '#fff' }}>{value}</strong>
-    </div>
   )
 }
 

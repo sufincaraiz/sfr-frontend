@@ -23,6 +23,9 @@ export interface Municipio {
   wikipedia_url: string
   faqs: { question: string; answer: string }[]
   tour360_url: string | null
+  /** Fecha real de última edición del contenido. Es la fecha de corte que se
+   *  publica junto a los datos del municipio: sin ella no serían citables. */
+  updated_at: Date
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,6 +50,7 @@ function mapMunicipio(m: any): Municipio {
     wikipedia_url: m.wikipedia_url ?? '',
     faqs: Array.isArray(m.faqs) ? (m.faqs as { question: string; answer: string }[]) : [],
     tour360_url: m.tour360_url ?? null,
+    updated_at: m.updated_at instanceof Date ? m.updated_at : new Date(m.updated_at),
   }
 }
 
