@@ -1,7 +1,8 @@
 import { prisma } from '@/lib/prisma'
 
-// Forma de un municipio para las páginas públicas (misma que el antiguo MunicipioData,
-// ahora servida desde la BD + tour360_url). El contenido se edita desde /admin/municipios.
+// Forma de un municipio para las páginas públicas. El contenido vive en la base
+// y se edita desde /admin/municipios; antes estaba escrito a mano en
+// lib/municipios-data.ts, que quedó sin uso y se eliminó.
 export interface Municipio {
   slug: string
   name: string
