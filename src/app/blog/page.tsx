@@ -17,7 +17,10 @@ export const metadata: Metadata = {
     'invertir en finca raíz rural en La Vega y el Gualivá, Cundinamarca.',
   alternates: { canonical: `${SITE_URL}/blog` },
   openGraph: {
-    title: 'Blog — Finca Raíz en Cundinamarca | Su Finca Raíz',
+    // Alineado con el <title> de la página. Cuando difieren, un modelo recibe
+    // dos nombres para el mismo recurso y tiene que elegir; alinearlos le quita
+    // una decisión y refuerza la señal.
+    title: 'Blog Inmobiliario — Fincas y Propiedades en Cundinamarca | Su Finca Raíz',
     description:
       'Artículos sobre compraventa de fincas, inversión rural, trámites y ' +
       'vivir en La Vega y el Gualivá.',

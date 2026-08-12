@@ -1,6 +1,12 @@
+// El año NO se escribe a mano (doctrina §7): los modelos descartan agresivamente
+// lo que se autodeclara viejo, y una página que dice «2025» en agosto de 2026 se
+// está autodescartando. Se calcula al construir, así que la revalidación horaria
+// de la portada lo mantiene al día sin que nadie se acuerde en enero.
+const ANIO = new Date().getFullYear()
+
 export const HOME_FAQS = [
   {
-    question: '¿Por qué invertir en La Vega, Cundinamarca en 2025?',
+    question: `¿Por qué invertir en La Vega, Cundinamarca en ${ANIO}?`,
     answer:
       'La Vega y la región del Gualivá registran una valorización anual promedio del 18 %, ' +
       'impulsada por tres factores concretos: la doble calzada Bogotá-La Vega que redujo el ' +
@@ -41,7 +47,12 @@ export const HOME_FAQS = [
     question: '¿Cuánto cuesta una finca o lote campestre en La Vega, Cundinamarca?',
     answer:
       'Los precios en La Vega y el Gualivá varían según tipo de propiedad, ubicación y ' +
-      'servicios disponibles. Como referencia actualizada para 2025: Lotes desde 500 m² con ' +
+      // OJO: aquí NO se parametriza el año. Decir «actualizada para 2026» sería
+      // afirmar que estos precios se revisaron en 2026, y no consta que se hayan
+      // revisado desde que se escribieron. Cambiar 2025 por 2026 convertiría un
+      // dato viejo en una falsedad sobre su propia vigencia, que es peor.
+      // Pendiente: fijar una fecha de corte real y volver a declararla.
+      'servicios disponibles. Como referencia orientativa: Lotes desde 500 m² con ' +
       'servicios públicos completos desde $85.000.000 COP. Casas campestres en condominio ' +
       'cerrado (80-120 m² construidos) desde $280.000.000 COP. Fincas productivas entre 1 y ' +
       '5 hectáreas con vía de acceso entre $350.000.000 y $900.000.000 COP. Condominios ' +

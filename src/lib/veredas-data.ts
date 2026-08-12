@@ -240,7 +240,11 @@ const VEREDAS: Record<string, VeredaData> = {
     faq: [
       {
         pregunta: '¿Se puede acceder a Tabacal en un carro normal?',
-        respuesta: 'La vía de acceso es destapada pero transitable en automóvil convencional durante temporada seca. En épocas de lluvia (abril–mayo y octubre–noviembre) se recomienda vehículo 4x4. El municipio tiene proyectada la pavimentación de la vía para 2025–2026.',
+        // Se quitó «proyectada … para 2025–2026»: en 2026 esa ventana ya pasó y
+        // no consta en qué estado quedó el proyecto. Mantener la fecha haría que
+        // la página se autodeclarara vieja; inventar una nueva sería peor.
+        // Pendiente: confirmar con el municipio el estado real y volver a datarlo.
+        respuesta: 'La vía de acceso es destapada pero transitable en automóvil convencional durante temporada seca. En épocas de lluvia (abril–mayo y octubre–noviembre) se recomienda vehículo 4x4. El municipio tiene proyectada la pavimentación de la vía; el especialista confirma el estado actual de la obra antes de la visita.',
       },
       {
         pregunta: '¿Qué tan fría es Tabacal respecto al casco urbano de La Vega?',

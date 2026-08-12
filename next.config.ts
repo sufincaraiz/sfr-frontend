@@ -101,6 +101,14 @@ const nextConfig: NextConfig = {
     return [
       { source: '/inmuebles', destination: '/propiedades', permanent: true },
       { source: '/fincas-en-venta/la-vega', destination: `/propiedades?tipo=finca&municipio=${encodeURIComponent('La Vega')}`, permanent: true },
+      // El slug llevaba un prefijo «ejemplo-» heredado de la plantilla inicial.
+      // Le decía a un lector —y a un modelo— que el artículo era de relleno,
+      // justo en la guía de compra, que es el contenido más citable del blog.
+      {
+        source: '/blog/ejemplo-como-comprar-finca-en-la-vega',
+        destination: '/blog/como-comprar-finca-en-la-vega',
+        permanent: true,
+      },
       ...landing,
       ...props,
     ]
