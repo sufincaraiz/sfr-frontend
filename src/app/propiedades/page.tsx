@@ -9,18 +9,36 @@ import { SkeletonCards }      from '@/components/propiedades/SkeletonCards';
 import { tipoPlural }         from '@/lib/property-types';
 import { getTiposPropiedad, getTipoPlurales } from '@/lib/property-types.server';
 import { getMunicipiosConInventario } from '@/lib/cobertura';
+import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
+import { respuestaPropiedades } from '@/lib/respuestas-directas';
+import { fraseInventario } from '@/lib/cifras-derivadas';
 import type { Property }      from '@/types';
 
-export const metadata: Metadata = {
-  title: 'Propiedades en Venta en La Vega y el Gualivá, Cundinamarca',
-  description: 'Fincas, lotes, casas campestres, condominios y apartamentos en venta en La Vega, Cundinamarca. Más de 24 propiedades verificadas. ☎ 321 882 6730.',
-  alternates: {
-    canonical: `${SITE_URL}/propiedades`,
-  },
-  openGraph: {
-    url: `${SITE_URL}/propiedades`,
-  },
-};
+// El inventario se deriva, no se escribe. Aquí decía «Más de 24 propiedades
+// verificadas» con 34 en catálogo: otra cifra fija que envejece sola, hermana de
+// la de «+100» que estaba en la portada.
+export async function generateMetadata(): Promise<Metadata> {
+  const inventario = await fraseInventario();
+
+  return {
+    title: 'Propiedades en Venta en La Vega y el Gualivá, Cundinamarca',
+    description:
+      'Fincas, lotes, casas campestres, condominios y apartamentos en venta en La Vega, ' +
+      `Cundinamarca. ${inventario}. ☎ 321 882 6730.`,
+    alternates: {
+      canonical: `${SITE_URL}/propiedades`,
+    },
+    openGraph: {
+      url: `${SITE_URL}/propiedades`,
+      description:
+        `Fincas, lotes, casas campestres y condominios en La Vega y el Gualivá. ${inventario}.`,
+    },
+    twitter: {
+      description:
+        `Fincas, lotes, casas campestres y condominios en La Vega y el Gualivá. ${inventario}.`,
+    },
+  };
+}
 
 const LIMIT = 12;
 
@@ -94,11 +112,12 @@ export default async function PropiedadesPage({
   searchParams: Promise<SearchParams>;
 }) {
   const sp = await searchParams;
-  const [data, tipos, plurales, municipios] = await Promise.all([
+  const [data, tipos, plurales, municipios, respuesta] = await Promise.all([
     fetchProperties(sp),
     getTiposPropiedad(),
     getTipoPlurales(),
     getMunicipiosConInventario(), // derivado del inventario, no una lista fija
+    respuestaPropiedades(),
   ]);
 
   const heading = sp.tipo
@@ -126,6 +145,12 @@ export default async function PropiedadesPage({
 
       {/* ── Contenido ── */}
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '2.5rem 1.5rem 4rem' }}>
+        {/* Respuesta directa solo en el catálogo SIN filtrar: describe el
+            inventario completo, y sobre una vista filtrada («fincas en Sasaima»)
+            contradiría al h1. Una respuesta que no cuadra con su página es peor
+            que ninguna. */}
+        {!sp.tipo && !sp.municipio && <RespuestaDirecta {...respuesta} />}
+
         {/* Filtros */}
         <Suspense fallback={null}>
           <FiltrosPropiedades

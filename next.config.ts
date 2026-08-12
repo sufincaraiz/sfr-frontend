@@ -117,9 +117,14 @@ const nextConfig: NextConfig = {
   // ── Propuestas comerciales (HTML estático en /public/propuesta) ─────────────
   // URL limpia sin .html. Para cada propuesta nueva: deja el archivo en
   // public/propuesta/<slug>.html y agrega aquí una línea con su <slug>.
+  //
+  // Al RETIRAR una propuesta: borra su archivo, quita su línea de aquí y añade
+  // el slug a RETIRADAS en app/propuesta/[slug]/route.ts, que devuelve 410.
+  // El rewrite tiene prioridad sobre esa ruta, así que mientras la línea siga
+  // aquí el 410 no se aplica.
   async rewrites() {
     return [
-      { source: '/propuesta/villa-maria-elvira', destination: '/propuesta/villa-maria-elvira.html' },
+      // (sin propuestas vigentes en este momento)
     ]
   },
 

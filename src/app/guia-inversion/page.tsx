@@ -7,6 +7,8 @@ import {
 import { SITE_URL } from '@/lib/site';
 import { JsonLd, breadcrumbSchema, faqSchema } from '@/components/seo/JsonLd';
 import { AsesorForm } from './AsesorForm';
+import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
+import { respuestaGuiaInversion } from '@/lib/respuestas-directas';
 
 const PUBLISHED = '2026-06-13';
 const COVER = '/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg';
@@ -170,6 +172,10 @@ export default function GuiaInversionPage() {
             </p>
           </div>
         </section>
+
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1.5rem 0' }}>
+          <RespuestaDirecta {...respuestaGuiaInversion()} />
+        </div>
 
         {/* ── Breadcrumb ── */}
         <nav aria-label="Breadcrumb" style={{ maxWidth: 880, margin: '0 auto', padding: '0.9rem 1.5rem', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: '#64748B', flexWrap: 'wrap' }}>

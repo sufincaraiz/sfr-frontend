@@ -9,6 +9,8 @@ import { getMunicipio, getMunicipiosVisibles } from '@/lib/municipios'
 import { RichText, renderInline } from '@/lib/richtext'
 import { JsonLd, breadcrumbSchema, faqSchema, webPageSchema } from '@/components/seo/JsonLd'
 import { DatosVerificables } from '@/components/aeo/DatosVerificables'
+import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta'
+import { respuestaMunicipio } from '@/lib/respuestas-directas'
 import { formatPrice } from '@/lib/utils'
 import { tipoLabel } from '@/lib/property-types'
 import { getTipoLabels } from '@/lib/property-types.server'
@@ -129,6 +131,8 @@ export default async function MunicipioPage(
   const data = await getMunicipio(slug)
   if (!data) notFound()
 
+  const respuesta = await respuestaMunicipio(data)
+
   const { properties } = await getMunicipalityProperties(slug)
   const tipoLabels = await getTipoLabels()
 
@@ -243,6 +247,13 @@ export default async function MunicipioPage(
           <ChevronRight size={13} />
           <span style={{ color: '#0D2D5E', fontWeight: 600 }}>{data.name}</span>
         </nav>
+
+        {/* Respuesta directa. Sin inventario NO dice «0 propiedades»: remite a la
+            cobertura, que sigue siendo cierta. Doctrina §1.2, guarda contra
+            páginas delgadas. */}
+        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0.5rem 1.5rem 0' }}>
+          <RespuestaDirecta {...respuesta} />
+        </div>
 
         {/* ── Cuerpo ── */}
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 1.5rem 5rem' }} className="municipio-layout">

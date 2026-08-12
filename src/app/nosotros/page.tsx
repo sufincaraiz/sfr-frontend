@@ -9,6 +9,8 @@ import {
 import { SITE_URL } from '@/lib/site';
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
 import { JsonLd, breadcrumbSchema, faqSchema } from '@/components/seo/JsonLd';
+import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
+import { respuestaNosotros } from '@/lib/respuestas-directas';
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
@@ -130,6 +132,7 @@ const FILOSOFIA = [
 // ─── Page ───────────────────────────────────────────────────────────────────────
 
 export default function NosotrosPage() {
+  const respuesta = respuestaNosotros();
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },
     { name: 'Nosotros', href: '/nosotros' },
@@ -178,6 +181,10 @@ export default function NosotrosPage() {
             </p>
           </div>
         </section>
+
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1.5rem 0' }}>
+          <RespuestaDirecta {...respuesta} />
+        </div>
 
         {/* ── Breadcrumb ── */}
         <nav aria-label="Breadcrumb" style={{ maxWidth: 1180, margin: '0 auto', padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: '#64748B', flexWrap: 'wrap' }}>

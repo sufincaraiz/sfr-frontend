@@ -6,6 +6,8 @@ import { SITE_URL } from '@/lib/site';
 import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd';
 import { DirectorioClient } from './DirectorioClient';
 import type { Business } from '@/lib/directorio';
+import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
+import { respuestaDirectorio } from '@/lib/respuestas-directas';
 
 export const dynamic = 'force-dynamic';
 
@@ -25,6 +27,7 @@ export const metadata: Metadata = {
 };
 
 export default async function DirectorioPage() {
+  const respuesta = await respuestaDirectorio();
   let businesses: Business[] = [];
   try {
     businesses = await prisma.business.findMany({ orderBy: [{ nombre: 'asc' }] }) as Business[];
@@ -57,6 +60,10 @@ export default async function DirectorioPage() {
             </p>
           </div>
         </section>
+
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1.5rem 0' }}>
+          <RespuestaDirecta {...respuesta} />
+        </div>
 
         {/* Breadcrumb */}
         <nav aria-label="Breadcrumb" style={{ maxWidth: 1180, margin: '0 auto', padding: '0.8rem 1.5rem', display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.8rem', color: '#64748B', flexWrap: 'wrap' }}>

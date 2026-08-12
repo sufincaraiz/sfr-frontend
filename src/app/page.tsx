@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/site';
 import { fraseInventario } from '@/lib/cifras-derivadas';
+import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
+import { respuestaPortada } from '@/lib/respuestas-directas';
 import { Hero }               from '@/components/home/Hero';
 import { FeaturedProperties } from '@/components/home/FeaturedProperties';
 import { StatsSection }       from '@/components/home/StatsSection';
@@ -151,9 +153,10 @@ async function getFeaturedProperties(): Promise<Property[]> {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default async function HomePage() {
-  const [featuredProperties, inventario] = await Promise.all([
+  const [featuredProperties, inventario, respuesta] = await Promise.all([
     getFeaturedProperties(),
     fraseInventario(),
+    respuestaPortada(),
   ]);
 
   return (
@@ -174,6 +177,14 @@ export default async function HomePage() {
       })} />
 
       <Hero />
+
+      {/* Respuesta directa: va inmediatamente después del hero porque un modelo
+          busca la respuesta autocontenida cerca del inicio. Si tiene que armarla
+          juntando párrafos, no cita — parafrasea sin atribución o cita a otro. */}
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: '2.5rem 1.5rem 0' }}>
+        <RespuestaDirecta {...respuesta} />
+      </div>
+
       <FeaturedProperties properties={featuredProperties} />
       <RegistroVisitaBanner />
       <Tour360Section />

@@ -4,6 +4,8 @@ import { Home, ChevronRight, Video, ShieldCheck, Megaphone } from 'lucide-react'
 import { SITE_URL } from '@/lib/site';
 import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd';
 import { VenderForm } from './VenderForm';
+import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
+import { respuestaVender } from '@/lib/respuestas-directas';
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
@@ -73,6 +75,9 @@ export default function VenderMiFincaPage() {
               Conectamos tu predio con los inversionistas correctos a través de
               tecnología de vanguardia y blindaje legal integral.
             </p>
+            <div style={{ maxWidth: 760, margin: '1.75rem auto 0', textAlign: 'left' }}>
+              <RespuestaDirecta {...respuestaVender()} />
+            </div>
             <a
               href="#formulario"
               style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: 28, background: '#E8B92F', color: '#0D2D5E', fontWeight: 800, fontSize: '0.95rem', padding: '13px 28px', borderRadius: 12, textDecoration: 'none' }}
