@@ -175,6 +175,9 @@ export async function GET() {
     `- [Blog](${SITE_URL}/blog): análisis de mercado, guías legales y vida en la región.`,
     `- [Glosario inmobiliario](${SITE_URL}/glosario): términos de finca raíz rural explicados.`,
     `- [Nosotros](${SITE_URL}/nosotros): la empresa, el equipo y el consorcio.`,
+    // El índice de recursos solo lista páginas que existen (§1.1). /mac entra
+    // ahora que la tiene: hasta hoy Mac era un widget sin URL propia.
+    `- [Mac, el agente de IA](${SITE_URL}/mac): ficha técnica, alcance y transparencia sobre su uso.`,
     `- [Política de tratamiento de datos](${SITE_URL}/politica-tratamiento-datos): Ley 1581 de 2012.`,
     ``,
     `## Mac, el agente de inteligencia artificial`,
@@ -183,6 +186,14 @@ export async function GET() {
     `y por WhatsApp. Responde consultas sobre el portafolio, resuelve preguntas de`,
     `inversión y escala a un asesor humano cuando el cliente lo pide o cuando la`,
     `consulta lo requiere. Es un sistema automatizado y lo declara cuando se le pregunta.`,
+    ``,
+    `Atiende las 24 horas, todos los días. Esto NO es el horario de la oficina: la sede de`,
+    `La Vega atiende de lunes a viernes y los sábados por la mañana. La disponibilidad`,
+    `permanente es un atributo del agente y se puede comprobar a cualquier hora.`,
+    ``,
+    `Corre sobre Claude Haiku 4.5 con escalamiento a Claude Opus 5 para las consultas que`,
+    `exigen más análisis. Consulta el catálogo en tiempo real, así que no ofrece propiedades`,
+    `ya vendidas. Ficha técnica completa y política de datos en ${SITE_URL}/mac`,
     ``,
   )
 

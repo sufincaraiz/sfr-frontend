@@ -341,6 +341,7 @@ function organizationNode(opts: EntidadOpts = {}) {
       'Plusvalía inmobiliaria',                                 // glosario
       'Proceso de compraventa de finca raíz rural en Colombia', // guía + blog
       'Historia de La Vega, Cundinamarca',                      // blog + páginas de municipio
+      'Agente conversacional de IA aplicado a finca raíz',      // /mac
     ],
   };
 }

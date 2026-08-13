@@ -60,6 +60,7 @@ export async function GET() {
     { url: SITE_URL,                            lastmod: ultimaPropiedad, changefreq: 'daily',   priority: 1.0 },
     { url: `${SITE_URL}/propiedades`,           lastmod: ultimaPropiedad, changefreq: 'daily',   priority: 0.9 },
     { url: `${SITE_URL}/guia-inversion`,        changefreq: 'monthly', priority: 0.85 },
+    { url: `${SITE_URL}/mac`,                   changefreq: 'monthly', priority: 0.85 },
     { url: `${SITE_URL}/vender-mi-finca`,       changefreq: 'monthly', priority: 0.8 },
     { url: `${SITE_URL}/nosotros`,              changefreq: 'yearly',  priority: 0.7 },
     { url: `${SITE_URL}/contacto`,              changefreq: 'yearly',  priority: 0.7 },

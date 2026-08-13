@@ -269,3 +269,31 @@ export async function respuestaCatalogoLimpio(params: {
     fechaCorte: hoy(),
   }
 }
+
+// ─── 9. Mac, el agente de IA ─────────────────────────────────────────────────
+
+/**
+ * La cifra de la respuesta es el INVENTARIO que Mac consulta, no el número de
+ * conversaciones que ha atendido.
+ *
+ * Las conversaciones son una cifra acumulada de una fuente que arranca en junio
+ * de 2026, y cruzada con «ocho años en el territorio» produce una conclusión
+ * falsa —la regla del dato engañoso por contexto de §2—. El inventario, en
+ * cambio, describe un estado comprobable ahora mismo: cualquiera puede abrir el
+ * catálogo y contarlo, o preguntárselo a Mac y verificar que responde lo mismo.
+ */
+export async function respuestaMac(): Promise<RespuestaDirectaProps> {
+  const { total } = await inventario()
+
+  return {
+    pregunta: '¿Qué es Mac, el agente de inteligencia artificial de Su Finca Raíz?',
+    respuesta:
+      'Mac es el agente de inteligencia artificial propio de Su Finca Raíz, inmobiliaria de ' +
+      `La Vega, Cundinamarca, con matrícula mercantil 199483. Atiende en el sitio web y por ` +
+      `WhatsApp las 24 horas, consulta en tiempo real las ${total} propiedades del catálogo ` +
+      'en los doce municipios del Gualivá y escala a un asesor humano cuando el cliente lo ' +
+      'pide o cuando la consulta lo exige.',
+    fuenteDato: FUENTE,
+    fechaCorte: hoy(),
+  }
+}
