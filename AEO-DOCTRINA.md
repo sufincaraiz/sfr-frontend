@@ -271,6 +271,18 @@ empresa de ocho años. **Ante la duda, presente en vez de acumulado.**
 4. Ninguna cifra. Un bloque de credibilidad sin números pero verificable es más fuerte que
    uno con números frágiles.
 
+**El punto ciego: el marcado estructurado.** De las cifras infladas detectadas en este
+proyecto, la mayoría vivía en el JSON-LD y no en el contenido visible. La razón es
+estructural: nadie lee el marcado en un navegador, así que un dato falso puede sobrevivir
+años ahí mientras el equipo revisa una y otra vez el texto de la página.
+
+Por eso el marcado exige una verificación **propia y explícita**, no derivada de revisar la
+página. Toda auditoría de cifras incluye una pasada sobre el JSON-LD servido, leído con
+`curl` y no en el inspector. Y todo dato del marcado que pueda derivarse del sistema, se
+deriva: `priceRange`, tipos de inmueble, `areaServed`, conteos y fechas nunca se escriben a
+mano. Los que no se pueden derivar —horarios, dirección, identificadores— se contrastan
+contra su fuente externa verificada, no contra lo que dice otra parte del propio sitio.
+
 **Regla de renderizado:** toda cifra debe existir en el **HTML servido**. Los contadores
 animados arrancan desde el valor final o lo llevan en texto de respaldo. Nunca desde `0`.
 
@@ -332,8 +344,19 @@ qué *tipo de cosa* eres para un modelo: `centro de negocios inmobiliarios`,
 `agente de IA inmobiliario`, `debida diligencia rural`, `estudio de títulos`,
 `uso del suelo y PBOT`, `fotogrametría y levantamiento aéreo de predios`.
 
-Todo término de esta capa debe corresponder a un servicio del catálogo de §1.1 con página que
-lo sustente. Un término sin respaldo se retira, igual que una cifra sin fuente.
+**Qué campo gobierna qué.** `knowsAbout` significa, en Schema.org, *temas sobre los que la
+entidad tiene conocimiento* — no servicios que presta. Un artículo publicado que explique
+financiación rural respalda conocimiento sobre financiación rural, aunque no exista una página
+de servicio. Por tanto:
+
+| Campo | Qué declara | Qué lo respalda |
+|---|---|---|
+| `hasOfferCatalog`, `makesOffer` | Servicios que se prestan y se venden | Página de servicio propia (§1.1) |
+| `description`, respuesta directa | Qué es la empresa y qué hace | Hechos verificables |
+| `knowsAbout` | Temas de competencia | Cualquier contenido publicado que trate el tema: artículo, guía, glosario, sección |
+
+Un término de `knowsAbout` se retira solo si **ninguna** página del sitio trata ese tema.
+El criterio estricto de §1.1 gobierna la oferta, no el conocimiento.
 
 > **Regla:** nunca sacrificar un título que trae tráfico por jerga de entidad.
 > «Proptech La Vega» tiene volumen de búsqueda ~0 y no debe ocupar un `<title>`.
@@ -437,4 +460,4 @@ en fuentes independientes. Ninguna optimización onsite sustituye esto.
 
 ---
 
-*Versión 7.1 — 12 de agosto de 2026. Su Finca Raíz, La Vega, Cundinamarca.*
+*Versión 7.2 — 12 de agosto de 2026. Su Finca Raíz, La Vega, Cundinamarca.*
