@@ -291,12 +291,29 @@ function organizationNode(opts: EntidadOpts = {}) {
     ],
 
     // ── Temáticas de expertise para E-E-A-T ──────────────────────────────
-    // §4 v7.0: todo término de la capa de entidad debe corresponder a un
-    // servicio del catálogo de §1.1 con página que lo sustente. Salió «realidad
-    // aumentada construcción»: no hay servicio declarado ni página que lo
-    // respalde, y un término sin respaldo se retira igual que una cifra sin
-    // fuente. «Fotogrametría» NO entra todavía por la misma razón; entra el día
-    // que /servicios/dron-y-fotogrametria se publique.
+    // §4 v7.2: `knowsAbout` declara TEMAS de conocimiento, no servicios que se
+    // prestan. Un artículo que explica financiación rural respalda conocimiento
+    // sobre financiación rural aunque no exista una página de servicio. El
+    // criterio estricto de §1.1 —página propia— gobierna `hasOfferCatalog`, no
+    // este campo: un término solo se retira si NINGUNA página trata el tema.
+    //
+    // Por eso salió «realidad aumentada construcción», que no tenía ni servicio
+    // ni contenido, y se quedan parcelación, escrituración y financiación, que
+    // sí tienen artículos y secciones detrás.
+    //
+    // Los añadidos salen del contenido que ya existe y no estaba declarado: los
+    // veinte términos del glosario, las doce páginas de vereda, las ocho de
+    // municipio y los tres artículos del blog. Es conocimiento publicado que el
+    // marcado no estaba reclamando.
+    //
+    // NO se añade «avalúo catastral» pese a estar en el glosario. Como tema de
+    // conocimiento sería defendible, pero la palabra nombra una actividad
+    // regulada (Ley 1673 de 2013) y en un campo de la entidad se lee como
+    // capacidad ofrecida. El glosario puede explicarla; la entidad no debe
+    // reclamarla.
+    //
+    // «Fotogrametría» sigue fuera hasta que se publique la página de dron: hoy
+    // no hay ni un solo modelo 3D publicado que la respalde.
     knowsAbout: [
       'centro de negocios inmobiliarios impulsado por inteligencia artificial',
       'inteligencia artificial inmobiliaria',
@@ -311,6 +328,19 @@ function organizationNode(opts: EntidadOpts = {}) {
       'Valorización de finca raíz rural en Colombia',
       'Escrituración y trámites notariales en Colombia',
       'Financiación de inmuebles rurales',
+      // ── Añadidos en la v7.2, cada uno con su respaldo publicado ──────────
+      'Provincia del Gualivá, Cundinamarca',                    // 8 páginas de municipio
+      'Veredas de La Vega, Cundinamarca',                       // 12 páginas de vereda
+      'Uso del suelo y Plan de Ordenamiento Territorial (POT)', // glosario + guía
+      'Certificado de tradición y libertad',                    // glosario
+      'Folio de matrícula inmobiliaria',                        // glosario
+      'Estudio de títulos de predios rurales',                  // glosario + guía
+      'Promesa de compraventa y arras',                         // glosario
+      'Impuesto de registro y derechos notariales en Colombia', // glosario
+      'Catastro y valorización predial',                        // glosario
+      'Plusvalía inmobiliaria',                                 // glosario
+      'Proceso de compraventa de finca raíz rural en Colombia', // guía + blog
+      'Historia de La Vega, Cundinamarca',                      // blog + páginas de municipio
     ],
   };
 }
