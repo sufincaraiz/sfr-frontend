@@ -294,23 +294,28 @@ export default async function MunicipioPage(
               </div>
             </section>
 
-            {/* Historia */}
-            <Section title="Historia" icon={<Trees size={20} />}>
+            {/* Encabezados en forma de pregunta — doctrina §3.4.
+                Decían «Historia», «Clima», «Turismo», «Inversión Inmobiliaria»:
+                una palabra suelta, sin anclaje geográfico y sin corresponder a
+                ninguna consulta real. Un modelo que resuelve «¿qué clima hace en
+                Sasaima?» no encuentra nada a lo que enganchar un <h2> que dice
+                «Clima»; con la pregunta completa, el encabezado y la consulta son
+                la misma frase. El nombre del municipio va dentro porque estas
+                ocho páginas comparten plantilla y sin él serían ocho encabezados
+                idénticos. */}
+            <Section title={`¿Cuál es la historia de ${data.name}, Cundinamarca?`} icon={<Trees size={20} />}>
               <RichText text={data.historia} style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }} />
             </Section>
 
-            {/* Clima */}
-            <Section title="Clima" icon={<Thermometer size={20} />}>
+            <Section title={`¿Qué clima hace en ${data.name}?`} icon={<Thermometer size={20} />}>
               <RichText text={data.clima} style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }} />
             </Section>
 
-            {/* Turismo */}
-            <Section title="Turismo" icon={<Trees size={20} />}>
+            <Section title={`¿Qué hacer en ${data.name}, Cundinamarca?`} icon={<Trees size={20} />}>
               <RichText text={data.turismo} style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }} />
             </Section>
 
-            {/* Inversión inmobiliaria */}
-            <Section title="Inversión Inmobiliaria" icon={<TrendingUp size={20} />} accent>
+            <Section title={`¿Por qué invertir en finca raíz en ${data.name}?`} icon={<TrendingUp size={20} />} accent>
               <RichText text={data.inversion} style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }} />
               <Link
                 href={`/propiedades?municipio=${data.name}`}

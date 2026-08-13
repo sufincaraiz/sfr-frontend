@@ -211,7 +211,7 @@ export default function GuiaInversionPage() {
 
           {/* Sección 2 */}
           <section style={{ marginBottom: '3.5rem' }}>
-            <SectionTitle eyebrow="Sección 2">El Catálogo de Inversión</SectionTitle>
+            <SectionTitle eyebrow="Sección 2">¿Qué tipos de propiedad se pueden comprar en La Vega?</SectionTitle>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
               {CATALOGO.map(({ icon: Icon, title, text }) => (
                 <div key={title} style={{ display: 'flex', gap: 16, background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '1.5rem 1.5rem' }}>
@@ -229,7 +229,7 @@ export default function GuiaInversionPage() {
 
           {/* Sección 3 */}
           <section style={{ marginBottom: '3.5rem' }}>
-            <SectionTitle eyebrow="Sección 3">El Corredor del Gualivá</SectionTitle>
+            <SectionTitle eyebrow="Sección 3">¿Qué otros municipios del Gualivá tienen potencial además de La Vega?</SectionTitle>
             <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.75, marginBottom: '1.75rem' }}>
               El auge de La Vega ha impulsado un crecimiento orgánico hacia los municipios vecinos,
               creando un corredor inmobiliario de alto potencial. En Su Finca Raíz te guiamos para

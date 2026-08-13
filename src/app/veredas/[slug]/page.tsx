@@ -217,18 +217,19 @@ export default async function VeredaPage(
               </div>
             </section>
 
-            {/* Acceso vial */}
-            <InfoSection title="Acceso Vial" icon={<MapPin size={19} />}>
+            {/* Encabezados en forma de pregunta — doctrina §3.4. Antes eran
+                rótulos de dos palabras («Acceso Vial», «Clima»). El municipio va
+                dentro de cada uno porque hay veredas homónimas en municipios
+                distintos: «El Chuscal» sin su municipio no identifica un lugar. */}
+            <InfoSection title={`¿Cómo se llega a la vereda ${v.name}, en ${v.municipio_name}?`} icon={<MapPin size={19} />}>
               <p style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }}>{v.acceso_vial}</p>
             </InfoSection>
 
-            {/* Clima */}
-            <InfoSection title="Clima" icon={<Thermometer size={19} />}>
+            <InfoSection title={`¿Qué clima tiene la vereda ${v.name}?`} icon={<Thermometer size={19} />}>
               <p style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }}>{v.clima}</p>
             </InfoSection>
 
-            {/* Ventajas */}
-            <InfoSection title="Ventajas para vivir en {v.name}" icon={<CheckCircle size={19} />} titleOverride={`Ventajas para vivir en ${v.name}`}>
+            <InfoSection title={`¿Por qué vivir en la vereda ${v.name}, ${v.municipio_name}?`} icon={<CheckCircle size={19} />}>
               <ul style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '0.6rem', listStyle: 'none', padding: 0, margin: 0 }}>
                 {v.ventajas.map((va, i) => (
                   <li key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, color: '#374151', fontSize: '0.9rem', lineHeight: 1.5 }}>
@@ -239,8 +240,7 @@ export default async function VeredaPage(
               </ul>
             </InfoSection>
 
-            {/* Valorización */}
-            <InfoSection title="Potencial de Valorización" icon={<TrendingUp size={19} />} accent>
+            <InfoSection title={`¿Qué potencial de valorización tiene la vereda ${v.name}?`} icon={<TrendingUp size={19} />} accent>
               <p style={{ color: '#1e40af', lineHeight: 1.8, fontSize: '0.95rem', marginBottom: '1.25rem' }}>{v.valorizacion}</p>
               <Link
                 href={`/propiedades?municipio=${v.municipio_name}`}
@@ -480,8 +480,11 @@ function StatBox({ icon, label, value }: { icon: React.ReactNode; label: string;
   )
 }
 
-function InfoSection({ title, titleOverride, icon, children, accent }: {
-  title: string; titleOverride?: string; icon: React.ReactNode; children: React.ReactNode; accent?: boolean
+// `titleOverride` desapareció con los encabezados en pregunta: existía solo para
+// tapar un `title="… {v.name}"` que nunca interpolaba, y ahora todos los títulos
+// llegan ya formados.
+function InfoSection({ title, icon, children, accent }: {
+  title: string; icon: React.ReactNode; children: React.ReactNode; accent?: boolean
 }) {
   return (
     <section style={{
@@ -491,7 +494,7 @@ function InfoSection({ title, titleOverride, icon, children, accent }: {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1rem' }}>
         <span style={{ color: '#1B56A1' }}>{icon}</span>
-        <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.05rem', margin: 0 }}>{titleOverride ?? title}</h2>
+        <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.05rem', margin: 0 }}>{title}</h2>
       </div>
       {children}
     </section>
