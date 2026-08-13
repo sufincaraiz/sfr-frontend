@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { MUNICIPIOS_PROVINCIA } from '@/lib/datos-oficiales'
+import { getTiposPropiedad } from '@/lib/property-types.server'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COBERTURA MUNICIPAL — las tres listas, derivadas, nunca escritas a mano.
@@ -105,6 +106,41 @@ export async function getMunicipiosConInventario(): Promise<MunicipioRef[]> {
     return rows
   } catch (err) {
     console.warn('[cobertura] BD no disponible al derivar municipios con inventario:', err instanceof Error ? err.message : err)
+    return []
+  }
+}
+
+// ─── 4. Tipos de inmueble con inventario activo (catálogo de servicios) ──────
+
+/**
+ * Tipos de inmueble que hoy tienen al menos una propiedad disponible, con su
+ * plural. De aquí sale el `hasOfferCatalog` del JSON-LD.
+ *
+ * Misma lógica que las tres salidas de municipios de §1.3: la lista se deriva
+ * del inventario en tiempo de consulta y nadie la mantiene. La que había estaba
+ * escrita a mano en el marcado con cuatro tipos y omitía los apartamentos, que
+ * llevaban tres unidades activas sin aparecer — la desincronización de siempre.
+ *
+ * Un tipo entra el día que entra su primera propiedad y sale cuando se vende la
+ * última: declarar «venta de condominios» sin un solo condominio en catálogo es
+ * la misma brecha entre lo declarado y lo publicado que §1.1 persigue.
+ */
+export async function getTiposConInventario(): Promise<{ slug: string; plural: string }[]> {
+  try {
+    const [grupos, tipos] = await Promise.all([
+      prisma.property.groupBy({ by: ['type'], where: { status: 'available' } }),
+      getTiposPropiedad({ incluirOcultos: true }),
+    ])
+    const plurales = new Map(tipos.map(t => [t.slug, t.plural]))
+    const conStock = new Set(grupos.map(g => g.type))
+
+    // Se recorre `tipos` y no `grupos` para conservar el orden editorial de la
+    // tabla de tipos; los que no tienen inventario se caen solos.
+    return tipos
+      .filter(t => conStock.has(t.slug))
+      .map(t => ({ slug: t.slug, plural: plurales.get(t.slug) ?? t.label }))
+  } catch (err) {
+    console.warn('[cobertura] BD no disponible al derivar tipos con inventario:', err instanceof Error ? err.message : err)
     return []
   }
 }

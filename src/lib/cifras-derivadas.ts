@@ -65,6 +65,48 @@ export async function fraseInventario(): Promise<string> {
   return `Más de ${Math.floor(n / 10) * 10} propiedades disponibles`
 }
 
+/**
+ * Rango de precios del catálogo activo, con el formato que espera `priceRange`
+ * de schema.org.
+ *
+ * Sustituye a «COP 50.000.000 – COP 5.000.000.000», que estaba escrita a mano en
+ * el JSON-LD y no cuadraba con nada: el catálogo real iba de 150 a 2.200
+ * millones. Un rango inventado en el marcado es exactamente la clase de dato que
+ * hace que un modelo deje de confiar en las demás cifras del sitio.
+ *
+ * **Se redondea hacia afuera a la decena de millón**, nunca al dato exacto: el
+ * mínimo baja y el máximo sube. Dos razones, y las dos importan. El rango
+ * redondeado hacia afuera CONTIENE al real, así que sigue siendo verdadero
+ * mientras el catálogo no se salga de él; y no obliga a redesplegar cada vez que
+ * entra o sale una propiedad, que es lo que convierte a una cifra derivada en
+ * una cifra a mano con pasos extra.
+ *
+ * Si la base no responde o el catálogo está vacío devuelve `null`, y quien llama
+ * OMITE el campo. La doctrina §7 ya lo resolvió para `lastmod`: omitir es
+ * honesto, falsear no.
+ */
+export async function rangoPreciosCatalogo(): Promise<string | null> {
+  return conFallback(async () => {
+    const agg = await prisma.property.aggregate({
+      where: { status: 'available' },
+      _min: { price_cop: true },
+      _max: { price_cop: true },
+    })
+
+    const min = agg._min.price_cop
+    const max = agg._max.price_cop
+    if (min == null || max == null) return null
+
+    const DECENA_DE_MILLON = 10_000_000
+    const piso  = Math.floor(Number(min) / DECENA_DE_MILLON) * DECENA_DE_MILLON
+    const techo = Math.ceil(Number(max)  / DECENA_DE_MILLON) * DECENA_DE_MILLON
+    if (piso <= 0 || techo <= 0) return null
+
+    const cop = (n: number) => `COP ${n.toLocaleString('es-CO')}`
+    return `${cop(piso)} – ${cop(techo)}`
+  }, null)
+}
+
 async function conFallback<T>(fn: () => Promise<T>, porDefecto: T): Promise<T> {
   try {
     return await fn()

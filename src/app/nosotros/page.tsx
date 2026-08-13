@@ -8,7 +8,9 @@ import {
 } from 'lucide-react';
 import { SITE_URL } from '@/lib/site';
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
-import { JsonLd, breadcrumbSchema, faqSchema } from '@/components/seo/JsonLd';
+import { JsonLd, breadcrumbSchema, faqSchema, realEstateAgentSchema } from '@/components/seo/JsonLd';
+import { rangoPreciosCatalogo } from '@/lib/cifras-derivadas';
+import { getTiposConInventario } from '@/lib/cobertura';
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
 import { respuestaNosotros } from '@/lib/respuestas-directas';
 
@@ -131,8 +133,12 @@ const FILOSOFIA = [
 
 // ─── Page ───────────────────────────────────────────────────────────────────────
 
-export default function NosotrosPage() {
+export default async function NosotrosPage() {
   const respuesta = respuestaNosotros();
+  const [priceRange, tiposConInventario] = await Promise.all([
+    rangoPreciosCatalogo(),
+    getTiposConInventario(),
+  ]);
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },
     { name: 'Nosotros', href: '/nosotros' },
@@ -149,6 +155,12 @@ export default function NosotrosPage() {
 
   return (
     <>
+      {/* La doctrina §5 exige RealEstateAgent en «/» y en «/nosotros». Estaba
+          solo en la portada: la página que un modelo abre para resolver «quién
+          es Su Finca Raíz» salía sin identidad, sin matrícula y sin sameAs, que
+          es justo el material contra la homónima antioqueña. Mismo @id que la
+          portada a propósito: es la misma entidad, no una segunda. */}
+      <JsonLd data={realEstateAgentSchema({ priceRange, tiposConInventario })} />
       <JsonLd data={breadcrumbs} />
       <JsonLd data={faqSchema(FAQS)} />
 

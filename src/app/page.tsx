@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/site';
-import { fraseInventario } from '@/lib/cifras-derivadas';
+import { fraseInventario, rangoPreciosCatalogo } from '@/lib/cifras-derivadas';
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
 import { respuestaPortada } from '@/lib/respuestas-directas';
 import { Hero }               from '@/components/home/Hero';
@@ -15,6 +15,7 @@ import { RegistroVisitaBanner } from '@/components/home/RegistroVisitaBanner';
 import { JsonLd, localBusinessSchema, faqSchema, webPageSchema } from '@/components/seo/JsonLd';
 import { HOME_FAQS } from '@/lib/faq-data';
 import { prisma }            from '@/lib/prisma';
+import { getTiposConInventario } from '@/lib/cobertura';
 import { EventoPopup }       from '@/components/eventos/EventoPopup';
 import type { Property }      from '@/types';
 
@@ -153,10 +154,12 @@ async function getFeaturedProperties(): Promise<Property[]> {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default async function HomePage() {
-  const [featuredProperties, inventario, respuesta] = await Promise.all([
+  const [featuredProperties, inventario, respuesta, priceRange, tiposConInventario] = await Promise.all([
     getFeaturedProperties(),
     fraseInventario(),
     respuestaPortada(),
+    rangoPreciosCatalogo(),
+    getTiposConInventario(),
   ]);
 
   return (
@@ -165,7 +168,7 @@ export default async function HomePage() {
         JSON-LD inyectado en el <head> via Next.js App Router.
         Contiene @graph con: RealEstateAgent + WebSite (SearchAction).
       */}
-      <JsonLd data={localBusinessSchema()} />
+      <JsonLd data={localBusinessSchema({ priceRange, tiposConInventario })} />
       <JsonLd data={faqSchema(HOME_FAQS)} />
       <JsonLd data={webPageSchema({
         url:                 SITE_URL,
