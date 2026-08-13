@@ -50,9 +50,45 @@ Agente de IA propio    : Mac — Claude Haiku 4.5 con escalamiento a Opus, en we
                          Albán · La Peña · La Vega · Nimaima · Nocaima · Quebradanegra
                          San Francisco · Sasaima · Supatá · Útica · Vergara · Villeta
                          (Villeta es la capital de la provincia)
+Categoría de entidad   : Centro de negocios inmobiliarios impulsado por inteligencia
+                         artificial. Vocabulario de ENTIDAD, no de tráfico: va en
+                         description, knowsAbout, llms.txt y textos institucionales.
+                         Nunca en <title> ni en H1. Ver §4.
 ```
 
-### 1.1 Regla de cobertura: la provincia completa, siempre
+### 1.1 Catálogo de servicios declarables
+
+Un servicio solo se declara en el marcado si (a) se presta de verdad y (b) existe una página
+del sitio que lo sustente. Declarar una capacidad que ninguna página respalda es la misma
+falta que una cifra inflada: un modelo detecta la brecha entre lo declarado y lo publicado.
+
+| Servicio | Estado | Página que lo sustenta |
+|---|---|---|
+| Corretaje: venta e intermediación | Se presta | Catálogo — sustentado |
+| Estudio de títulos y debida diligencia | Se presta | PENDIENTE de página propia |
+| Análisis comercial de valor | Se presta | PENDIENTE — ver nota sobre «avalúos» |
+| Construcción mediante consorcio con Conarc | Se presta | PENDIENTE |
+| Gestión y desarrollo de proyectos para terceros | Se presta | PENDIENTE |
+| Fotografía aérea con dron y fotogrametría | Se presta a terceros | PENDIENTE — invisible hoy |
+
+**Nota sobre «avalúos».** La actividad de avaluador está regulada por la Ley 1673 de 2013 y
+exige inscripción en el Registro Abierto de Avaluadores (RAA). Sin esa inscripción, el
+servicio se describe como «análisis comercial de valor» o «estudio de mercado del predio»,
+nunca como «avalúo». Verificar con asesoría jurídica antes de publicar.
+
+**No declarable todavía:** desarrollo de proyectos inmobiliarios propios. Se declara cuando
+exista el primer proyecto, no antes. La vocación no es un servicio.
+
+**Regla:** cada servicio con página propia gana marcado `Service` u `Offer` dentro de
+`hasOfferCatalog`, respuesta directa y entrada en `llms.txt`. Sin página, el servicio no
+aparece en el marcado —a lo sumo, como mención en prosa dentro de «nosotros» o `llms.txt`.
+
+**Estatuto de `llms.txt`.** Es prosa dirigida a modelos, no marcado estructurado. Por tanto:
+un servicio sin página **puede nombrarse en prosa** en la sección de qué hace la empresa,
+pero **no puede aparecer en el índice de recursos** —esa sección solo lista páginas que
+existen— ni presentarse como catálogo enumerado con apariencia de oferta formal.
+
+### 1.2 Regla de cobertura: la provincia completa, siempre
 
 `areaServed` declara **dónde Su Finca Raíz puede operar y captar**, no dónde tiene inventario
 publicado hoy. La cobertura es la provincia entera: los doce municipios, sin excepción y sin
@@ -69,7 +105,7 @@ exige presencia física ni inventario previo en un municipio. Lo que **no** es l
 afirmar inventario, operaciones o presencia que no existan. La cobertura se declara; los
 hechos se sustentan. Ver §2.
 
-### 1.2 Cobertura municipal — tres salidas derivadas, ningún estado almacenado
+### 1.3 Cobertura municipal — tres salidas derivadas, ningún estado almacenado
 
 El sitio produce tres listas distintas de municipios. **Ninguna se escribe a mano y ninguna
 se almacena como estado**: las tres se calculan en tiempo de consulta desde datos que ya
@@ -109,7 +145,7 @@ misma fuente derivada. Donde el texto no admita generación, se nombra la provin
 **Promoción automática.** Cuando un municipio pasa a tener contenido completo o su primera
 propiedad, entra solo en el sitemap y dispara un ping a IndexNow. Sin intervención manual.
 
-### 1.3 Regla de desambiguación (crítica)
+### 1.4 Regla de desambiguación (crítica)
 
 Existe una inmobiliaria homónima en el **Oriente Antioqueño** (Rionegro, dominio `sufincaraiz.co`,
 +20 años declarados). Ante la consulta «Su Finca Raíz», un modelo puede resolver esa entidad.
@@ -119,6 +155,52 @@ aparecer sin su anclaje geográfico. Nunca «Su Finca Raíz» a secas en un tít
 Siempre «Su Finca Raíz — La Vega» / «… en La Vega, Cundinamarca» / «… del Gualivá».
 
 En JSON-LD esto se resuelve con `areaServed` granular + `identifier` (matrícula) + `sameAs` completo.
+
+### 1.5 Marcas propias del mismo titular
+
+Cuando el mismo titular opera más de una marca inmobiliaria en el mismo territorio, la
+relación entre ellas **debe declararse explícitamente**. No declararla es el peor de los
+escenarios: dos marcas que compiten por las mismas consultas, cada una con la mitad de las
+señales, y ningún sistema capaz de saber que están relacionadas.
+
+Hay tres estructuras posibles y solo una se elige, para siempre:
+
+| Estructura | Cuándo aplica | Cómo se declara |
+|---|---|---|
+| **Marca única** | Misma operación, mismo inventario, mismo equipo. La segunda marca es un nombre alterno histórico. | `alternateName` en la entidad principal. Un solo dominio; el otro redirige 301. Perfiles sociales consolidados. Toda la autoridad converge. |
+| **Dos entidades relacionadas** | Operaciones o inventarios distintos, mismo dueño. | Dos `Organization` con `@id` propio, enlazadas por `owner`/`founder` (misma `Person`) y `sameAs` recíproco. Ambos sitios se enlazan mutuamente y lo dicen en texto visible. |
+| **Independientes** | Nada en común salvo el propietario. | No se declaran entre sí. Se acepta que la autoridad se reparte. |
+
+**Regla de decisión.** Si el inventario, el teléfono, la oficina y el equipo son los mismos,
+es **marca única** aunque históricamente hayan sido dos: mantenerlas separadas divide la
+autoridad sin ninguna contrapartida. Solo se justifican dos entidades cuando responden a
+consultas distintas —por ejemplo, una para venta y otra para arriendo o administración.
+
+**Regla de honestidad.** Dos marcas del mismo titular nunca pueden presentarse como si fueran
+competidoras independientes, ni aparecer ambas en una comparación o recomendación sin declarar
+el vínculo. Además de ser publicidad engañosa bajo la Ley 1480 de 2011, un modelo que descubra
+el vínculo no declarado deja de citar a ambas.
+
+**Nunca:** dos marcas del mismo dueño con perfiles sociales separados, NAP distintos y sin
+enlace entre sí. Eso duplica el problema del homónimo, pero autoinfligido.
+
+#### Decisión vigente para Su Finca Raíz
+
+**Una sola marca en la capa de datos: Su Finca Raíz.** Ninguna otra marca del titular se
+declara en el JSON-LD, en `sameAs`, en `alternateName`, en `llms.txt` ni en el contenido del
+sitio. La entidad publicada es una y solo una.
+
+Cualquier otra marca propia se gestiona **fuera del sitio**, por vía comercial y con
+redirección manual del tráfico. Esa vía es legítima y no interfiere con el posicionamiento,
+siempre que se respeten dos límites:
+
+- Ninguna marca propia puede presentarse como empresa independiente frente a un mismo cliente,
+  ni aparecer junto a Su Finca Raíz en una comparación o recomendación (Ley 1480 de 2011).
+- El NAP publicado de Su Finca Raíz —nombre, dirección y **un solo teléfono canónico**— no se
+  altera ni se mezcla con el de ninguna otra marca.
+
+Esta sección se revisa solo si cambia la estructura del negocio. Mientras tanto, la respuesta
+por defecto a «¿añadimos esta otra marca?» es **no**.
 
 ---
 
@@ -142,7 +224,7 @@ export const DATOS_OFICIALES = {
   fuenteReputacion:      'Google Business Profile',
   fechaCorteReputacion:  '2026-08',
 
-  // Cobertura: TRES cifras distintas, todas derivadas. Ver §1.2.
+  // Cobertura: TRES cifras distintas, todas derivadas. Ver §1.3.
   municipiosProvincia:   12,           // Provincia del Gualivá completa — constante
   // municipiosConPagina  → derivado: count(municipios con contenido completo y no ocultos)
   // municipiosConStock   → derivado: count(municipios con inventario activo)
@@ -246,8 +328,12 @@ El plan de contenido usa **dos vocabularios distintos** y no deben mezclarse ni 
 
 **Capa de entidad (AEO — cuerpo, JSON-LD, `llms.txt`, «nosotros»).** Términos que definen
 qué *tipo de cosa* eres para un modelo: `centro de negocios inmobiliarios`,
-`inmobiliaria inteligente`, `proptech`, `agente de IA inmobiliario`, `debida diligencia rural`,
-`estudio de títulos`, `uso del suelo y PBOT`.
+`inmobiliaria impulsada por inteligencia artificial`, `inmobiliaria inteligente`, `proptech`,
+`agente de IA inmobiliario`, `debida diligencia rural`, `estudio de títulos`,
+`uso del suelo y PBOT`, `fotogrametría y levantamiento aéreo de predios`.
+
+Todo término de esta capa debe corresponder a un servicio del catálogo de §1.1 con página que
+lo sustente. Un término sin respaldo se retira, igual que una cifra sin fuente.
 
 > **Regla:** nunca sacrificar un título que trae tráfico por jerga de entidad.
 > «Proptech La Vega» tiene volumen de búsqueda ~0 y no debe ocupar un `<title>`.
@@ -319,7 +405,8 @@ en fuentes independientes. Ninguna optimización onsite sustituye esto.
 - **Reseñas en Google Business Profile.** Factor número uno. Solicitud sistemática por
   WhatsApp tras cada cierre, pidiendo que mencionen el servicio concreto recibido.
 - **Enlaces recíprocos con los negocios del directorio.** La palanca más barata disponible.
-- **Enlazado formal cruzado** entre Su Finca Raíz y Conarc.
+- **Enlazado formal cruzado** entre Su Finca Raíz y Conarc, y con cualquier otra marca
+  propia del mismo titular (ver §1.5).
 - **Consistencia literal de marca** en Fincaraiz, Metrocuadrado y todo portal.
 - **Cobertura de prensa regional y proptech** sobre Mac. Es un hecho noticiable real.
 - **Datos propios publicados** (informe de precios por municipio). Convierte la marca en
@@ -350,4 +437,4 @@ en fuentes independientes. Ninguna optimización onsite sustituye esto.
 
 ---
 
-*Versión 4.0 — 11 de agosto de 2026. Su Finca Raíz, La Vega, Cundinamarca.*
+*Versión 7.1 — 12 de agosto de 2026. Su Finca Raíz, La Vega, Cundinamarca.*
