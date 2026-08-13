@@ -56,6 +56,32 @@ npm run build
   varios temas dentro de un mismo archivo, no se puede partir en commits por
   tema: hay que agrupar por archivo y ordenar para que cada commit compile.
 
+### ⚠ Segmentos dinámicos con nombres distintos — el fallo que `next build` no detecta
+
+**Next exige que un mismo nivel dinámico lleve el MISMO nombre en todas las
+rutas hermanas.** Esto es ilegal:
+
+```
+src/app/propiedades/[municipio]/page.tsx
+src/app/propiedades/[tipo]/[municipio]/page.tsx     ← [tipo] ≠ [municipio]
+```
+
+y produce `Error: You cannot use different slug names for the same dynamic path`.
+
+**Lo peligroso es que `next build` pasa en verde**: 164 páginas generadas, cero
+avisos, el listado de rutas impecable. El error solo aparece al SERVIR, y
+entonces devuelve **500 a toda la rama**, no solo a la ruta en conflicto.
+
+La solución es un nombre compartido y desambiguar por número de segmentos:
+
+```
+src/app/propiedades/[filtro]/page.tsx              ← un segmento  = municipio
+src/app/propiedades/[filtro]/[municipio]/page.tsx  ← dos segmentos = tipo + municipio
+```
+
+Es el mejor argumento de todo el proyecto a favor de la regla de verificar
+contra el **HTML servido**: aquí el build mintió por completo.
+
 ---
 
 ## 2. Qué se construyó antes del trabajo de AEO
