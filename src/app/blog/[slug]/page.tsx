@@ -10,6 +10,7 @@ import { ArticleContent } from '@/components/blog/ArticleContent'
 import { renderInline } from '@/lib/richtext'
 import { ArticleCard, CategoryBadge, TagBadge } from '@/components/blog/ArticleCard'
 import { JsonLd, breadcrumbSchema, articleSchema, howToSchema, webPageSchema } from '@/components/seo/JsonLd'
+import { AutorArticulo } from '@/components/aeo/AutorArticulo'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
@@ -211,6 +212,11 @@ export default async function BlogPostPage(
                 Última actualización: {updatedFormatted}
               </p>
             )}
+
+            {/* Firma del autor. Va ANTES del CTA porque respalda el artículo,
+                no lo vende: es lo que hace que la `Person` del JSON-LD tenga
+                existencia en la página y no sea marcado sin respaldo. */}
+            <AutorArticulo />
 
             {/* CTA bottom */}
             <div style={{ background: 'linear-gradient(135deg, #0D2D5E 0%, #1B56A1 100%)', borderRadius: 16, padding: '1.75rem 2rem', marginTop: '2.5rem', textAlign: 'center' }}>

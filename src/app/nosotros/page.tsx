@@ -8,7 +8,8 @@ import {
 } from 'lucide-react';
 import { SITE_URL } from '@/lib/site';
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
-import { JsonLd, breadcrumbSchema, faqSchema, realEstateAgentSchema } from '@/components/seo/JsonLd';
+import { JsonLd, breadcrumbSchema, faqSchema, realEstateAgentSchema, personaAutora } from '@/components/seo/JsonLd';
+import { AutorArticulo } from '@/components/aeo/AutorArticulo';
 import { rangoPreciosCatalogo } from '@/lib/cifras-derivadas';
 import { getTiposConInventario } from '@/lib/cobertura';
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
@@ -162,6 +163,11 @@ export default async function NosotrosPage() {
           es justo el material contra la homónima antioqueña. Mismo @id que la
           portada a propósito: es la misma entidad, no una segunda. */}
       <JsonLd data={realEstateAgentSchema({ priceRange, tiposConInventario })} />
+      {/* La Person que firma los artículos, con el MISMO @id que usa cada
+          BlogPosting. Aquí es donde su `url` apunta, así que aquí es donde tiene
+          que estar declarada y visible: es lo que convierte una firma repetida
+          en una entidad resoluble. */}
+      <JsonLd data={{ '@context': 'https://schema.org', ...personaAutora() }} />
       <JsonLd data={breadcrumbs} />
       <JsonLd data={faqSchema(FAQS)} />
 
@@ -199,6 +205,10 @@ export default async function NosotrosPage() {
           <RespuestaDirecta {...respuesta} />
           {/* Después de la respuesta directa, nunca antes: ver TaglineMarca. */}
           <TaglineMarca />
+          {/* Respaldo visible de la Person del marcado. Sin esto, el @id que
+              firma cada artículo apuntaría a una página donde esa persona no
+              existe. */}
+          <AutorArticulo enPaginaPropia />
         </div>
 
         {/* ── Breadcrumb ── */}

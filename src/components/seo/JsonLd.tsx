@@ -388,6 +388,45 @@ export function realEstateAgentSchema(opts: EntidadOpts = {}) {
   };
 }
 
+// ── Persona autora ────────────────────────────────────────────────────────────
+/**
+ * El autor real de los artículos. La doctrina §5 exige `author` como `Person`
+ * y no como organización: un modelo atribuye conocimiento a personas, y una
+ * empresa que se firma a sí misma no aporta ninguna señal de autoría.
+ *
+ * EL `@id` ES ESTABLE Y SE REFERENCIA DESDE `/nosotros`. Ese es el punto: la
+ * misma persona aparece en cada `BlogPosting` y en la página de la empresa
+ * apuntando al mismo identificador, así que las dos menciones se resuelven como
+ * una sola entidad en vez de como dos nombres sueltos.
+ *
+ * TIENE QUE EXISTIR TAMBIÉN COMO BLOQUE VISIBLE. Va al pie de cada artículo y
+ * en `/nosotros` (ver `<AutorArticulo>`). Una `Person` que solo vive en el
+ * marcado y no aparece en ninguna página es marcado sin respaldo — exactamente
+ * lo que §1.1 prohíbe para los servicios, y vale igual para las personas.
+ *
+ * Los datos son verificables y sin adjetivos: dirige la empresa desde su
+ * fundación y tiene formación en ingeniería de sistemas. Nada de «reconocido
+ * experto», que es lo que §3 llama un adjetivo en lugar de una afirmación
+ * falsable.
+ */
+export const AUTOR_ID = `${SITE_URL}/#leonel-lopez`;
+
+export function personaAutora() {
+  return {
+    '@type':   'Person',
+    '@id':      AUTOR_ID,
+    name:      'Leonel Macgiver López Albadán',
+    jobTitle:  'Director',
+    worksFor:  { '@id': `${SITE_URL}/#organization` },
+    knowsAbout: [
+      'Mercado inmobiliario de La Vega y la Provincia del Gualivá',
+      'Uso del suelo y ordenamiento territorial en Cundinamarca',
+      'Estudio de títulos de predios rurales',
+    ],
+    url: `${SITE_URL}/nosotros`,
+  };
+}
+
 // ── Breadcrumb ────────────────────────────────────────────────────────────────
 export function breadcrumbSchema(items: { name: string; href: string }[]) {
   return {
@@ -543,7 +582,10 @@ export function articleSchema(article: {
     datePublished:  article.date,
     dateModified:   article.updated ?? article.date,
     image: [{ '@type': 'ImageObject', url: imageUrl, width: 1200, height: 630 }],
-    author: { '@id': `${SITE_URL}/#organization` },
+    // `author` es la Person; `publisher` sigue siendo la organización. Son
+    // papeles distintos y confundirlos es lo que hacía este esquema, que
+    // firmaba los artículos con el @id de la empresa.
+    author: personaAutora(),
     publisher: {
       '@type': 'Organization',
       '@id':   `${SITE_URL}/#organization`,
