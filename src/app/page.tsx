@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { SITE_URL } from '@/lib/site';
 import { fraseInventario, rangoPreciosCatalogo } from '@/lib/cifras-derivadas';
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
+import { TaglineMarca } from '@/components/layout/TaglineMarca';
 import { respuestaPortada } from '@/lib/respuestas-directas';
 import { Hero }               from '@/components/home/Hero';
 import { FeaturedProperties } from '@/components/home/FeaturedProperties';
@@ -186,6 +187,9 @@ export default async function HomePage() {
           juntando párrafos, no cita — parafrasea sin atribución o cita a otro. */}
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '2.5rem 1.5rem 0' }}>
         <RespuestaDirecta {...respuesta} />
+        {/* Después de la respuesta directa, nunca antes: un modelo extrae por
+            orden de aparición y el primer párrafo tiene que ser el citable. */}
+        <TaglineMarca />
       </div>
 
       <FeaturedProperties properties={featuredProperties} />

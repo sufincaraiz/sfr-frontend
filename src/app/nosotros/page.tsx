@@ -12,6 +12,7 @@ import { JsonLd, breadcrumbSchema, faqSchema, realEstateAgentSchema } from '@/co
 import { rangoPreciosCatalogo } from '@/lib/cifras-derivadas';
 import { getTiposConInventario } from '@/lib/cobertura';
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
+import { TaglineMarca } from '@/components/layout/TaglineMarca';
 import { respuestaNosotros } from '@/lib/respuestas-directas';
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -196,6 +197,8 @@ export default async function NosotrosPage() {
 
         <div style={{ maxWidth: 900, margin: '0 auto', padding: '2rem 1.5rem 0' }}>
           <RespuestaDirecta {...respuesta} />
+          {/* Después de la respuesta directa, nunca antes: ver TaglineMarca. */}
+          <TaglineMarca />
         </div>
 
         {/* ── Breadcrumb ── */}
