@@ -4,7 +4,7 @@ import { SITE_URL } from '@/lib/site';
 import { ogImageUrl, ogImageMeta } from '@/lib/og-image';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Home, MapPin, Bed, Bath, Car, Maximize2, Layers, ChevronRight } from 'lucide-react';
+import { Home, MapPin, ChevronRight } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatPrice } from '@/lib/utils';
 import { tipoLabel } from '@/lib/property-types';
@@ -14,6 +14,7 @@ import { GaleriaLightbox } from '@/components/propiedades/GaleriaLightbox';
 import { Modelo3D } from '@/components/propiedades/Modelo3D';
 import { FormContactoPropiedad } from '@/components/propiedades/FormContactoPropiedad';
 import { JsonLd, breadcrumbSchema, propertySchema } from '@/components/seo/JsonLd';
+import { DatosVerificables } from '@/components/aeo/DatosVerificables';
 import { RelatedProperties } from '@/components/propiedades/RelatedProperties';
 import type { Property, PropertyMedia, PropertyFeature } from '@/types';
 
@@ -310,35 +311,53 @@ export default async function PropiedadDetallePage(
               </section>
             )}
 
-            {/* Ficha rápida */}
-            <section style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '1.5rem 1.75rem' }}>
-              <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.1rem', marginBottom: '1.25rem' }}>Características</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '1rem' }}>
-                {p.area_lot_m2 && (
-                  <Ficha icon={<Maximize2 size={18} />} label="Área terreno" value={`${p.area_lot_m2.toLocaleString('es-CO')} m²`} />
-                )}
-                {p.area_built_m2 && (
-                  <Ficha icon={<Layers size={18} />} label="Área construida" value={`${p.area_built_m2.toLocaleString('es-CO')} m²`} />
-                )}
-                {p.bedrooms > 0 && (
-                  <Ficha icon={<Bed size={18} />} label="Habitaciones" value={String(p.bedrooms)} />
-                )}
-                {p.bathrooms > 0 && (
-                  <Ficha icon={<Bath size={18} />} label="Baños" value={String(p.bathrooms)} />
-                )}
-                {p.parking > 0 && (
-                  <Ficha icon={<Car size={18} />} label="Parqueaderos" value={String(p.parking)} />
-                )}
-                {clima && (
-                  <Ficha icon={<span style={{ fontSize: '1.1rem' }}>🌡️</span>} label="Clima" value={clima} />
-                )}
-                {altitud && (
-                  <Ficha icon={<span style={{ fontSize: '1.1rem' }}>⛰️</span>} label="Altitud" value={altitud} />
-                )}
-                {distParque && (
-                  <Ficha icon={<span style={{ fontSize: '1.1rem' }}>📍</span>} label="Al parque principal" value={distParque} />
-                )}
-              </div>
+            {/* ── Ficha técnica ──────────────────────────────────────────────
+                Era una rejilla de <div> con iconos: se ve igual que una tabla
+                para una persona y es ruido para una máquina, porque la relación
+                etiqueta→valor solo existe en la posición visual. <table> la hace
+                explícita en el marcado, que es lo que un modelo extrae.
+
+                Se sustituye en vez de añadirse debajo: publicar los mismos
+                datos dos veces en la misma página es peor producto y, además,
+                dos copias del mismo dato son dos copias que pueden divergir.
+
+                Ningún campo se pierde: los tres de contexto del municipio
+                —clima, altitud y distancia al parque— siguen aquí. Se suman
+                tipo y municipio, que estaban en el hero pero no como dato
+                tabulado, y que son justo lo que un modelo necesita para
+                responder «¿qué apartamentos hay en La Vega?».
+
+                Sin tamanoMuestra a propósito: este no es un dato estadístico
+                sino la ficha de UN inmueble, y ahí la muestra no significa
+                nada. La fecha de corte es la de la última actualización real
+                del registro, no la de hoy. */}
+            <section>
+              <DatosVerificables
+                titulo={`Ficha técnica: ${title} — ${muni}, Cundinamarca`}
+                fechaCorte={p.updated_at.slice(0, 10)}
+                fuente="Ficha del inmueble registrada por Su Finca Raíz"
+                metodologia={
+                  'Datos del inmueble tal como están registrados en el catálogo de Su Finca ' +
+                  'Raíz. Las áreas se expresan en metros cuadrados y la ubicación publicada ' +
+                  'en el mapa es aproximada.'
+                }
+                filas={[
+                  { etiqueta: 'Tipo de propiedad', valor: typeLabel },
+                  { etiqueta: 'Municipio',         valor: `${muni}, Cundinamarca` },
+                  ...(p.area_lot_m2
+                    ? [{ etiqueta: 'Área del terreno',  valor: p.area_lot_m2.toLocaleString('es-CO'),   unidad: 'm²' }]
+                    : []),
+                  ...(p.area_built_m2
+                    ? [{ etiqueta: 'Área construida',   valor: p.area_built_m2.toLocaleString('es-CO'), unidad: 'm²' }]
+                    : []),
+                  ...(p.bedrooms  > 0 ? [{ etiqueta: 'Habitaciones',  valor: p.bedrooms }]  : []),
+                  ...(p.bathrooms > 0 ? [{ etiqueta: 'Baños',         valor: p.bathrooms }] : []),
+                  ...(p.parking   > 0 ? [{ etiqueta: 'Parqueaderos',  valor: p.parking }]   : []),
+                  ...(clima      ? [{ etiqueta: 'Clima',              valor: clima }]      : []),
+                  ...(altitud    ? [{ etiqueta: 'Altitud',            valor: altitud }]    : []),
+                  ...(distParque ? [{ etiqueta: 'Al parque principal', valor: distParque }] : []),
+                ]}
+              />
             </section>
 
             {/* Descripción */}
@@ -486,16 +505,3 @@ export default async function PropiedadDetallePage(
 
 // ─── Ficha item ──────────────────────────────────────────────────────────────
 
-function Ficha({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
-  return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', gap: 4,
-      background: '#F8FAFC', borderRadius: 10, padding: '0.8rem 1rem',
-      border: '1px solid #F1F5F9',
-    }}>
-      <span style={{ color: '#1B56A1', marginBottom: 2 }}>{icon}</span>
-      <span style={{ color: '#94A3B8', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>{label}</span>
-      <span style={{ color: '#0D2D5E', fontWeight: 700, fontSize: '0.95rem' }}>{value}</span>
-    </div>
-  );
-}
