@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { Home, ChevronRight, Store } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { SITE_URL } from '@/lib/site';
-import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd';
+import { JsonLd, breadcrumbSchema, itemListSchema } from '@/components/seo/JsonLd';
 import { DirectorioClient } from './DirectorioClient';
 import type { Business } from '@/lib/directorio';
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
@@ -40,9 +40,39 @@ export default async function DirectorioPage() {
     { name: 'Directorio', href: '/directorio' },
   ]);
 
+  // Los negocios no tienen ficha propia en el sitio, así que van como nodos
+  // LocalBusiness embebidos en vez de enlaces. El google_maps_url va en sameAs:
+  // es lo que permite a un modelo cruzar cada negocio con la entidad que ya
+  // conoce de Google, en lugar de tratarlo como un nombre suelto.
+  const listado = itemListSchema({
+    url:  `${SITE_URL}/directorio`,
+    name: 'Directorio de negocios recomendados en La Vega y el Gualivá, Cundinamarca',
+    description:
+      'Negocios locales de La Vega y la Provincia del Gualivá recomendados por ' +
+      'Su Finca Raíz: restaurantes, ferreterías, droguerías y viveros.',
+    orden: 'asc',   // alfabético por nombre, igual que la consulta
+    items: businesses.map(b => ({
+      name: b.nombre,
+      item: {
+        '@type': 'LocalBusiness',
+        name:     b.nombre,
+        ...(b.descripcion ? { description: b.descripcion } : {}),
+        address: {
+          '@type':         'PostalAddress',
+          addressLocality:  b.municipio,
+          addressRegion:   'Cundinamarca',
+          addressCountry:  'CO',
+        },
+        ...(b.google_maps_url ? { sameAs: b.google_maps_url } : {}),
+        ...(b.imagen_url ? { image: b.imagen_url } : {}),
+      },
+    })),
+  });
+
   return (
     <>
       <JsonLd data={breadcrumbs} />
+      {businesses.length > 0 && <JsonLd data={listado} />}
       <main style={{ background: '#F8FAFC', minHeight: '100vh' }}>
 
         {/* Hero */}

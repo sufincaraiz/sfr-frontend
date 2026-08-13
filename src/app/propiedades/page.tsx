@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { SITE_URL } from '@/lib/site';
 import { prisma } from '@/lib/prisma';
+import { JsonLd, breadcrumbSchema, itemListSchema } from '@/components/seo/JsonLd';
 import { PropiedadesGrid }    from '@/components/propiedades/PropiedadesGrid';
 import { FiltrosPropiedades } from '@/components/propiedades/FiltrosPropiedades';
 import { Paginacion }         from '@/components/propiedades/Paginacion';
@@ -124,7 +125,37 @@ export default async function PropiedadesPage({
     ? `${tipoPlural(sp.tipo, plurales)} en Venta${sp.municipio ? ` en ${sp.municipio}` : ' en Cundinamarca'}`
     : `Propiedades en Venta${sp.municipio ? ` en ${sp.municipio}` : ' · La Vega y el Gualivá'}`;
 
+  // ── Marcado estructurado ────────────────────────────────────────────────────
+  // Esta página salía al aire sin una sola línea de JSON-LD: ni ItemList ni
+  // migas de pan, siendo el catálogo la página más comercial del sitio. La
+  // doctrina §5 exige ambos para toda página de listado.
+  const etiquetaTipo = new Map(tipos.map(t => [t.slug, t.label]));
+
+  const breadcrumbs = breadcrumbSchema([
+    { name: 'Inicio',      href: '/' },
+    { name: 'Propiedades', href: '/propiedades' },
+  ]);
+
+  // El ItemList describe la página que el rastreador tiene delante: los doce de
+  // esta página, numerados desde su posición real en el catálogo, y el total
+  // completo en numberOfItems.
+  const listado = itemListSchema({
+    url:  `${SITE_URL}/propiedades`,
+    name:  heading,
+    numberOfItems: data.total,
+    desde: (data.page - 1) * LIMIT + 1,
+    orden: 'desc',   // published_at descendente, igual que la consulta
+    items: data.properties.map(p => ({
+      name: p.title
+        ?? `${etiquetaTipo.get(p.type) ?? 'Propiedad'} en ${p.municipality?.name ?? 'La Vega'}`,
+      url:  `${SITE_URL}/propiedad/${p.slug}`,
+    })),
+  });
+
   return (
+    <>
+      <JsonLd data={breadcrumbs} />
+      <JsonLd data={listado} />
     <main style={{ background: '#F8FAFC', minHeight: '100vh' }}>
       {/* ── Hero compacto ── */}
       <section style={{
@@ -170,5 +201,6 @@ export default async function PropiedadesPage({
         </Suspense>
       </div>
     </main>
+    </>
   );
 }
