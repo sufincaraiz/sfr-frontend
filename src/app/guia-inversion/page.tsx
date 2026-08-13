@@ -11,6 +11,7 @@ import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
 import { respuestaGuiaInversion } from '@/lib/respuestas-directas';
 import { getMunicipiosConDatos } from '@/lib/cobertura';
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
+import { faqsDeMunicipios } from '@/lib/faq-municipios';
 
 const PUBLISHED = '2026-06-13';
 const COVER = '/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg';
@@ -37,41 +38,18 @@ export const metadata: Metadata = {
 
 // ─── FAQ (visible + FAQPage schema; rentabilidad por municipio) ───────────────
 
-const FAQS = [
-  {
-    question: '¿Es rentable invertir en finca raíz en La Vega, Cundinamarca?',
-    answer:
-      'Sí. La Vega combina cercanía a Bogotá (menos de dos horas), un microclima templado de ~22°C y una demanda constante de alquiler vacacional de corta estancia, lo que sostiene una valorización constante de lotes, fincas de descanso y apartamentos. Es uno de los destinos de mayor proyección del país para inversión inmobiliaria.',
-  },
-  {
-    question: '¿Qué rentabilidad ofrece invertir en San Francisco, Cundinamarca?',
-    answer:
-      'San Francisco ofrece climas templados y terrenos vírgenes ideales para proyectos ecológicos, con precios de entrada más competitivos que el casco de La Vega y una buena proyección al ser parte del corredor del Gualivá. Es una oportunidad atractiva para inversionistas que buscan valorización a mediano plazo.',
-  },
-  {
-    question: '¿Conviene comprar finca o lote en Sasaima para inversión?',
-    answer:
-      'Sasaima cuenta con topografías fascinantes para fincas productivas y de recreo. Su integración al corredor inmobiliario impulsado por La Vega lo convierte en una zona de oportunidades de alta rentabilidad, especialmente para quienes buscan terrenos con potencial agrícola o turístico.',
-  },
-  {
-    question: '¿Por qué invertir en Villeta, Cundinamarca?',
-    answer:
-      'Villeta es el destino tradicional y cálido de la región, perfecto para condominios de lujo y turismo de alto nivel. La fuerte demanda turística sostiene el interés por propiedades de descanso y alquiler vacacional, lo que respalda su atractivo como inversión.',
-  },
-  {
-    question: '¿Qué oportunidades de inversión hay en Nocaima?',
-    answer:
-      'Nocaima ofrece un clima templado y terrenos aptos para proyectos ecológicos y fincas de descanso, con precios competitivos por su cercanía a La Vega. Es una de las oportunidades "ocultas" del corredor del Gualivá con buena proyección de valorización.',
-  },
-  {
-    question: '¿Vale la pena invertir en Vergara, Cundinamarca?',
-    answer:
-      'Vergara presenta topografías ideales para fincas productivas y de recreo. Al formar parte del crecimiento orgánico del corredor del Gualivá, ofrece oportunidades de inversión a precios más accesibles con potencial de valorización a futuro.',
-  },
+// FAQ generales: las que NO dependen de un municipio concreto. Las de municipio
+// se generan desde sus datos reales en lib/faq-municipios.ts, porque decian
+// «topografias fascinantes» y «perfecto para condominios de lujo» dentro de un
+// FAQPage, que es el marcado que mas se extrae.
+const FAQS_GENERALES = [
   {
     question: '¿Qué documentos necesito para comprar una propiedad de forma segura?',
     answer:
-      'Para una compra segura se requiere el Certificado de Tradición y Libertad reciente, las escrituras públicas, paz y salvos de impuestos y administración (si aplica), y un estudio de títulos realizado por un abogado independiente. En Su Finca Raíz validamos toda la documentación jurídica antes de ofrecer una propiedad.',
+      'Para una compra segura se requiere el Certificado de Tradición y Libertad reciente, ' +
+      'las escrituras públicas, paz y salvos de impuestos y administración (si aplica), y un ' +
+      'estudio de títulos realizado por un abogado independiente. En Su Finca Raíz validamos ' +
+      'toda la documentación jurídica antes de ofrecer una propiedad.',
   },
 ];
 
@@ -142,6 +120,11 @@ export default async function GuiaInversionPage() {
   // «Los OTROS municipios además de La Vega»: se excluye por slug, no por
   // nombre, para que no dependa de cómo esté escrito el nombre en la base.
   const corredor = await getMunicipiosConDatos('la-vega');
+
+  // Las FAQ de municipio salen de sus datos reales; las generales, de la
+  // constante. Van primero las de municipio porque son las que responden a la
+  // consulta con la que llega el visitante («¿conviene invertir en Sasaima?»).
+  const FAQS = [...(await faqsDeMunicipios()), ...FAQS_GENERALES];
 
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },
