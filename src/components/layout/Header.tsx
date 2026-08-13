@@ -8,7 +8,7 @@ import { SearchBar } from '@/components/search/SearchBar';
 
 const NAV_LINKS = [
   { href: '/propiedades?tipo=finca',      label: 'Fincas' },
-  { href: '/propiedades?municipio=La Vega', label: 'La Vega' },
+  { href: '/propiedades/la-vega',         label: 'La Vega' },
   { href: '/propiedades',                 label: 'Propiedades' },
   { href: '/guia-inversion',             label: 'Guía de Inversión' },
   { href: '/vender-mi-finca',            label: 'Vende tu finca' },

@@ -57,7 +57,7 @@ export async function RelatedProperties(props: Props) {
               cards={groups.municipio}
               hubHref={`/municipios/${groups.municipio_slug}`}
               hubLabel={`Guía completa de ${groups.municipio_name}`}
-              listHref={`/propiedades?municipio=${groups.municipio_slug}`}
+              listHref={`/propiedades/${groups.municipio_slug}`}
               listLabel={`Ver todas las propiedades en ${groups.municipio_name}`}
             />
           )}
@@ -69,7 +69,7 @@ export async function RelatedProperties(props: Props) {
               cards={groups.vereda}
               hubHref={`/veredas/${groups.vereda_slug}`}
               hubLabel={`Todo sobre vereda ${groups.vereda_name ?? ''}`}
-              listHref={`/propiedades?municipio=${groups.municipio_slug}`}
+              listHref={`/propiedades/${groups.municipio_slug}`}
               listLabel={`Ver propiedades disponibles en ${groups.municipio_name}`}
             />
           )}

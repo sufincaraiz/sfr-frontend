@@ -234,7 +234,7 @@ function NewsletterWidget() {
 
 function RelatedLinksWidget() {
   const links = [
-    { label: 'Fincas en venta en La Vega', href: '/propiedades?tipo=finca&municipio=La Vega' },
+    { label: 'Fincas en venta en La Vega', href: '/propiedades/finca/la-vega' },
     { label: 'Municipios del Gualivá', href: '/municipios' },
     { label: 'Veredas de La Vega', href: '/veredas' },
     { label: 'Ver todas las propiedades', href: '/propiedades' },

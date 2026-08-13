@@ -70,12 +70,20 @@ const nextConfig: NextConfig = {
       ['casas-campestres-en-venta', 'casa'], ['condominios-campestres', 'condominio'],
     ]
 
-    // Landing legacy de tipo (+ municipio) → filtro real de /propiedades.
+    // Landing legacy de tipo (+ municipio) → ruta LIMPIA de /propiedades.
+    //
+    // Antes apuntaban a /propiedades?tipo=&municipio=, o sea que una visita
+    // desde Google encadenaba redirect y luego canonical hasta la ruta limpia.
+    // Ahora aterrizan directamente en la canónica: un salto menos y las señales
+    // del enlace legacy llegan enteras a la URL que se quiere posicionar.
+    //
+    // `mname` deja de usarse en el destino porque la ruta limpia va por slug,
+    // que es justo lo que evita el encodeURIComponent de un nombre con espacios.
     const landing = TYPES.flatMap(([prefix, tipo]) => [
       { source: `/${prefix}`, destination: `/propiedades?tipo=${tipo}`, permanent: true },
-      ...MUNIS.map(([mslug, mname]) => ({
+      ...MUNIS.map(([mslug]) => ({
         source: `/${prefix}-${mslug}-cundinamarca`,
-        destination: `/propiedades?tipo=${tipo}&municipio=${encodeURIComponent(mname)}`,
+        destination: `/propiedades/${tipo}/${mslug}`,
         permanent: true,
       })),
     ])
@@ -100,7 +108,7 @@ const nextConfig: NextConfig = {
 
     return [
       { source: '/inmuebles', destination: '/propiedades', permanent: true },
-      { source: '/fincas-en-venta/la-vega', destination: `/propiedades?tipo=finca&municipio=${encodeURIComponent('La Vega')}`, permanent: true },
+      { source: '/fincas-en-venta/la-vega', destination: '/propiedades/finca/la-vega', permanent: true },
       // El slug llevaba un prefijo «ejemplo-» heredado de la plantilla inicial.
       // Le decía a un lector —y a un modelo— que el artículo era de relleno,
       // justo en la guía de compra, que es el contenido más citable del blog.

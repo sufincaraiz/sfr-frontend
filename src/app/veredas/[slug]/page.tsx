@@ -243,7 +243,7 @@ export default async function VeredaPage(
             <InfoSection title={`¿Qué potencial de valorización tiene la vereda ${v.name}?`} icon={<TrendingUp size={19} />} accent>
               <p style={{ color: '#1e40af', lineHeight: 1.8, fontSize: '0.95rem', marginBottom: '1.25rem' }}>{v.valorizacion}</p>
               <Link
-                href={`/propiedades?municipio=${v.municipio_name}`}
+                href={`/propiedades/${v.municipio_slug}`}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8,
                   background: '#0D2D5E', color: '#fff', fontWeight: 700,
@@ -269,7 +269,7 @@ export default async function VeredaPage(
                 </div>
                 <div style={{ marginTop: '1.25rem', textAlign: 'center' }}>
                   <Link
-                    href={`/propiedades?municipio=${v.municipio_name}`}
+                    href={`/propiedades/${v.municipio_slug}`}
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: 8,
                       border: '2px solid #0D2D5E', color: '#0D2D5E', fontWeight: 700,
@@ -366,10 +366,10 @@ export default async function VeredaPage(
               <p style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.9rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>Buscar en {v.municipio_name}</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
                 {[
-                  { label: `Fincas en ${v.municipio_name}`, href: `/propiedades?tipo=finca&municipio=${v.municipio_name}` },
-                  { label: `Lotes en ${v.municipio_name}`, href: `/propiedades?tipo=lote&municipio=${v.municipio_name}` },
-                  { label: `Casas campestres`, href: `/propiedades?tipo=casa&municipio=${v.municipio_name}` },
-                  { label: `Ver todas las propiedades`, href: `/propiedades?municipio=${v.municipio_name}` },
+                  { label: `Fincas en ${v.municipio_name}`, href: `/propiedades/finca/${v.municipio_slug}` },
+                  { label: `Lotes en ${v.municipio_name}`, href: `/propiedades/lote/${v.municipio_slug}` },
+                  { label: `Casas campestres`, href: `/propiedades/casa/${v.municipio_slug}` },
+                  { label: `Ver todas las propiedades`, href: `/propiedades/${v.municipio_slug}` },
                 ].map(l => (
                   <Link key={l.href} href={l.href} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.55rem 0.8rem', borderRadius: 8, border: '1px solid #F1F5F9', color: '#334155', fontSize: '0.84rem', fontWeight: 600, textDecoration: 'none', background: '#FAFAFA' }}>
                     {l.label} <ChevronRight size={13} style={{ color: '#94A3B8' }} />

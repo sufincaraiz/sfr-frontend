@@ -4,8 +4,8 @@ import { getMunicipiosVisibles } from '@/lib/municipios';
 
 const PROPERTY_LINKS = [
   { href: '/propiedades?tipo=finca',                    label: 'Fincas en venta' },
-  { href: '/propiedades?tipo=finca&municipio=La Vega',  label: 'Fincas en La Vega' },
-  { href: '/propiedades?tipo=finca&municipio=Sasaima',  label: 'Fincas en Sasaima' },
+  { href: '/propiedades/finca/la-vega',                 label: 'Fincas en La Vega' },
+  { href: '/propiedades/finca/sasaima',                 label: 'Fincas en Sasaima' },
   { href: '/propiedades?tipo=lote',                     label: 'Lotes en venta' },
   { href: '/propiedades?tipo=condominio',               label: 'Condominios campestres' },
 ];

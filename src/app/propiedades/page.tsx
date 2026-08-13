@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 import { Suspense } from 'react';
 import { SITE_URL } from '@/lib/site';
-import { prisma } from '@/lib/prisma';
 import { JsonLd, breadcrumbSchema, itemListSchema } from '@/components/seo/JsonLd';
+import { fetchPropiedades, resolverTipo, municipioPorNombre, LIMIT } from '@/lib/catalogo';
 import { PropiedadesGrid }    from '@/components/propiedades/PropiedadesGrid';
 import { FiltrosPropiedades } from '@/components/propiedades/FiltrosPropiedades';
 import { Paginacion }         from '@/components/propiedades/Paginacion';
@@ -13,13 +13,25 @@ import { getMunicipiosConInventario } from '@/lib/cobertura';
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
 import { respuestaPropiedades } from '@/lib/respuestas-directas';
 import { fraseInventario } from '@/lib/cifras-derivadas';
-import type { Property }      from '@/types';
 
 // El inventario se deriva, no se escribe. Aquí decía «Más de 24 propiedades
 // verificadas» con 34 en catálogo: otra cifra fija que envejece sola, hermana de
 // la de «+100» que estaba en la portada.
-export async function generateMetadata(): Promise<Metadata> {
-  const inventario = await fraseInventario();
+export async function generateMetadata(
+  { searchParams }: { searchParams: Promise<SearchParams> },
+): Promise<Metadata> {
+  const [inventario, sp] = await Promise.all([fraseInventario(), searchParams]);
+
+  // ── Canonical hacia la ruta limpia ──────────────────────────────────────────
+  // /propiedades?municipio=Sasaima y /propiedades/sasaima son la MISMA vista.
+  // Sin esto, un motor indexa las dos y reparte las señales entre ambas. La de
+  // parámetros no desaparece —los filtros interactivos la producen al vuelo—
+  // pero deja de competir con la limpia.
+  //
+  // Solo se redirige el canonical cuando los filtros se corresponden con una
+  // ruta limpia existente. Un filtro de precio o una página 2 no tienen ruta
+  // limpia equivalente, así que esas variantes siguen apuntando a sí mismas.
+  const canonical = await canonicalDeFiltros(sp);
 
   return {
     title: 'Propiedades en Venta en La Vega y el Gualivá, Cundinamarca',
@@ -27,7 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
       'Fincas, lotes, casas campestres, condominios y apartamentos en venta en La Vega, ' +
       `Cundinamarca. ${inventario}. ☎ 321 882 6730.`,
     alternates: {
-      canonical: `${SITE_URL}/propiedades`,
+      canonical,
     },
     openGraph: {
       url: `${SITE_URL}/propiedades`,
@@ -41,7 +53,10 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-const LIMIT = 12;
+// El tamaño de página sale de lib/catalogo: si esta vista paginara de doce y
+// las rutas limpias de otra cifra, el `desde` del ItemList mentiría en una de
+// las dos.
+
 
 interface SearchParams {
   tipo?:       string;
@@ -50,62 +65,42 @@ interface SearchParams {
   page?:       string;
 }
 
-async function fetchProperties(sp: SearchParams) {
-  const page  = Math.max(1, parseInt(sp.page ?? '1'));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const where: any = { status: 'available' };
+/**
+ * A qué URL debe apuntar el canonical de esta vista.
+ *
+ * Devuelve la ruta limpia cuando existe una equivalente, y `/propiedades` en
+ * cualquier otro caso. Se comprueba contra la base que el municipio y el tipo
+ * existan de verdad: un canonical hacia una URL que devuelve 404 es peor que no
+ * declarar ninguno, porque le dice al motor que la página buena es una que no
+ * está.
+ */
+async function canonicalDeFiltros(sp: SearchParams): Promise<string> {
+  const base = `${SITE_URL}/propiedades`;
 
-  if (sp.tipo && sp.tipo !== 'todos')           where.type = sp.tipo;
-  if (sp.maxPrecio)                              where.price_cop = { lte: BigInt(sp.maxPrecio) };
-  if (sp.municipio && sp.municipio !== 'todos') {
-    where.municipality = { name: { contains: sp.municipio, mode: 'insensitive' } };
+  // Una página 2 o un filtro de precio no tienen ruta limpia: se quedan donde
+  // están, apuntando a sí mismas a través del catálogo sin filtrar.
+  if (sp.maxPrecio || (sp.page && sp.page !== '1')) return base;
+  if (!sp.municipio || sp.municipio === 'todos') return base;
+
+  const muni = await municipioPorNombre(sp.municipio);
+  if (!muni) return base;
+
+  if (sp.tipo && sp.tipo !== 'todos') {
+    const tipo = await resolverTipo(sp.tipo);
+    if (tipo) return `${base}/${tipo.slug}/${muni.slug}`;
   }
-
-  const [rows, total] = await Promise.all([
-    prisma.property.findMany({
-      where,
-      skip: (page - 1) * LIMIT,
-      take: LIMIT,
-      orderBy: [{ published_at: 'desc' }],
-      include: {
-        municipality: { select: { id: true, slug: true, name: true, province: true, demand_score: true } },
-        media:        { orderBy: { order: 'asc' }, take: 6 },
-      },
-    }),
-    prisma.property.count({ where }),
-  ]);
-
-  // Serializar BigInt
-  const properties: Property[] = rows.map(r => ({
-    id:               r.id,
-    slug:             r.slug,
-    type:             r.type as Property['type'],
-    transaction_type: 'venta' as const,
-    municipality_id:  r.municipality_id,
-    vereda_id:        r.vereda_id,
-    address_visible:  r.address_visible,
-    price_cop:        Number(r.price_cop),
-    area_lot_m2:      r.area_lot_m2,
-    area_built_m2:    r.area_built_m2,
-    bedrooms:         r.bedrooms,
-    bathrooms:        r.bathrooms,
-    parking:          r.parking,
-    year_built:       r.year_built,
-    status:           r.status as Property['status'],
-    geo_lat:          r.geo_lat,
-    geo_lng:          r.geo_lng,
-    published_at:     r.published_at.toISOString(),
-    updated_at:       r.updated_at.toISOString(),
-    title:            r.title ?? undefined,
-    short_description: r.short_description ?? undefined,
-    meta_title:       r.meta_title ?? undefined,
-    meta_description: r.meta_description ?? undefined,
-    municipality:     r.municipality ?? undefined,
-    media:            r.media as Property['media'],
-  }));
-
-  return { properties, total, page, pages: Math.ceil(total / LIMIT) };
+  return `${base}/${muni.slug}`;
 }
+
+// La consulta vive en lib/catalogo.ts: la comparten esta vista y las dos rutas
+// limpias. Tres copias serian tres copias que pueden divergir.
+const fetchProperties = (sp: SearchParams) =>
+  fetchPropiedades({
+    tipo:      sp.tipo,
+    municipio: sp.municipio,
+    maxPrecio: sp.maxPrecio,
+    page:      sp.page ? parseInt(sp.page) : 1,
+  });
 
 export default async function PropiedadesPage({
   searchParams,

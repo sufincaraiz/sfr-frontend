@@ -207,3 +207,65 @@ export async function respuestaMunicipio(m: {
     fechaCorte: hoy(),
   }
 }
+
+// ─── 8. Catálogo filtrado — rutas limpias ────────────────────────────────────
+
+/**
+ * Respuesta directa de `/propiedades/[municipio]` y `/propiedades/[tipo]/[municipio]`.
+ *
+ * Se deriva de la misma consulta que alimenta la vista, así que la cifra del
+ * párrafo y la del listado no pueden discrepar.
+ *
+ * CUANDO NO HAY INVENTARIO no dice «0 propiedades»: la doctrina §1.3 lo prohíbe
+ * expresamente porque una página que termina en vacío resta autoridad a todo el
+ * dominio. Dice lo que sigue siendo cierto —que la captación está abierta en ese
+ * municipio, porque la cobertura son los doce— y esa versión de la página va
+ * además con `noindex`.
+ */
+export async function respuestaCatalogoLimpio(params: {
+  municipio: string
+  /** Plural del tipo («Fincas»). Ausente = todos los tipos. */
+  tipoPlural?: string
+  total: number
+}): Promise<RespuestaDirectaProps> {
+  const { municipio, tipoPlural, total } = params
+  const que = tipoPlural ? tipoPlural.toLowerCase() : 'propiedades'
+
+  if (total === 0) {
+    return {
+      pregunta: `¿Hay ${que} en venta en ${municipio}, Cundinamarca?`,
+      respuesta:
+        `Su Finca Raíz cubre ${municipio} dentro de los ${DATOS_OFICIALES.municipiosProvincia} ` +
+        'municipios de la Provincia del Gualivá, Cundinamarca, y capta inmuebles allí de forma ' +
+        `permanente. Hoy no hay ${que} publicadas en ese municipio, pero sí en los vecinos, y ` +
+        'la búsqueda de un predio concreto se puede encargar por WhatsApp a la inmobiliaria, ' +
+        'que tiene matrícula mercantil 199483.',
+      fuenteDato: FUENTE,
+      fechaCorte: hoy(),
+    }
+  }
+
+  const desde = await seguro(async () => {
+    const m = await prisma.property.findFirst({
+      where: {
+        status: 'available',
+        municipality: { name: { contains: municipio, mode: 'insensitive' } },
+      },
+      orderBy: { price_cop: 'asc' },
+      select: { price_cop: true },
+    })
+    return m ? Number(m.price_cop) : null
+  }, null as number | null)
+
+  return {
+    pregunta: `¿Qué ${que} hay en venta en ${municipio}, Cundinamarca?`,
+    respuesta:
+      `Su Finca Raíz publica ${total} ${total === 1 ? que.replace(/s$/, '') : que} en venta en ` +
+      `${municipio}, Cundinamarca, dentro de la Provincia del Gualivá` +
+      `${desde ? `, desde ${cop(desde)} COP` : ''}. La inmobiliaria, con matrícula mercantil ` +
+      '199483 y sede en La Vega, incluye estudio de títulos y verificación de uso del suelo, ' +
+      'acceso y agua en cada negociación.',
+    fuenteDato: FUENTE,
+    fechaCorte: hoy(),
+  }
+}

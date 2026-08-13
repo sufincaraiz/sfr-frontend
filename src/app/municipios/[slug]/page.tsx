@@ -318,7 +318,7 @@ export default async function MunicipioPage(
             <Section title={`¿Por qué invertir en finca raíz en ${data.name}?`} icon={<TrendingUp size={20} />} accent>
               <RichText text={data.inversion} style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }} />
               <Link
-                href={`/propiedades?municipio=${data.name}`}
+                href={`/propiedades/${data.slug}`}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: 8, marginTop: '1.25rem',
                   background: '#0D2D5E', color: '#fff', fontWeight: 700, fontSize: '0.9rem',
@@ -368,7 +368,7 @@ export default async function MunicipioPage(
                 {properties.length >= 6 && (
                   <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
                     <Link
-                      href={`/propiedades?municipio=${data.name}`}
+                      href={`/propiedades/${data.slug}`}
                       style={{
                         display: 'inline-flex', alignItems: 'center', gap: 8,
                         border: '2px solid #0D2D5E', color: '#0D2D5E',
@@ -396,7 +396,7 @@ export default async function MunicipioPage(
                 {TIPO_LINKS.map(t => (
                   <Link
                     key={t.tipo}
-                    href={`/propiedades?tipo=${t.tipo}&municipio=${encodeURIComponent(data.name)}`}
+                    href={`/propiedades/${t.tipo}/${data.slug}`}
                     style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '0.6rem 0.9rem', borderRadius: 8, border: '1px solid #E2E8F0',
