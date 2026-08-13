@@ -18,17 +18,29 @@ export const HOME_FAQS = [
       'bogotanas que buscan segunda vivienda o retiro.',
   },
   {
+    // Esta respuesta va dentro del FAQPage de la portada, o sea que es MARCADO.
+    // Declaraba seis servicios y solo el primero tiene página que lo sustente,
+    // que es justo lo que la doctrina §1.1 no permite en el marcado.
+    //
+    // Cayeron además dos cosas: «el más completo de la región», un superlativo
+    // sin forma de sustentarse, de la misma familia que el «98 %» retirado; y
+    // «Avalúo técnico», que nombra una actividad regulada por la Ley 1673 de
+    // 2013 y reservada a inscritos en el RAA.
+    //
+    // Los servicios reales que aún no tienen página se nombran en prosa, sin
+    // numerar y sin presentarlos como catálogo: es la diferencia entre decir
+    // qué se hace y declarar una oferta.
     question: '¿Qué servicios ofrece Su Finca Raíz como Centro de Negocios Inmobiliarios?',
     answer:
-      'Su Finca Raíz opera como el centro de negocios inmobiliarios más completo de la región ' +
-      'del Gualivá. Nuestros servicios incluyen: (1) Compra y venta de fincas, lotes, casas ' +
-      'campestres y condominios; (2) Tours virtuales 360° e inspección aérea con drones para ' +
-      'compradores remotos; (3) Estudio de títulos y certificado de tradición y libertad ' +
-      'incluido en cada negociación; (4) Asesoría notarial y acompañamiento en promesas de ' +
-      'compraventa; (5) Avalúo técnico de propiedades rurales y campestres; (6) Gestión de ' +
-      'proyectos de construcción campestre para inversionistas. Todo esto bajo un modelo de ' +
-      'asesoría personalizada: un agente exclusivo por cliente desde la búsqueda hasta la ' +
-      'escrituración.',
+      'Su Finca Raíz es un centro de negocios inmobiliarios impulsado por inteligencia ' +
+      'artificial en La Vega y la Provincia del Gualivá, Cundinamarca. Su servicio principal ' +
+      'es la compra y venta de fincas, lotes, casas campestres, condominios y apartamentos, ' +
+      'con recorridos virtuales 360° y tomas aéreas de cada predio para compradores remotos. ' +
+      'Cada negociación incluye estudio de títulos y certificado de tradición y libertad, y ' +
+      'acompañamiento notarial en la promesa de compraventa y la escrituración. La empresa ' +
+      'también realiza estudios de mercado del predio y gestiona proyectos de construcción ' +
+      'campestre en consorcio con Conarc. Un agente acompaña al cliente desde la búsqueda ' +
+      'hasta la escrituración.',
   },
   {
     question: '¿Cómo garantiza Su Finca Raíz la seguridad legal al comprar una propiedad?',
@@ -56,7 +68,11 @@ export const HOME_FAQS = [
       'servicios públicos completos desde $85.000.000 COP. Casas campestres en condominio ' +
       'cerrado (80-120 m² construidos) desde $280.000.000 COP. Fincas productivas entre 1 y ' +
       '5 hectáreas con vía de acceso entre $350.000.000 y $900.000.000 COP. Condominios ' +
-      'campestres con amenidades desde $320.000.000 COP. Para un avalúo personalizado o el ' +
+      // «avalúo personalizado» → «análisis comercial de valor»: la palabra
+      // nombra una actividad regulada (Ley 1673 de 2013, inscripción en el RAA)
+      // y ofrecerla sin inscripción es el problema, no describir el trabajo.
+      'campestres con amenidades desde $320.000.000 COP. Para un análisis comercial de valor ' +
+      'de tu predio o el ' +
       'listado completo de propiedades disponibles filtrado por tu presupuesto, contáctanos ' +
       'por WhatsApp al +57 321 882 6730.',
   },

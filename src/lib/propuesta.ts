@@ -124,7 +124,12 @@ export const DEFAULT_PROPUESTA: PropuestaContent = {
     eyebrow: 'Servicios integrales',
     headingHtml: 'Todo lo que un proyecto necesita, <em>bajo un mismo techo.</em>',
     columns: [
-      { title: 'Inmobiliario y comercial', items: ['Asesoría y promoción de venta (La Vega y municipios vecinos).', 'Caracterización de mercado y estrategias.', 'Avalúos y trámites inmobiliarios, prediales y legales.'] },
+      // «Avalúos» → «Análisis comercial de valor»: la actividad de avaluador
+      // está regulada por la Ley 1673 de 2013 y exige inscripción en el RAA.
+      // Esta propuesta se sirve en /propuesta-comercial, que es pública: el
+      // noindex la esconde de los buscadores, no de un cliente que abre el
+      // enlace, y ofrecer el servicio es lo que la ley regula.
+      { title: 'Inmobiliario y comercial', items: ['Asesoría y promoción de venta (La Vega y municipios vecinos).', 'Caracterización de mercado y estrategias.', 'Análisis comercial de valor y trámites inmobiliarios, prediales y legales.'] },
       { title: 'Arquitectura y diseño', items: ['Anteproyectos arquitectónicos, interiorismo y paisajismo.', 'Diseño de huertas y sistemas productivos.', 'Topografía y planimetría.'] },
       { title: 'Estrategia y visualización', items: ['Análisis de viabilidad, factibilidad y prefactibilidad turística.', 'Planes maestros de fincas.', 'Renders, recorridos 360° dinámicos y ejecución de obra.'] },
     ],
