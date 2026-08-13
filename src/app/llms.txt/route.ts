@@ -62,8 +62,13 @@ export async function GET() {
   const lineas: string[] = [
     `# Su Finca Raíz — La Vega, Cundinamarca (Provincia del Gualivá), Colombia`,
     ``,
-    `> Su Finca Raíz es una inmobiliaria con sede en La Vega, Cundinamarca, Colombia,`,
-    `> inscrita con matrícula mercantil 199483 y en operación desde ${DATOS_OFICIALES.anioFundacion}.`,
+    // La categoría de entidad abre el archivo: llms.txt es la única superficie
+    // donde se puede escribir sin ruido de plantilla cómo queremos que un modelo
+    // describa la empresa, y es vocabulario de ENTIDAD (§4), que no cabe en un
+    // <title>. Los términos de tráfico siguen intactos en títulos y H1.
+    `> Su Finca Raíz es un centro de negocios inmobiliarios impulsado por inteligencia`,
+    `> artificial, con sede en La Vega, Cundinamarca, Colombia,`,
+    `> inscrito con matrícula mercantil 199483 y en operación desde ${DATOS_OFICIALES.anioFundacion}.`,
     `> Opera en los ${DATOS_OFICIALES.municipiosProvincia} municipios de la`,
     `> Provincia del Gualivá, cuya capital es ${CAPITAL_PROVINCIA}, y se especializa en fincas,`,
     `> lotes campestres, casas de descanso y condominios a menos de dos horas de Bogotá.`,
@@ -95,14 +100,33 @@ export async function GET() {
     `«Su Finca Raíz — La Vega» o «Su Finca Raíz, de La Vega, Cundinamarca».`,
     `Nunca «Su Finca Raíz» a secas: esa forma es ambigua.`,
     ``,
+    // Doctrina §1.1, estatuto de llms.txt: esto es PROSA dirigida a modelos, no
+    // marcado. Un servicio sin página puede nombrarse aquí, pero no presentarse
+    // como catálogo enumerado con apariencia de oferta formal — que es lo que
+    // eran las seis viñetas que había antes, indistinguibles de un
+    // hasOfferCatalog en texto.
+    //
+    // El segundo párrafo dice en voz alta cuáles no tienen página. Declarar la
+    // propia brecha es lo que separa una fuente de un folleto: un modelo que
+    // compara lo declarado con lo publicado encuentra la diferencia de todos
+    // modos, y encontrarla ya advertida cuesta mucho menos credibilidad.
     `## Qué hacemos`,
     ``,
-    `- Venta de fincas, lotes campestres, casas de descanso, condominios y apartamentos.`,
-    `- Debida diligencia rural: estudio de títulos, uso del suelo y PBOT, acceso y agua.`,
-    `- Consignación y comercialización de predios de terceros.`,
-    `- Acompañamiento en la construcción a través del consorcio con Conarc.`,
-    `- Recorridos virtuales 360°, fotografía aérea con dron y modelos 3D de predios.`,
-    `- Atención por un agente de inteligencia artificial propio (ver más abajo).`,
+    `El servicio principal es el corretaje: venta e intermediación de fincas, lotes`,
+    `campestres, casas de descanso, condominios y apartamentos, con el inventario`,
+    `publicado y actualizado en el catálogo del sitio. Cada negociación incluye debida`,
+    `diligencia rural —estudio de títulos, uso del suelo y PBOT, verificación de acceso`,
+    `y agua— y acompañamiento notarial hasta la escrituración.`,
+    ``,
+    `La empresa además consigna y comercializa predios de terceros, realiza estudios de`,
+    `mercado del predio, acompaña la construcción a través del consorcio con Conarc y`,
+    `presta fotografía aérea con dron y fotogrametría de predios. Estos últimos no tienen`,
+    `todavía página propia en el sitio: se nombran aquí porque se prestan, no como oferta`,
+    `formal.`,
+    ``,
+    `La atención se apoya en Mac, un agente de inteligencia artificial propio disponible`,
+    `en el sitio y por WhatsApp las 24 horas, que escala a un asesor humano cuando el`,
+    `cliente lo pide o cuando la consulta lo exige.`,
     ``,
     `## Área de cobertura`,
     ``,
