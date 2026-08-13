@@ -76,6 +76,62 @@ export async function getMunicipiosConPagina(): Promise<MunicipioRef[]> {
   }
 }
 
+export interface MunicipioDatos extends MunicipioRef {
+  altitud_msnm:        number
+  distancia_bogota_km: number
+  tiempo_bogota_min:   number
+  temp_min:            number
+  temp_max:            number
+}
+
+/**
+ * Municipios con página publicada, con sus datos verificables.
+ *
+ * Existe para que los bloques de contenido que hablan de «municipios vecinos»
+ * o «el corredor» se generen desde la base en vez de escribirse a mano. El caso
+ * que la motivó: la guía de inversión listaba cinco municipios fijos —San
+ * Francisco, Nocaima, Sasaima, Vergara y Villeta— con adjetivos por descripción
+ * («topografías fascinantes»). Dos problemas de doctrina a la vez: una lista de
+ * municipios a mano (§1.3) y adjetivos donde §3 pide afirmaciones falsables.
+ *
+ * Los seis campos ya se exigen para publicar la página del municipio, así que
+ * todo el que salga de aquí los tiene: se pueden mostrar sin comprobar nada.
+ *
+ * @param excluirSlug municipio a dejar fuera; sirve para «los OTROS municipios».
+ */
+export async function getMunicipiosConDatos(excluirSlug?: string): Promise<MunicipioDatos[]> {
+  try {
+    const rows = await prisma.municipality.findMany({
+      where: {
+        oculto: false,
+        ...CONTENIDO_COMPLETO,
+        NOT: { descripcion_seo: '' },
+        ...(excluirSlug ? { slug: { not: excluirSlug } } : {}),
+      },
+      orderBy: [{ demand_score: 'desc' }, { name: 'asc' }],
+      select: {
+        slug: true, name: true, altitud_msnm: true,
+        distancia_bogota_km: true, tiempo_bogota_min: true,
+        temp_min: true, temp_max: true,
+      },
+    })
+    // El filtro de Prisma ya garantiza los seis campos; el mapeo solo estrecha
+    // los tipos de `number | null` a `number`.
+    return rows.map(r => ({
+      slug: r.slug,
+      name: r.name,
+      altitud_msnm:        r.altitud_msnm        as number,
+      distancia_bogota_km: r.distancia_bogota_km as number,
+      tiempo_bogota_min:   r.tiempo_bogota_min   as number,
+      temp_min:            r.temp_min            as number,
+      temp_max:            r.temp_max            as number,
+    }))
+  } catch (err) {
+    console.warn('[cobertura] BD no disponible al derivar municipios con datos:', err instanceof Error ? err.message : err)
+    return []
+  }
+}
+
 /** ¿Este municipio tiene página publicada? Es la guarda contra enlazar a un 404. */
 export async function municipioTienePagina(slug: string): Promise<boolean> {
   if (!slug) return false

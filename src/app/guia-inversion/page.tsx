@@ -9,6 +9,8 @@ import { JsonLd, breadcrumbSchema, faqSchema } from '@/components/seo/JsonLd';
 import { AsesorForm } from './AsesorForm';
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
 import { respuestaGuiaInversion } from '@/lib/respuestas-directas';
+import { getMunicipiosConDatos } from '@/lib/cobertura';
+import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
 
 const PUBLISHED = '2026-06-13';
 const COVER = '/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg';
@@ -87,12 +89,6 @@ const CATALOGO = [
   { icon: Building2, title: 'Apartamentos y Proyectos Urbanos', text: 'Para quienes buscan la practicidad del casco urbano sin perder la tranquilidad del municipio. Modernidad, seguridad y fácil mantenimiento en el corazón de La Vega.' },
 ];
 
-const CORREDOR = [
-  { title: 'San Francisco y Nocaima', text: 'Climas templados y terrenos vírgenes ideales para proyectos ecológicos.' },
-  { title: 'Sasaima y Vergara', text: 'Topografías fascinantes para fincas productivas y de recreo.' },
-  { title: 'Villeta', text: 'El destino tradicional y cálido, perfecto para condominios de lujo y turismo de alto nivel.' },
-];
-
 const AUTORIDAD = [
   { icon: Video, title: 'Visión Inmersiva', text: 'Explora propiedades desde Bogotá o el extranjero con nuestros recorridos 360° y cinematografía con drones. Conoce el entorno real antes de viajar.' },
   { icon: Scale, title: 'Blindaje Jurídico', text: 'Acompañamiento estricto en el saneamiento de títulos, estudio de tradición y promesas de compraventa.' },
@@ -142,7 +138,11 @@ function SectionTitle({ eyebrow, children }: { eyebrow?: string; children: React
 
 // ─── Page ───────────────────────────────────────────────────────────────────────
 
-export default function GuiaInversionPage() {
+export default async function GuiaInversionPage() {
+  // «Los OTROS municipios además de La Vega»: se excluye por slug, no por
+  // nombre, para que no dependa de cómo esté escrito el nombre en la base.
+  const corredor = await getMunicipiosConDatos('la-vega');
+
   const breadcrumbs = breadcrumbSchema([
     { name: 'Inicio', href: '/' },
     { name: 'Guía de Inversión', href: '/guia-inversion' },
@@ -231,17 +231,38 @@ export default function GuiaInversionPage() {
           <section style={{ marginBottom: '3.5rem' }}>
             <SectionTitle eyebrow="Sección 3">¿Qué otros municipios del Gualivá tienen potencial además de La Vega?</SectionTitle>
             <p style={{ color: '#475569', fontSize: '1rem', lineHeight: 1.75, marginBottom: '1.75rem' }}>
-              El auge de La Vega ha impulsado un crecimiento orgánico hacia los municipios vecinos,
-              creando un corredor inmobiliario de alto potencial. En Su Finca Raíz te guiamos para
-              encontrar oportunidades &ldquo;ocultas&rdquo; de alta rentabilidad en:
+              El auge de La Vega ha impulsado un crecimiento hacia los municipios vecinos, dentro de
+              los {DATOS_OFICIALES.municipiosProvincia} de la Provincia del Gualivá donde Su Finca
+              Raíz opera. Estos son los que tienen ficha de información propia, con su altitud,
+              su rango de temperatura y su distancia real a Bogotá:
             </p>
+            {/* La lista se DERIVA de los municipios con página publicada. Antes
+                eran cinco escritos a mano —San Francisco, Nocaima, Sasaima,
+                Vergara y Villeta— con adjetivos por descripción: «topografías
+                fascinantes», «climas templados». Dos faltas a la vez: una lista
+                de municipios a mano (§1.3) y adjetivos donde §3 pide
+                afirmaciones falsables.
+                Ahora cada tarjeta lleva altitud, temperatura y distancia reales,
+                que es lo que un modelo puede extraer y citar, y enlaza a la
+                página del municipio —que existe por definición: salir de esta
+                consulta significa tenerla publicada. */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
-              {CORREDOR.map(({ title, text }) => (
-                <div key={title} style={{ background: '#0D2D5E', borderRadius: 16, padding: '1.5rem 1.4rem' }}>
+              {corredor.map(m => (
+                <Link
+                  key={m.slug}
+                  href={`/municipios/${m.slug}`}
+                  style={{ background: '#0D2D5E', borderRadius: 16, padding: '1.5rem 1.4rem', textDecoration: 'none', display: 'block' }}
+                >
                   <MapPinned size={22} color="#E8B92F" style={{ marginBottom: 10 }} />
-                  <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '1.02rem', marginBottom: 8 }}>{title}</h3>
-                  <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '0.9rem', lineHeight: 1.6 }}>{text}</p>
-                </div>
+                  <h3 style={{ color: '#fff', fontWeight: 800, fontSize: '1.02rem', marginBottom: 8 }}>
+                    {m.name}, Cundinamarca
+                  </h3>
+                  <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '0.9rem', lineHeight: 1.6, margin: 0 }}>
+                    {m.altitud_msnm.toLocaleString('es-CO')} msnm · {m.temp_min}–{m.temp_max} °C
+                    <br />
+                    {m.distancia_bogota_km} km de Bogotá ({m.tiempo_bogota_min} min)
+                  </p>
+                </Link>
               ))}
             </div>
           </section>
