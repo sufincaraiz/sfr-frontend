@@ -9,6 +9,7 @@ import {
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { getVeredaData, getAllVeredasData } from '@/lib/veredas-data'
+import { faqsDeVereda } from '@/lib/faq-veredas'
 import { JsonLd, breadcrumbSchema, faqSchema } from '@/components/seo/JsonLd'
 import { formatPrice } from '@/lib/utils'
 import { tipoLabel } from '@/lib/property-types'
@@ -123,7 +124,13 @@ export default async function VeredaPage(
     { name: `${v.name} — ${v.municipio_name}`, href: `/veredas/${slug}` },
   ])
 
-  const faq = faqSchema(v.faq.map(f => ({ question: f.pregunta, answer: f.respuesta })))
+  // Las derivadas van PRIMERO: responden a las consultas de dato —distancia,
+  // altitud, disponibilidad— con las que llega quien busca, y las escritas a
+  // mano aportan después el conocimiento local que no se puede generar.
+  const faqDerivadas = await faqsDeVereda(v)
+  const todasLasFaq = [...faqDerivadas, ...v.faq]
+
+  const faq = faqSchema(todasLasFaq.map(f => ({ question: f.pregunta, answer: f.respuesta })))
 
   const placeSchema = {
     '@context': 'https://schema.org',
@@ -292,7 +299,7 @@ export default async function VeredaPage(
                 </h2>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {v.faq.map((item, i) => (
+                {todasLasFaq.map((item, i) => (
                   <details key={i} style={{ background: '#fff', borderRadius: 12, border: '1px solid #E2E8F0', overflow: 'hidden' }}>
                     <summary style={{
                       padding: '1rem 1.25rem', fontWeight: 700, fontSize: '0.92rem',
