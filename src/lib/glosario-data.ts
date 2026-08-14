@@ -194,7 +194,7 @@ export const GLOSARIO_TERMS: GlosarioTerm[] = [
       'inmuebles que se benefician de obras públicas de infraestructura (vías, parques, ' +
       'alcantarillado). Se diferencia del impuesto predial en que es de pago único o por ' +
       'cuotas específicas. No debe confundirse con la valorización del mercado inmobiliario ' +
-      '(apreciación del precio de la propiedad), que en La Vega es del 18% anual promedio.',
+      '(apreciación del precio de la propiedad por las condiciones del mercado).',
   },
   {
     term: 'Escrituración',

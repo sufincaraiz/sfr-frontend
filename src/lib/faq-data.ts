@@ -7,15 +7,28 @@ const ANIO = new Date().getFullYear()
 export const HOME_FAQS = [
   {
     question: `¿Por qué invertir en La Vega, Cundinamarca en ${ANIO}?`,
+    // ⚠ AQUÍ ESTABA LA CIFRA MÁS EXPUESTA DEL SITIO: «valorización anual
+    // promedio del 18 %», dentro del FAQPage de la PORTADA. Si un modelo cita a
+    // Su Finca Raíz sobre valorización, cita ese número — y no tenía fuente,
+    // metodología ni fecha de corte. Se retira hasta tenerlas.
+    //
+    // Lo que queda son los factores, que sí se sostienen: la doble calzada
+    // existe, los tiempos se miden, los servicios se comprueban. Describir por
+    // qué sube el valor es defendible; decir cuánto sube, sin fuente, no.
+    //
+    // Cayó también «invertir aquí hoy equivale a lo que fue invertir en el
+    // Oriente Antioqueño hace 15 años»: es una promesa de rendimiento por
+    // analogía —la peor clase, porque no se puede ni verificar ni desmentir— y
+    // además nombraba justo la región de la inmobiliaria homónima (§1.4).
     answer:
-      'La Vega y la región del Gualivá registran una valorización anual promedio del 18 %, ' +
-      'impulsada por tres factores concretos: la doble calzada Bogotá-La Vega que redujo el ' +
-      'tiempo de desplazamiento a menos de 90 minutos, el auge del turismo campestre ' +
-      'post-pandemia, y la escasez de lotes disponibles con servicios públicos completos. ' +
-      'Invertir aquí hoy equivale a lo que fue invertir en el Oriente Antioqueño hace 15 años. ' +
-      'La zona combina clima templado (18 °C promedio), agua potable, luz eléctrica y ' +
-      'conectividad — condiciones que la convierten en la primera opción para familias ' +
-      'bogotanas que buscan segunda vivienda o retiro.',
+      'La Vega y la Provincia del Gualivá concentran demanda de vivienda campestre por tres ' +
+      'factores comprobables: la doble calzada Bogotá-La Vega, que deja el desplazamiento por ' +
+      'debajo de los 90 minutos; el crecimiento del turismo campestre en la región; y la ' +
+      'disponibilidad limitada de lotes con servicios públicos completos. La zona combina clima ' +
+      'templado, agua potable, energía eléctrica y conectividad, condiciones que la sitúan entre ' +
+      'las opciones habituales de las familias bogotanas que buscan segunda vivienda o retiro. ' +
+      'Cuánto se valorice un predio concreto depende de su ubicación, su estado jurídico y las ' +
+      'condiciones del mercado.',
   },
   {
     // Esta respuesta va dentro del FAQPage de la portada, o sea que es MARCADO.

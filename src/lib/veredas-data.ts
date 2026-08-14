@@ -44,9 +44,8 @@ const VEREDAS: Record<string, VeredaData> = {
       'Paisaje de bosque andino con fuentes de agua permanentes',
     ],
     valorizacion:
-      'Bulucaima registra una de las mayores tasas de valorización de finca raíz ' +
-      'en el Gualivá, con incrementos promedio del 14 % anual en los últimos cuatro ' +
-      'años. La consolidación de condominios campestres como Altos de Bulucaima y la ' +
+      'Bulucaima es una de las veredas con mayor demanda de finca raíz del ' +
+      'Gualivá. La consolidación de condominios campestres como Altos de Bulucaima y la ' +
       'llegada de compradores del norte de Bogotá han impulsado los precios de lotes ' +
       'de 1.000 m² por encima de los 180 millones de pesos. Las fincas de recreo con ' +
       'piscina y casa registran tiempos de venta inferiores a 45 días, reflejo de una ' +
@@ -106,8 +105,8 @@ const VEREDAS: Record<string, VeredaData> = {
       'Potencial de agroturismo y fincas cafeteras en desarrollo',
     ],
     valorizacion:
-      'El Cural ha registrado valorización sostenida del 10 % anual, impulsada ' +
-      'por el auge del agroturismo y la demanda de fincas productivas con agua. ' +
+      'El Cural sostiene una demanda constante, impulsada por el auge del ' +
+      'agroturismo y el interés en fincas productivas con agua propia. ' +
       'Las propiedades con cultivos establecidos de café o aguacate tienen mayor ' +
       'liquidez por el interés de inversionistas del sector agroalimentario. ' +
       'Los lotes de más de 5.000 m² con acceso a quebrada representan la mejor ' +
@@ -136,7 +135,13 @@ const VEREDAS: Record<string, VeredaData> = {
       },
       {
         pregunta: '¿Qué tan buena es la inversión en fincas productivas en El Cural?',
-        respuesta: 'Las fincas con producción de café especial han demostrado retornos combinados (valorización + ingreso agrícola) superiores al 15 % anual. El auge del agroturismo agrega una tercera fuente de ingreso a quienes abren sus fincas al turismo cafetero.',
+        // Decía «retornos combinados (valorización + ingreso agrícola)
+        // superiores al 15 % anual». Una proyección de rendimiento futuro sin
+        // metodología ni advertencia va más allá de la Ley 1480 y entra en
+        // terreno de asesoría de inversión, que exige habilitación. No se
+        // sustituye por otra cifra: se retira la proyección y queda el hecho
+        // cualitativo, que es lo que sí se puede sostener.
+        respuesta: 'El Cural produce café especial, y las fincas de la vereda combinan la valorización del predio con el ingreso agrícola. El agroturismo cafetero añade una tercera vía de ingreso a quienes abren su finca a visitantes. El rendimiento concreto depende del predio, del manejo del cultivo y de las condiciones del mercado en cada momento.',
       },
     ],
   },
@@ -167,11 +172,10 @@ const VEREDAS: Record<string, VeredaData> = {
     ],
     valorizacion:
       'San Juan está en la fase inicial de valorización acelerada. Los precios ' +
-      'aún están entre un 25 y un 35 % por debajo de Bulucaima para lotes ' +
-      'equivalentes, lo que representa una ventana de oportunidad para inversores. ' +
-      'La mejora progresiva de la vía de acceso y el derrame de demanda desde ' +
-      'veredas saturadas como Chicalá y Bulucaima proyectan incrementos del ' +
-      '12–15 % anual para los próximos tres años.',
+      'siguen por debajo de los de Bulucaima para lotes equivalentes. La mejora ' +
+      'progresiva de la vía de acceso y el desplazamiento de la demanda desde ' +
+      'veredas más consolidadas, como Chicalá y Bulucaima, sostienen el interés ' +
+      'por la zona.',
     clima:
       'San Juan tiene un clima templado de montaña con temperatura promedio ' +
       'de 22 °C. Su posición geográfica entre los 1.100 y 1.400 msnm crea ' +
@@ -224,10 +228,10 @@ const VEREDAS: Record<string, VeredaData> = {
     valorizacion:
       'Tabacal es la apuesta a largo plazo más interesante de La Vega. Los precios ' +
       'actuales son los más bajos de las veredas cercanas al casco urbano, pero ' +
-      'la pavimentación de la vía proyectada para el Plan de Desarrollo Municipal ' +
-      '2024–2027 cambiará radicalmente su accesibilidad. Inversores que compren ' +
-      'hoy con un horizonte de 5 años pueden esperar valoraciones del 60–80 % ' +
-      'sobre el precio de adquisición.',
+      'la pavimentación de la vía está contemplada en el Plan de Desarrollo ' +
+      'Municipal 2024–2027, y de ejecutarse cambiaría su accesibilidad. Es una ' +
+      'obra prevista, no ejecutada: el efecto sobre los precios dependerá de que ' +
+      'se realice y de cuándo.',
     clima:
       'A 1.350 msnm, Tabacal tiene el clima más fresco de La Vega con temperaturas ' +
       'que raramente superan los 23 °C. Las mañanas son frescas (15–17 °C) y las ' +
@@ -252,7 +256,7 @@ const VEREDAS: Record<string, VeredaData> = {
       },
       {
         pregunta: '¿Es segura la inversión en Tabacal dado que la vía no está pavimentada?',
-        respuesta: 'El precio actual refleja esa condición: los lotes en Tabacal cuestan entre un 30 y un 40 % menos que en veredas con vía pavimentada. Cuando mejore la infraestructura vial, esa diferencia de precio desaparece, generando una plusvalía directa para quienes compraron antes.',
+        respuesta: 'El precio actual refleja esa condición: los lotes en Tabacal se ofrecen por debajo de los de veredas con vía pavimentada. Si la vía se pavimenta, esa diferencia tendería a reducirse, aunque el efecto y su magnitud dependen de que la obra se ejecute.',
       },
     ],
   },
@@ -277,13 +281,13 @@ const VEREDAS: Record<string, VeredaData> = {
       'Servicios públicos estables: agua, energía, telefonía e internet',
       'Lotes con escritura pública y sin problemas jurídicos',
       'Comunidad organizada con junta de acción comunal activa',
-      'Precios entre 20–30 % más accesibles que Bulucaima',
+      'Precios más accesibles que en Bulucaima para lotes equivalentes',
       'Cerca de la vía principal La Vega–Bogotá',
     ],
     valorizacion:
       'La Alianza se ha beneficiado del rebose de demanda desde veredas más ' +
       'saturadas. Con vía pavimentada ya establecida, sus fundamentos de ' +
-      'valorización son sólidos y sostenibles: 11 % anual en promedio. ' +
+      'valorización son sólidos y sostenibles. ' +
       'Los lotes de menos de 150 millones con escritura y sin problemas ' +
       'jurídicos tienen alta rotación entre compradores de primera finca.',
     clima:
@@ -335,9 +339,8 @@ const VEREDAS: Record<string, VeredaData> = {
     ],
     valorizacion:
       'El Rosario ha seguido la tendencia positiva de toda La Vega con ' +
-      'valorización del 10–12 % anual. La topografía plana, que reduce los ' +
-      'costos de construcción, hace que el metro cuadrado construido sea ' +
-      'más rentable que en veredas con pendientes pronunciadas. Los proyectos ' +
+      'valorización sostenida. La topografía plana reduce los costos de ' +
+      'construcción frente a las veredas con pendientes pronunciadas. Los proyectos ' +
       'de parcelación activos en la vereda están generando una revalorización ' +
       'acelerada del suelo rural.',
     clima:
@@ -351,7 +354,7 @@ const VEREDAS: Record<string, VeredaData> = {
     faq: [
       {
         pregunta: '¿El Rosario tiene lotes planos disponibles en La Vega?',
-        respuesta: 'Sí. El Rosario es una de las pocas veredas de La Vega con sectores de topografía plana y semiplana, una característica escasa y muy valorada. Los lotes planos reducen los costos de cimentación y urbanismo hasta en un 30 % frente a lotes en ladera.',
+        respuesta: 'Sí. El Rosario es una de las pocas veredas de La Vega con sectores de topografía plana y semiplana, una característica escasa y muy valorada. Los lotes planos reducen los costos de cimentación y urbanismo frente a los lotes en ladera.',
       },
       {
         pregunta: '¿Hay condominios campestres en El Rosario?',
@@ -359,7 +362,7 @@ const VEREDAS: Record<string, VeredaData> = {
       },
       {
         pregunta: '¿Cuál es el rango de precios en El Rosario?',
-        respuesta: 'Los lotes parten desde 130 millones para 1.000 m². Las casas campestres construidas oscilan entre 400 y 950 millones según tamaño y acabados. Los lotes planos tienen un premio de precio de entre el 15 y el 25 % sobre lotes equivalentes en ladera.',
+        respuesta: 'Los lotes parten desde 130 millones para 1.000 m². Las casas campestres construidas oscilan entre 400 y 950 millones según tamaño y acabados. Los lotes planos se ofrecen por encima de los lotes equivalentes en ladera.',
       },
     ],
   },
@@ -391,8 +394,8 @@ const VEREDAS: Record<string, VeredaData> = {
       'Laureles representa la inversión más orientada a la naturaleza en La Vega. ' +
       'Los precios son moderados hoy pero el interés creciente por el turismo de ' +
       'naturaleza y las fincas eco-lodge está generando una demanda nueva de ' +
-      'compradores con perfil ambiental. Se proyectan valorizaciones del 15 % ' +
-      'anual a medida que el ecoturismo se consolide en el Gualivá.',
+      'compradores con perfil ambiental, y el ecoturismo sigue consolidándose ' +
+      'en el Gualivá.',
     clima:
       'Laureles, a 1.310 msnm, tiene un clima fresco-templado con influencia ' +
       'del bosque de niebla. La temperatura rara vez supera los 24 °C y las ' +
@@ -497,13 +500,17 @@ const VEREDAS: Record<string, VeredaData> = {
       'Alta demanda de alquiler vacacional por la accesibilidad',
       'Temperatura ideal para piscina exterior durante todo el año',
     ],
+    // Decía «retornos superiores al 13 % anual» y «ocupación del 70–80 %».
+    // Dos proyecciones de rendimiento futuro sin metodología ni fuente: la
+    // primera es asesoría de inversión sin habilitación y la segunda sostiene
+    // a la primera. Se retiran ambas y queda lo observable —qué hay en la
+    // vereda y por qué se demanda—, sin prometer cuánto rinde.
     valorizacion:
-      'Guarumal tiene los fundamentos de valorización más sólidos de La Vega ' +
-      'para el corto y mediano plazo. La proximidad al pueblo, la vía pavimentada ' +
-      'y la demanda de alquiler vacacional generan retornos superiores al 13 % ' +
-      'anual. Las casas con piscina en Guarumal tienen ocupación de alquiler ' +
-      'vacacional del 70–80 % durante los fines de semana del año, generando ' +
-      'ingresos que cubren el costo de oportunidad de la inversión.',
+      'Guarumal combina proximidad al casco urbano, vía pavimentada y demanda de ' +
+      'alquiler vacacional, sobre todo en las casas con piscina, que se ocupan ' +
+      'principalmente los fines de semana. Cuánto rinda un predio concreto depende de ' +
+      'su estado, su ubicación dentro de la vereda y las condiciones del mercado en ' +
+      'cada momento.',
     clima:
       'Guarumal, a 1.150 msnm, tiene el clima más cálido de las veredas cercanas ' +
       'al pueblo. Las temperaturas de 19 a 27 °C son perfectas para el disfrute ' +
@@ -555,8 +562,8 @@ const VEREDAS: Record<string, VeredaData> = {
       'Cacahual está beneficiándose de la demanda residual de La Vega y de la ' +
       'llegada de inversionistas del sector agrícola. Las fincas productivas con ' +
       'cultivos de aguacate Hass han demostrado retornos combinados superiores ' +
-      'al 18 % anual (valorización + producción). Para el comprador de largo ' +
-      'plazo, es la vereda con mayor upside de La Vega.',
+      'la valorización del predio con el ingreso del cultivo. El resultado depende ' +
+      'del manejo agrícola y de las condiciones del mercado en cada momento.',
     clima:
       'Cacahual, a 1.100 msnm, tiene el clima más cálido de las veredas de La Vega. ' +
       'Las temperaturas de 20 a 28 °C son ideales para cultivos de clima ' +
@@ -667,9 +674,9 @@ const VEREDAS: Record<string, VeredaData> = {
     valorizacion:
       'Ucranea es el punto de entrada más accesible para invertir en el Gualivá ' +
       'a precio bajo. La vía pavimentada directa es un activo diferencial respecto ' +
-      'a otras veredas de Sasaima. La valorización proyectada es del 10 % anual, ' +
-      'con potencial adicional si se materializa el plan de mejoramiento turístico ' +
-      'del municipio de Sasaima financiado por la Gobernación de Cundinamarca.',
+      'a otras veredas de Sasaima. El municipio tiene un plan de mejoramiento ' +
+      'turístico financiado por la Gobernación de Cundinamarca, todavía sin ' +
+      'ejecutar en su totalidad.',
     clima:
       'Ucranea tiene un clima cálido-templado a 1.080 msnm, ideal para cultivos ' +
       'de café, plátano y cítricos. La temperatura de 20 a 28 °C es perfecta ' +
@@ -682,7 +689,7 @@ const VEREDAS: Record<string, VeredaData> = {
     faq: [
       {
         pregunta: '¿Por qué invertir en Ucranea, Sasaima, y no en La Vega?',
-        respuesta: 'Ucranea ofrece mayor accesibilidad económica: los mismos metros cuadrados cuestan entre un 30 y un 40 % menos que en La Vega con condiciones equivalentes. Para quien busca primera finca con presupuesto ajustado, Ucranea es la opción más inteligente de todo el Gualivá.',
+        respuesta: 'Ucranea ofrece mayor accesibilidad económica: el metro cuadrado se ofrece por debajo del de La Vega en condiciones equivalentes. Es una alternativa a considerar para una primera finca con presupuesto ajustado.',
       },
       {
         pregunta: '¿Cuánto se tarda en llegar de Bogotá a Ucranea?',
