@@ -15,6 +15,7 @@ import { getTiposConInventario } from '@/lib/cobertura';
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
 import { TaglineMarca } from '@/components/layout/TaglineMarca';
 import { respuestaNosotros } from '@/lib/respuestas-directas';
+import { FAQS_NOSOTROS } from '@/lib/faqs';
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 
@@ -92,28 +93,6 @@ const INTELIGENTE = [
 ];
 
 // ── Preguntas frecuentes (visibles + schema FAQPage) ──────────────────────────
-const FAQS = [
-  {
-    question: '¿Qué es una inmobiliaria inteligente?',
-    answer: 'Una inmobiliaria inteligente integra inteligencia artificial y tecnología en sus procesos: atención automatizada 24/7, búsqueda con recomendaciones personalizadas, recorridos virtuales y visualización de proyectos. Su Finca Raíz es la primera inmobiliaria inteligente de La Vega, Cundinamarca y la región del Gualivá.',
-  },
-  {
-    question: '¿Quién es Mac?',
-    answer: 'Mac es el agente de inteligencia artificial de Su Finca Raíz, experto en el mercado inmobiliario de La Vega y el Gualivá. Analiza tu necesidad, compara propiedades y responde en minutos, las 24 horas, los 7 días de la semana, en cualquier idioma.',
-  },
-  {
-    question: '¿Puedo ver una finca sin viajar a La Vega?',
-    answer: 'Sí. Nuestros recorridos virtuales 360° te permiten explorar las propiedades desde cualquier lugar del mundo, y Mac resuelve tus preguntas al instante.',
-  },
-  {
-    question: '¿Su Finca Raíz atiende inversionistas extranjeros?',
-    answer: 'Sí. Mac asesora en cualquier idioma y nuestro equipo acompaña todo el proceso legal y comercial para inversión extranjera en la región del Gualivá.',
-  },
-  {
-    question: '¿Qué zonas cubre Su Finca Raíz?',
-    answer: 'La Vega, Cundinamarca y toda la región del Gualivá: fincas, lotes urbanizados, casas campestres, condominios y proyectos de parcelación.',
-  },
-];
 
 const FILOSOFIA = [
   {
@@ -169,7 +148,7 @@ export default async function NosotrosPage() {
           en una entidad resoluble. */}
       <JsonLd data={{ '@context': 'https://schema.org', ...personaAutora() }} />
       <JsonLd data={breadcrumbs} />
-      <JsonLd data={faqSchema(FAQS)} />
+      <JsonLd data={faqSchema(FAQS_NOSOTROS)} />
 
       <main style={{ background: '#F8FAFC', minHeight: '100vh' }}>
 
@@ -237,9 +216,9 @@ export default async function NosotrosPage() {
             <p style={{ color: '#475569', fontSize: '1.02rem', lineHeight: 1.75 }}>
               Nacimos con el firme propósito de transformar el sector tradicional. No somos
               simplemente un portal de anuncios; somos una plataforma tecnológica y un equipo
-              de expertos dedicados a optimizar los tiempos de búsqueda y garantizar
-              transacciones eficientes, ágiles y seguras para compradores, vendedores e
-              inversionistas.
+              de expertos dedicados a acortar los tiempos de búsqueda y a acompañar cada
+              transacción —estudio de títulos, promesa de compraventa y escrituración— para
+              compradores, vendedores e inversionistas.
             </p>
           </section>
 
@@ -347,7 +326,7 @@ export default async function NosotrosPage() {
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', maxWidth: 820 }}>
-              {FAQS.map(({ question, answer }) => (
+              {FAQS_NOSOTROS.map(({ question, answer }) => (
                 <article key={question} style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '1.4rem 1.5rem' }}>
                   <h3 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.05rem', lineHeight: 1.35, marginBottom: 8 }}>{question}</h3>
                   <p style={{ color: '#475569', fontSize: '0.95rem', lineHeight: 1.7, margin: 0 }}>{answer}</p>

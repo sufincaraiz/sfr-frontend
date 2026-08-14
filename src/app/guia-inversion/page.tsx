@@ -12,6 +12,7 @@ import { respuestaGuiaInversion } from '@/lib/respuestas-directas';
 import { getMunicipiosConDatos } from '@/lib/cobertura';
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
 import { faqsDeMunicipios } from '@/lib/faq-municipios';
+import { FAQS_GENERALES } from '@/lib/faqs';
 
 const PUBLISHED = '2026-06-13';
 const COVER = '/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg';
@@ -42,23 +43,18 @@ export const metadata: Metadata = {
 // se generan desde sus datos reales en lib/faq-municipios.ts, porque decian
 // «topografias fascinantes» y «perfecto para condominios de lujo» dentro de un
 // FAQPage, que es el marcado que mas se extrae.
-const FAQS_GENERALES = [
-  {
-    question: '¿Qué documentos necesito para comprar una propiedad de forma segura?',
-    answer:
-      'Para una compra segura se requiere el Certificado de Tradición y Libertad reciente, ' +
-      'las escrituras públicas, paz y salvos de impuestos y administración (si aplica), y un ' +
-      'estudio de títulos realizado por un abogado independiente. En Su Finca Raíz validamos ' +
-      'toda la documentación jurídica antes de ofrecer una propiedad.',
-  },
-];
 
 // ─── Datos de secciones ─────────────────────────────────────────────────────────
 
 const VALORIZACION = [
   { icon: Sun, title: 'Clima Perfecto y Topografía', text: 'Un microclima envidiable (22°C promedio) que permite disfrutar de piscinas y naturaleza los 365 días del año.' },
   { icon: Route, title: 'Desarrollo de Infraestructura', text: 'Vías de acceso en constante mejora que conectan rápidamente con la capital, convirtiendo a La Vega en la opción ideal para vivienda principal o turismo de fin de semana.' },
-  { icon: TrendingUp, title: 'Alta Rentabilidad (ROI)', text: 'La demanda por alquileres vacacionales de corta estancia supera la oferta, garantizando retornos sólidos para quienes invierten en propiedades de descanso.' },
+  // «garantizando retornos sólidos» era una garantía de rentabilidad
+  // financiera: la clase de promesa que obliga bajo la Ley 1480 de 2011 y que
+  // ningún intermediario inmobiliario puede sostener, porque el retorno depende
+  // del mercado y no de la empresa. Se sustituye por el hecho observable, que
+  // además es lo que un modelo puede citar.
+  { icon: TrendingUp, title: 'Demanda de alquiler vacacional', text: 'La demanda de alquileres vacacionales de corta estancia en la región supera a la oferta publicada, lo que sostiene el interés por las propiedades de descanso. La rentabilidad de cada inmueble depende de su ubicación, su estado y las condiciones del mercado en cada momento.' },
 ];
 
 const CATALOGO = [

@@ -10,8 +10,13 @@ const PILLARS = [
   },
   {
     icon: Shield,
-    title: 'Blindaje Legal Total',
-    body: 'Cero riesgos. Revisión de títulos, promesas de compraventa y escrituración. Sin costos adicionales.',
+    // «Blindaje Legal Total» + «Cero riesgos» era la garantía más fuerte del
+    // sitio y estaba en la portada: prometía ausencia de riesgo en una
+    // operación donde el riesgo existe siempre. Bajo la Ley 1480 de 2011 una
+    // garantía enunciada obliga a cumplirla, y esta no se puede cumplir.
+    // El trabajo que hay detrás es real y se describe; la promesa, no.
+    title: 'Revisión jurídica antes de ofrecer',
+    body: 'Estudio de títulos, promesa de compraventa y acompañamiento en la escrituración, sin costo adicional para el comprador.',
   },
   {
     icon: TrendingUp,

@@ -569,7 +569,10 @@ const VEREDAS: Record<string, VeredaData> = {
     faq: [
       {
         pregunta: '¿Qué cultivos son más rentables en Cacahual?',
-        respuesta: 'El aguacate Hass es el cultivo más rentable actualmente: produce desde el tercer año, tiene alta demanda de exportación y valoriza el predio. La mandarina clementina y la naranja Valencia también son rentables con mercado local garantizado. Los cítricos son más fáciles de manejar para propietarios sin experiencia agrícola.',
+        // «mercado local garantizado» → el hecho que había detrás. Una garantía
+        // enunciada obliga a cumplirla bajo la Ley 1480 de 2011, y aquí se
+        // prometía la colocación de una cosecha que no depende de la empresa.
+        respuesta: 'El aguacate Hass es el cultivo más rentable actualmente: produce desde el tercer año, tiene demanda de exportación y valoriza el predio. La mandarina clementina y la naranja Valencia también se cultivan en la vereda y se comercializan en las plazas de la región. Los cítricos son más fáciles de manejar para propietarios sin experiencia agrícola.',
       },
       {
         pregunta: '¿Cacahual es más cálido que el centro de La Vega?',

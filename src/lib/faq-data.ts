@@ -43,9 +43,18 @@ export const HOME_FAQS = [
       'hasta la escrituración.',
   },
   {
-    question: '¿Cómo garantiza Su Finca Raíz la seguridad legal al comprar una propiedad?',
+    // La pregunta también decía «¿Cómo garantiza…?». Corregir solo la respuesta
+    // habría dejado la garantía enunciada en el campo `name` del FAQPage, que es
+    // justo el que un motor extrae como titular de la respuesta.
+    question: '¿Cómo verifica Su Finca Raíz la seguridad legal de una propiedad antes de ofrecerla?',
     answer:
-      'Garantizamos seguridad jurídica en cada transacción mediante un proceso de tres capas. ' +
+      // «Garantizamos seguridad jurídica» → lo que se hace de verdad. Estaba
+      // dentro del FAQPage de la portada, o sea en el marcado que más se
+      // extrae, y una garantía enunciada obliga a cumplirla (Ley 1480 de 2011).
+      // El proceso de tres capas es real y verificable; la garantía de
+      // resultado no lo era. Describirlo es más fuerte que prometerlo.
+      'Su Finca Raíz aplica un proceso de verificación jurídica de tres capas antes de ' +
+      'ofrecer una propiedad. ' +
       'Primera capa — verificación documental: solicitamos y revisamos el certificado de ' +
       'tradición y libertad actualizado en la Superintendencia de Notariado, confirmando que ' +
       'el predio no tiene embargos, hipotecas ni litigios activos. Segunda capa — estudio de ' +
