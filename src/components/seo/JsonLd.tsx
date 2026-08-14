@@ -1,5 +1,6 @@
 import { SITE_URL } from '@/lib/site';
 import { MUNICIPIOS_PROVINCIA, DATOS_OFICIALES } from '@/lib/datos-oficiales';
+import { HORARIO_SEDE } from '@/lib/horario';
 
 interface JsonLdProps {
   data: Record<string, unknown> | Record<string, unknown>[];
@@ -142,20 +143,31 @@ function organizationNode(opts: EntidadOpts = {}) {
     },
 
     // ── Horario de atención ───────────────────────────────────────────────
-    openingHoursSpecification: [
-      {
-        '@type':      'OpeningHoursSpecification',
-        dayOfWeek:    ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-        opens:        '08:00',
-        closes:       '18:00',
-      },
-      {
-        '@type':      'OpeningHoursSpecification',
-        dayOfWeek:    'Saturday',
-        opens:        '09:00',
-        closes:       '14:00',
-      },
-    ],
+    //
+    // Confirmado contra Google Business Profile, que es la fuente que Google
+    // contrasta. Lo que había —L-V 08:00-18:00 y sábado 09:00-14:00— no salía
+    // de ninguna parte: ni de la ficha, ni de §1, ni de otra página del sitio.
+    // Y el sitio llegó a declarar TRES horarios distintos a la vez: este, el de
+    // /contacto (L-S 08:00-18:00) y el de la prosa de llms.txt y /mac («L-V y
+    // sábados por la mañana»). Ninguno de los tres era el real.
+    //
+    // Este campo describe atención HUMANA en la sede. La disponibilidad de Mac
+    // NO va aquí: declararla convertiría el agente en una persona en la Calle
+    // 21 a las tres de la mañana. Va como atributo del servicio, en /mac y en
+    // llms.txt.
+    //
+    // La sede abre los SIETE días. Lunes a jueves comparten horario y van
+    // agrupados; viernes, sábado y domingo son distintos y van sueltos.
+    //
+    // Se genera desde HORARIO_SEDE, que es también de donde sale la prosa de
+    // /contacto, llms.txt y /mac. Escribirlo a mano en cada sitio es lo que
+    // produjo tres versiones contradictorias.
+    openingHoursSpecification: HORARIO_SEDE.map(f => ({
+      '@type':   'OpeningHoursSpecification',
+      dayOfWeek: f.dias.length === 1 ? f.dias[0] : [...f.dias],
+      opens:     f.opens,
+      closes:    f.closes,
+    })),
 
     // ── Zona de cobertura — los DOCE de la Provincia del Gualivá ─────────
     //

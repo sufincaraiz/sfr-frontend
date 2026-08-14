@@ -4,6 +4,7 @@ import { Home, ChevronRight, MessageCircle, Phone, Mail, MapPin } from 'lucide-r
 import { SITE_URL } from '@/lib/site';
 import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd';
 import { ContactoForm } from './ContactoForm';
+import { horarioEnLineas } from '@/lib/horario';
 
 export const metadata: Metadata = {
   title: 'Contáctanos — Asesoría inmobiliaria en La Vega',
@@ -104,9 +105,21 @@ export default function ContactoPage() {
               </span>
             </div>
 
-            <p style={{ color: '#94A3B8', fontSize: '0.8rem' }}>
-              Horario de atención: Lunes a Sábado, 8:00 a.m. – 6:00 p.m.
-            </p>
+            {/* Decía «Lunes a Sábado, 8:00 a.m. – 6:00 p.m.», que no coincidía
+                ni con Google Business Profile ni con el JSON-LD ni con llms.txt:
+                el sitio declaraba tres horarios distintos. Sale de HORARIO_SEDE,
+                la misma fuente que genera el marcado. */}
+            <div style={{ color: '#64748B', fontSize: '0.82rem', lineHeight: 1.7 }}>
+              <span style={{ display: 'block', color: '#0D2D5E', fontWeight: 700, marginBottom: 4 }}>
+                Horario de atención
+              </span>
+              {horarioEnLineas().map(({ label, rango }) => (
+                <span key={label} style={{ display: 'flex', justifyContent: 'space-between', maxWidth: 250 }}>
+                  <span>{label}</span>
+                  <span style={{ fontWeight: 600, color: '#334155' }}>{rango}</span>
+                </span>
+              ))}
+            </div>
           </section>
 
           {/* ── Formulario ── */}

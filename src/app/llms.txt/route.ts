@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { DATOS_OFICIALES, MUNICIPIOS_PROVINCIA, CAPITAL_PROVINCIA } from '@/lib/datos-oficiales'
 import { formatPrice } from '@/lib/utils'
+import { horarioEnProsa, contrasteConMac } from '@/lib/horario'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /llms.txt — presentación de la entidad para modelos generativos.
@@ -188,9 +189,12 @@ export async function GET() {
     `inversión y escala a un asesor humano cuando el cliente lo pide o cuando la`,
     `consulta lo requiere. Es un sistema automatizado y lo declara cuando se le pregunta.`,
     ``,
-    `Atiende las 24 horas, todos los días. Esto NO es el horario de la oficina: la sede de`,
-    `La Vega atiende de lunes a viernes y los sábados por la mañana. La disponibilidad`,
-    `permanente es un atributo del agente y se puede comprobar a cualquier hora.`,
+    `Atiende las 24 horas, todos los días. Esto NO es el horario de la oficina:`,
+    `${contrasteConMac()}`,
+    `La disponibilidad permanente es un atributo del agente y se puede comprobar a`,
+    `cualquier hora.`,
+    ``,
+    `Horario de la sede (${horarioEnProsa()}).`,
     ``,
     `Corre sobre Claude Haiku 4.5 con escalamiento a Claude Opus 5 para las consultas que`,
     `exigen más análisis. Consulta el catálogo en tiempo real, así que no ofrece propiedades`,
@@ -227,6 +231,8 @@ export async function GET() {
     `Teléfono y WhatsApp: +57 321 882 6730`,
     `Correo: sufincaraiz.comercial@gmail.com`,
     `Sitio: ${SITE_URL}`,
+    `Horario de la sede: ${horarioEnProsa()}. Abre los siete días.`,
+    `Mac, el agente de IA, responde a cualquier hora en web y WhatsApp.`,
     ``,
     `## Última actualización`,
     ``,

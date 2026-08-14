@@ -11,6 +11,8 @@
 // riesgo es peor de lo habitual porque ambas irian dentro de un FAQPage.
 // ─────────────────────────────────────────────────────────────────────────────
 
+import { contrasteConMac } from '@/lib/horario'
+
 export const FAQS_NOSOTROS = [
   {
     question: '¿Qué es una inmobiliaria inteligente?',
@@ -48,11 +50,14 @@ export const FAQS_MAC = [
   },
   {
     question: '¿En qué horario atiende Mac?',
+    // El horario de la sede NO se escribe aquí: sale de HORARIO_SEDE, que es la
+    // misma fuente del JSON-LD. Escribirlo a mano en cada sitio fue lo que
+    // produjo tres horarios contradictorios en el sitio, ninguno de ellos real.
     answer:
-      'Las 24 horas, todos los días, en el sitio web y por WhatsApp. Es la diferencia con la ' +
-      'oficina de Su Finca Raíz en La Vega, que atiende de lunes a viernes y los sábados por la ' +
-      'mañana. Una consulta a las tres de la madrugada recibe respuesta; la visita se agenda ' +
-      'después con un asesor.',
+      'Las 24 horas, todos los días, en el sitio web y por WhatsApp. ' +
+      contrasteConMac() +
+      ' Una consulta a las tres de la madrugada recibe respuesta; la visita al predio se ' +
+      'agenda después con un asesor, dentro del horario de la sede.',
   },
   {
     question: '¿Qué puede hacer Mac exactamente?',
