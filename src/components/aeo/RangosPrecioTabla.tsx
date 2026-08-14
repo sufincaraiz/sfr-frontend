@@ -67,3 +67,32 @@ export async function RangosPrecioTabla({ agrupacion = 'tipo' }: Props) {
     </DatosVerificables>
   )
 }
+
+/**
+ * Los rangos de UN municipio, y solo si ese municipio tiene muestra para un
+ * rango. Si no la tiene, no dibuja nada: la página ya dice qué hay publicado
+ * hoy en su listado y en su respuesta directa, que es lo cierto, sin
+ * presentarlo como referencia de mercado.
+ */
+export async function RangosMunicipio({ municipio }: { municipio: string }) {
+  const r = await rangosPrecioObservados()
+  if (!r) return null
+
+  const fila = r.porMunicipio.find(m => m.clave === municipio)
+  if (!fila) return null
+
+  return (
+    <DatosVerificables
+      titulo={`Precios de oferta en ${municipio}, Cundinamarca`}
+      fechaCorte={r.corte}
+      fuente={r.fuente}
+      tamanoMuestra={fila.n}
+      metodologia={r.metodologia}
+      filas={[
+        { etiqueta: 'Rango publicado', valor: `${cop(fila.min)} – ${cop(fila.max)}`, unidad: 'COP' },
+        { etiqueta: 'Mediana',         valor: cop(fila.mediana), unidad: 'COP' },
+        { etiqueta: 'Propiedades en la muestra', valor: fila.n },
+      ]}
+    />
+  )
+}

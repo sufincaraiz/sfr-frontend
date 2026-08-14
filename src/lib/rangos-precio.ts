@@ -36,9 +36,25 @@ export interface RangoObservado {
   mediana: number
 }
 
+/**
+ * Observaciones mínimas para que una celda se publique como RANGO.
+ *
+ * Con una o dos propiedades no hay rango: hay un precio, o dos. Publicar «en
+ * Albán: $980.000.000 – $980.000.000, n=1» como rango de municipio induce a
+ * error aunque el n esté declarado, porque el formato dice «esto es lo que
+ * cuesta un inmueble aquí» y el dato solo dice «esto cuesta el único inmueble
+ * que tenemos publicado aquí».
+ *
+ * Declarar el tamaño de muestra no arregla un formato que promete otra cosa.
+ */
+export const MIN_OBSERVACIONES_RANGO = 5
+
 export interface RangosPrecio {
   porTipo:      RangoObservado[]
+  /** Solo municipios con muestra suficiente. Ver MIN_OBSERVACIONES_RANGO. */
   porMunicipio: RangoObservado[]
+  /** Los que quedaron fuera, para poder nombrarlos sin publicarlos como rango. */
+  municipiosSinMuestra: RangoObservado[]
   total:        number
   corte:        string
   /** El texto de procedencia, ya formado. Quien lo publique no lo reescribe. */
@@ -80,15 +96,18 @@ export async function rangosPrecioObservados(): Promise<RangosPrecio | null> {
     const corte = hoy()
     const total = rows.length
 
+    const municipios = agrupar(rows.map(r => ({
+      clave: r.municipality?.name,
+      valor: Number(r.price_cop),
+    })))
+
     return {
       porTipo: agrupar(rows.map(r => ({
         clave: plural.get(r.type) ?? r.type,
         valor: Number(r.price_cop),
       }))),
-      porMunicipio: agrupar(rows.map(r => ({
-        clave: r.municipality?.name,
-        valor: Number(r.price_cop),
-      }))),
+      porMunicipio:         municipios.filter(m => m.n >= MIN_OBSERVACIONES_RANGO),
+      municipiosSinMuestra: municipios.filter(m => m.n <  MIN_OBSERVACIONES_RANGO),
       total,
       corte,
       fuente:

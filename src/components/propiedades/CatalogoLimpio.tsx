@@ -3,6 +3,7 @@ import { Home, ChevronRight } from 'lucide-react'
 import { SITE_URL } from '@/lib/site'
 import { JsonLd, breadcrumbSchema, itemListSchema } from '@/components/seo/JsonLd'
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta'
+import { RangosMunicipio } from '@/components/aeo/RangosPrecioTabla'
 import { PropiedadesGrid } from '@/components/propiedades/PropiedadesGrid'
 import { Paginacion } from '@/components/propiedades/Paginacion'
 import { respuestaCatalogoLimpio } from '@/lib/respuestas-directas'
@@ -108,6 +109,13 @@ export async function CatalogoLimpio({ data, municipio, tipo, ruta }: CatalogoLi
               {tipo ? `${tipo.plural} en ${municipio.name}` : municipio.name}
             </span>
           </nav>
+
+          {/* Rangos de oferta del municipio, SOLO donde la muestra da para un
+              rango. Hoy eso es La Vega (n=33): Albán y San Francisco tienen una
+              propiedad cada uno, y una propiedad no es un rango — es un precio.
+              El filtro lo decide MIN_OBSERVACIONES_RANGO, así que un municipio
+              entra solo el día que tenga inventario suficiente. */}
+          {!vacio && !tipo && <RangosMunicipio municipio={municipio.name} />}
 
           {vacio ? (
             /* Guarda de §1.3: nunca «0 propiedades». Lo que se afirma aquí
