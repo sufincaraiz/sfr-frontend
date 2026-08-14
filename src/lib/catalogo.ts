@@ -208,3 +208,43 @@ export async function municipiosConInventarioSlug(): Promise<string[]> {
     return []
   }
 }
+
+/**
+ * Tipos con inventario EN UN MUNICIPIO concreto, con su conteo.
+ *
+ * Alimenta la guarda de §1.3: cuando una combinación tipo+municipio se queda
+ * vacía, la página no puede limitarse a decir «aquí no hay». Tiene que decir
+ * qué sí hay y a dónde ir.
+ *
+ * El caso que lo motivó: al dejar «condominio» de ser un tipo, la ruta
+ * /propiedades/condominio/la-vega se vació de golpe y su inventario se repartió
+ * entre lotes y casas. Al derivarse, esto vale para cualquier combinación que
+ * se vacíe en el futuro sin que nadie tenga que acordarse.
+ */
+export async function tiposConInventarioEnMunicipio(
+  municipioNombre: string,
+  excluirTipo?: string,
+): Promise<{ slug: string; plural: string; n: number }[]> {
+  try {
+    const [grupos, tipos] = await Promise.all([
+      prisma.property.groupBy({
+        by: ['type'],
+        where: {
+          status: 'available',
+          municipality: { name: { contains: municipioNombre, mode: 'insensitive' } },
+        },
+        _count: true,
+      }),
+      prisma.tipoPropiedad.findMany({ select: { slug: true, label: true, plural: true } }),
+    ])
+    const plural = new Map(tipos.map(t => [t.slug, t.plural || `${t.label}s`]))
+
+    return grupos
+      .filter(g => g.type !== excluirTipo)
+      .map(g => ({ slug: g.type, plural: plural.get(g.type) ?? g.type, n: g._count }))
+      .sort((a, b) => b.n - a.n)
+  } catch (err) {
+    console.warn('[catalogo] BD no disponible al derivar tipos del municipio:', err instanceof Error ? err.message : err)
+    return []
+  }
+}

@@ -181,11 +181,15 @@ export default async function MunicipioPage(
     about_same_as:       data.wikipedia_url,
   })
 
+  // Sin «Condominios»: dejó de ser un tipo y pasó a ser el régimen de propiedad
+  // (`en_condominio`). El enlace apuntaba a /propiedades/condominio/<muni>, que
+  // desde la reclasificación no tiene inventario y responde con la guarda de
+  // §1.3 — un enlace destacado hacia una página que dice «no hay nada aquí».
   const TIPO_LINKS = [
-    { tipo: 'finca',      label: 'Fincas en Venta' },
-    { tipo: 'lote',       label: 'Lotes en Venta' },
-    { tipo: 'casa',       label: 'Casas Campestres' },
-    { tipo: 'condominio', label: 'Condominios' },
+    { tipo: 'finca',       label: 'Fincas en Venta' },
+    { tipo: 'lote',        label: 'Lotes en Venta' },
+    { tipo: 'casa',        label: 'Casas Campestres' },
+    { tipo: 'apartamento', label: 'Apartamentos' },
   ]
 
   return (

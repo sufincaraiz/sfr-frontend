@@ -7,7 +7,7 @@ import { RangosMunicipio } from '@/components/aeo/RangosPrecioTabla'
 import { PropiedadesGrid } from '@/components/propiedades/PropiedadesGrid'
 import { Paginacion } from '@/components/propiedades/Paginacion'
 import { respuestaCatalogoLimpio } from '@/lib/respuestas-directas'
-import { LIMIT, type ResultadoCatalogo } from '@/lib/catalogo'
+import { LIMIT, tiposConInventarioEnMunicipio, type ResultadoCatalogo } from '@/lib/catalogo'
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,6 +39,12 @@ interface CatalogoLimpioProps {
 
 export async function CatalogoLimpio({ data, municipio, tipo, ruta }: CatalogoLimpioProps) {
   const vacio = data.total === 0
+
+  // Solo se consulta cuando hace falta: si hay inventario, no hay que ofrecer
+  // alternativas.
+  const alternativas = vacio
+    ? await tiposConInventarioEnMunicipio(municipio.name, tipo?.slug)
+    : []
 
   const titulo = tipo
     ? `${tipo.plural} en Venta en ${municipio.name}, Cundinamarca`
@@ -132,6 +138,29 @@ export async function CatalogoLimpio({ data, municipio, tipo, ruta }: CatalogoLi
                 allí. El inventario cambia de forma continua y la búsqueda de un predio concreto se
                 puede encargar directamente.
               </p>
+              {/* Lo que SÍ hay en este municipio, por tipo. Sin esto, una
+                  combinación vacía es un callejón sin salida: la página dice
+                  «aquí no hay» y no ofrece a dónde ir.
+                  El caso que lo motivó: /propiedades/condominio/la-vega quedó
+                  sin inventario al dejar «condominio» de ser un tipo, y su
+                  inventario se repartió entre lotes y casas. Estos enlaces son
+                  los que llevan allí — derivados, así que valen para cualquier
+                  combinación que se vacíe en el futuro. */}
+              {alternativas.length > 0 && (
+                <p style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem', marginBottom: '1.25rem' }}>
+                  En {municipio.name} sí hay{' '}
+                  {alternativas.map((a, i) => (
+                    <span key={a.slug}>
+                      {i > 0 && (i === alternativas.length - 1 ? ' y ' : ', ')}
+                      <Link href={`/propiedades/${a.slug}/${municipio.slug}`} style={{ color: '#1B56A1', fontWeight: 600 }}>
+                        {a.plural.toLowerCase()} ({a.n})
+                      </Link>
+                    </span>
+                  ))}
+                  .
+                </p>
+              )}
+
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <Link href="/propiedades" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#0D2D5E', color: '#fff', fontWeight: 700, fontSize: '0.9rem', padding: '0.7rem 1.5rem', borderRadius: 10, textDecoration: 'none' }}>
                   Ver todo el catálogo

@@ -61,7 +61,15 @@ model Vereda {
 model Property {
   id               String          @id @default(uuid())
   slug             String          @unique
-  type             String          // finca | lote | casa | apartamento | condominio | local
+  /// Tipo FÍSICO del inmueble. «condominio» ya no es un tipo: era el régimen
+  /// de propiedad colándose en el campo que describe qué es el bien, y por eso
+  /// un lote y una casa dentro del mismo condominio caían en la misma bolsa.
+  /// El régimen vive ahora en `en_condominio`.
+  type             String          // finca | lote | casa | apartamento | local
+  /// Régimen de propiedad horizontal: el inmueble está dentro de un condominio
+  /// o conjunto cerrado. Es ORTOGONAL al tipo — hay lotes en condominio y casas
+  /// en condominio, y son búsquedas distintas.
+  en_condominio    Boolean         @default(false)
   transaction_type String          @default("venta")
   municipality_id  String
   vereda_id        String?

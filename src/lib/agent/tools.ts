@@ -173,7 +173,7 @@ function norm(s: string): string {
 }
 
 /** Sinónimos del cliente → tipos reales de la BD (Property.type). */
-const LOTES = ['lote', 'lote-urbano', 'lote-campestre', 'lote-rural', 'condominio']
+const LOTES = ['lote', 'lote-urbano', 'lote-campestre', 'lote-rural']
 
 const TIPO_SINONIMOS: Record<string, string[]> = {
   finca: ['finca'], fincas: ['finca'], hacienda: ['finca'], parcela: ['finca'],
@@ -184,16 +184,16 @@ const TIPO_SINONIMOS: Record<string, string[]> = {
   terreno: LOTES, terrenos: LOTES,
   predio: LOTES, tierra: LOTES,
   'lote urbano': ['lote-urbano', 'lote'],
-  'lote campestre': ['lote-campestre', 'lote', 'condominio'],
+  'lote campestre': ['lote-campestre', 'lote'],
   'lote rural': ['lote-rural', 'lote'],
-  casa: ['casa', 'condominio'], casas: ['casa', 'condominio'],
-  vivienda: ['casa', 'condominio', 'apartamento'],
-  'casa campestre': ['casa', 'condominio', 'finca'],
-  chalet: ['casa', 'condominio'],
-  cabana: ['casa', 'condominio', 'finca'], cabanas: ['casa', 'condominio', 'finca'],
+  casa: ['casa'], casas: ['casa'],
+  vivienda: ['casa', 'apartamento'],
+  'casa campestre': ['casa', 'finca'],
+  chalet: ['casa'],
+  cabana: ['casa', 'finca'], cabanas: ['casa', 'finca'],
   apartamento: ['apartamento'], apartamentos: ['apartamento'],
   apto: ['apartamento'], apartaestudio: ['apartamento'],
-  condominio: ['condominio'], condominios: ['condominio'], conjunto: ['condominio'],
+  // condominio/conjunto se interceptan antes: van por en_condominio, no por type.
   local: ['local'], locales: ['local'],
 }
 
@@ -241,9 +241,18 @@ async function buscarPropiedades(input: BuscarInput) {
   const criterios: Array<{ nombre: string; where: Record<string, unknown> }> = []
 
   if (input.tipo) {
-    const tipos = tiposDesde(input.tipo)
-    if (tipos) criterios.push({ nombre: `tipo ${input.tipo}`, where: { type: { in: tipos } } })
-    // Si el tipo no se reconoce (ej. "casa lote"), no se filtra: se usa como texto.
+    // «Condominio» y «conjunto» dejaron de ser un valor de `type`: son el
+    // RÉGIMEN de propiedad y viven en `en_condominio`. Sin esta intercepción,
+    // un cliente que pregunta «¿tienen condominios?» recibiría cero resultados
+    // habiendo doce inmuebles en condominio — la reclasificación de tipos habría
+    // roto en silencio una de las consultas más frecuentes del negocio.
+    if (/condominio|conjunto/.test(norm(input.tipo))) {
+      criterios.push({ nombre: `en condominio`, where: { en_condominio: true } })
+    } else {
+      const tipos = tiposDesde(input.tipo)
+      if (tipos) criterios.push({ nombre: `tipo ${input.tipo}`, where: { type: { in: tipos } } })
+      // Si el tipo no se reconoce (ej. "casa lote"), no se filtra: se usa como texto.
+    }
   }
 
   // Zona pedida fuera de nuestra cobertura: se muestran opciones igual, pero Mac
