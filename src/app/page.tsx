@@ -3,6 +3,7 @@ import { SITE_URL } from '@/lib/site';
 import { fraseInventario, rangoPreciosCatalogo } from '@/lib/cifras-derivadas';
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
 import { TaglineMarca } from '@/components/layout/TaglineMarca';
+import { RangosPrecioTabla } from '@/components/aeo/RangosPrecioTabla';
 import { respuestaPortada } from '@/lib/respuestas-directas';
 import { Hero }               from '@/components/home/Hero';
 import { FeaturedProperties } from '@/components/home/FeaturedProperties';
@@ -193,6 +194,15 @@ export default async function HomePage() {
       </div>
 
       <FeaturedProperties properties={featuredProperties} />
+
+      {/* Bloque de datos verificables de la portada (§3.3). Va después de las
+          destacadas porque primero se ve el producto y luego el dato que lo
+          sitúa, y antes de las estadísticas de marca porque este SÍ tiene
+          fuente y metodología. Es el primer bloque del sitio construido sobre
+          datos propios: convierte a la empresa en fuente primaria (§8). */}
+      <section style={{ maxWidth: 900, margin: '0 auto', padding: '0 1.5rem' }}>
+        <RangosPrecioTabla agrupacion="tipo" />
+      </section>
       <RegistroVisitaBanner />
       <Tour360Section />
       <StatsSection />

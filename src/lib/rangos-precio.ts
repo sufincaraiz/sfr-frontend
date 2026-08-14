@@ -1,0 +1,139 @@
+import { prisma } from '@/lib/prisma'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RANGOS DE PRECIO OBSERVADOS EN EL INVENTARIO PROPIO.
+//
+// LA DISTINCIÓN QUE GOBIERNA TODO ESTE MÓDULO:
+//
+//   Esto son PRECIOS DE OFERTA PUBLICADOS. No son precios de cierre.
+//
+// Un precio de oferta es lo que se pide; uno de cierre es lo que se pagó.
+// Entre ambos hay una negociación, y en finca raíz rural colombiana la
+// diferencia no es despreciable. Publicar estos rangos como «precios de
+// mercado» sería exactamente el dato engañoso por contexto de §2: cada cifra
+// sería cierta y la conclusión, falsa. Peor todavía, un modelo que cite
+// «precio de mercado en La Vega» cuando el dato es «precio pedido» propaga el
+// error a todo el que le pregunte.
+//
+// Por eso la metodología lo dice con todas las letras y no en letra pequeña.
+//
+// QUÉ SE PUBLICA Y QUÉ NO:
+//
+//   ✅ Precio por TIPO de inmueble — n de 3 a 11 por celda
+//   ✅ Precio por MUNICIPIO — con su n, que en dos casos es 1
+//   ❌ Precio por m² — NO se publica. Ver `precioPorM2NoPublicable()`.
+//
+// El tamaño de muestra va en cada fila, no en una nota general: con 35
+// propiedades repartidas en cinco tipos, ninguna celda llega a doce
+// observaciones y eso tiene que verse en la misma línea que la cifra.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface RangoObservado {
+  clave:  string
+  n:      number
+  min:    number
+  max:    number
+  mediana: number
+}
+
+export interface RangosPrecio {
+  porTipo:      RangoObservado[]
+  porMunicipio: RangoObservado[]
+  total:        number
+  corte:        string
+  /** El texto de procedencia, ya formado. Quien lo publique no lo reescribe. */
+  fuente:       string
+  metodologia:  string
+}
+
+const hoy = () => new Date().toISOString().slice(0, 10)
+
+function mediana(valores: number[]): number {
+  const s = [...valores].sort((a, b) => a - b)
+  const m = Math.floor(s.length / 2)
+  return s.length % 2 ? s[m]! : Math.round((s[m - 1]! + s[m]!) / 2)
+}
+
+function agrupar(filas: { clave: string | null | undefined; valor: number }[]): RangoObservado[] {
+  const g = new Map<string, number[]>()
+  for (const f of filas) {
+    if (!f.clave || !isFinite(f.valor)) continue
+    if (!g.has(f.clave)) g.set(f.clave, [])
+    g.get(f.clave)!.push(f.valor)
+  }
+  return [...g.entries()]
+    .map(([clave, v]) => ({ clave, n: v.length, min: Math.min(...v), max: Math.max(...v), mediana: mediana(v) }))
+    .sort((a, b) => b.n - a.n)
+}
+
+export async function rangosPrecioObservados(): Promise<RangosPrecio | null> {
+  try {
+    const rows = await prisma.property.findMany({
+      where:  { status: 'available' },
+      select: { type: true, price_cop: true, municipality: { select: { name: true } } },
+    })
+    if (!rows.length) return null
+
+    const tipos = await prisma.tipoPropiedad.findMany({ select: { slug: true, plural: true, label: true } })
+    const plural = new Map(tipos.map(t => [t.slug, t.plural || `${t.label}s`]))
+
+    const corte = hoy()
+    const total = rows.length
+
+    return {
+      porTipo: agrupar(rows.map(r => ({
+        clave: plural.get(r.type) ?? r.type,
+        valor: Number(r.price_cop),
+      }))),
+      porMunicipio: agrupar(rows.map(r => ({
+        clave: r.municipality?.name,
+        valor: Number(r.price_cop),
+      }))),
+      total,
+      corte,
+      fuente:
+        `Rangos observados en el inventario propio de Su Finca Raíz, ${total} propiedades ` +
+        `publicadas, corte ${corte}`,
+      metodologia:
+        'Son PRECIOS DE OFERTA publicados en el catálogo, no precios de cierre: reflejan lo ' +
+        'que se pide por cada inmueble, no lo que se pagó al final de una negociación. No ' +
+        // «No constituyen un avalúo» sería una negación, no una oferta, pero la
+        // palabra nombra una actividad regulada (Ley 1673 de 2013) y no hace
+        // falta escribirla para decir lo mismo.
+        'constituyen una valoración técnica ni un estudio de mercado del municipio, y no ' +
+        'deben leerse como ' +
+        'precio de mercado. Cada fila indica sobre cuántas propiedades se calcula: la muestra ' +
+        'es pequeña y los extremos dependen de uno o dos inmuebles.',
+    }
+  } catch (err) {
+    console.warn('[rangos-precio] BD no disponible:', err instanceof Error ? err.message : err)
+    return null
+  }
+}
+
+/**
+ * POR QUÉ NO HAY PRECIO POR METRO CUADRADO.
+ *
+ * Se calculó y se descartó. Dos razones independientes, y cualquiera de las
+ * dos bastaría:
+ *
+ * 1. DOS ÁREAS ESTÁN MAL EN LA BASE, por un factor de mil. «Finca
+ *    Agropecuaria» tiene `area_lot_m2 = 22` con un precio de $1.700 millones
+ *    —una finca de 22 m²— y «Lote para proyecto» tiene 52,519 donde casi con
+ *    seguridad son 52.519 m². Dan $77.272.727/m² y $18.659.914/m². Publicar
+ *    una media contaminada por esos dos valores sería publicar basura con
+ *    aspecto de dato.
+ *
+ * 2. AUNQUE ESTUVIERAN BIEN, el m² de lote no compara lo mismo entre tipos.
+ *    En una casa urbana de 150 m² de lote el precio lo pone la construcción,
+ *    no el suelo; en una finca de varias hectáreas, al revés. Un promedio que
+ *    mezcle ambos no describe ningún mercado real.
+ *
+ * Además, diez de las treinta y cinco fichas activas no tienen `area_lot_m2`,
+ * así que el cálculo se haría sobre dos tercios del inventario.
+ *
+ * Se publicará cuando las áreas estén corregidas y separando suelo urbano de
+ * suelo rural. Mientras tanto, la jerarquía de sustentación de §2 es clara:
+ * ninguna cifra es mejor que una cifra frágil.
+ */
+export const PRECIO_POR_M2_PENDIENTE = true
