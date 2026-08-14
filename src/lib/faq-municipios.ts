@@ -37,6 +37,10 @@ const PLANTILLAS: readonly ((m: string) => string)[] = [
 
 export interface FaqItem { question: string; answer: string }
 
+/** La FAQ con su municipio, para que quien la consuma no tenga que emparejar
+ *  dos listas por indice y confiar en que vengan igual ordenadas. */
+export interface FaqMunicipio extends FaqItem { slug: string; name: string }
+
 /** Inventario activo por slug de municipio. */
 async function inventarioPorMunicipio(): Promise<Map<string, number>> {
   try {
@@ -86,7 +90,7 @@ function respuesta(m: MunicipioDatos, disponibles: number): string {
  * FAQ de los municipios con página publicada, en el mismo orden que el bloque
  * del corredor para que la página se lea coherente.
  */
-export async function faqsDeMunicipios(): Promise<FaqItem[]> {
+export async function faqsDeMunicipios(): Promise<FaqMunicipio[]> {
   const [municipios, stock] = await Promise.all([
     getMunicipiosConDatos(),
     inventarioPorMunicipio(),
@@ -95,6 +99,8 @@ export async function faqsDeMunicipios(): Promise<FaqItem[]> {
   return municipios.map((m, i) => {
     const plantilla = PLANTILLAS[i % PLANTILLAS.length] ?? PLANTILLAS[0]!
     return {
+      slug:     m.slug,
+      name:     m.name,
       question: plantilla(m.name),
       answer:   respuesta(m, stock.get(m.slug) ?? 0),
     }

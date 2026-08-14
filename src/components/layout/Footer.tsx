@@ -14,7 +14,8 @@ const COMPANY_LINKS = [
   { href: '/nosotros',        label: 'Nosotros' },
   // Mac tenía widget pero no URL: una página sin enlaces internos nace
   // huérfana, la descubra o no el sitemap.
-  { href: '/mac',             label: 'Mac, nuestro agente de IA' },
+  { href: '/mac',                   label: 'Mac, nuestro agente de IA' },
+  { href: '/preguntas-frecuentes',  label: 'Preguntas frecuentes' },
   { href: '/guia-inversion',  label: 'Guía de Inversión en La Vega' },
   { href: '/vender-mi-finca', label: 'Vende tu finca' },
   { href: '/blog',            label: 'Blog' },

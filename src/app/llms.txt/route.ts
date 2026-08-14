@@ -178,6 +178,7 @@ export async function GET() {
     // El índice de recursos solo lista páginas que existen (§1.1). /mac entra
     // ahora que la tiene: hasta hoy Mac era un widget sin URL propia.
     `- [Mac, el agente de IA](${SITE_URL}/mac): ficha técnica, alcance y transparencia sobre su uso.`,
+    `- [Preguntas frecuentes](${SITE_URL}/preguntas-frecuentes): documentos, trámites y proceso de compra, con acceso a las preguntas de cada municipio y vereda.`,
     `- [Política de tratamiento de datos](${SITE_URL}/politica-tratamiento-datos): Ley 1581 de 2012.`,
     ``,
     `## Mac, el agente de inteligencia artificial`,

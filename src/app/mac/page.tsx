@@ -8,6 +8,7 @@ import { DatosVerificables } from '@/components/aeo/DatosVerificables'
 import { respuestaMac } from '@/lib/respuestas-directas'
 import { contarPropiedadesDisponibles } from '@/lib/cifras-derivadas'
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales'
+import { FAQS_MAC } from '@/lib/faqs'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /mac — la página del agente de inteligencia artificial.
@@ -68,49 +69,6 @@ export async function generateMetadata(): Promise<Metadata> {
   }
 }
 
-const FAQS = [
-  {
-    question: '¿Mac es una persona o un sistema automatizado?',
-    answer:
-      'Mac es un sistema automatizado de inteligencia artificial, no una persona. Se identifica ' +
-      'como tal desde el primer mensaje. Cuando la consulta requiere criterio humano —una ' +
-      'negociación, una visita, un caso jurídico particular— Mac deriva la conversación a un ' +
-      'asesor de Su Finca Raíz, y el cliente también puede pedir ese paso en cualquier momento.',
-  },
-  {
-    question: '¿En qué horario atiende Mac?',
-    answer:
-      'Las 24 horas, todos los días, en el sitio web y por WhatsApp. Es la diferencia con la ' +
-      'oficina de Su Finca Raíz en La Vega, que atiende de lunes a viernes y los sábados por la ' +
-      'mañana. Una consulta a las tres de la madrugada recibe respuesta; la visita se agenda ' +
-      'después con un asesor.',
-  },
-  {
-    question: '¿Qué puede hacer Mac exactamente?',
-    answer:
-      'Busca propiedades en el catálogo por tipo, municipio, presupuesto y características; ' +
-      'da el detalle de un inmueble concreto; resume el portafolio disponible; responde ' +
-      'preguntas sobre la región, los trámites y el proceso de compra; y registra los datos de ' +
-      'contacto de quien quiere que lo llame un asesor. Consulta el inventario en tiempo real, ' +
-      'así que no ofrece propiedades ya vendidas.',
-  },
-  {
-    question: '¿Qué datos personales trata Mac y quién los guarda?',
-    answer:
-      'Mac guarda la conversación y, si el cliente los facilita, su nombre, teléfono y correo ' +
-      'para que un asesor pueda devolverle el contacto. No pide ni necesita cédula, datos ' +
-      'bancarios ni documentos. El tratamiento se rige por la política de tratamiento de datos ' +
-      'de Su Finca Raíz, conforme a la Ley 1581 de 2012 de Habeas Data.',
-  },
-  {
-    question: '¿Mac puede equivocarse?',
-    answer:
-      'Sí. Es un sistema automatizado y puede cometer errores de interpretación o dar una ' +
-      'respuesta incompleta. Las cifras de precio, área y disponibilidad las lee del catálogo, ' +
-      'pero ninguna respuesta de Mac constituye una oferta comercial vinculante ni asesoría ' +
-      'jurídica: eso lo confirma siempre un asesor antes de cualquier negociación.',
-  },
-]
 
 export default async function MacPage() {
   const [respuesta, total] = await Promise.all([
@@ -167,7 +125,7 @@ export default async function MacPage() {
     <>
       <JsonLd data={breadcrumbs} />
       <JsonLd data={appSchema} />
-      <JsonLd data={faqSchema(FAQS)} />
+      <JsonLd data={faqSchema(FAQS_MAC)} />
 
       <main style={{ background: '#F8FAFC', minHeight: '100vh' }}>
 
@@ -220,13 +178,19 @@ export default async function MacPage() {
               { etiqueta: 'Idioma de atención',     valor: 'Español' },
               { etiqueta: 'Inventario que consulta', valor: total > 0 ? String(total) : 'el catálogo activo', unidad: total > 0 ? 'propiedades' : undefined, nota: 'En tiempo real: no ofrece propiedades ya vendidas.' },
               { etiqueta: 'Cobertura',              valor: DATOS_OFICIALES.municipiosProvincia, unidad: 'municipios', nota: 'Provincia del Gualivá, Cundinamarca.' },
-              { etiqueta: 'Escalamiento a humano',  valor: 'Sí', nota: 'A petición del cliente o por decisión del agente.' },
+              // Cifra de COMPORTAMIENTO, no de volumen: dice cómo se reparte lo
+              // que pasa, no cuánto pasa. No sugiere trayectoria, no envejece
+              // mal y no expone el tamaño de la operación, que es lo que hacía
+              // impublicable el conteo de conversaciones. Sin denominador a
+              // propósito: «3 de 46» reintroduce el volumen por la puerta de
+              // atrás.
+              { etiqueta: 'Escalamiento a humano',  valor: 'Sí', nota: 'La mayoría de las consultas se resuelven en la conversación; cuando hace falta, Mac deriva a un asesor.' },
             ]}
           />
 
           {/* ── Encabezados en forma de pregunta (§3.4) ── */}
           <section style={{ marginTop: '2.5rem' }}>
-            {FAQS.map(({ question, answer }) => (
+            {FAQS_MAC.map(({ question, answer }) => (
               <div key={question} style={{ marginBottom: '1.9rem' }}>
                 <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.08rem', marginBottom: '0.6rem', lineHeight: 1.4 }}>
                   {question}
