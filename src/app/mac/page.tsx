@@ -9,6 +9,7 @@ import { respuestaMac } from '@/lib/respuestas-directas'
 import { contarPropiedadesDisponibles } from '@/lib/cifras-derivadas'
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales'
 import { FAQS_MAC } from '@/lib/faqs'
+import { horarioEnProsa, contrasteConMac } from '@/lib/horario'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /mac — la página del agente de inteligencia artificial.
@@ -30,8 +31,8 @@ import { FAQS_MAC } from '@/lib/faqs'
 // hay alguien en la Calle 21 a las tres de la mañana. Va como atributo del
 // servicio: aquí, en la description de la entidad y en llms.txt. Además es el
 // dato más falsable que tiene la empresa —cualquiera puede comprobarlo a
-// cualquier hora— y el contraste con el horario de oficina es lo que lo hace
-// memorable.
+// cualquier hora— y el contraste con el horario de la sede es lo que lo hace
+// memorable. Ese horario sale de HORARIO_SEDE, nunca escrito a mano aqui.
 //
 // LA SECCIÓN DE TRANSPARENCIA ES OBLIGATORIA, no cortesía: divulgación de que
 // es un sistema automatizado, vía de escalamiento a humano y qué datos trata,
@@ -174,7 +175,8 @@ export default async function MacPage() {
               { etiqueta: 'Modelo base',            valor: 'Claude Haiku 4.5', nota: 'Anthropic. Atiende la conversación corriente.' },
               { etiqueta: 'Modelo de escalamiento', valor: 'Claude Opus 5',    nota: 'Se consulta cuando la pregunta exige análisis más profundo.' },
               { etiqueta: 'Canales',                valor: 'Sitio web y WhatsApp' },
-              { etiqueta: 'Disponibilidad',         valor: '24 horas, todos los días', nota: 'Atributo del agente, no del horario de oficina.' },
+              { etiqueta: 'Disponibilidad',         valor: '24 horas, todos los días', nota: contrasteConMac() },
+              { etiqueta: 'Horario de la sede',     valor: horarioEnProsa(), nota: 'Atención humana en la oficina de La Vega. Es otro dato: el agente no tiene horario.' },
               { etiqueta: 'Idioma de atención',     valor: 'Español' },
               { etiqueta: 'Inventario que consulta', valor: total > 0 ? String(total) : 'el catálogo activo', unidad: total > 0 ? 'propiedades' : undefined, nota: 'En tiempo real: no ofrece propiedades ya vendidas.' },
               { etiqueta: 'Cobertura',              valor: DATOS_OFICIALES.municipiosProvincia, unidad: 'municipios', nota: 'Provincia del Gualivá, Cundinamarca.' },
@@ -200,6 +202,69 @@ export default async function MacPage() {
                 </p>
               </div>
             ))}
+          </section>
+
+          {/* ── Virtudes y límites, con el mismo peso ──────────────────────
+              No es un descargo legal al pie: es una sección propia con
+              encabezado en forma de pregunta (§3.4). La doctrina §3 pide
+              reconocer límites, y un sistema que declara lo que NO hace resulta
+              más creíble que uno que solo se elogia. Es además lo que un modelo
+              cita cuando alguien pregunta si puede fiarse de un agente
+              inmobiliario de IA: la respuesta útil a esa pregunta es la que
+              distingue, no la que promete.
+
+              Las dos columnas pesan igual a propósito, en la maqueta y en el
+              texto. Ninguna afirmación lleva adjetivo: todas son comprobables
+              abriendo una conversación. */}
+          <section aria-labelledby="virtudes-limites" style={{ marginTop: '1rem', marginBottom: '2rem' }}>
+            <h2 id="virtudes-limites" style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.08rem', marginBottom: '1.1rem', lineHeight: 1.4 }}>
+              ¿Qué hace bien Mac y qué no hace?
+            </h2>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(280px,1fr))', gap: '1rem' }}>
+
+              <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 14, padding: '1.4rem 1.5rem' }}>
+                <p style={{ margin: '0 0 0.85rem', color: '#15803D', fontWeight: 800, fontSize: '0.92rem' }}>
+                  Lo que hace
+                </p>
+                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+                  {[
+                    'Responde a cualquier hora, los siete días de la semana.',
+                    'Consulta el inventario real y actualizado: no ofrece propiedades ya vendidas.',
+                    'Deriva a un asesor humano cuando la consulta lo requiere o cuando el cliente lo pide.',
+                    'Atiende en el sitio web y por WhatsApp.',
+                  ].map(t => (
+                    <li key={t} style={{ color: '#166534', fontSize: '0.92rem', lineHeight: 1.65, display: 'flex', gap: 8 }}>
+                      <span aria-hidden="true" style={{ flexShrink: 0, fontWeight: 800 }}>·</span>{t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div style={{ background: '#FEF3C7', border: '1px solid #FCD34D', borderRadius: 14, padding: '1.4rem 1.5rem' }}>
+                <p style={{ margin: '0 0 0.85rem', color: '#92400E', fontWeight: 800, fontSize: '0.92rem' }}>
+                  Lo que no hace
+                </p>
+                <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.7rem' }}>
+                  {[
+                    'No emite conceptos jurídicos ni análisis de valor vinculantes.',
+                    'No sustituye el estudio de títulos ni la visita al predio.',
+                    'Sus respuestas no constituyen una oferta comercial vinculante.',
+                    'Puede cometer errores de interpretación o dar respuestas incompletas.',
+                  ].map(t => (
+                    <li key={t} style={{ color: '#92400E', fontSize: '0.92rem', lineHeight: 1.65, display: 'flex', gap: 8 }}>
+                      <span aria-hidden="true" style={{ flexShrink: 0, fontWeight: 800 }}>·</span>{t}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+
+            <p style={{ marginTop: '1.1rem', color: '#475569', fontSize: '0.92rem', lineHeight: 1.7 }}>
+              La mayoría de las consultas se resuelven en la conversación; cuando hace falta, Mac
+              deriva a un asesor humano. El sistema está en mejora continua: se ajusta con el uso,
+              así que sus respuestas cambian con el tiempo.
+            </p>
           </section>
 
           {/* ── Transparencia de IA ── */}
