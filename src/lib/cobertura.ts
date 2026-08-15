@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { MUNICIPIOS_PROVINCIA } from '@/lib/datos-oficiales'
 import { getTiposPropiedad } from '@/lib/property-types.server'
+import { cargarEnlaces } from '@/lib/enlaces'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COBERTURA MUNICIPAL — las tres listas, derivadas, nunca escritas a mano.
@@ -211,8 +212,10 @@ export async function getTiposConInventario(): Promise<{ slug: string; plural: s
  * tienen página —hoy Albán— y un enlace roto interno resta autoridad al dominio.
  */
 export async function urlDeMunicipio(nombre: string, slug: string): Promise<string> {
-  const publicada = await municipioTienePagina(slug)
-  return publicada
-    ? `/municipios/${slug}`
-    : `/propiedades?municipio=${encodeURIComponent(nombre)}`
+  // Delega en lib/enlaces.ts, que es la autoridad única sobre qué tiene página.
+  // Antes resolvía por su cuenta con `municipioTienePagina()`: mismo criterio
+  // que `getMunicipiosVisibles()` hoy, pero escrito dos veces. Cuando dos sitios
+  // deciden lo mismo por separado, tarde o temprano dejan de coincidir.
+  const enlaces = await cargarEnlaces()
+  return enlaces.municipioConRespaldo(nombre, slug)
 }

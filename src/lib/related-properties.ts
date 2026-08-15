@@ -1,6 +1,7 @@
 import { prisma } from './prisma'
 import { tipoLabel } from './property-types'
 import { getTipoLabels } from './property-types.server'
+import { hrefVereda } from './enlaces'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -26,7 +27,8 @@ export interface RelatedGroups {
   municipio_name: string
   municipio_slug: string
   vereda_name: string | null
-  vereda_slug: string | null
+  /** Ruta ya validada, o null si la vereda no tiene página. Ver lib/enlaces.ts */
+  vereda_href: string | null
   tipo_label: string
   tipo_slug: string
 }
@@ -142,7 +144,9 @@ export async function getRelatedProperties(params: {
     municipio_name:  municipalityName,
     municipio_slug:  municipalitySlug,
     vereda_name:     veredaRecord?.name ?? null,
-    vereda_slug:     veredaRecord?.slug ?? null,
+    // Agrupar por una vereda sin página sí sirve; enlazarla sería un 404.
+    // Quién tiene página lo decide lib/enlaces.ts, no este archivo.
+    vereda_href: hrefVereda(veredaRecord?.slug),
     tipo_label:      tipoLabel(type, labels),
     tipo_slug:       type,
   }

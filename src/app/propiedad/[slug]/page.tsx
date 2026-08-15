@@ -10,7 +10,7 @@ import { formatPrice } from '@/lib/utils';
 import { tipoLabel } from '@/lib/property-types';
 import { getTipoLabels } from '@/lib/property-types.server';
 import { urlDeMunicipio } from '@/lib/cobertura';
-import { getAllVeredasData } from '@/lib/veredas-data';
+import { hrefVereda } from '@/lib/enlaces';
 import { GaleriaLightbox } from '@/components/propiedades/GaleriaLightbox';
 import { Modelo3D } from '@/components/propiedades/Modelo3D';
 import { FormContactoPropiedad } from '@/components/propiedades/FormContactoPropiedad';
@@ -167,10 +167,13 @@ export default async function PropiedadDetallePage(
   const urlMuni    = await urlDeMunicipio(muni, p.municipality?.slug ?? '');
   // La vereda llega en la MISMA consulta de la ficha (include), no en una
   // aparte: con pool de 5 conexiones, una consulta extra por ficha agota el
-  // pool durante el prerender de 167 paginas (P2024). Se filtra aqui por las
-  // que tienen pagina, que es la guarda contra enlazar a un 404.
-  const conPagina  = new Set(getAllVeredasData().map(v => v.slug));
-  const vereda     = p.vereda && conPagina.has(p.vereda.slug) ? p.vereda : null;
+  // pool durante el prerender de 167 paginas (P2024).
+  //
+  // Se muestra siempre en la ficha tecnica —es el dato que convierte «en La
+  // Vega» en «en la vereda El Cural»—, pero solo se ENLAZA si tiene pagina.
+  // Quien tiene pagina lo decide lib/enlaces.ts.
+  const vereda     = p.vereda ?? null;
+  const veredaHref = hrefVereda(p.vereda?.slug);
   const title      = p.title ?? `${typeLabel} en ${muni}`;
   const banner     = p.media?.find(m => m.is_primary) ?? p.media?.[0];
 
@@ -261,10 +264,10 @@ export default async function PropiedadDetallePage(
           <Link href="/propiedades" style={{ color: '#64748B', textDecoration: 'none' }}>Propiedades</Link>
           <ChevronRight size={13} />
           <Link href={urlMuni} style={{ color: '#64748B', textDecoration: 'none' }}>{muni}</Link>
-          {vereda && (
+          {vereda && veredaHref && (
             <>
               <ChevronRight size={13} />
-              <Link href={`/veredas/${vereda.slug}`} style={{ color: '#64748B', textDecoration: 'none' }}>
+              <Link href={veredaHref} style={{ color: '#64748B', textDecoration: 'none' }}>
                 Vereda {vereda.name}
               </Link>
             </>

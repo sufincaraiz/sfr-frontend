@@ -63,12 +63,14 @@ export async function RelatedProperties(props: Props) {
           )}
 
           {/* ── Grupo 2: misma vereda ── */}
-          {groups.vereda.length > 0 && groups.vereda_slug && (
+          {groups.vereda.length > 0 && (
             <RelatedGroup
               heading={`Más propiedades en vereda ${groups.vereda_name ?? ''}`}
               cards={groups.vereda}
-              hubHref={`/veredas/${groups.vereda_slug}`}
-              hubLabel={`Todo sobre vereda ${groups.vereda_name ?? ''}`}
+              // Sin página de vereda el grupo se mantiene —las propiedades vecinas
+              // siguen siendo útiles— pero sin enlace al hub, que no existe.
+              hubHref={groups.vereda_href ?? undefined}
+              hubLabel={groups.vereda_href ? `Todo sobre vereda ${groups.vereda_name ?? ''}` : undefined}
               listHref={`/propiedades/${groups.municipio_slug}`}
               listLabel={`Ver propiedades disponibles en ${groups.municipio_name}`}
             />
@@ -120,8 +122,9 @@ function RelatedGroup({
 }: {
   heading:   string
   cards:     RelatedCard[]
-  hubHref:   string
-  hubLabel:  string
+  /** Ausente cuando el hub no existe: una vereda de la tabla sin página propia. */
+  hubHref?:  string
+  hubLabel?: string
   listHref:  string
   listLabel: string
 }) {
@@ -135,16 +138,18 @@ function RelatedGroup({
         <h3 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1rem', margin: 0 }}>
           {heading}
         </h3>
-        <Link
-          href={hubHref}
-          className="rel-hub-link"
-          style={{
-            color: '#1B56A1', fontSize: '0.82rem', fontWeight: 700,
-            textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4,
-          }}
-        >
-          {hubLabel} <ArrowRight size={13} />
-        </Link>
+        {hubHref && hubLabel && (
+          <Link
+            href={hubHref}
+            className="rel-hub-link"
+            style={{
+              color: '#1B56A1', fontSize: '0.82rem', fontWeight: 700,
+              textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 4,
+            }}
+          >
+            {hubLabel} <ArrowRight size={13} />
+          </Link>
+        )}
       </div>
 
       {/* Cards */}
