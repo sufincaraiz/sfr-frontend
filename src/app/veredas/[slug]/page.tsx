@@ -9,6 +9,7 @@ import {
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { getVeredaData, getAllVeredasData } from '@/lib/veredas-data'
+import { exigirIntegridadVeredas } from '@/lib/veredas-integridad'
 import { faqsDeVereda } from '@/lib/faq-veredas'
 import { propiedadesDeVereda } from '@/lib/catalogo'
 import { JsonLd, breadcrumbSchema, faqSchema, itemListSchema } from '@/components/seo/JsonLd'
@@ -24,6 +25,11 @@ import type { Property, PropertyMedia } from '@/types'
 export const revalidate = 3600
 
 export async function generateStaticParams() {
+  // Guarda automática: rompe el build si veredas-data.ts y la tabla `veredas`
+  // divergen en slug, nombre o municipio. Ver src/lib/veredas-integridad.ts
+  // para por qué la defensa es esta y no un comentario.
+  await exigirIntegridadVeredas()
+
   return getAllVeredasData().map(v => ({ slug: v.slug }))
 }
 
