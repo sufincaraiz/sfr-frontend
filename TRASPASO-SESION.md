@@ -62,20 +62,26 @@ Hay defectos que **no se notan en el navegador y lo degradan todo**. Ya van
 tres, y los tres se encontraron mirando lo que el servidor devuelve, no la
 pagina:
 
-| Defecto | Sintoma en el navegador | Como aparecio |
+| Defecto | Síntoma en el navegador | Cómo apareció |
 |---|---|---|
-|  en el sitemap | Ninguno | Leyendo el XML servido |
-| Contadores que arrancan en  | Ninguno: la animacion llega al valor |  del HTML, sin ejecutar JS |
-|  en el catalogo y en  | Ninguno | Leyendo las CABECERAS de respuesta |
+| `new Date()` en el sitemap | Ninguno | Leyendo el XML servido |
+| Contadores que arrancan en `0` | Ninguno: la animación llega al valor | `curl` del HTML, sin ejecutar JS |
+| `no-store` en el catálogo y en `/directorio` | Ninguno | Leyendo las **cabeceras** de respuesta |
 
-El patron comun: el navegador **repara** el defecto al ejecutar JavaScript,
-seguir la redireccion o ignorar la cabecera. Un rastreador no.
+El patrón común: el navegador **repara** el defecto al ejecutar JavaScript,
+seguir la redirección o ignorar la cabecera. Un rastreador no.
 
-**Regla operativa:** toda verificacion incluye una pasada de  sobre
-produccion mirando TRES cosas, no una: el HTML servido, el JSON-LD dentro de
-ese HTML, y las **cabeceras de respuesta** —, ,
-—. Las cabeceras son las que nadie mira y donde vivio un fallo
-durante toda la vida del sitio.
+**Regla operativa:** toda verificación incluye una pasada de `curl` sobre
+producción mirando **tres cosas, no una**:
+
+1. El **HTML servido** — sin JavaScript.
+2. El **JSON-LD dentro de ese HTML** — parseado, no con `grep`: un `grep` mal
+   calibrado sobre JSON-LD miente en las dos direcciones.
+3. Las **cabeceras de respuesta** — `Cache-Control`, `X-Vercel-Cache`,
+   `X-Robots-Tag`.
+
+La tercera es la que nadie mira, y donde vivió un fallo durante toda la vida
+del sitio.
 
 ### ⚠⚠ MAC LEE LA BASE EN TIEMPO REAL — toda migración lo afecta ANTES del despliegue
 
