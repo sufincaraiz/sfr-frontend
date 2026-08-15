@@ -56,6 +56,27 @@ npm run build
   varios temas dentro de un mismo archivo, no se puede partir en commits por
   tema: hay que agrupar por archivo y ordenar para que cada commit compile.
 
+### ⚠ La clase de defecto que solo se ve con curl
+
+Hay defectos que **no se notan en el navegador y lo degradan todo**. Ya van
+tres, y los tres se encontraron mirando lo que el servidor devuelve, no la
+pagina:
+
+| Defecto | Sintoma en el navegador | Como aparecio |
+|---|---|---|
+|  en el sitemap | Ninguno | Leyendo el XML servido |
+| Contadores que arrancan en  | Ninguno: la animacion llega al valor |  del HTML, sin ejecutar JS |
+|  en el catalogo y en  | Ninguno | Leyendo las CABECERAS de respuesta |
+
+El patron comun: el navegador **repara** el defecto al ejecutar JavaScript,
+seguir la redireccion o ignorar la cabecera. Un rastreador no.
+
+**Regla operativa:** toda verificacion incluye una pasada de  sobre
+produccion mirando TRES cosas, no una: el HTML servido, el JSON-LD dentro de
+ese HTML, y las **cabeceras de respuesta** —, ,
+—. Las cabeceras son las que nadie mira y donde vivio un fallo
+durante toda la vida del sitio.
+
 ### ⚠⚠ MAC LEE LA BASE EN TIEMPO REAL — toda migración lo afecta ANTES del despliegue
 
 **Mac no usa el build: consulta la base en cada conversación.** Un `UPDATE` o un

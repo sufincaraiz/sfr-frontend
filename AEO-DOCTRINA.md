@@ -283,6 +283,29 @@ deriva: `priceRange`, tipos de inmueble, `areaServed`, conteos y fechas nunca se
 mano. Los que no se pueden derivar —horarios, dirección, identificadores— se contrastan
 contra su fuente externa verificada, no contra lo que dice otra parte del propio sitio.
 
+**El sitio no es la única superficie de publicación.** Toda corrección de contenido —una
+cifra retirada, un eslogan cambiado, una promesa eliminada— debe aplicarse a **todas** las
+superficies donde ese contenido se publica, no solo a las páginas HTML:
+
+1. Páginas del sitio (código y base de datos)
+2. Artículos MDX y artículos en base de datos
+3. `llms.txt` generado
+4. Bloques JSON-LD
+5. **El prompt de sistema del agente y su base de conocimiento**
+6. Documentos estáticos servidos desde `public/`
+
+La quinta es la más peligrosa y la que más se olvida. Lo que el agente lleva en su contexto
+lo dice en conversaciones reales, a personas concretas, sin que nadie lo revise — y sigue
+diciéndolo aunque el sitio esté impecable. Una afirmación retirada del sitio pero viva en el
+prompt no está retirada: solo está oculta a los rastreadores y sigue llegando a clientes.
+
+Además, el agente lee la base de datos **en tiempo real**: un cambio de datos lo afecta antes
+de que exista despliegue. Toda migración o actualización masiva exige revisar en el mismo
+lote las herramientas y los sinónimos del agente.
+
+**Regla:** ningún barrido de contenido se da por cerrado sin haber cubierto las seis
+superficies, y el resultado se reporta superficie por superficie.
+
 **Regla de renderizado:** toda cifra debe existir en el **HTML servido**. Los contadores
 animados arrancan desde el valor final o lo llevan en texto de respaldo. Nunca desde `0`.
 
@@ -460,4 +483,4 @@ en fuentes independientes. Ninguna optimización onsite sustituye esto.
 
 ---
 
-*Versión 7.2 — 12 de agosto de 2026. Su Finca Raíz, La Vega, Cundinamarca.*
+*Versión 7.3 — 14 de agosto de 2026. Su Finca Raíz, La Vega, Cundinamarca.*
