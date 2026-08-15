@@ -109,7 +109,7 @@ export function Hero() {
             animationDelay: '0.4s',
           }}
         >
-          La primera inmobiliaria inteligente de La Vega y el Gualivá
+          Inmobiliaria impulsada por inteligencia artificial en La Vega y el Gualivá
         </p>
 
         {/* Descripción — delay 0.5s */}

@@ -16,7 +16,7 @@ import { contrasteConMac } from '@/lib/horario'
 export const FAQS_NOSOTROS = [
   {
     question: '¿Qué es una inmobiliaria inteligente?',
-    answer: 'Una inmobiliaria inteligente integra inteligencia artificial y tecnología en sus procesos: atención automatizada 24/7, búsqueda con recomendaciones personalizadas, recorridos virtuales y visualización de proyectos. Su Finca Raíz es la primera inmobiliaria inteligente de La Vega, Cundinamarca y la región del Gualivá.',
+    answer: 'Una inmobiliaria inteligente integra inteligencia artificial y tecnología en sus procesos: atención automatizada 24/7, búsqueda con recomendaciones personalizadas, recorridos virtuales y visualización de proyectos. Su Finca Raíz opera bajo ese modelo en La Vega, Cundinamarca, y la Provincia del Gualivá.',
   },
   {
     question: '¿Quién es Mac?',

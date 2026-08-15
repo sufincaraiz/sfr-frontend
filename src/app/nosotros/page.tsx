@@ -222,20 +222,19 @@ export default async function NosotrosPage() {
             </p>
           </section>
 
-          {/* ── 3. La primera inmobiliaria inteligente ── */}
+          {/* ── 3. Centro de negocios inmobiliarios impulsado por IA ── */}
           <section style={{ marginBottom: '4rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1.5rem' }}>
               <div style={{ width: 4, height: 24, background: '#E8B92F', borderRadius: 2 }} />
               <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: 'clamp(1.3rem,3vw,1.7rem)', margin: 0 }}>
-                La primera inmobiliaria inteligente de La Vega y la región del Gualivá
+                Un centro de negocios inmobiliarios impulsado por inteligencia artificial
               </h2>
             </div>
             <p style={{ color: '#475569', fontSize: '1.02rem', lineHeight: 1.75, marginBottom: '2rem', maxWidth: 820 }}>
-              Su Finca Raíz es un Centro de Inversión Inmobiliaria que integra inteligencia
-              artificial y tecnología de vanguardia en cada etapa del negocio. No somos una
-              inmobiliaria tradicional con página web: somos la primera inmobiliaria inteligente
-              de La Vega, Cundinamarca y la región del Gualivá — un equipo de expertos del
-              territorio potenciado por herramientas de IA que mejoran resultados en menos tiempo.
+              Su Finca Raíz es un centro de negocios inmobiliarios impulsado por inteligencia
+              artificial en La Vega y el Gualivá, Cundinamarca. La tecnología atraviesa cada etapa
+              del negocio: un equipo del territorio, apoyado en herramientas de IA, y Mac, un
+              agente propio que atiende en web y WhatsApp las 24 horas.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

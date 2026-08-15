@@ -91,9 +91,8 @@ export function AboutUs() {
           {/* Columna de texto */}
           <div data-about-text className="sfr-about-text">
             <p>
-              <strong>Su Finca Raíz es el Centro de Negocios Inmobiliarios líder de La Vega
-              y el Gualivá</strong>, y la <strong>primera inmobiliaria inteligente</strong> de
-              la región: combinamos el conocimiento de un equipo nacido y criado en el
+              <strong>Su Finca Raíz es un centro de negocios inmobiliarios impulsado por
+              inteligencia artificial en La Vega y el Gualivá</strong>: combinamos el conocimiento de un equipo nacido y criado en el
               territorio con la potencia de la Inteligencia Artificial, encabezada por{' '}
               <strong>Mac</strong>, nuestro asistente disponible 24/7.
             </p>
