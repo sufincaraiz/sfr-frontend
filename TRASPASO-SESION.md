@@ -465,6 +465,102 @@ agente de inteligencia artificial propio disponible en web y WhatsApp las 24
 horas». Se puede comprobar a las tres de la mañana; «inmobiliaria inteligente» no
 se puede comprobar ni desmentir.
 
+### `veredas-data.ts` manda sobre el contenido; la tabla solo guarda la relación
+
+Decisión del titular, 15/08/2026. La alternativa era migrar el contenido
+editorial a la tabla, como se hizo con municipios. Se descartó por lo que pasó
+ese mismo día: Railway estuvo degradado una hora y las páginas de vereda
+siguieron sirviéndose porque su texto viaja en el bundle. Con el contenido en
+base habrían quedado vacías.
+
+    veredas-data.ts  →  contenido editorial. FUENTE ÚNICA.
+    tabla `veredas`  →  id, slug, name, municipality_id. SOLO la relación.
+
+**Editar `name` en la tabla no cambia nada de lo que se publica.** Ese es
+exactamente el fallo que dejó huérfano a `municipios-data.ts` durante meses.
+
+Por eso la defensa **no es este párrafo**. Es `src/lib/veredas-integridad.ts`,
+invocada desde `generateStaticParams()` en `/veredas/[slug]`: si el código y la
+tabla divergen en slug, nombre o municipio, **`next build` termina en rojo**.
+Probada rompiéndola a propósito antes de darla por buena.
+
+Lo que la guarda **no** exige: que la tabla tenga solo las veredas con página.
+La Vega tiene 27 veredas y solo unas pocas justifican una página propia. Una
+vereda en tabla sin página sigue sirviendo para asignar propiedades, filtrar y
+agrupar — simplemente no genera URL. Enlazar a una de ellas sí sería un 404, y
+por eso tanto la miga de la ficha como `related-properties.ts` comprueban
+`getAllVeredasData()` antes de construir el enlace.
+
+Si la base no responde, la guarda avisa y **no** rompe el build: meter una caída
+de Railway dentro de ella convertiría un fallo de infraestructura en un falso
+error de datos, que es justo lo contrario de por qué se eligió este reparto.
+
+### La vereda «Ucranea de Sasaima» no existía
+
+Publicábamos `/veredas/ucranea` como vereda de Sasaima. Es **Ucrania**, vereda
+de **La Vega** (código postal 253618, junto a Chuscal, El Dintel, El Roble,
+Laureles, Libertad, Llano Grande y Sabaneta).
+
+No se renombró. Los nueve campos del contenido —altitud, temperatura, las dos
+distancias, acceso vial, clima, valorización, coordenadas y el POT citado—
+estaban medidos o escritos para Sasaima; una de las FAQ llegaba a preguntar
+«¿por qué invertir en Ucranea, Sasaima, y no en La Vega?». Renombrarla habría
+publicado nueve datos inventados sobre La Vega en lugar de uno. Se retiró la
+página entera, la fila quedó en la tabla como La Vega y `/veredas/ucranea`
+redirige 301 a `/municipios/la-vega`.
+
+Sasaima quedó con cero veredas en tabla. Era la única, y era falsa.
+
+### ⚠ El listado de códigos postales de La Vega es PARCIAL
+
+**Nombra 13 de las 27 veredas. No es la lista oficial completa.** Quien lo tome
+por completa sembrará mal.
+
+    253610  El Cural, Rosario, San Juan          (colindantes al casco urbano)
+    253617  La Cabaña, Tabacal
+    253618  Chuscal, El Dintel, El Roble, Laureles, Libertad,
+            Llano Grande, Sabaneta, Ucrania
+
+«Centro 1» y «Centro 2» comparten el 253610 pero **no son veredas**: son la
+división del casco urbano, y encajan con las «7 zonas» que la Alcaldía declara
+aparte de las 27 veredas. No se siembran.
+
+**Chupal y Chuscal son veredas distintas**, no una grafía de la otra. Ambos
+topónimos existen en La Vega; Chuscal está en el 253618 y Chupal no, porque el
+listado no cubre las 27. Chupal conserva su página; Chuscal es fila sin página.
+
+Las 6 que faltan salen del POT municipal. **No inventarlas.**
+
+**Las grafías `El Rosario` y `La Libertad` no se tocan.** El listado postal
+normaliza el artículo y publica «Rosario» y «Libertad»; mover dos URLs vivas por
+eso no compensa. Lo que cede es el comparador:
+`buscarNombreVeredaEnTexto()` en `veredas-data.ts` tolera el artículo en ambos
+lados, de modo que un texto que diga «vereda Rosario» encuentra la fila de
+El Rosario. Lo usa la columna «Citada en el texto» del admin.
+
+### Enlaces internos: `lib/enlaces.ts` decide qué tiene página
+
+Tres veces el mismo fallo —enlace a una ruta que no existe— y las tres pasaron
+el build en verde, porque una plantilla de cadena siempre compila:
+
+1. la miga de la ficha, a una vereda sin página;
+2. el breadcrumb del borrador de dron, a `/servicios`, que no existe (solo
+   existe `/servicios/dron-y-fotogrametria`);
+3. `related-properties.ts`, repitiendo el 1 desde otro sitio.
+
+El patrón no es descuido: cada punto del código decidía por su cuenta si una
+ruta existía, replicando una regla que vive en otra parte. **Todos los enlaces a
+municipio, vereda, catálogo y combinación tipo+municipio pasan ahora por
+`lib/enlaces.ts`**, que devuelve la ruta o `null`, nunca una rota.
+
+`urlDeMunicipio()` de `cobertura.ts` quedó como delegación: resolvía lo mismo
+con su propia consulta.
+
+⚠ **Riesgo latente que queda abierto:** `CONTENIDO_COMPLETO` está definido dos
+veces, en `cobertura.ts` y en `municipios.ts`, con los mismos seis campos. Hoy
+coinciden. El día que alguien añada un séptimo campo a uno solo, los dos
+criterios de «municipio publicable» dejarán de coincidir en silencio.
+
 ---
 
 ## 5. Cosas que parecen raras pero son deliberadas
