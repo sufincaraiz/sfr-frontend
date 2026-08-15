@@ -56,6 +56,27 @@ npm run build
   varios temas dentro de un mismo archivo, no se puede partir en commits por
   tema: hay que agrupar por archivo y ordenar para que cada commit compile.
 
+### Railway se cayó y producción aguantó — por el cambio de caché
+
+El 14 de agosto Railway estuvo degradado casi una hora: pings que fallaban,
+latencia de 4-7 s frente a los ~100 ms normales, y varios builds abortados por
+timeouts de 60 s en el prerender.
+
+**Producción siguió sirviendo 200 todo el rato.** No por casualidad: el turno
+anterior había sacado el catálogo del render dinámico y lo había devuelto a la
+caché del borde. Antes de ese arreglo, `/propiedades`,
+`/propiedades/[municipio]` y `/propiedades/[tipo]/[municipio]` servían
+`no-store` y bajaban a Railway en CADA petición: con la base caída, el catálogo
+entero —el hub del que cuelgan las 35 fichas— habría caído con ella.
+
+Es el argumento a favor de cachear que **ninguna métrica de rendimiento habría
+dado**: no se notaba en tiempos de carga, se notó el día que la base falló.
+
+**Corolario operativo:** cuando Railway falle, el sitio público aguanta pero el
+BUILD no. No desplegar sin build verde; esperar y reintentar. Las únicas páginas
+que se degradan en vivo son las que siguen siendo dinámicas — hoy solo
+`/propiedades` con filtros.
+
 ### ⚠ La clase de defecto que solo se ve con curl
 
 Hay defectos que **no se notan en el navegador y lo degradan todo**. Ya van
@@ -102,6 +123,24 @@ después.
 Esto convive con la regla de «no tocar a Mac sin pedirlo»: reparar una regresión
 que un cambio propio causó **no** es modificar el agente, es devolverlo a donde
 estaba. Se avisa y se documenta, pero no se deja roto.
+
+### Los 13 slugs con prefijo de tipo viejo — DECISIÓN TOMADA: no se tocan
+
+Tras reclasificar los tipos, trece slugs conservan un prefijo que ya no
+corresponde: `condominio-lote-buenos-aires-…` con `type = lote`,
+`finca-la-alborada-…` con `type = casa`, y once más.
+
+**No se corrigen.** El coste —trece redirects 301 permanentes— supera al
+beneficio:
+
+- El `canonical` ya es correcto y apunta a la URL real.
+- El tipo va **declarado** en el JSON-LD (`RealEstateListing`), donde un modelo
+  lo lee sin tener que inferirlo de la URL.
+- Un slug es una cadena opaca: no rompe nada, solo desorienta a quien lee la
+  barra de direcciones.
+
+Está anotado para que no se reabra en un barrido futuro y alguien decida
+«arreglarlo».
 
 ### Tarifas normativas del glosario — NO son cifras sin fuente
 
