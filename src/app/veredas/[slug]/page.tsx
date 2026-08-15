@@ -10,7 +10,8 @@ import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { getVeredaData, getAllVeredasData } from '@/lib/veredas-data'
 import { faqsDeVereda } from '@/lib/faq-veredas'
-import { JsonLd, breadcrumbSchema, faqSchema } from '@/components/seo/JsonLd'
+import { propiedadesDeVereda } from '@/lib/catalogo'
+import { JsonLd, breadcrumbSchema, faqSchema, itemListSchema } from '@/components/seo/JsonLd'
 import { formatPrice } from '@/lib/utils'
 import { tipoLabel } from '@/lib/property-types'
 import { getTipoLabels } from '@/lib/property-types.server'
@@ -115,7 +116,13 @@ export default async function VeredaPage(
   const v = getVeredaData(slug)
   if (!v) notFound()
 
-  const properties = await getVeredaProperties(v.municipio_slug)
+  // Dos consultas distintas a proposito: lo que hay EN la vereda y lo que hay
+  // cerca, en el municipio. Confundirlas seria declarar una precision que el
+  // dato no tiene.
+  const [properties, enLaVereda] = await Promise.all([
+    getVeredaProperties(v.municipio_slug),
+    propiedadesDeVereda(v.slug, v.municipio_slug),
+  ])
   const tipoLabels = await getTipoLabels()
 
   const breadcrumbs = breadcrumbSchema([
@@ -165,6 +172,21 @@ export default async function VeredaPage(
       <JsonLd data={breadcrumbs} />
       <JsonLd data={faq} />
       <JsonLd data={placeSchema} />
+      {/* ItemList SOLO del inventario propio de la vereda. Las propiedades del
+          municipio no llevan lista marcada: son «cerca de», y declararlas como
+          lista de la vereda seria prometer una precision que el dato no tiene. */}
+      {enLaVereda.total > 0 && (
+        <JsonLd data={itemListSchema({
+          url:  SITE_URL + '/veredas/' + slug,
+          name: `Propiedades en venta en la vereda ${v.name}, ${v.municipio_name}, Cundinamarca`,
+          numberOfItems: enLaVereda.total,
+          orden: 'desc',
+          items: enLaVereda.properties.map(pr => ({
+            name: pr.title ?? ('Propiedad en la vereda ' + v.name),
+            url:  SITE_URL + '/propiedad/' + pr.slug,
+          })),
+        })} />
+      )}
 
       <main style={{ background: '#F8FAFC', minHeight: '100vh' }}>
 
@@ -262,15 +284,70 @@ export default async function VeredaPage(
               </Link>
             </InfoSection>
 
-            {/* Propiedades */}
+            {/* ── Inventario DE LA VEREDA ────────────────────────────────────
+                Distinto de lo de abajo. Esta sección solo aparece cuando hay
+                propiedades asignadas a la vereda por `vereda_id`, y entonces sí
+                responde «¿qué hay en venta en Bulucaima?» — que es la consulta
+                hiperlocal donde el sitio no tiene competencia y que hasta ahora
+                era imposible de responder: la tabla `veredas` estaba vacía, así
+                que no había ni una fila a la que apuntar.
+
+                Lleva su propio ItemList. La sección de abajo, la del municipio,
+                NO lo lleva: son propiedades «cerca de», y marcarlas como lista
+                de la vereda sería declarar una precisión que el dato no tiene. */}
+            {enLaVereda.total > 0 && (
+              <section>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1.25rem' }}>
+                  <Building2 size={19} style={{ color: '#15803D' }} />
+                  <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.1rem', margin: 0 }}>
+                    ¿Qué hay en venta en la vereda {v.name}?
+                  </h2>
+                </div>
+                <p style={{ color: '#475569', lineHeight: 1.75, fontSize: '0.95rem', marginBottom: '1.25rem' }}>
+                  Su Finca Raíz publica {enLaVereda.total} propiedad
+                  {enLaVereda.total !== 1 ? 'es' : ''} en la vereda {v.name}, {v.municipio_name},
+                  Cundinamarca. La vereda está a {v.distancia_pueblo_min} minutos del casco urbano
+                  y a {v.altitud_msnm.toLocaleString('es-CO')} msnm, con temperaturas de{' '}
+                  {v.temperatura_c.min} a {v.temperatura_c.max} °C.
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(270px,1fr))', gap: '1.1rem', marginBottom: '2.5rem' }}>
+                  {/* `media` es opcional en el tipo Property pero la consulta
+                      siempre lo trae; PropCard lo exige presente. */}
+                  {enLaVereda.properties.map((p, i) => (
+                    <PropCard
+                      key={p.id}
+                      property={{ ...p, media: p.media ?? [] }}
+                      priority={i < 2}
+                      labels={tipoLabels}
+                    />
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Propiedades del MUNICIPIO — «cerca de», no «en» */}
             {properties.length > 0 && (
               <section>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1.25rem' }}>
                   <Building2 size={19} style={{ color: '#1B56A1' }} />
                   <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.1rem', margin: 0 }}>
-                    Propiedades disponibles cerca de {v.name}
+                    {enLaVereda.total > 0
+                      ? `Otras propiedades cerca de ${v.name}`
+                      : `Propiedades disponibles cerca de ${v.name}`}
                   </h2>
                 </div>
+                {enLaVereda.total === 0 && (
+                  /* Guarda de §1.3 aplicada a la vereda: no se dice «0
+                     propiedades en la vereda». Se dice lo que es cierto —que
+                     hay inventario en el municipio— sin fingir precisión que
+                     el dato no tiene. */
+                  <p style={{ color: '#475569', lineHeight: 1.75, fontSize: '0.95rem', marginBottom: '1.25rem' }}>
+                    Su Finca Raíz capta inmuebles en la vereda {v.name} y en todo{' '}
+                    {v.municipio_name}. Estas son las propiedades publicadas hoy en el municipio;
+                    para un predio concreto en la vereda, la búsqueda se puede encargar
+                    directamente.
+                  </p>
+                )}
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(270px,1fr))', gap: '1.1rem' }}>
                   {properties.map((p, i) => <PropCard key={p.id} property={p} priority={i < 2} labels={tipoLabels} />)}
                 </div>

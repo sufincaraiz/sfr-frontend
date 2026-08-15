@@ -280,3 +280,84 @@ export async function tiposConInventarioEnMunicipio(
     return []
   }
 }
+
+/**
+ * Propiedades asignadas a UNA vereda concreta, por `vereda_id`.
+ *
+ * Distinto de las del municipio: hoy la página de vereda muestra el inventario
+ * del municipio bajo el rótulo «cerca de X», que es honesto pero no responde a
+ * «¿qué hay en venta EN Bulucaima?». Esa pregunta necesita el dato de vereda, y
+ * hasta ahora era imposible responderla porque la tabla `veredas` estaba vacía:
+ * no es que nadie hubiera asignado veredas, es que no existían como fila a la
+ * que apuntar.
+ *
+ * Sin asignaciones devuelve lista vacía y la página cae a la guarda de §1.3.
+ */
+export async function propiedadesDeVereda(
+  veredaSlug: string,
+  municipioSlug: string,
+): Promise<ResultadoCatalogo> {
+  try {
+    const v = await prisma.vereda.findFirst({
+      where:  { slug: veredaSlug, municipality: { slug: municipioSlug } },
+      select: { id: true },
+    })
+    if (!v) return { properties: [], total: 0, page: 1, pages: 0 }
+
+    const where = { status: 'available', vereda_id: v.id }
+    const [rows, total] = await Promise.all([
+      prisma.property.findMany({
+        where,
+        take: TOPE_SIN_PAGINAR,
+        orderBy: [{ published_at: 'desc' }],
+        include: {
+          municipality: { select: { id: true, slug: true, name: true, province: true, demand_score: true } },
+          media:        { orderBy: { order: 'asc' }, take: 6 },
+        },
+      }),
+      prisma.property.count({ where }),
+    ])
+    return { properties: rows.map(serializar), total, page: 1, pages: 1 }
+  } catch (err) {
+    console.warn('[catalogo] BD no disponible al derivar propiedades de vereda:', err instanceof Error ? err.message : err)
+    return { properties: [], total: 0, page: 1, pages: 0 }
+  }
+}
+
+/** Cuántas propiedades activas tiene cada vereda, por slug. Para el admin y los listados. */
+export async function inventarioPorVereda(): Promise<Map<string, number>> {
+  try {
+    const rows = await prisma.vereda.findMany({
+      select: { slug: true, _count: { select: { properties: { where: { status: 'available' } } } } },
+    })
+    return new Map(rows.map(r => [r.slug, r._count.properties]))
+  } catch (err) {
+    console.warn('[catalogo] BD no disponible al contar por vereda:', err instanceof Error ? err.message : err)
+    return new Map()
+  }
+}
+
+/**
+ * La vereda de una propiedad, si la tiene asignada y tiene página publicada.
+ *
+ * Devuelve `null` cuando no hay vereda o cuando la que hay no tiene página en
+ * el sitio. Es la misma guarda que `urlDeMunicipio` aplica a los municipios
+ * (§1.3): una ficha no enlaza a una ruta que devuelve 404.
+ */
+export async function veredaDePropiedad(
+  veredaId: string | null,
+  slugsConPagina: readonly string[],
+): Promise<{ slug: string; name: string } | null> {
+  if (!veredaId) return null
+  try {
+    const v = await prisma.vereda.findUnique({
+      where:  { id: veredaId },
+      select: { slug: true, name: true },
+    })
+    if (!v || !slugsConPagina.includes(v.slug)) return null
+    return v
+  } catch (err) {
+    console.warn('[catalogo] BD no disponible al resolver vereda:', err instanceof Error ? err.message : err)
+    return null
+  }
+}

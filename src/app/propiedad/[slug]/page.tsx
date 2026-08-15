@@ -10,6 +10,8 @@ import { formatPrice } from '@/lib/utils';
 import { tipoLabel } from '@/lib/property-types';
 import { getTipoLabels } from '@/lib/property-types.server';
 import { urlDeMunicipio } from '@/lib/cobertura';
+import { veredaDePropiedad } from '@/lib/catalogo';
+import { getAllVeredasData } from '@/lib/veredas-data';
 import { GaleriaLightbox } from '@/components/propiedades/GaleriaLightbox';
 import { Modelo3D } from '@/components/propiedades/Modelo3D';
 import { FormContactoPropiedad } from '@/components/propiedades/FormContactoPropiedad';
@@ -162,6 +164,8 @@ export default async function PropiedadDetallePage(
   // Albán— apuntaría a /municipios/alban, que devuelve 404. Además codifica el
   // parámetro, que antes iba con el espacio literal ("?municipio=La Vega").
   const urlMuni    = await urlDeMunicipio(muni, p.municipality?.slug ?? '');
+  // La vereda, solo si esta asignada Y tiene pagina: una ficha no enlaza a un 404.
+  const vereda     = await veredaDePropiedad(p.vereda_id ?? null, getAllVeredasData().map(v => v.slug));
   const title      = p.title ?? `${typeLabel} en ${muni}`;
   const banner     = p.media?.find(m => m.is_primary) ?? p.media?.[0];
 
@@ -252,6 +256,14 @@ export default async function PropiedadDetallePage(
           <Link href="/propiedades" style={{ color: '#64748B', textDecoration: 'none' }}>Propiedades</Link>
           <ChevronRight size={13} />
           <Link href={urlMuni} style={{ color: '#64748B', textDecoration: 'none' }}>{muni}</Link>
+          {vereda && (
+            <>
+              <ChevronRight size={13} />
+              <Link href={`/veredas/${vereda.slug}`} style={{ color: '#64748B', textDecoration: 'none' }}>
+                Vereda {vereda.name}
+              </Link>
+            </>
+          )}
           <ChevronRight size={13} />
           <span style={{ color: '#0D2D5E', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 200 }}>{title}</span>
         </nav>
@@ -344,6 +356,10 @@ export default async function PropiedadDetallePage(
                 filas={[
                   { etiqueta: 'Tipo de propiedad', valor: typeLabel },
                   { etiqueta: 'Municipio',         valor: `${muni}, Cundinamarca` },
+                  // La vereda solo aparece cuando esta asignada. Es el dato que
+                  // convierte «en La Vega» en «en la vereda El Cural», que es
+                  // como se busca en el territorio.
+                  ...(vereda ? [{ etiqueta: 'Vereda', valor: vereda.name }] : []),
                   ...(p.area_lot_m2
                     ? [{ etiqueta: 'Área del terreno',  valor: p.area_lot_m2.toLocaleString('es-CO'),   unidad: 'm²' }]
                     : []),
