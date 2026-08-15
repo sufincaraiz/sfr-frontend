@@ -10,7 +10,6 @@ import { formatPrice } from '@/lib/utils';
 import { tipoLabel } from '@/lib/property-types';
 import { getTipoLabels } from '@/lib/property-types.server';
 import { urlDeMunicipio } from '@/lib/cobertura';
-import { veredaDePropiedad } from '@/lib/catalogo';
 import { getAllVeredasData } from '@/lib/veredas-data';
 import { GaleriaLightbox } from '@/components/propiedades/GaleriaLightbox';
 import { Modelo3D } from '@/components/propiedades/Modelo3D';
@@ -31,6 +30,7 @@ async function getProperty(slug: string) {
     where: { slug },
     include: {
       municipality: true,
+      vereda:       true,
       media:        { orderBy: { order: 'asc' } },
       features:     true,
     },
@@ -44,6 +44,7 @@ async function getProperty(slug: string) {
     transaction_type: 'venta',
     municipality_id:  raw.municipality_id,
     vereda_id:        raw.vereda_id,
+    vereda:           raw.vereda ?? undefined,
     address_visible:  raw.address_visible,
     price_cop:        Number(raw.price_cop),
     area_lot_m2:      raw.area_lot_m2,
@@ -164,8 +165,12 @@ export default async function PropiedadDetallePage(
   // Albán— apuntaría a /municipios/alban, que devuelve 404. Además codifica el
   // parámetro, que antes iba con el espacio literal ("?municipio=La Vega").
   const urlMuni    = await urlDeMunicipio(muni, p.municipality?.slug ?? '');
-  // La vereda, solo si esta asignada Y tiene pagina: una ficha no enlaza a un 404.
-  const vereda     = await veredaDePropiedad(p.vereda_id ?? null, getAllVeredasData().map(v => v.slug));
+  // La vereda llega en la MISMA consulta de la ficha (include), no en una
+  // aparte: con pool de 5 conexiones, una consulta extra por ficha agota el
+  // pool durante el prerender de 167 paginas (P2024). Se filtra aqui por las
+  // que tienen pagina, que es la guarda contra enlazar a un 404.
+  const conPagina  = new Set(getAllVeredasData().map(v => v.slug));
+  const vereda     = p.vereda && conPagina.has(p.vereda.slug) ? p.vereda : null;
   const title      = p.title ?? `${typeLabel} en ${muni}`;
   const banner     = p.media?.find(m => m.is_primary) ?? p.media?.[0];
 
