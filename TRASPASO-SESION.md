@@ -56,6 +56,44 @@ npm run build
   varios temas dentro de un mismo archivo, no se puede partir en commits por
   tema: hay que agrupar por archivo y ordenar para que cada commit compile.
 
+### ⚠⚠ MAC LEE LA BASE EN TIEMPO REAL — toda migración lo afecta ANTES del despliegue
+
+**Mac no usa el build: consulta la base en cada conversación.** Un `UPDATE` o un
+cambio de esquema lo afecta **en el momento en que se ejecuta**, no cuando se
+despliega el código. Entre el cambio de datos y el arreglo del agente, Mac está
+respondiendo mal a clientes reales.
+
+El caso que lo demostró: al dejar `condominio` de ser un tipo, el mapeo de
+sinónimos de `tools.ts` seguía diciendo `condominio: ['condominio']`. Un cliente
+que preguntara «¿tienen condominios?» recibía **cero resultados habiendo doce
+inmuebles en condominio**, y empezó a fallar con el `UPDATE`, no con el deploy.
+
+**Regla:** cualquier cambio de esquema o de datos exige revisar en el MISMO lote
+el mapeo de sinónimos (`lib/agent/tools.ts`) y las herramientas del agente. No
+después.
+
+Esto convive con la regla de «no tocar a Mac sin pedirlo»: reparar una regresión
+que un cambio propio causó **no** es modificar el agente, es devolverlo a donde
+estaba. Se avisa y se documenta, pero no se deja roto.
+
+### Tarifas normativas del glosario — NO son cifras sin fuente
+
+Un barrido futuro de porcentajes las va a marcar. **No se retiran**: son cifras
+normativas verificables en la ley colombiana, no afirmaciones de rendimiento.
+
+| Cifra | Qué es |
+|---|---|
+| Arras 10 % | Uso habitual del mercado, en el glosario y el blog |
+| Retención en la fuente 1 % | Sobre el valor de la escritura |
+| Impuesto de registro 1 % | Tributo departamental |
+| Derechos notariales 0,27 % | Regulados por la Superintendencia de Notariado |
+| Plusvalía hasta 50 % | Lo que puede cobrar el municipio |
+| Avalúo catastral 40–70 % | Proporción habitual frente al valor comercial |
+| Comisión 5 % / 2,5 % | Términos del contrato en la propuesta comercial |
+
+Lo que **sí** se retira es cualquier porcentaje de **valorización, rentabilidad,
+retorno u ocupación**. Se retiraron quince; ver §4.
+
 ### ⚠ Segmentos dinámicos con nombres distintos — el fallo que `next build` no detecta
 
 **Next exige que un mismo nivel dinámico lleve el MISMO nombre en todas las
