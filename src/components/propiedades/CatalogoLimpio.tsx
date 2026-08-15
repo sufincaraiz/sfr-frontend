@@ -173,7 +173,9 @@ export async function CatalogoLimpio({ data, municipio, tipo, ruta }: CatalogoLi
           ) : (
             <>
               <PropiedadesGrid properties={data.properties} />
-              <Paginacion page={data.page} pages={data.pages} total={data.total} />
+              {/* El paginador solo aparece si de verdad hay mas de una pagina.
+                  En las rutas limpias no la hay: se sirve el municipio entero. */}
+              {data.pages > 1 && <Paginacion page={data.page} pages={data.pages} total={data.total} />}
             </>
           )}
         </div>

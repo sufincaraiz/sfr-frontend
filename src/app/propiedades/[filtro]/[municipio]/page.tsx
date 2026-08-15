@@ -74,24 +74,18 @@ export async function generateMetadata(
   }
 }
 
+// Sin searchParams, por lo mismo que la ruta de un segmento: leerlos convierte
+// la ruta en dinamica y la saca de la cache del borde.
 export default async function PropiedadesPorTipoYMunicipio(
-  { params, searchParams }: {
-    params: Promise<Params>
-    searchParams: Promise<{ page?: string }>
-  },
+  { params }: { params: Promise<Params> },
 ) {
   const { filtro: tipoSlug, municipio: muniSlug } = await params
-  const { page } = await searchParams
 
   const [t, m] = await Promise.all([resolverTipo(tipoSlug), resolverMunicipio(muniSlug)])
   // Ni el tipo ni el municipio se inventan: si alguno no existe, 404.
   if (!t || !m) notFound()
 
-  const data = await fetchPropiedades({
-    tipo:      t.slug,
-    municipio: m.name,
-    page: page ? parseInt(page) : 1,
-  })
+  const data = await fetchPropiedades({ tipo: t.slug, municipio: m.name, todo: true })
 
   return (
     <CatalogoLimpio

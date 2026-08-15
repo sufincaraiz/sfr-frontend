@@ -9,7 +9,11 @@ import type { Business } from '@/lib/directorio';
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
 import { respuestaDirectorio } from '@/lib/respuestas-directas';
 
-export const dynamic = 'force-dynamic';
+// Era force-dynamic sin necesitarlo: la pagina es indexable, esta en el
+// sitemap y su contenido —nueve negocios locales— no cambia por minuto. Con
+// force-dynamic, Vercel respondia private/no-store y cada rastreo bajaba a
+// Railway. Una hora de revalidacion cubre de sobra la frescura.
+export const revalidate = 3600;
 
 export const metadata: Metadata = {
   title: 'Directorio de Negocios Recomendados en La Vega',

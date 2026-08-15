@@ -69,14 +69,17 @@ export async function generateMetadata(
   }
 }
 
+// SIN searchParams A PROPOSITO. Leer searchParams —aunque la peticion no traiga
+// ninguno— saca la ruta de la cache del borde: Vercel responde entonces
+// `private, no-store` y CADA visita de CADA rastreador baja a Railway.
+//
+// La vista muestra el municipio entero hasta TOPE_SIN_PAGINAR. Hoy el maximo es
+// La Vega con 33 propiedades, asi que no habia nada que paginar, y un rastreador
+// ve las 33 fichas enlazadas desde una sola pagina en vez de tres.
 export default async function PropiedadesPorMunicipio(
-  { params, searchParams }: {
-    params: Promise<Params>
-    searchParams: Promise<{ page?: string }>
-  },
+  { params }: { params: Promise<Params> },
 ) {
   const { filtro: slug } = await params
-  const { page } = await searchParams
 
   const m = await resolverMunicipio(slug)
   if (!m) {
@@ -86,10 +89,7 @@ export default async function PropiedadesPorMunicipio(
     notFound()
   }
 
-  const data = await fetchPropiedades({
-    municipio: m.name,
-    page: page ? parseInt(page) : 1,
-  })
+  const data = await fetchPropiedades({ municipio: m.name, todo: true })
 
   return (
     <CatalogoLimpio

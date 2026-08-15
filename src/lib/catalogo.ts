@@ -22,6 +22,17 @@ import type { Property } from '@/types'
 
 export const LIMIT = 12
 
+/**
+ * Tope de seguridad para las vistas SIN paginar.
+ *
+ * Las rutas limpias muestran el municipio entero de una vez. Hoy el máximo es
+ * La Vega con 33 propiedades, así que no hay nada que paginar; el tope existe
+ * para que la página no crezca sin control si el inventario se multiplica.
+ * Si alguna vez se alcanza, es la señal de que toca volver a paginar — y
+ * entonces con segmentos de ruta, no con `?page=`.
+ */
+export const TOPE_SIN_PAGINAR = 60
+
 export interface FiltroCatalogo {
   /** Slug del tipo de inmueble («finca», «lote»). */
   tipo?:      string
@@ -29,6 +40,20 @@ export interface FiltroCatalogo {
   municipio?: string
   maxPrecio?: string
   page?:      number
+  /**
+   * Trae el municipio entero hasta `TOPE_SIN_PAGINAR`, sin paginar.
+   *
+   * Existe para que las rutas limpias NO tengan que leer `searchParams`. Leer
+   * `searchParams` —aunque la petición no traiga ninguno— saca la ruta de la
+   * caché del borde y la convierte en dinámica: Vercel responde entonces
+   * `private, no-store` y CADA visita de CADA rastreador baja a Railway.
+   *
+   * Con los ~20 agentes de IA declarados en robots.txt más Googlebot y
+   * Bingbot, eso es la base de datos sirviendo tráfico de robots sin capa
+   * intermedia, en las páginas de las que cuelgan las 35 fichas. Y de paso
+   * gasta presupuesto de rastreo en páginas que no cambian por minuto.
+   */
+  todo?: boolean
 }
 
 export interface ResultadoCatalogo {
@@ -53,8 +78,8 @@ export async function fetchPropiedades(f: FiltroCatalogo): Promise<ResultadoCata
     const [rows, total] = await Promise.all([
       prisma.property.findMany({
         where,
-        skip: (page - 1) * LIMIT,
-        take: LIMIT,
+        skip: f.todo ? 0 : (page - 1) * LIMIT,
+        take: f.todo ? TOPE_SIN_PAGINAR : LIMIT,
         orderBy: [{ published_at: 'desc' }],
         include: {
           municipality: { select: { id: true, slug: true, name: true, province: true, demand_score: true } },
@@ -64,7 +89,14 @@ export async function fetchPropiedades(f: FiltroCatalogo): Promise<ResultadoCata
       prisma.property.count({ where }),
     ])
 
-    return { properties: rows.map(serializar), total, page, pages: Math.ceil(total / LIMIT) }
+    return {
+      properties: rows.map(serializar),
+      total,
+      page:  f.todo ? 1 : page,
+      // Sin paginar solo hay una pagina: la vista lo usa para no dibujar el
+      // paginador ni desplazar el  del ItemList.
+      pages: f.todo ? 1 : Math.ceil(total / LIMIT),
+    }
   } catch (err) {
     console.warn('[catalogo] BD no disponible:', err instanceof Error ? err.message : err)
     return { properties: [], total: 0, page, pages: 0 }
