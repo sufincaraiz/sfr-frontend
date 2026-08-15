@@ -648,59 +648,22 @@ const VEREDAS: Record<string, VeredaData> = {
     ],
   },
 
-  'ucranea': {
-    slug: 'ucranea',
-    name: 'Ucranea',
-    municipio_slug: 'sasaima',
-    municipio_name: 'Sasaima',
-    distancia_pueblo_min: 12,
-    distancia_bogota_min: 98,
-    altitud_msnm: 1080,
-    temperatura_c: { min: 20, max: 28 },
-    acceso_vial: 'Vía principal pavimentada Bogotá–Sasaima. Acceso directo sin desvío.',
-    descripcion_seo:
-      'Ucranea es una vereda de Sasaima estratégicamente ubicada sobre la vía ' +
-      'principal a Bogotá, con acceso pavimentado directo y un clima cálido-templado ' +
-      'de 20 a 28 °C. Su posición sobre la carretera principal la convierte en ' +
-      'la vereda de mayor accesibilidad del municipio para fincas de fin de semana.',
-    ventajas: [
-      'Sobre la vía principal: acceso en automóvil convencional todo el año',
-      'La vereda de Sasaima más cercana a Bogotá por tiempo de viaje',
-      'Temperatura cálida ideal para piscina y recreo al aire libre',
-      'Precios más bajos que municipios equivalentes de La Vega',
-      'Fincas productivas de café y cítricos con ingresos complementarios',
-      'Vista al río Dulce y acceso a pozos naturales para baño',
-    ],
-    valorizacion:
-      'Ucranea es el punto de entrada más accesible para invertir en el Gualivá ' +
-      'a precio bajo. La vía pavimentada directa es un activo diferencial respecto ' +
-      'a otras veredas de Sasaima. El municipio tiene un plan de mejoramiento ' +
-      'turístico financiado por la Gobernación de Cundinamarca, todavía sin ' +
-      'ejecutar en su totalidad.',
-    clima:
-      'Ucranea tiene un clima cálido-templado a 1.080 msnm, ideal para cultivos ' +
-      'de café, plátano y cítricos. La temperatura de 20 a 28 °C es perfecta ' +
-      'para el turismo de recreo, con tardes de brisa fresca que bajan del ' +
-      'páramo a través de los cañones del río Dulce. Las noches frescas de ' +
-      '19–21 °C hacen que sea cómodo dormir sin aire acondicionado.',
-    og_image: '/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg',
-    geo_lat: 4.9580,
-    geo_lng: -74.4200,
-    faq: [
-      {
-        pregunta: '¿Por qué invertir en Ucranea, Sasaima, y no en La Vega?',
-        respuesta: 'Ucranea ofrece mayor accesibilidad económica: el metro cuadrado se ofrece por debajo del de La Vega en condiciones equivalentes. Es una alternativa a considerar para una primera finca con presupuesto ajustado.',
-      },
-      {
-        pregunta: '¿Cuánto se tarda en llegar de Bogotá a Ucranea?',
-        respuesta: 'Aproximadamente 98 minutos desde el norte de Bogotá por la autopista Bogotá–La Vega y la vía Sasaima. Es uno de los accesos más rápidos del Gualivá: prácticamente el mismo tiempo que La Vega pero con precios significativamente menores.',
-      },
-      {
-        pregunta: '¿Se puede construir una casa de recreo en Ucranea?',
-        respuesta: 'Sí. El POT de Sasaima permite construcción de vivienda campestre en suelo rural suburbano con los parámetros establecidos. El acceso pavimentado facilita el transporte de materiales, reduciendo los costos de construcción respecto a veredas con vía en afirmado.',
-      },
-    ],
-  },
+  // ─── SIN PÁGINA EDITORIAL ──────────────────────────────────────────────
+  //
+  // UCRANIA (La Vega) tenía aquí una entrada `ucranea` que la declaraba
+  // vereda de SASAIMA. Era falso: Ucrania es vereda de La Vega, dentro del
+  // código postal 253618 junto a Chuscal, El Dintel, El Roble, Laureles,
+  // Libertad, Llano Grande y Sabaneta.
+  //
+  // No se renombró: los 9 campos del contenido (altitud, temperatura, las dos
+  // distancias, acceso vial, clima, valorización, coordenadas y el POT citado)
+  // estaban medidos o escritos para Sasaima. Renombrarla habría publicado esos
+  // 9 datos como si fueran de La Vega. Se retiró la página entera.
+  //
+  // Ucrania sigue en la tabla `veredas` (La Vega): se le pueden asignar
+  // propiedades y aparece en filtros y enlaces. Recupera su página cuando
+  // haya datos verificados de la vereda real.
+  // ───────────────────────────────────────────────────────────────────────
 }
 
 export function getVeredaData(slug: string): VeredaData | null {
@@ -713,4 +676,45 @@ export function getAllVeredasData(): VeredaData[] {
 
 export function getVeredasByMunicipio(municipioSlug: string): VeredaData[] {
   return Object.values(VEREDAS).filter(v => v.municipio_slug === municipioSlug)
+}
+
+// ─── Emparejado de nombres ───────────────────────────────────────────────────
+
+/**
+ * Normaliza un nombre de vereda para compararlo: sin tildes, en minúscula y
+ * SIN el artículo inicial.
+ *
+ * El artículo es de uso corriente y el listado postal de La Vega lo normaliza:
+ * publica «Rosario» y «Libertad» donde nosotros publicamos «El Rosario» y
+ * «La Libertad». No se cambian las grafías —mover dos URLs vivas por eso no
+ * compensa—, así que el que tiene que ceder es el comparador: un texto que
+ * diga «vereda Rosario» debe encontrar la fila de El Rosario.
+ */
+export function normalizarNombreVereda(nombre: string): string {
+  return nombre
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .toLowerCase().trim()
+    .replace(/^(el|la|los|las)\s+/, '')
+}
+
+/**
+ * Busca en un texto libre cualquiera de los nombres dados y devuelve el que
+ * aparezca, en su grafía original. Tolera el artículo en cualquiera de los dos
+ * lados: «vereda Rosario» encuentra «El Rosario», y «La Huerta» encuentra
+ * «Huerta».
+ *
+ * Es una PISTA para quien asigna a mano, nunca una asignación automática: la
+ * vereda determina acceso, servicios y valor, y una mal asignada es peor que
+ * ninguna.
+ */
+export function buscarNombreVeredaEnTexto(texto: string, nombres: string[]): string | null {
+  const plano = texto.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
+  for (const n of nombres) {
+    const base = normalizarNombreVereda(n)
+    if (base.length < 4) continue          // demasiado corto: falsos positivos
+    const escapado = base.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    // Artículo opcional por delante, y límites de palabra a ambos lados.
+    if (new RegExp(`\\b(?:el|la|los|las)?\\s*${escapado}\\b`).test(plano)) return n
+  }
+  return null
 }

@@ -117,6 +117,12 @@ const nextConfig: NextConfig = {
         destination: '/blog/como-comprar-finca-en-la-vega',
         permanent: true,
       },
+      // /veredas/ucranea publicaba una vereda de Sasaima que en realidad es
+      // Ucrania, vereda de La Vega (código postal 253618). No se renombró la
+      // página: su contenido —altitud, temperatura, distancias, clima, POT y
+      // coordenadas— estaba medido para Sasaima. Se retiró entera y la URL
+      // apunta al municipio correcto.
+      { source: '/veredas/ucranea', destination: '/municipios/la-vega', permanent: true },
       ...landing,
       ...props,
     ]
