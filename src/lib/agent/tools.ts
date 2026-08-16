@@ -246,13 +246,26 @@ async function buscarPropiedades(input: BuscarInput) {
     // un cliente que pregunta «¿tienen condominios?» recibiría cero resultados
     // habiendo doce inmuebles en condominio — la reclasificación de tipos habría
     // roto en silencio una de las consultas más frecuentes del negocio.
-    if (/condominio|conjunto/.test(norm(input.tipo))) {
-      criterios.push({ nombre: `en condominio`, where: { en_condominio: true } })
-    } else {
-      const tipos = tiposDesde(input.tipo)
-      if (tipos) criterios.push({ nombre: `tipo ${input.tipo}`, where: { type: { in: tipos } } })
-      // Si el tipo no se reconoce (ej. "casa lote"), no se filtra: se usa como texto.
+    //
+    // Régimen y tipo son INDEPENDIENTES y se acumulan. «Casas en condominio» es
+    // una pregunta por las dos cosas: la primera versión de esta intercepción
+    // dejaba que la palabra «condominio» se comiera el tipo, y devolvía los doce
+    // inmuebles —lotes incluidos— a quien había preguntado por casas.
+    const entrada = norm(input.tipo)
+    const enCondominio = /condominio|conjunto/.test(entrada)
+
+    if (enCondominio) {
+      criterios.push({ nombre: 'en condominio', where: { en_condominio: true } })
     }
+
+    // Se quita lo que ya consumió el régimen y se busca el tipo en lo que queda.
+    const resto = enCondominio
+      ? entrada.replace(/\b(en|dentro de)\b/g, ' ').replace(/condominios?|conjuntos?( cerrados?)?/g, ' ').trim()
+      : entrada
+
+    const tipos = resto ? tiposDesde(resto) : null
+    if (tipos) criterios.push({ nombre: `tipo ${input.tipo}`, where: { type: { in: tipos } } })
+    // Si el tipo no se reconoce (ej. "casa lote"), no se filtra: se usa como texto.
   }
 
   // Zona pedida fuera de nuestra cobertura: se muestran opciones igual, pero Mac
