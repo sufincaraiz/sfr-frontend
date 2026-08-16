@@ -585,6 +585,25 @@ tumbaría.
 `P2024` casi siempre significa consultas de más **por página**. Ya ha pasado
 dos veces: la vereda en consulta aparte, y `cargarEnlaces()` en `cache()`.
 
+### ⚠ Un dato falso que sobrevive en otro sitio entra en el MISMO lote
+
+Criterio del titular, 16/08/2026.
+
+Cuando un cambio deja un dato falso o contradictorio vivo en otra parte del
+sitio, esa parte **entra en el mismo lote**. No es ampliar el alcance: es
+completar el cambio.
+
+> Un lote que corrige el hero y deja la distancia falsa en la respuesta directa
+> no está a medias, está mal hecho.
+
+El caso que lo fijó: se quitó «a menos de dos horas de Bogotá» del hero —falso,
+Vergara está a 130 minutos— y la misma frase seguía en `respuestaPortada()`,
+que es **el bloque que los modelos citan literalmente**. Sacarla de la primera
+pantalla y dejarla ahí no la corrige: la traslada al sitio más citable.
+
+**Excepción única:** cuando corregirlo exige un dato que no se tiene. Entonces
+se marca TODO en el código, se reporta al titular y se sigue.
+
 ### ⚠ El `catch` va FUERA del caché — patrón general
 
 Un `catch` que degrada dentro de `unstable_cache` **cachea el estado degradado**

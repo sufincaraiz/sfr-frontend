@@ -25,9 +25,14 @@ export const metadata: Metadata = {
   },
   openGraph: {
     title: 'Municipios del Gualivá, Cundinamarca | Su Finca Raíz',
+    // Decía «La Vega, Villeta, Nocaima, Sasaima y más, a menos de 2 horas de
+    // Bogotá»: lista parcial de cuatro contra los doce que declara el
+    // areaServed, y una distancia falsa —Vergara está a 130 minutos—. La meta
+    // description de esta misma página ya estaba corregida; se quedó solo el OG,
+    // que es el que se cita al compartir el enlace.
     description:
-      'Guía de municipios del Gualivá para inversión inmobiliaria: La Vega, Villeta, ' +
-      'Nocaima, Sasaima y más, a menos de 2 horas de Bogotá.',
+      'Los doce municipios de la Provincia del Gualivá, Cundinamarca, para comprar ' +
+      'finca raíz cerca de Bogotá: clima, turismo, inversión y propiedades disponibles.',
     url: `${SITE_URL}/municipios`,
     type: 'website',
     locale: 'es_CO',

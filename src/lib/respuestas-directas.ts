@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales'
+import { getTiposOfrecibles, getTipoLabels } from '@/lib/property-types.server'
+import { tipoLabel } from '@/lib/property-types'
 import type { RespuestaDirectaProps } from '@/components/aeo/RespuestaDirecta'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -34,7 +36,7 @@ async function seguro<T>(fn: () => Promise<T>, porDefecto: T): Promise<T> {
   }
 }
 
-/** Inventario activo con su precio mínimo, por tipo. */
+/** Inventario activo, su precio mínimo y el TIPO de la propiedad más barata. */
 async function inventario() {
   return seguro(async () => {
     const [total, minimo] = await Promise.all([
@@ -42,28 +44,77 @@ async function inventario() {
       prisma.property.findFirst({
         where: { status: 'available' },
         orderBy: { price_cop: 'asc' },
-        select: { price_cop: true },
+        select: { price_cop: true, type: true },
       }),
     ])
-    return { total, desde: minimo ? Number(minimo.price_cop) : null }
-  }, { total: 0, desde: null as number | null })
+    return {
+      total,
+      desde: minimo ? Number(minimo.price_cop) : null,
+      // El tipo del más barato se DERIVA. Estaba escrito a mano como «lotes
+      // campestres», que además es un tipo con cero inventario: la frase más
+      // citable del sitio apuntaba a una categoría que no existe.
+      tipoDesde: minimo?.type ?? null,
+    }
+  }, { total: 0, desde: null as number | null, tipoDesde: null as string | null })
+}
+
+/**
+ * Minutos de viaje a Bogotá desde La Vega, según la ficha del municipio.
+ *
+ * Se nombra La Vega y no «la provincia» a propósito. La portada decía «los 12
+ * municipios […] a menos de dos horas de Bogotá» y eso es falso: Vergara está
+ * a 130 minutos y cuatro municipios no tienen el dato capturado. Atado a un
+ * municipio concreto, el número es exacto y comprobable.
+ */
+async function minutosLaVega(): Promise<number | null> {
+  return seguro(async () => {
+    const m = await prisma.municipality.findFirst({
+      where:  { slug: 'la-vega' },
+      select: { tiempo_bogota_min: true },
+    })
+    return m?.tiempo_bogota_min ?? null
+  }, null as number | null)
+}
+
+/** «fincas, casas campestres, lotes y apartamentos» — solo los que hay hoy. */
+async function pluralesConInventario(): Promise<string> {
+  const tipos = await getTiposOfrecibles()
+  const lista = tipos.map(t => t.plural.toLowerCase())
+  // Si la base no responde, `getTiposOfrecibles` ya cae a la lista estática;
+  // este respaldo cubre solo el caso de que llegue vacía.
+  if (lista.length === 0) return 'inmuebles rurales'
+  const ultimo = lista[lista.length - 1]!
+  if (lista.length === 1) return ultimo
+  return `${lista.slice(0, -1).join(', ')} y ${ultimo}`
 }
 
 // ─── 1. Portada ──────────────────────────────────────────────────────────────
 
 export async function respuestaPortada(): Promise<RespuestaDirectaProps> {
-  const { total, desde } = await inventario()
+  const [{ total, desde, tipoDesde }, minutos, plurales, labels] = await Promise.all([
+    inventario(),
+    minutosLaVega(),
+    pluralesConInventario(),
+    getTipoLabels(),
+  ])
+
   const cola = total > 0 && desde
-    ? ` Tiene ${total} propiedades disponibles, desde ${cop(desde)} COP en lotes campestres.`
+    ? ` Tiene ${total} propiedades disponibles, desde ${cop(desde)} COP` +
+      (tipoDesde ? ` en ${tipoLabel(tipoDesde, labels).toLowerCase()}` : '') + '.'
     : ''
+
+  // El dato de distancia va atado a La Vega, no a la provincia entera: la
+  // versión anterior afirmaba «los 12 municipios […] a menos de dos horas» y
+  // Vergara está a 130 minutos.
+  const distancia = minutos ? `, y La Vega está a ${minutos} minutos de Bogotá` : ''
 
   return {
     pregunta: '¿Dónde comprar finca o lote campestre cerca de Bogotá?',
     respuesta:
       `Su Finca Raíz es una inmobiliaria de La Vega, Cundinamarca, con matrícula mercantil ` +
-      `199483 y operación desde ${DATOS_OFICIALES.anioFundacion}. Comercializa fincas, lotes ` +
-      `campestres, casas de descanso y condominios en los ${DATOS_OFICIALES.municipiosProvincia} ` +
-      `municipios de la Provincia del Gualivá, a menos de dos horas de Bogotá.${cola}`,
+      `199483 y operación desde ${DATOS_OFICIALES.anioFundacion}. Comercializa ${plurales} ` +
+      `en los ${DATOS_OFICIALES.municipiosProvincia} municipios de la Provincia del ` +
+      `Gualivá${distancia}.${cola}`,
     fuenteDato: FUENTE,
     fechaCorte: hoy(),
   }

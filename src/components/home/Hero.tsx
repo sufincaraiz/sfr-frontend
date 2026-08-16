@@ -21,10 +21,6 @@ export function Hero() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const scrollToFeatured = () => {
-    document.getElementById('featured-properties')?.scrollIntoView({ behavior: 'smooth' });
-  };
-
   return (
     <section
       id="hero-section"
@@ -55,47 +51,45 @@ export function Hero() {
       {/* Contenido — animaciones CSS puras, GPU-composited */}
       <div className="relative z-10 flex flex-col items-center text-center px-4 sm:px-6 pt-28 pb-12 max-w-5xl mx-auto">
 
-        {/* Eyebrow decorativo — delay 0s */}
+        {/* Línea de territorio — delay 0s.
+            Decía «La Vega · Sasaima · Nocaima · Villeta»: cuatro municipios en la
+            primera pantalla contra los doce que declara el areaServed del JSON-LD y
+            llms.txt. Nombrar la provincia entera cabe en tres palabras, no contradice
+            el marcado, y además es el término que se busca. */}
         <p
           className="hero-anim font-sans font-semibold text-sm tracking-[0.28em] uppercase mb-2"
           style={{ color: '#E8B92F', animationDelay: '0s' }}
         >
-          La Vega · Sasaima · Nocaima · Villeta
+          Provincia del Gualivá · Cundinamarca
         </p>
 
-        {/* H1 — keyword SEO, estilo eyebrow sutil — delay 0.15s */}
+        {/* H1 — delay 0.15s.
+            Era el texto MÁS PEQUEÑO del hero (0.85rem, 70% de opacidad) mientras un
+            H2 decorativo ocupaba 4.5rem: la jerarquía visual iba al revés de la
+            semántica. Ahora es el elemento dominante.
+            Los apartamentos van al final porque el orden refleja peso: 4 disponibles
+            frente a 14 casas y 10 lotes. Y capturan la consulta urbana, que no estaba
+            cubierta en ninguna parte del sitio. */}
         <h1
           className="hero-anim"
           style={{
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            color: 'rgba(255,255,255,0.70)',
-            letterSpacing: '0.13em',
-            textTransform: 'uppercase',
-            marginBottom: '1.25rem',
-            textShadow: '0 1px 4px rgba(0,0,0,0.4)',
+            fontSize: 'clamp(1.6rem, 3.6vw, 2.6rem)',
+            fontWeight: 800,
+            color: '#FFFFFF',
+            lineHeight: 1.15,
+            letterSpacing: '-0.015em',
+            marginBottom: '1rem',
+            textShadow: '0 2px 8px rgba(0,0,0,0.5)',
             animationDelay: '0.15s',
           }}
         >
-          Fincas, Lotes y Casas Campestres en Venta · La Vega, Cundinamarca
+          Fincas, Lotes, Casas Campestres y Apartamentos en Venta · La Vega y el Gualivá, Cundinamarca
         </h1>
 
-        {/* H2 — titular emocional grande — delay 0.3s */}
-        <h2
-          className="hero-anim font-sans text-white text-balance mb-5"
-          style={{
-            fontSize: 'clamp(2.5rem, 6vw, 4.5rem)',
-            fontWeight: 900,
-            lineHeight: 1.08,
-            letterSpacing: '-0.025em',
-            textShadow: '0 2px 8px rgba(0,0,0,0.5)',
-            animationDelay: '0.3s',
-          }}
-        >
-          Tu inmueble te espera,<br />
-          ¡Hazlo{' '}
-          <span style={{ color: '#E8B92F' }}>Realidad</span>!
-        </h2>
+        {/* El H2 «Tu inmueble te espera, ¡Hazlo Realidad!» salió de aquí: es el
+            eslogan del logotipo, así que ya vive en la marca, y repetirlo a 4.5rem
+            no añadía información. Sale como ENCABEZADO, no de la identidad.
+            Si el hero necesitara un H2, sería el eslogan de entidad. */}
 
         {/* Posicionamiento — delay 0.4s */}
         <p
@@ -112,7 +106,13 @@ export function Hero() {
           Inmobiliaria impulsada por inteligencia artificial en La Vega y el Gualivá
         </p>
 
-        {/* Descripción — delay 0.5s */}
+        {/* Descripción — delay 0.5s.
+            Decía «a menos de dos horas de Bogotá» (falso: Vergara está a 130 min) y
+            «alta proyección de valorización», que es una promesa de rendimiento de la
+            misma familia que las cifras retiradas, en la primera pantalla.
+            El texto nuevo NO repite territorio, tipos ni distancia: eso ya lo dicen la
+            línea superior, el H1 y la <RespuestaDirecta> de debajo. Dice el
+            diferencial, que no aparecía en ninguna parte de esta pantalla. */}
         <p
           className="hero-anim font-sans text-white/80 max-w-2xl mb-8 leading-relaxed"
           style={{
@@ -122,24 +122,15 @@ export function Hero() {
             animationDelay: '0.5s',
           }}
         >
-          Encuentra tu refugio ideal a menos de dos horas de Bogotá. Descubre condominios
-          exclusivos, proyectos inmobiliarios y cabañas con alta proyección de valorización.
+          Cada negociación incluye estudio de títulos y certificado de tradición y libertad.
+          Verificamos acceso, agua y uso del suelo antes de que firmes.
         </p>
 
-        {/* Botón "Ver proyectos destacados" — delay 0.65s */}
-        <button
-          onClick={scrollToFeatured}
-          className="hero-anim mb-8 inline-flex items-center gap-2 px-7 py-3 rounded-xl text-sm font-bold transition-colors hover:bg-yellow-400/10 active:scale-[0.97]"
-          style={{
-            border: '2px solid #E8B92F',
-            color: '#E8B92F',
-            background: 'transparent',
-            animationDelay: '0.65s',
-          }}
-        >
-          Ver proyectos destacados →
-        </button>
-
+        {/* El botón «Ver proyectos destacados» salió de aquí. No iba al catálogo:
+            era un ancla a #featured-properties, la sección curada que está una
+            pantalla más abajo en esta misma portada y a la que se llega scrolleando.
+            Competía con «Ver propiedades» por la misma intención y la dividía.
+            La sección sigue donde estaba. */}
         {/* CTAs principales — delay 0.8s */}
         <div
           className="hero-anim flex flex-col sm:flex-row items-center gap-3 mb-12 w-full max-w-xs sm:max-w-none sm:justify-center"
@@ -174,11 +165,9 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-10 flex flex-col items-center gap-1.5 opacity-60">
-        <span className="text-white text-[10px] font-bold tracking-[0.25em] uppercase">Explorar</span>
-        <div className="w-px h-10 bg-white/50" aria-hidden="true" />
-      </div>
-    </section>
+      {/* El indicador «Explorar» salió de aquí: quedaba tapado por la tarjeta del
+          buscador y competía con «Buscar propiedades», que ya es la llamada a la
+          acción de esa zona. */}
+</section>
   );
 }
