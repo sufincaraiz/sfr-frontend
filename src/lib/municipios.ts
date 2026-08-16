@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { PUBLICABLE } from '@/lib/publicable'
 
 // Forma de un municipio para las páginas públicas. El contenido vive en la base
 // y se edita desde /admin/municipios; antes estaba escrito a mano en
@@ -70,22 +71,6 @@ function mapMunicipio(m: any): Municipio {
 // activo en @/lib/cobertura. Son cosas independientes.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Los seis campos que definen contenido propio y verificable. */
-const CONTENIDO_COMPLETO = {
-  altitud_msnm:        { not: null },
-  distancia_bogota_km: { not: null },
-  tiempo_bogota_min:   { not: null },
-  temp_min:            { not: null },
-  temp_max:            { not: null },
-  descripcion_seo:     { not: null },
-} as const
-
-/** Condición completa de publicación: contenido + no oculto + descripción no vacía. */
-const PUBLICABLE = {
-  oculto: false,
-  ...CONTENIDO_COMPLETO,
-  NOT: { descripcion_seo: '' },
-} as const
 
 /** Un municipio con página publicada, por slug. null si no existe, no tiene
  *  contenido completo, está oculto o la BD no responde. */

@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { MUNICIPIOS_PROVINCIA } from '@/lib/datos-oficiales'
 import { getTiposPropiedad } from '@/lib/property-types.server'
 import { cargarEnlaces } from '@/lib/enlaces'
+import { PUBLICABLE } from '@/lib/publicable'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // COBERTURA MUNICIPAL — las tres listas, derivadas, nunca escritas a mano.
@@ -28,21 +29,9 @@ import { cargarEnlaces } from '@/lib/enlaces'
 // forzarla. Es un freno manual, no un interruptor.
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Campos mínimos que definen «contenido propio y verificable» (doctrina §1.2). */
-const CAMPOS_CONTENIDO = [
-  'altitud_msnm',
-  'distancia_bogota_km',
-  'tiempo_bogota_min',
-  'temp_min',
-  'temp_max',
-  'descripcion_seo',
-] as const
-
-/** Filtro Prisma que exige los seis campos poblados. Se usa en las consultas
- *  para que la derivación ocurra en la base y no en memoria. */
-const CONTENIDO_COMPLETO = Object.fromEntries(
-  CAMPOS_CONTENIDO.map(c => [c, { not: null }]),
-) as Record<(typeof CAMPOS_CONTENIDO)[number], { not: null }>
+// La condición de «municipio publicable» vive en @/lib/publicable, una sola vez.
+// Antes estaba aquí Y en municipios.ts: coincidían, pero nada obligaba a que
+// siguieran coincidiendo.
 
 // ─── 1. areaServed: los doce, constante ──────────────────────────────────────
 
@@ -64,7 +53,7 @@ export interface MunicipioRef { slug: string; name: string }
 export async function getMunicipiosConPagina(): Promise<MunicipioRef[]> {
   try {
     const rows = await prisma.municipality.findMany({
-      where: { oculto: false, ...CONTENIDO_COMPLETO, NOT: { descripcion_seo: '' } },
+      where: PUBLICABLE,
       orderBy: [{ demand_score: 'desc' }, { name: 'asc' }],
       select: { slug: true, name: true },
     })
@@ -104,9 +93,7 @@ export async function getMunicipiosConDatos(excluirSlug?: string): Promise<Munic
   try {
     const rows = await prisma.municipality.findMany({
       where: {
-        oculto: false,
-        ...CONTENIDO_COMPLETO,
-        NOT: { descripcion_seo: '' },
+        ...PUBLICABLE,
         ...(excluirSlug ? { slug: { not: excluirSlug } } : {}),
       },
       orderBy: [{ demand_score: 'desc' }, { name: 'asc' }],
@@ -138,7 +125,7 @@ export async function municipioTienePagina(slug: string): Promise<boolean> {
   if (!slug) return false
   try {
     const n = await prisma.municipality.count({
-      where: { slug, oculto: false, ...CONTENIDO_COMPLETO, NOT: { descripcion_seo: '' } },
+      where: { slug, ...PUBLICABLE },
     })
     return n > 0
   } catch {
