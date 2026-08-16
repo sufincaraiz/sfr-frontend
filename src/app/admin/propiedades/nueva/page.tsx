@@ -50,6 +50,7 @@ export default function NuevaPropiedadPage() {
     short_description: '', description: '', meta_title: '', meta_description: '',
     // features
     clima: '', altitud: '', distancia_parque: '',
+    en_condominio: false,
     has_360_tour: false, tour360_url: '',
   });
   const [servicios,  setServicios]  = useState<string[]>([]);
@@ -74,12 +75,17 @@ export default function NuevaPropiedadPage() {
       .catch(() => {});
   }, []);
 
-  // Tipos de inmueble desde la BD (incluye ocultos) + opción "Otro".
+  // Tipos de inmueble desde la BD. Se EXCLUYEN los ocultos: el catálogo
+  // completo se administra en /admin/tipos, pero ofrecer aquí un tipo retirado
+  // —«Condominio» lo estuvo— deja crear mañana una propiedad que resucita la
+  // taxonomía que se eliminó. En creación no hay tipo previo que conservar.
   useEffect(() => {
     fetch('/api/admin/property-types')
       .then(r => r.ok ? r.json() : null)
       .then(d => {
-        const lista = (d?.tipos ?? []).map((t: { slug: string; label: string }) => ({ value: t.slug, label: t.label }));
+        const lista = (d?.tipos ?? [])
+          .filter((t: { oculto?: boolean }) => !t.oculto)
+          .map((t: { slug: string; label: string }) => ({ value: t.slug, label: t.label }));
         if (lista.length) setTipos(lista);
       })
       .catch(() => {});
@@ -136,6 +142,7 @@ export default function NuevaPropiedadPage() {
         type_label:      tipoNuevo || undefined, // tipo nuevo escrito a mano; el API lo crea
         municipality_name: municipio,
         status:          form.status,
+        en_condominio:   !!form.en_condominio,
         price_cop:       form.price_cop ? parseInt(form.price_cop) : 0,
         area_lot_m2:     form.area_lot_m2  ? parseFloat(form.area_lot_m2)  : null,
         area_built_m2:   form.area_built_m2 ? parseFloat(form.area_built_m2) : null,
@@ -237,6 +244,16 @@ export default function NuevaPropiedadPage() {
                 style={{ ...inputStyle, marginTop: 8 }}
               />
             )}
+          </Field>
+          <Field label="Ubicación">
+            {/* «Condominio» dejó de ser un tipo de inmueble —no es una clase de
+                inmueble, es dónde está—. Esta casilla es lo que lo sustituye, y es
+                lo que alimenta el filtro público /propiedades/en-condominio.
+                Cruza con el tipo: en un condominio hay lotes, casas y fincas. */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '0.55rem 0' }}>
+              <input type="checkbox" checked={!!form.en_condominio} onChange={e => set('en_condominio', e.target.checked)} style={{ width: 16, height: 16 }} />
+              <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0D2D5E' }}>Está en un condominio campestre</span>
+            </label>
           </Field>
           <Field label="Municipio" required>
             <select value={form.municipality_name} onChange={e => set('municipality_name', e.target.value)} style={inputStyle}>

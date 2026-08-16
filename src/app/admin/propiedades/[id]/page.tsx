@@ -41,7 +41,7 @@ export default function EditarPropiedadPage() {
   const [munis, setMunis] = useState<string[]>([...MUNICIPIOS_PROVINCIA]);
   const [nuevoMuni, setNuevoMuni] = useState('');
   const [muniCreado, setMuniCreado] = useState<{ name: string; slug: string } | null>(null);
-  const [tipos, setTipos] = useState(PROPERTY_TYPES);
+  const [tipos, setTipos] = useState<{ value: string; label: string; oculto?: boolean }[]>(PROPERTY_TYPES);
   const [nuevoTipo, setNuevoTipo] = useState('');
 
   useEffect(() => {
@@ -58,13 +58,17 @@ export default function EditarPropiedadPage() {
     fetch('/api/admin/property-types')
       .then(r => r.ok ? r.json() : null)
       .then(d => {
-        const lista = (d?.tipos ?? []).map((t: { slug: string; label: string }) => ({ value: t.slug, label: t.label }));
+        const lista = (d?.tipos ?? [])
+          .map((t: { slug: string; label: string; oculto?: boolean }) => ({ value: t.slug, label: t.label, oculto: !!t.oculto }));
         if (lista.length) setTipos(lista);
       })
       .catch(() => {});
   }, []);
   const [data,    setData]    = useState<Record<string, unknown> | null>(null);
   const [form,    setForm]    = useState<Record<string, string>>({});
+  // Booleano aparte: el resto del formulario son cadenas, y ensanchar el
+  // Record obligaría a comprobar el tipo en cada campo de texto.
+  const [enCondominio, setEnCondominio] = useState(false);
   const [media,   setMedia]   = useState<MediaItem[]>([]);
   const [uploading, setUploading] = useState(false);
   const [saving,  setSaving]  = useState(false);
@@ -77,6 +81,7 @@ export default function EditarPropiedadPage() {
       .then(r => { if (r.status === 401) { window.location.href = '/admin/login'; } return r.json(); })
       .then(d => {
         setData(d);
+        setEnCondominio(!!d.en_condominio);
         setForm({
           title:            d.title ?? '',
           type:             d.type ?? 'finca',
@@ -181,6 +186,7 @@ export default function EditarPropiedadPage() {
           municipality_name: municipio,
           type:       form.type === OTRO ? '' : form.type,
           type_label: tipoNuevo || undefined,
+          en_condominio: enCondominio,
           price_cop:    parseInt(form['price_cop'] ?? '0') || 0,
           area_lot_m2:  form['area_lot_m2']  ? parseFloat(form['area_lot_m2'])  : null,
           area_built_m2: form['area_built_m2'] ? parseFloat(form['area_built_m2']) : null,
@@ -280,12 +286,26 @@ export default function EditarPropiedadPage() {
           <Field label="Título"><input value={form.title} onChange={e => set('title', e.target.value)} required style={inputStyle} /></Field>
           <Field label="Tipo">
             <select value={form.type} onChange={e => set('type', e.target.value)} style={inputStyle}>
-              {tipos.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+              {/* Se ocultan los tipos retirados —«Condominio» lo está— para que
+                  nadie los reasigne, pero se conserva el actual aunque esté oculto:
+                  filtrarlo cambiaría el tipo de la ficha sin querer al guardar. */}
+              {tipos.filter(t => !t.oculto || t.value === form.type)
+                    .map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
               <option value={OTRO}>➕ Otro tipo…</option>
             </select>
             {form.type === OTRO && (
               <input value={nuevoTipo} onChange={e => setNuevoTipo(e.target.value)} placeholder="Nombre del tipo (ej. Bodega)" autoFocus style={{ ...inputStyle, marginTop: 8 }} />
             )}
+          </Field>
+          <Field label="Ubicación">
+            {/* «Condominio» dejó de ser un tipo de inmueble —no es una clase de
+                inmueble, es dónde está—. Esta casilla es lo que lo sustituye, y es
+                lo que alimenta el filtro público /propiedades/en-condominio.
+                Cruza con el tipo: en un condominio hay lotes, casas y fincas. */}
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', padding: '0.55rem 0' }}>
+              <input type="checkbox" checked={enCondominio} onChange={e => setEnCondominio(e.target.checked)} style={{ width: 16, height: 16 }} />
+              <span style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0D2D5E' }}>Está en un condominio campestre</span>
+            </label>
           </Field>
           <Field label="Municipio">
             <select value={form.municipality_name} onChange={e => set('municipality_name', e.target.value)} style={inputStyle}>

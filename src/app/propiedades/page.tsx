@@ -8,7 +8,7 @@ import { FiltrosPropiedades } from '@/components/propiedades/FiltrosPropiedades'
 import { Paginacion }         from '@/components/propiedades/Paginacion';
 import { SkeletonCards }      from '@/components/propiedades/SkeletonCards';
 import { tipoPlural }         from '@/lib/property-types';
-import { getTiposPropiedad, getTipoPlurales } from '@/lib/property-types.server';
+import { getTiposOfrecibles, getTipoPlurales } from '@/lib/property-types.server';
 import { getMunicipiosConInventario } from '@/lib/cobertura';
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
 import { respuestaPropiedades } from '@/lib/respuestas-directas';
@@ -110,7 +110,7 @@ export default async function PropiedadesPage({
   const sp = await searchParams;
   const [data, tipos, plurales, municipios, respuesta] = await Promise.all([
     fetchProperties(sp),
-    getTiposPropiedad(),
+    getTiposOfrecibles(),   // solo tipos CON inventario: ver property-types.server
     getTipoPlurales(),
     getMunicipiosConInventario(), // derivado del inventario, no una lista fija
     respuestaPropiedades(),

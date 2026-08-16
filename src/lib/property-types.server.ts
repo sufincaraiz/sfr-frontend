@@ -2,6 +2,8 @@ import { cache } from 'react';
 import { prisma } from '@/lib/prisma';
 import { slugify } from '@/lib/utils';
 import { DEFAULT_TIPOS, pluralizar, type TipoPropiedad } from '@/lib/property-types';
+// catalogo.ts solo importa prisma y tipos: no hay ciclo.
+import { tiposConInventario } from '@/lib/catalogo';
 
 /**
  * Tipos de inmueble desde la BD, ordenados. Resiliente: si la consulta falla
@@ -28,6 +30,31 @@ export const getTiposPropiedad = cache(async (opciones?: { incluirOcultos?: bool
     console.error('[getTiposPropiedad]', err);
     return DEFAULT_TIPOS;
   }
+});
+
+/**
+ * Tipos que se OFRECEN AL CLIENTE: visibles en el catálogo Y con inventario.
+ *
+ * El desplegable público ofrecía Lote urbano, Lote rural, Lote campestre y
+ * Local comercial con cero propiedades cada uno. El cliente elegía y no
+ * encontraba nada: el mismo fallo que dejar los condominios sin vía de
+ * búsqueda, por el otro extremo.
+ *
+ * El admin NO usa esto —allí se crean las propiedades, así que necesita el
+ * catálogo entero—, y por eso la lista completa sigue existiendo aparte.
+ *
+ * Si la base no responde, `getTiposPropiedad` ya cae a la lista estática; en
+ * ese caso se devuelve tal cual en vez de vaciar el filtro, que dejaría al
+ * buscador sin ninguna opción.
+ */
+export const getTiposOfrecibles = cache(async (): Promise<TipoPropiedad[]> => {
+  const [tipos, conStock] = await Promise.all([
+    getTiposPropiedad(),
+    tiposConInventario(),
+  ]);
+  if (!conStock.length) return tipos;
+  const vivos = new Set(conStock);
+  return tipos.filter(t => vivos.has(t.slug));
 });
 
 /** Mapa slug → label para pasar a `tipoLabel()` en componentes de servidor. */

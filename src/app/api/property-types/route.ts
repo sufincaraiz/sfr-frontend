@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
-import { getTiposPropiedad } from '@/lib/property-types.server'
+import { getTiposOfrecibles } from '@/lib/property-types.server'
 
-// Lista pública de tipos de inmueble para los selectores del buscador y de los
-// filtros. Solo los visibles. Si la BD falla, `getTiposPropiedad` ya devuelve la
-// lista estática, así que el filtro nunca queda vacío.
+// Lista PÚBLICA de tipos para los selectores del buscador y de los filtros.
+//
+// Solo los visibles Y con inventario. Ofrecía cuatro tipos con cero
+// propiedades —Lote urbano, Lote rural, Lote campestre, Local comercial—, así
+// que el cliente elegía y no encontraba nada. El admin usa
+// /api/admin/property-types, que sí devuelve el catálogo entero porque allí es
+// donde se crean las propiedades.
 export async function GET() {
-  const tipos = await getTiposPropiedad()
+  const tipos = await getTiposOfrecibles()
   return NextResponse.json({ tipos })
 }
