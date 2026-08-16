@@ -26,7 +26,7 @@
  *   · «took more than 60 seconds»
  *   · «Retrying again shortly»
  *
- * Los avisos se comparan contra el build anterior (.next/ultimo-build.json).
+ *  Los avisos se comparan contra el build anterior (.build-historial.json).
  * Una subida brusca sí merece mirada aunque ninguno sea, por sí solo, un fallo.
  *
  * ---------------------------------------------------------------------------
@@ -40,9 +40,11 @@
  */
 
 import { spawn } from 'node:child_process'
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
-const HISTORIAL = '.next/ultimo-build.json'
+// FUERA de .next: el propio build borra ese directorio, así que el historial
+// guardado dentro nunca sobrevivía para la comparación siguiente.
+const HISTORIAL = '.build-historial.json'
 
 const PATRONES = [
   { clave: 'p2024',      re: /P2024/g,                        grave: true,  label: 'P2024 (pool agotado)' },
@@ -78,7 +80,6 @@ hijo.on('close', codigo => {
   if (!previo) console.log('  (sin build anterior con el que comparar)')
 
   try {
-    mkdirSync('.next', { recursive: true })
     writeFileSync(HISTORIAL, JSON.stringify(conteo, null, 2))
   } catch { /* el historial es una ayuda, no un requisito */ }
 

@@ -6,6 +6,7 @@ import {
   fetchPropiedades, resolverMunicipio, resolverTipo,
   municipiosConInventarioSlug,
 } from '@/lib/catalogo'
+import { exigirIntegridadTipos } from '@/lib/tipos-integridad'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /propiedades/[municipio] — ruta limpia del catálogo por municipio.
@@ -29,6 +30,11 @@ interface Params { filtro: string }
 
 /** Solo los municipios con inventario se prerenderizan; el resto va bajo demanda. */
 export async function generateStaticParams(): Promise<Params[]> {
+  // Guarda automática: rompe el build si hay propiedades publicadas con un tipo
+  // inexistente u oculto. Ya se escapó una vez —al retirar «condominio» el
+  // formulario del admin siguió ofreciéndolo—. Ver src/lib/tipos-integridad.ts
+  await exigirIntegridadTipos()
+
   const slugs = await municipiosConInventarioSlug()
   return slugs.map(filtro => ({ filtro }))
 }
