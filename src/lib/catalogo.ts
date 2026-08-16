@@ -41,6 +41,17 @@ export interface FiltroCatalogo {
   maxPrecio?: string
   page?:      number
   /**
+   * Solo propiedades dentro de un condominio campestre.
+   *
+   * Es un ATRIBUTO, no un tipo: cruza con `tipo`, porque en un condominio hay
+   * lotes, casas y fincas. Existió como tipo («condominio») y se retiró, pero
+   * retirar el tipo dejó al cliente sin forma de buscar lo que sí busca por su
+   * nombre: hay 12 propiedades en condominio y ninguna vía pública para
+   * filtrarlas. Un atributo que la gente nombra necesita filtro; un tipo que
+   * no existe, no.
+   */
+  enCondominio?: boolean
+  /**
    * Trae el municipio entero hasta `TOPE_SIN_PAGINAR`, sin paginar.
    *
    * Existe para que las rutas limpias NO tengan que leer `searchParams`. Leer
@@ -69,6 +80,7 @@ export async function fetchPropiedades(f: FiltroCatalogo): Promise<ResultadoCata
   const where: any = { status: 'available' }
 
   if (f.tipo && f.tipo !== 'todos')            where.type = f.tipo
+  if (f.enCondominio)                           where.en_condominio = true
   if (f.maxPrecio)                              where.price_cop = { lte: BigInt(f.maxPrecio) }
   if (f.municipio && f.municipio !== 'todos') {
     where.municipality = { name: { contains: f.municipio, mode: 'insensitive' } }
@@ -223,6 +235,69 @@ export async function combinacionesConInventario(): Promise<{ tipo: string; muni
       .filter((c): c is { tipo: string; municipio: string } => Boolean(c.municipio))
   } catch (err) {
     console.warn('[catalogo] BD no disponible al derivar combinaciones:', err instanceof Error ? err.message : err)
+    return []
+  }
+}
+
+/**
+ * Tipos que hoy tienen al menos una propiedad disponible.
+ *
+ * El desplegable PÚBLICO se deriva de aquí, no del catálogo de tipos. Ofrecer
+ * un tipo sin inventario manda al cliente a un listado vacío: es el mismo
+ * fallo que dejar «condominio» sin vía de búsqueda, por el otro extremo.
+ * Ofrecíamos Lote urbano, Lote rural, Lote campestre y Local comercial con
+ * cero propiedades cada uno.
+ *
+ * El admin NO usa esto: allí se crean las propiedades, así que necesita el
+ * catálogo entero.
+ */
+export async function tiposConInventario(): Promise<string[]> {
+  try {
+    const grupos = await prisma.property.groupBy({
+      by: ['type'],
+      where: { status: 'available' },
+    })
+    return grupos.map(g => g.type)
+  } catch (err) {
+    console.warn('[catalogo] BD no disponible al derivar tipos con inventario:', err instanceof Error ? err.message : err)
+    return []
+  }
+}
+
+/**
+ * Municipios con al menos una propiedad en condominio. Alimenta las rutas
+ * `/propiedades/en-condominio/[municipio]` y su prerender.
+ */
+export async function municipiosConCondominio(): Promise<string[]> {
+  try {
+    const rows = await prisma.municipality.findMany({
+      where:  { properties: { some: { status: 'available', en_condominio: true } } },
+      select: { slug: true },
+    })
+    return rows.map(r => r.slug)
+  } catch (err) {
+    console.warn('[catalogo] BD no disponible al derivar municipios con condominio:', err instanceof Error ? err.message : err)
+    return []
+  }
+}
+
+/** Reparto por tipo de las propiedades en condominio de un municipio (o de todos). */
+export async function tiposEnCondominio(municipioNombre?: string): Promise<{ slug: string; n: number }[]> {
+  try {
+    const grupos = await prisma.property.groupBy({
+      by: ['type'],
+      where: {
+        status: 'available',
+        en_condominio: true,
+        ...(municipioNombre ? { municipality: { name: { contains: municipioNombre, mode: 'insensitive' } } } : {}),
+      },
+      _count: { _all: true },
+    })
+    return grupos
+      .map(g => ({ slug: g.type, n: g._count._all }))
+      .sort((a, b) => b.n - a.n)
+  } catch (err) {
+    console.warn('[catalogo] BD no disponible al derivar tipos en condominio:', err instanceof Error ? err.message : err)
     return []
   }
 }

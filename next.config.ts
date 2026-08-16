@@ -123,6 +123,12 @@ const nextConfig: NextConfig = {
       // coordenadas— estaba medido para Sasaima. Se retiró entera y la URL
       // apunta al municipio correcto.
       { source: '/veredas/ucranea', destination: '/municipios/la-vega', permanent: true },
+      // «Condominio» dejó de ser un tipo de inmueble, pero quien llegaba a
+      // /propiedades/condominio/<municipio> buscaba exactamente lo que ahora
+      // vive en /propiedades/en-condominio/<municipio>. La intención es la
+      // misma; solo cambió el vocabulario de los datos.
+      { source: '/propiedades/condominio/:municipio', destination: '/propiedades/en-condominio/:municipio', permanent: true },
+      { source: '/propiedades/condominio', destination: '/propiedades/en-condominio', permanent: true },
       ...landing,
       ...props,
     ]

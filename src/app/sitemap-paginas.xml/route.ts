@@ -1,7 +1,9 @@
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { urlset, respuestaXml, type EntradaSitemap } from '@/lib/sitemap-xml'
-import { municipiosConInventarioSlug, combinacionesConInventario } from '@/lib/catalogo'
+import {
+  municipiosConInventarioSlug, combinacionesConInventario, municipiosConCondominio,
+} from '@/lib/catalogo'
 
 // Páginas fijas del sitio.
 //
@@ -36,9 +38,10 @@ export async function GET() {
   //
   // Entran y salen solas: la lista se deriva del inventario, así que un cruce
   // aparece en el sitemap el día que entra su primera propiedad.
-  const [municipios, combinaciones] = await Promise.all([
+  const [municipios, combinaciones, condominioMunis] = await Promise.all([
     municipiosConInventarioSlug(),
     combinacionesConInventario(),
+    municipiosConCondominio(),
   ])
 
   const rutasCatalogo: EntradaSitemap[] = [
@@ -47,6 +50,21 @@ export async function GET() {
       lastmod: ultimaPropiedad,
       changefreq: 'daily' as const,
       priority: 0.85,
+    })),
+    // Vista por ATRIBUTO: agrupa lotes, casas y fincas que están en condominio.
+    // «Condominios campestres La Vega» es una consulta con demanda y hasta ahora
+    // no tenía URL propia; el tipo se retiró pero la búsqueda no desapareció.
+    ...(condominioMunis.length ? [{
+      url: `${SITE_URL}/propiedades/en-condominio`,
+      lastmod: ultimaPropiedad,
+      changefreq: 'daily' as const,
+      priority: 0.85,
+    }] : []),
+    ...condominioMunis.map(slug => ({
+      url: `${SITE_URL}/propiedades/en-condominio/${slug}`,
+      lastmod: ultimaPropiedad,
+      changefreq: 'daily' as const,
+      priority: 0.8,
     })),
     ...combinaciones.map(({ tipo, municipio }) => ({
       url: `${SITE_URL}/propiedades/${tipo}/${municipio}`,

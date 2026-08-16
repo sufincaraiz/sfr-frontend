@@ -35,9 +35,18 @@ interface CatalogoLimpioProps {
   tipo?:         { slug: string; plural: string }
   /** Ruta canónica de esta vista, sin dominio. */
   ruta:          string
+  /**
+   * La vista está acotada a propiedades dentro de un condominio campestre.
+   *
+   * Es un ATRIBUTO y no un tipo, y por eso cruza con `tipo`: en un condominio
+   * hay lotes, casas y fincas. El encabezado lo dice así —«lotes en condominio»,
+   * no «condominios»— para no reintroducir por el texto la taxonomía que se
+   * retiró de los datos.
+   */
+  condominio?:   boolean
 }
 
-export async function CatalogoLimpio({ data, municipio, tipo, ruta }: CatalogoLimpioProps) {
+export async function CatalogoLimpio({ data, municipio, tipo, ruta, condominio }: CatalogoLimpioProps) {
   const vacio = data.total === 0
 
   // Solo se consulta cuando hace falta: si hay inventario, no hay que ofrecer
@@ -46,9 +55,13 @@ export async function CatalogoLimpio({ data, municipio, tipo, ruta }: CatalogoLi
     ? await tiposConInventarioEnMunicipio(municipio.name, tipo?.slug)
     : []
 
-  const titulo = tipo
-    ? `${tipo.plural} en Venta en ${municipio.name}, Cundinamarca`
-    : `Propiedades en Venta en ${municipio.name}, Cundinamarca`
+  const titulo = condominio
+    ? tipo
+      ? `${tipo.plural} en Condominio en ${municipio.name}, Cundinamarca`
+      : `Propiedades en Condominio Campestre en ${municipio.name}, Cundinamarca`
+    : tipo
+      ? `${tipo.plural} en Venta en ${municipio.name}, Cundinamarca`
+      : `Propiedades en Venta en ${municipio.name}, Cundinamarca`
 
   const respuesta = await respuestaCatalogoLimpio({
     municipio:  municipio.name,
@@ -59,6 +72,7 @@ export async function CatalogoLimpio({ data, municipio, tipo, ruta }: CatalogoLi
   const migas = [
     { name: 'Inicio',      href: '/' },
     { name: 'Propiedades', href: '/propiedades' },
+    ...(condominio ? [{ name: 'En condominio', href: '/propiedades/en-condominio' }] : []),
     ...(tipo ? [{ name: tipo.plural, href: `/propiedades/${tipo.slug}/${municipio.slug}` }] : []),
     { name: municipio.name, href: ruta },
   ]
@@ -112,7 +126,7 @@ export async function CatalogoLimpio({ data, municipio, tipo, ruta }: CatalogoLi
             <Link href="/propiedades" style={{ color: '#64748B', textDecoration: 'none' }}>Propiedades</Link>
             <ChevronRight size={13} />
             <span style={{ color: '#0D2D5E', fontWeight: 600 }}>
-              {tipo ? `${tipo.plural} en ${municipio.name}` : municipio.name}
+              {tipo ? `${tipo.plural}${condominio ? ' en condominio' : ''} en ${municipio.name}` : condominio ? `En condominio en ${municipio.name}` : municipio.name}
             </span>
           </nav>
 
@@ -121,7 +135,7 @@ export async function CatalogoLimpio({ data, municipio, tipo, ruta }: CatalogoLi
               propiedad cada uno, y una propiedad no es un rango — es un precio.
               El filtro lo decide MIN_OBSERVACIONES_RANGO, así que un municipio
               entra solo el día que tenga inventario suficiente. */}
-          {!vacio && !tipo && <RangosMunicipio municipio={municipio.name} />}
+          {!vacio && !tipo && !condominio && <RangosMunicipio municipio={municipio.name} />}
 
           {vacio ? (
             /* Guarda de §1.3: nunca «0 propiedades». Lo que se afirma aquí

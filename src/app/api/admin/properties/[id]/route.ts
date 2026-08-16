@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { resolveMunicipality } from '@/lib/municipality-resolve'
@@ -12,6 +12,12 @@ function revalidatePropertyPaths(slug?: string | null) {
   if (slug) revalidatePath(`/propiedad/${slug}`)
   revalidatePath('/propiedades')
   revalidatePath('/')
+  // La vista por atributo depende del mismo inventario: marcar o desmarcar
+  // «en condominio» cambia estas rutas aunque la ficha no cambie de sitio.
+  revalidatePath('/propiedades/en-condominio')
+  // Y el índice de tipos ofrecibles, que se deriva del inventario: vender la
+  // última propiedad de un tipo tiene que sacarlo del buscador.
+  revalidateTag('enlaces')
 }
 
 export async function GET(
