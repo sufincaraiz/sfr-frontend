@@ -36,7 +36,7 @@ export async function VeredasCercanas({ slug }: { slug: string }) {
         ¿Qué otras veredas hay cerca?
       </h2>
       <p style={{ color: '#64748B', fontSize: '0.85rem', margin: '0 0 1rem' }}>
-        Distancia en línea recta entre los centros de cada vereda, dentro del mismo municipio.
+        Otras veredas de {items[0]!.municipio_name}, de la más cercana a la más lejana.
       </p>
 
       <ul style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gap: 8, gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))' }}>
@@ -54,11 +54,11 @@ export async function VeredasCercanas({ slug }: { slug: string }) {
               <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
                 <Navigation size={13} color="#1B56A1" /> {v.name}
               </span>
-              <span style={{ color: '#64748B', fontWeight: 600, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
-                {v.distancia_km < 1
-                  ? `${Math.round(v.distancia_km * 1000)} m`
-                  : `${v.distancia_km.toFixed(1)} km`}
-              </span>
+              {/* El ORDEN se publica; la distancia no. Los centroides de
+                  veredas-data.ts son aproximados —los once caben en unos 4×4 km
+                  alrededor del casco urbano— y sirven para ordenar, no para
+                  afirmar «400 m» al metro entre dos veredas rurales. Publicar la
+                  cifra declararía una precisión que el dato no tiene. */}
             </Link>
           </li>
         ))}
