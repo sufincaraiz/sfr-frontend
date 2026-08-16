@@ -23,7 +23,16 @@ const buildUrl =
 export const prisma =
   globalForPrisma.prisma ??
   new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['query'] : [],
+    // SFR_LOG_QUERIES=1 enciende el log de consultas también en el build.
+    // Lo usa `npm run build:verificado` para CONTARLAS: la malla de enlazado
+    // multiplica los enlaces y cada enlace puede ser una consulta. El P2024 con
+    // pool de 5 ya apareció dos veces por esa vía exacta —la vereda en consulta
+    // aparte y `cargarEnlaces()` en `cache()` de React—, y las dos veces el
+    // build terminó en verde. Contar es la única forma de verlo venir.
+    log:
+      process.env.NODE_ENV === 'development' || process.env.SFR_LOG_QUERIES === '1'
+        ? ['query']
+        : [],
     ...(buildUrl ? { datasources: { db: { url: buildUrl } } } : {}),
   })
 

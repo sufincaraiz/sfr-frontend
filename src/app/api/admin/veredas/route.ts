@@ -12,11 +12,13 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { getAllVeredasData, buscarNombreVeredaEnTexto } from '@/lib/veredas-data'
+import { veredasPublicables, UMBRAL_PROMOCION } from '@/lib/malla-veredas'
+import { notificarIndexNow } from '@/lib/indexnow'
 
 export async function GET() {
   const session = await requireRole(['admin'])
@@ -130,9 +132,38 @@ export async function PATCH(req: NextRequest) {
 
   revalidatePath('/propiedades')
   revalidatePath('/veredas')
+  // El índice de enlaces y la malla dependen del inventario por vereda.
+  revalidateTag('enlaces')
+  revalidateTag('veredas')
   for (const a of cambios) {
     const v = a.vereda_id ? porVereda.get(a.vereda_id) : null
     if (v) revalidatePath(`/veredas/${v.slug}`)
+  }
+
+  // ── Promoción automática ──────────────────────────────────────────────────
+  //
+  // Una vereda gana página sola al llegar a UMBRAL_PROMOCION propiedades. Como
+  // la URL nace en ese momento, hay que avisar: una página que existe y que
+  // nadie declara es una página que nadie encuentra.
+  //
+  // Se lee DESPUÉS de escribir y de invalidar los tags, para que
+  // `veredasPublicables()` vea el inventario nuevo y no el de hace un momento.
+  // Y solo se notifican las que de verdad tienen página ahora: avisar de una
+  // URL que devuelve 404 gasta credibilidad con el rastreador.
+  try {
+    const conPagina = await veredasPublicables()
+    const tocadas = new Set(
+      cambios.map(a => (a.vereda_id ? porVereda.get(a.vereda_id)?.slug : null)).filter(Boolean) as string[],
+    )
+    const promovidas = conPagina.filter(v => v.promocionada && tocadas.has(v.slug))
+    if (promovidas.length) {
+      void notificarIndexNow(
+        [...promovidas.map(v => `/veredas/${v.slug}`), '/veredas'],
+        `veredas promocionadas por inventario (>= ${UMBRAL_PROMOCION}): ${promovidas.map(v => v.slug).join(', ')}`,
+      )
+    }
+  } catch {
+    // El aviso a IndexNow no puede tumbar una asignación ya escrita.
   }
 
   return NextResponse.json({ ok: true, actualizadas: cambios.length })

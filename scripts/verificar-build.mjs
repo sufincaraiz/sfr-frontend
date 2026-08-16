@@ -51,11 +51,19 @@ const PATRONES = [
   { clave: 'prerender',  re: /Error occurred prerendering/g,   grave: true,  label: 'errores de prerender' },
   { clave: 'timeouts',   re: /took more than \d+ seconds/g,    grave: false, label: 'timeouts de página' },
   { clave: 'reintentos', re: /Retrying again shortly/g,        grave: false, label: 'reintentos' },
+  // No es un error: es la MAGNITUD. Un salto grande al añadir enlaces significa
+  // consultas por página en vez de una consulta compartida, que es lo que agota
+  // el pool de 5 durante el prerender. Se compara con el build anterior.
+  { clave: 'consultas',  re: /prisma:query/g,                  grave: false, label: 'consultas a la base' },
 ]
 
 let salida = ''
 
-const hijo = spawn('npm', ['run', 'build'], { shell: true, stdio: ['inherit', 'pipe', 'pipe'] })
+const hijo = spawn('npm', ['run', 'build'], {
+  shell: true,
+  stdio: ['inherit', 'pipe', 'pipe'],
+  env: { ...process.env, SFR_LOG_QUERIES: '1' },
+})
 hijo.stdout.on('data', d => { salida += d; process.stdout.write(d) })
 hijo.stderr.on('data', d => { salida += d; process.stderr.write(d) })
 
@@ -82,6 +90,14 @@ hijo.on('close', codigo => {
   try {
     writeFileSync(HISTORIAL, JSON.stringify(conteo, null, 2))
   } catch { /* el historial es una ayuda, no un requisito */ }
+
+  // Un salto de más del 50% en consultas no es un error, pero es la señal que
+  // precedió a los dos P2024 anteriores. Se avisa fuerte.
+  if (previo && previo.consultas > 0 && conteo.consultas > previo.consultas * 1.5) {
+    console.log("")
+    console.log(`  ATENCIÓN: las consultas subieron de ${previo.consultas} a ${conteo.consultas}.`)
+    console.log('  Revisa si algo pasó a consultar POR PÁGINA en vez de una vez.')
+  }
 
   const graves = PATRONES.filter(p => p.grave && conteo[p.clave] > 0)
 

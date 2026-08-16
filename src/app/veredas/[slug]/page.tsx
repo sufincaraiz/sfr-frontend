@@ -10,6 +10,10 @@ import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { getVeredaData, getAllVeredasData } from '@/lib/veredas-data'
 import { exigirIntegridadVeredas } from '@/lib/veredas-integridad'
+import { veredasPublicables } from '@/lib/malla-veredas'
+import { VeredasDelMunicipio } from '@/components/malla/VeredasDelMunicipio'
+import { VeredasCercanas } from '@/components/malla/VeredasCercanas'
+import { VeredaDerivada } from '@/components/malla/VeredaDerivada'
 import { faqsDeVereda } from '@/lib/faq-veredas'
 import { propiedadesDeVereda } from '@/lib/catalogo'
 import { JsonLd, breadcrumbSchema, faqSchema, itemListSchema } from '@/components/seo/JsonLd'
@@ -30,7 +34,10 @@ export async function generateStaticParams() {
   // para por qué la defensa es esta y no un comentario.
   await exigirIntegridadVeredas()
 
-  return getAllVeredasData().map(v => ({ slug: v.slug }))
+  // Incluye las promocionadas por inventario. Antes salían solo las
+  // editoriales, así que una vereda promovida habría tenido enlaces desde la
+  // malla y ninguna página prerenderizada.
+  return (await veredasPublicables()).map(v => ({ slug: v.slug }))
 }
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
@@ -40,7 +47,27 @@ export async function generateMetadata(
 ): Promise<Metadata> {
   const { slug } = await params
   const v = getVeredaData(slug)
-  if (!v) return { title: 'Vereda no encontrada' }
+  // Una vereda promocionada por inventario no tiene contenido editorial, así
+  // que su metadata se deriva del inventario y del municipio. Sin esto,
+  // devolvía «Vereda no encontrada» para una página que sí existe.
+  if (!v) {
+    const promovida = (await veredasPublicables()).find(x => x.slug === slug)
+    if (!promovida) return { title: 'Vereda no encontrada' }
+    const titulo = `Propiedades en Venta en la Vereda ${promovida.name}, ${promovida.municipio_name}`
+    return {
+      title: titulo,
+      description:
+        `${promovida.inventario} propiedades disponibles en la vereda ${promovida.name}, ` +
+        `${promovida.municipio_name}, Cundinamarca, con área, precio y servicios verificados.`,
+      alternates: { canonical: `${SITE_URL}/veredas/${slug}` },
+      openGraph: {
+        title: `${titulo} | Su Finca Raíz`,
+        url: `${SITE_URL}/veredas/${slug}`,
+        type: 'website',
+        locale: 'es_CO',
+      },
+    }
+  }
 
   const title = `Fincas y Lotes en Vereda ${v.name}, ${v.municipio_name}, Cundinamarca`
 
@@ -120,7 +147,17 @@ export default async function VeredaPage(
 ) {
   const { slug } = await params
   const v = getVeredaData(slug)
-  if (!v) notFound()
+
+  // Sin contenido editorial la vereda puede tener página igualmente: si supera
+  // el umbral de inventario se promociona sola. Se sirve una versión DERIVADA,
+  // que no finge tener altitud, clima ni acceso vial —esos datos son de la
+  // vereda real y nadie los ha capturado—. Inventarlos para rellenar es
+  // exactamente lo que hizo la ficha de «Ucranea».
+  if (!v) {
+    const promovida = (await veredasPublicables()).find(x => x.slug === slug)
+    if (!promovida) notFound()
+    return <VeredaDerivada vereda={promovida} />
+  }
 
   // Dos consultas distintas a proposito: lo que hay EN la vereda y lo que hay
   // cerca, en el municipio. Confundirlas seria declarar una precision que el
@@ -490,9 +527,26 @@ export default async function VeredaPage(
               </a>
             </div>
 
-            {/* Otras veredas */}
-            <VeredasCercanas currentSlug={slug} municipioSlug={v.municipio_slug} municipioName={v.municipio_name} />
+            {/* Hermanas del municipio. Antes era un bloque local, alfabético, que
+                enlazaba a /veredas/<slug> sin preguntar si la página existía —el
+                mismo fallo que lib/enlaces.ts resolvió en otros tres sitios— y que
+                además leía veredas-data.ts con un require() dentro del render.
+                Ahora van por inventario y por el índice de enlaces. */}
+            <VeredasDelMunicipio
+              municipioSlug={v.municipio_slug}
+              municipioNombre={v.municipio_name}
+              excluirSlug={slug}
+              titulo={`Más veredas en ${v.municipio_name}`}
+            />
           </aside>
+        </div>
+
+        {/* Circuito hiperlocal: «no encontré aquí, ¿qué hay al lado?». Es el
+            enlace que más sirve al comprador y el que cierra la malla entre
+            veredas. Por distancia entre centroides, no por lindero: no tenemos
+            ese dato y no lo afirmamos. */}
+        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 clamp(1rem,3vw,2rem) 3rem' }}>
+          <VeredasCercanas slug={slug} />
         </div>
       </main>
 
@@ -514,28 +568,6 @@ export default async function VeredaPage(
 }
 
 // ─── Otras veredas del mismo municipio ───────────────────────────────────────
-
-function VeredasCercanas({ currentSlug, municipioSlug, municipioName }: { currentSlug: string; municipioSlug: string; municipioName: string }) {
-  // imported inline to avoid another server call
-  const { getVeredasByMunicipio } = require('@/lib/veredas-data') as typeof import('@/lib/veredas-data')
-  const otras = getVeredasByMunicipio(municipioSlug).filter(v => v.slug !== currentSlug).slice(0, 5)
-  if (!otras.length) return null
-
-  return (
-    <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', padding: '1.25rem 1.4rem' }}>
-      <p style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '0.85rem', marginBottom: '0.9rem', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-        Más veredas en {municipioName}
-      </p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {otras.map(v => (
-          <Link key={v.slug} href={`/veredas/${v.slug}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.8rem', borderRadius: 8, border: '1px solid #F1F5F9', color: '#334155', fontSize: '0.84rem', fontWeight: 600, textDecoration: 'none', background: '#FAFAFA' }}>
-            {v.name} <ChevronRight size={13} style={{ color: '#94A3B8' }} />
-          </Link>
-        ))}
-      </div>
-    </div>
-  )
-}
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { veredasPublicables } from '@/lib/malla-veredas'
 import { SITE_URL } from '@/lib/site'
 import { getAllVeredasData } from '@/lib/veredas-data'
 import { urlset, respuestaXml, masReciente, type EntradaSitemap } from '@/lib/sitemap-xml'
@@ -51,7 +52,10 @@ export async function GET() {
     })
   }
 
-  for (const v of getAllVeredasData()) {
+  // Incluye las promocionadas por inventario: si tienen URL, tienen que estar
+  // en el sitemap. Una página que existe y no se declara es una página que
+  // nadie encuentra.
+  for (const v of await veredasPublicables()) {
     entradas.push({
       url:        `${SITE_URL}/veredas/${v.slug}`,
       changefreq: 'monthly',

@@ -40,7 +40,7 @@
 
 import { cache } from 'react'
 import { unstable_cache } from 'next/cache'
-import { getAllVeredasData } from './veredas-data'
+import { veredasPublicables } from './malla-veredas'
 import { getMunicipiosVisibles } from './municipios'
 import { combinacionesConInventario, municipiosConInventarioSlug } from './catalogo'
 
@@ -56,7 +56,7 @@ const RUTAS_FIJAS = new Set([
 export interface Enlaces {
   /** `/municipios/<slug>` si el municipio es publicable. */
   municipio(slug: string | null | undefined): string | null
-  /** `/veredas/<slug>` si la vereda tiene contenido en veredas-data.ts. */
+  /** `/veredas/<slug>` si la vereda tiene página: contenido editorial O inventario suficiente. */
   vereda(slug: string | null | undefined): string | null
   /** `/propiedades/<municipio>` si ese municipio tiene inventario. */
   catalogoMunicipio(slug: string | null | undefined): string | null
@@ -115,7 +115,11 @@ export const cargarEnlaces = cache(async (): Promise<Enlaces> => {
   })
 
   const setMunicipios = new Set(idx.municipios)
-  const setVeredas    = new Set(getAllVeredasData().map(v => v.slug))
+  // Las veredas con página no son solo las que tienen contenido editorial: una
+  // que supera el umbral de inventario se promociona sola. Si este índice
+  // mirara únicamente `veredas-data.ts`, la malla dejaría de enlazar una vereda
+  // que SÍ tiene URL — el error contrario al 404, igual de silencioso.
+  const setVeredas    = new Set((await veredasPublicables()).map(v => v.slug))
   const setCatalogo   = new Set(idx.catalogo)
   const setCombis     = new Set(idx.combis)
 
@@ -135,13 +139,3 @@ export const cargarEnlaces = cache(async (): Promise<Enlaces> => {
   }
 })
 
-/**
- * Variante sincrónica, solo para veredas: su fuente es código, no base de datos.
- * Existe para los sitios que no pueden esperar a un `await` —`related-properties.ts`
- * construye el resultado dentro de un map— y para no obligar a cargar el índice
- * entero cuando lo único que se necesita es esta comprobación.
- */
-export function hrefVereda(slug: string | null | undefined): string | null {
-  if (!slug) return null
-  return getAllVeredasData().some(v => v.slug === slug) ? `/veredas/${slug}` : null
-}

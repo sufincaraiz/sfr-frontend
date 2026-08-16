@@ -10,7 +10,7 @@ import { formatPrice } from '@/lib/utils';
 import { tipoLabel } from '@/lib/property-types';
 import { getTipoLabels } from '@/lib/property-types.server';
 import { urlDeMunicipio } from '@/lib/cobertura';
-import { hrefVereda } from '@/lib/enlaces';
+import { cargarEnlaces } from '@/lib/enlaces';
 import { GaleriaLightbox } from '@/components/propiedades/GaleriaLightbox';
 import { Modelo3D } from '@/components/propiedades/Modelo3D';
 import { FormContactoPropiedad } from '@/components/propiedades/FormContactoPropiedad';
@@ -173,7 +173,7 @@ export default async function PropiedadDetallePage(
   // Vega» en «en la vereda El Cural»—, pero solo se ENLAZA si tiene pagina.
   // Quien tiene pagina lo decide lib/enlaces.ts.
   const vereda     = p.vereda ?? null;
-  const veredaHref = hrefVereda(p.vereda?.slug);
+  const veredaHref = (await cargarEnlaces()).vereda(p.vereda?.slug);
   const title      = p.title ?? `${typeLabel} en ${muni}`;
   const banner     = p.media?.find(m => m.is_primary) ?? p.media?.[0];
 

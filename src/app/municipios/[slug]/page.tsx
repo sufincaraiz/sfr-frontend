@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { VeredasDelMunicipio } from '@/components/malla/VeredasDelMunicipio'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -460,6 +461,14 @@ export default async function MunicipioPage(
             </div>
 
           </aside>
+        </div>
+
+        {/* Municipio → sus veredas. No existía ningún enlace desde aquí: la
+            página hablaba de veredas en prosa —«conocemos todas las veredas»—
+            y no llevaba a ninguna. Ordenadas por inventario, porque quien busca
+            dónde comprar tiene que ver primero dónde hay algo que comprar. */}
+        <div style={{ maxWidth: 1180, margin: '0 auto', padding: '0 clamp(1rem,3vw,2rem) 3rem' }}>
+          <VeredasDelMunicipio municipioSlug={data.slug} municipioNombre={data.name} />
         </div>
       </main>
 
