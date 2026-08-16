@@ -26,7 +26,12 @@ export function SearchBar({ compact = false }: SearchBarProps) {
   // escribiendo «condominio» en el selector, que ya no existe como tipo.
   const [enCondominio, setEnCondominio] = useState(false);
   const [municipios, setMunicipios] = useState<{ name: string; slug: string }[]>(MUNI_FALLBACK);
-  const [tipos, setTipos] = useState(PROPERTY_TYPES);
+  // Arranca VACÍO, no con el respaldo. El respaldo trae los tipos del catálogo,
+  // y cuatro de ellos no tienen ni una propiedad: pintarlos antes de que resuelva
+  // el fetch los deja en el HTML que lee un rastreador, y ofrece al cliente
+  // cuatro callejones sin salida. Mejor un selector con solo «Tipo» durante unos
+  // milisegundos que uno que promete lo que no hay.
+  const [tipos, setTipos] = useState<{ value: string; label: string }[]>([]);
 
   // Municipios reales desde la BD (visibles o con propiedades).
   useEffect(() => {
@@ -43,7 +48,9 @@ export function SearchBar({ compact = false }: SearchBarProps) {
       .then(d => {
         if (d?.tipos?.length) setTipos(d.tipos.map((t: { slug: string; label: string }) => ({ value: t.slug, label: t.label })));
       })
-      .catch(() => {});
+      // Si la API no responde, el respaldo estático es preferible a un
+      // selector vacío: ahí sí compensa ofrecer de más.
+      .catch(() => setTipos(PROPERTY_TYPES));
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
