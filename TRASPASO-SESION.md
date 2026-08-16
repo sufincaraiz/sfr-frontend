@@ -561,6 +561,45 @@ veces, en `cobertura.ts` y en `municipios.ts`, con los mismos seis campos. Hoy
 coinciden. El día que alguien añada un séptimo campo a uno solo, los dos
 criterios de «municipio publicable» dejarán de coincidir en silencio.
 
+### ⚠ `EXIT=0` no prueba que el build esté sano
+
+Next reintenta cada página hasta tres veces. **Un build con 7 `P2024` termina en
+verde**, porque los reintentos acaban pasando. Ocurrió al extraer
+`lib/enlaces.ts` y solo se vio contando dentro del log.
+
+Misma clase de defecto que el `new Date()` en datos derivados y que el
+`no-store` del catálogo: **no rompe nada visible y lo degrada todo.**
+
+Todo build tras un cambio que toque consultas exige contar dentro del log y
+comparar con el anterior. Hay guarda, que vale más que esta nota:
+
+```bash
+npm run build:verificado
+```
+
+Falla con `P2024` y errores de prerender, que son defectos del código. Solo
+avisa con timeouts y reintentos, que son del entorno. **No** es el script
+`build`: Vercel ejecuta ese, y un hipo de Railway durante un despliegue lo
+tumbaría.
+
+`P2024` casi siempre significa consultas de más **por página**. Ya ha pasado
+dos veces: la vereda en consulta aparte, y `cargarEnlaces()` en `cache()`.
+
+### ⚠ El `catch` va FUERA del caché — patrón general
+
+Un `catch` que degrada dentro de `unstable_cache` **cachea el estado degradado**
+y lo sirve mucho después de que la base haya vuelto. Con `revalidate: 3600`,
+una caída de un minuto deja el sitio una hora sin enlaces internos.
+
+Fuera del caché, el fallo no se guarda: la siguiente petición reintenta.
+
+```ts
+const leer = unstable_cache(async () => { /* sin catch: que lance */ }, [...])
+const usar = async () => leer().catch(() => VALOR_DEGRADADO)   // ← aquí
+```
+
+Aplica a cualquier dato derivado que se cachee, no solo a `enlaces.ts`.
+
 ---
 
 ## 5. Cosas que parecen raras pero son deliberadas
