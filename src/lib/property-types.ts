@@ -21,7 +21,11 @@ export interface TipoPropiedad {
 export const DEFAULT_TIPOS: TipoPropiedad[] = [
   { slug: 'finca',           label: 'Finca',           plural: 'Fincas',            orden: 10 },
   { slug: 'casa',            label: 'Casa campestre',  plural: 'Casas campestres',  orden: 20 },
-  { slug: 'condominio',      label: 'Condominio',      plural: 'Condominios',       orden: 30 },
+  // «Condominio» NO va aquí: dejó de ser un tipo de inmueble. Es el régimen de
+  // propiedad y vive en `en_condominio`. Esta lista es el respaldo de cuando la
+  // base no responde, y la tenía: bastaba con eso para que el buscador siguiera
+  // ofreciéndolo, y para que un rastreador lo leyera en el HTML servido.
+  // Se busca en /propiedades/en-condominio.
   { slug: 'lote',            label: 'Lote',            plural: 'Lotes',             orden: 40 },
   { slug: 'lote-urbano',     label: 'Lote urbano',     plural: 'Lotes urbanos',     orden: 50 },
   { slug: 'lote-campestre',  label: 'Lote campestre',  plural: 'Lotes campestres',  orden: 60 },

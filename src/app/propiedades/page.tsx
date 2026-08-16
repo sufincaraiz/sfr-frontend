@@ -63,6 +63,8 @@ interface SearchParams {
   municipio?:  string;
   maxPrecio?:  string;
   page?:       string;
+  /** «1» = solo propiedades dentro de un condominio. Atributo, no tipo. */
+  condominio?: string;
 }
 
 /**
@@ -80,6 +82,19 @@ async function canonicalDeFiltros(sp: SearchParams): Promise<string> {
   // Una página 2 o un filtro de precio no tienen ruta limpia: se quedan donde
   // están, apuntando a sí mismas a través del catálogo sin filtrar.
   if (sp.maxPrecio || (sp.page && sp.page !== '1')) return base;
+
+  // El atributo condominio SÍ tiene ruta limpia, con y sin municipio. Sin este
+  // canonical, la casilla del buscador fabricaría una variante con parámetros
+  // que compite con /propiedades/en-condominio por las mismas señales.
+  // Cruzado con tipo no la tiene todavía: esa combinación se queda en la vista
+  // de parámetros en vez de apuntar a una ruta que no existe.
+  if (sp.condominio === '1') {
+    if (sp.tipo && sp.tipo !== 'todos') return base;
+    if (!sp.municipio || sp.municipio === 'todos') return `${base}/en-condominio`;
+    const m = await municipioPorNombre(sp.municipio);
+    return m ? `${base}/en-condominio/${m.slug}` : `${base}/en-condominio`;
+  }
+
   if (!sp.municipio || sp.municipio === 'todos') return base;
 
   const muni = await municipioPorNombre(sp.municipio);
@@ -99,6 +114,7 @@ const fetchProperties = (sp: SearchParams) =>
     tipo:      sp.tipo,
     municipio: sp.municipio,
     maxPrecio: sp.maxPrecio,
+    enCondominio: sp.condominio === '1',
     page:      sp.page ? parseInt(sp.page) : 1,
   });
 

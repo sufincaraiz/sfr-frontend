@@ -22,6 +22,9 @@ export function SearchBar({ compact = false }: SearchBarProps) {
   const [tipo,      setTipo]      = useState('');
   const [municipio, setMunicipio] = useState('');
   const [precioMax, setPrecioMax] = useState('');
+  // Atributo, no tipo: cruza con el tipo elegido. Lo que antes se buscaba
+  // escribiendo «condominio» en el selector, que ya no existe como tipo.
+  const [enCondominio, setEnCondominio] = useState(false);
   const [municipios, setMunicipios] = useState<{ name: string; slug: string }[]>(MUNI_FALLBACK);
   const [tipos, setTipos] = useState(PROPERTY_TYPES);
 
@@ -49,6 +52,7 @@ export function SearchBar({ compact = false }: SearchBarProps) {
     if (tipo)      params.set('tipo',      tipo);
     if (municipio) params.set('municipio', municipio);
     if (precioMax) params.set('maxPrecio', precioMax);
+    if (enCondominio) params.set('condominio', '1');
     router.push(`/propiedades?${params.toString()}`);
   };
 
@@ -88,6 +92,15 @@ export function SearchBar({ compact = false }: SearchBarProps) {
             <option key={t.value} value={t.value}>{t.label}</option>
           ))}
         </select>
+        <label style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0 10px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          <input
+            type="checkbox"
+            checked={enCondominio}
+            onChange={(e) => setEnCondominio(e.target.checked)}
+            style={{ width: 15, height: 15 }}
+          />
+          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#2C2C2C' }}>En condominio</span>
+        </label>
 
         <span style={{ color: '#CBD5E1', fontSize: 18 }}>|</span>
 
@@ -160,6 +173,10 @@ export function SearchBar({ compact = false }: SearchBarProps) {
                 <option key={t.value} value={t.value}>{t.label}</option>
               ))}
             </select>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8, cursor: 'pointer' }}>
+              <input type="checkbox" checked={enCondominio} onChange={(e) => setEnCondominio(e.target.checked)} style={{ width: 15, height: 15 }} />
+              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#2C2C2C' }}>En condominio</span>
+            </label>
           </div>
 
           <div className="flex flex-col gap-1">
