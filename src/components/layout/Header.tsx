@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { SearchBar } from '@/components/search/SearchBar';
 
@@ -31,6 +32,18 @@ function HamburgerIcon() {
 export function Header() {
   const [open,    setOpen]    = useState(false);
   const [scrolled, setScrolled] = useState(false);
+
+  // La portada YA tiene el buscador completo en el hero. Renderizar aquí el
+  // compacto ponía DOS formularios de búsqueda en el HTML servido de `/`: el
+  // visitante tiene que elegir cuál usar sin motivo, y un modelo lee dos veces
+  // los mismos controles.
+  //
+  // No se oculta con CSS: `display:none` deja los controles duplicados en el
+  // marcado, que es exactamente el problema. No se renderiza.
+  //
+  // En el resto del sitio no hay hero, así que este es el ÚNICO buscador y
+  // sigue vivo. Por eso se condiciona en vez de borrarse.
+  const enPortada = usePathname() === '/';
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -120,7 +133,7 @@ export function Header() {
           </div>
 
           {/* Compact search — aparece al hacer scroll en desktop */}
-          {scrolled && (
+          {scrolled && !enPortada && (
             <div className="pb-3 hidden lg:block -mt-1">
               <SearchBar compact />
             </div>
@@ -188,10 +201,13 @@ export function Header() {
               </Link>
             </div>
 
-            {/* Buscador compacto en el drawer */}
-            <div className="pb-4">
-              <SearchBar compact />
-            </div>
+            {/* Buscador compacto en el drawer — no en la portada, que ya
+                tiene el del hero. */}
+            {!enPortada && (
+              <div className="pb-4">
+                <SearchBar compact />
+              </div>
+            )}
           </nav>
         </div>
       </div>
