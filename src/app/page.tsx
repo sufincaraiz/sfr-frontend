@@ -51,7 +51,7 @@ export async function generateMetadata(): Promise<Metadata> {
   openGraph: {
     title:       'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
     description:
-      `Fincas, lotes y casas campestres en La Vega y el Gualivá. ${inventario} a solo 2 horas de Bogotá.`,
+      `Fincas, lotes y casas campestres en La Vega, a una hora de Bogotá, y en los doce municipios del Gualivá. ${inventario}`,
     url:    SITE_URL,
     images: [
       {

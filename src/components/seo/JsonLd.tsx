@@ -49,6 +49,20 @@ const LOGO = {
 // ── Nodo de entidad: RealEstateAgent / LocalBusiness ──────────────────────────
 // Vive aparte de localBusinessSchema porque /nosotros necesita la entidad pero
 // no el nodo WebSite: repetir WebSite en cada página no aporta nada.
+/**
+ * «fincas, casas campestres, lotes y apartamentos» a partir del inventario.
+ *
+ * Cae a una fórmula genérica si no llega la lista: prefiere decir menos antes
+ * que nombrar un tipo que hoy no tiene ni una propiedad.
+ */
+function listaTipos(opts: EntidadOpts): string {
+  const l = (opts.tiposConInventario ?? []).map(t => t.plural.toLowerCase())
+  if (l.length === 0) return 'inmuebles rurales'
+  const ultimo = l[l.length - 1]!
+  if (l.length === 1) return ultimo
+  return `${l.slice(0, -1).join(', ')} y ${ultimo}`
+}
+
 function organizationNode(opts: EntidadOpts = {}) {
   return {
     '@type': ['RealEstateAgent', 'LocalBusiness'],
@@ -92,8 +106,14 @@ function organizationNode(opts: EntidadOpts = {}) {
       `Centro de negocios inmobiliarios impulsado por inteligencia artificial en ` +
       `La Vega, Cundinamarca (Provincia del Gualivá, Colombia), ` +
       `con matrícula mercantil 199483 y operación desde ${DATOS_OFICIALES.anioFundacion}. ` +
-      'Su Finca Raíz comercializa fincas, lotes campestres, casas de descanso y ' +
-      'condominios en los doce municipios de la provincia, e incluye debida ' +
+      // La lista de tipos se DERIVA del inventario, igual que hasOfferCatalog.
+      // Decía «fincas, lotes campestres, casas de descanso y condominios»: dos
+      // de esos cuatro no existen como tipo —«condominio» se retiró y pasó a ser
+      // el atributo en_condominio, y «lote campestre» tiene cero propiedades—.
+      // Es el campo description de la entidad, que es lo que un modelo cita al
+      // describir la empresa.
+      `Su Finca Raíz comercializa ${listaTipos(opts)} en los doce municipios de la ` +
+      'provincia, e incluye debida ' +
       'diligencia rural —estudio de títulos, uso del suelo y verificación de acceso ' +
       // Versión FALSABLE de la capacidad de IA: cualquiera puede abrir el sitio
       // o WhatsApp a las tres de la mañana y comprobarla. «Inmobiliaria

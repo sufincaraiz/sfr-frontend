@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma'
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales'
-import { getTiposOfrecibles, getTipoLabels } from '@/lib/property-types.server'
-import { tipoLabel } from '@/lib/property-types'
+import { getTiposOfrecibles, getTipoPlurales } from '@/lib/property-types.server'
+import { tipoPlural } from '@/lib/property-types'
 import type { RespuestaDirectaProps } from '@/components/aeo/RespuestaDirecta'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -95,12 +95,12 @@ export async function respuestaPortada(): Promise<RespuestaDirectaProps> {
     inventario(),
     minutosLaVega(),
     pluralesConInventario(),
-    getTipoLabels(),
+    getTipoPlurales(),
   ])
 
   const cola = total > 0 && desde
     ? ` Tiene ${total} propiedades disponibles, desde ${cop(desde)} COP` +
-      (tipoDesde ? ` en ${tipoLabel(tipoDesde, labels).toLowerCase()}` : '') + '.'
+      (tipoDesde ? ` en ${tipoPlural(tipoDesde, labels).toLowerCase()}` : '') + '.'
     : ''
 
   // El dato de distancia va atado a La Vega, no a la provincia entera: la
@@ -133,8 +133,9 @@ export async function respuestaPropiedades(): Promise<RespuestaDirectaProps> {
     [] as { type: string; _count: number; _min: { price_cop: bigint | null } }[],
   )
 
+  // Sin `condominio`: dejó de ser un tipo. Las propiedades en condominio se
+  // agrupan por en_condominio y se listan en /propiedades/en-condominio.
   const ETIQUETAS: Record<string, [string, string]> = {
-    condominio:  ['condominio campestre', 'condominios campestres'],
     casa:        ['casa', 'casas'],
     finca:       ['finca', 'fincas'],
     apartamento: ['apartamento', 'apartamentos'],
@@ -155,8 +156,7 @@ export async function respuestaPropiedades(): Promise<RespuestaDirectaProps> {
     pregunta: '¿Qué propiedades hay en venta en La Vega y el Gualivá?',
     respuesta:
       `Su Finca Raíz publica ${total} propiedades disponibles en La Vega y el Gualivá, ` +
-      `Cundinamarca: ${detalle} COP. Todas a menos de dos horas de Bogotá, con estudio de ` +
-      `títulos incluido en la negociación.`,
+      `Cundinamarca: ${detalle} COP, con estudio de títulos incluido en la negociación.`,
     fuenteDato: FUENTE,
     fechaCorte: hoy(),
   }

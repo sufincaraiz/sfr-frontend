@@ -3,6 +3,8 @@ import { SITE_URL } from '@/lib/site'
 import { DATOS_OFICIALES, MUNICIPIOS_PROVINCIA, CAPITAL_PROVINCIA } from '@/lib/datos-oficiales'
 import { formatPrice } from '@/lib/utils'
 import { horarioEnProsa, contrasteConMac } from '@/lib/horario'
+import { PUBLICABLE } from '@/lib/publicable'
+import { getTiposOfrecibles } from '@/lib/property-types.server'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /llms.txt — presentación de la entidad para modelos generativos.
@@ -30,9 +32,21 @@ export async function GET() {
   }[] = []
   let municipiosConPagina: { slug: string; name: string }[] = []
   let disponibles = 0
+  // Los tipos se DERIVAN del inventario. La línea decía «fincas, lotes
+  // campestres, casas de descanso y condominios»: «condominio» ya no es un
+  // tipo y «lote campestre» tiene cero propiedades. En el archivo escrito
+  // PARA modelos, nombrar categorías vacías es peor que en cualquier otro sitio.
+  let listaTipos = 'inmuebles rurales'
 
   try {
     disponibles = await prisma.property.count({ where: { status: 'available' } })
+    const tiposVivos = (await getTiposOfrecibles()).map(t => t.plural.toLowerCase())
+    if (tiposVivos.length) {
+      const ultimo = tiposVivos[tiposVivos.length - 1]!
+      listaTipos = tiposVivos.length === 1
+        ? ultimo
+        : `${tiposVivos.slice(0, -1).join(', ')} y ${ultimo}`
+    }
     ;[propiedades, municipiosConPagina] = await Promise.all([
       prisma.property.findMany({
         where: { status: 'available' },
@@ -41,13 +55,10 @@ export async function GET() {
         select: { slug: true, title: true, type: true, price_cop: true, municipality: { select: { name: true } } },
       }),
       prisma.municipality.findMany({
-        where: {
-          oculto: false,
-          altitud_msnm: { not: null }, distancia_bogota_km: { not: null },
-          tiempo_bogota_min: { not: null }, temp_min: { not: null },
-          temp_max: { not: null }, descripcion_seo: { not: null },
-          NOT: { descripcion_seo: '' },
-        },
+        // Tercera copia de la condición de «municipio publicable», que ya vive
+        // en @/lib/publicable. Las otras dos se unificaron; esta se quedó
+        // escrita a mano y habría divergido igual.
+        where: PUBLICABLE,
         orderBy: [{ demand_score: 'desc' }, { name: 'asc' }],
         select: { slug: true, name: true },
       }),
@@ -71,8 +82,12 @@ export async function GET() {
     `> artificial, con sede en La Vega, Cundinamarca, Colombia,`,
     `> inscrito con matrícula mercantil 199483 y en operación desde ${DATOS_OFICIALES.anioFundacion}.`,
     `> Opera en los ${DATOS_OFICIALES.municipiosProvincia} municipios de la`,
-    `> Provincia del Gualivá, cuya capital es ${CAPITAL_PROVINCIA}, y se especializa en fincas,`,
-    `> lotes campestres, casas de descanso y condominios a menos de dos horas de Bogotá.`,
+    // Decía «fincas, lotes campestres, casas de descanso y condominios a menos de
+    // dos horas de Bogotá». Tres defectos en una línea del archivo escrito PARA
+    // modelos: «condominio» ya no es un tipo, «lote campestre» tiene cero
+    // propiedades, y la distancia es falsa —Vergara está a 130 minutos—.
+    `> Provincia del Gualivá, cuya capital es ${CAPITAL_PROVINCIA}. Se especializa en`,
+    `> ${listaTipos} para vivienda y recreo en suelo rural.`,
     `> Trabaja en consorcio con Conarc (construcción), e incluye`,
     `> debida diligencia rural —estudio de títulos, uso del suelo y verificación de`,
     `> acceso y agua— como parte del acompañamiento en cada negociación.`,

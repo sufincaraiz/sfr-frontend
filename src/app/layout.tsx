@@ -61,8 +61,10 @@ export const metadata: Metadata = {
     url: SITE_URL,
     title: 'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
     description:
-      'Fincas, lotes y casas campestres verificados en La Vega y el Gualivá, ' +
-      'a solo 2 horas de Bogotá.',
+      // «La Vega y el Gualivá a solo 2 horas» es falso para la provincia:
+      // Vergara está a 130 minutos. El dato se ata al municipio del que es cierto.
+      'Fincas, lotes y casas campestres verificados en La Vega, a una hora de ' +
+      'Bogotá, y en los doce municipios de la Provincia del Gualivá.',
     images: [
       {
         url: '/images/la-vega/panoramica-la-vega-cundinamarca-drone.jpg',
