@@ -93,7 +93,7 @@ export function Hero() {
 
         {/* Posicionamiento — delay 0.4s */}
         <p
-          className="hero-anim font-sans mb-4"
+          className="hero-anim font-sans mb-8"
           style={{
             fontSize: 'clamp(0.95rem, 1.8vw, 1.1rem)',
             fontWeight: 700,
@@ -106,35 +106,27 @@ export function Hero() {
           Inmobiliaria impulsada por inteligencia artificial en La Vega y el Gualivá
         </p>
 
-        {/* Descripción — delay 0.5s.
-            Decía «a menos de dos horas de Bogotá» (falso: Vergara está a 130 min) y
-            «alta proyección de valorización», que es una promesa de rendimiento de la
-            misma familia que las cifras retiradas, en la primera pantalla.
-            El texto nuevo NO repite territorio, tipos ni distancia: eso ya lo dicen la
-            línea superior, el H1 y la <RespuestaDirecta> de debajo. Dice el
-            diferencial, que no aparecía en ninguna parte de esta pantalla. */}
-        <p
-          className="hero-anim font-sans text-white/80 max-w-2xl mb-8 leading-relaxed"
-          style={{
-            fontSize: 'clamp(1rem, 2vw, 1.15rem)',
-            fontWeight: 400,
-            textShadow: '0 1px 6px rgba(0,0,0,0.4)',
-            animationDelay: '0.5s',
-          }}
-        >
-          Cada negociación incluye estudio de títulos y certificado de tradición y libertad.
-          Verificamos acceso, agua y uso del suelo antes de que firmes.
-        </p>
+        {/* El párrafo descriptivo salió de aquí. Decía «Cada negociación incluye
+            estudio de títulos y certificado de tradición y libertad. Verificamos
+            acceso, agua y uso del suelo antes de que firmes».
 
+            Dos problemas. Prometía GASTO («incluye») y RESULTADO («verificamos»)
+            en la primera pantalla, que es donde una promesa vincula más. Y repetía:
+            el eslogan de encima ya dice qué es la empresa.
+
+            No se sustituye por otro texto. El peso lo llevan el H1 —tipos y lugar—,
+            el eslogan de entidad, y la <RespuestaDirecta> de justo debajo, que es
+            la pieza citable. Este párrafo era prosa de apoyo. */}
         {/* El botón «Ver proyectos destacados» salió de aquí. No iba al catálogo:
             era un ancla a #featured-properties, la sección curada que está una
             pantalla más abajo en esta misma portada y a la que se llega scrolleando.
             Competía con «Ver propiedades» por la misma intención y la dividía.
             La sección sigue donde estaba. */}
-        {/* CTAs principales — delay 0.8s */}
+        {/* CTAs principales — delay 0.6s. Se adelantó desde 0.8s: sin el párrafo
+            intermedio, la cascada 0.4 → 0.8 se notaba como un tirón. */}
         <div
           className="hero-anim flex flex-col sm:flex-row items-center gap-3 mb-12 w-full max-w-xs sm:max-w-none sm:justify-center"
-          style={{ animationDelay: '0.8s' }}
+          style={{ animationDelay: '0.6s' }}
         >
           <Link
             href="/propiedades?tipo=finca"
@@ -156,10 +148,10 @@ export function Hero() {
           </Link>
         </div>
 
-        {/* Buscador — delay 0.95s */}
+        {/* Buscador — delay 0.75s, adelantado por lo mismo. */}
         <div
           className="hero-anim w-full max-w-3xl"
-          style={{ animationDelay: '0.95s' }}
+          style={{ animationDelay: '0.75s' }}
         >
           <SearchBar />
         </div>
