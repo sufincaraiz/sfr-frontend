@@ -156,7 +156,7 @@ export async function respuestaPropiedades(): Promise<RespuestaDirectaProps> {
     pregunta: '¿Qué propiedades hay en venta en La Vega y el Gualivá?',
     respuesta:
       `Su Finca Raíz publica ${total} propiedades disponibles en La Vega y el Gualivá, ` +
-      `Cundinamarca: ${detalle} COP, con estudio de títulos incluido en la negociación.`,
+      `Cundinamarca: ${detalle} COP, con acompañamiento en todo el proceso de compra.`,
     fuenteDato: FUENTE,
     fechaCorte: hoy(),
   }
@@ -172,7 +172,7 @@ export function respuestaGuiaInversion(): RespuestaDirectaProps {
       'de firmar: títulos, uso del suelo y acceso real al predio. Su Finca Raíz, inmobiliaria ' +
       `de La Vega con matrícula mercantil 199483 y operación desde ${DATOS_OFICIALES.anioFundacion}, ` +
       `acompaña ese proceso en los ${DATOS_OFICIALES.municipiosProvincia} municipios de la ` +
-      'provincia e incluye el estudio de títulos en cada negociación.',
+      'provincia y orienta al comprador sobre qué revisar antes de firmar.',
   }
 }
 
@@ -314,7 +314,7 @@ export async function respuestaCatalogoLimpio(params: {
       `Su Finca Raíz publica ${total} ${total === 1 ? que.replace(/s$/, '') : que} en venta en ` +
       `${municipio}, Cundinamarca, dentro de la Provincia del Gualivá` +
       `${desde ? `, desde ${cop(desde)} COP` : ''}. La inmobiliaria, con matrícula mercantil ` +
-      '199483 y sede en La Vega, incluye estudio de títulos y verificación de uso del suelo, ' +
+      '199483 y sede en La Vega, acompaña al cliente en la revisión de títulos, uso del suelo, ' +
       'acceso y agua en cada negociación.',
     fuenteDato: FUENTE,
     fechaCorte: hoy(),

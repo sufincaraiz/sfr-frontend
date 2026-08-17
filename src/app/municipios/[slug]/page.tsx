@@ -51,7 +51,7 @@ export async function generateMetadata(
   if (m.tiempo_bogota_min) ctxBits.push(`a ${m.tiempo_bogota_min} min de Bogotá`)
   if (m.temperatura_c.min && m.temperatura_c.max) ctxBits.push(`clima ${m.temperatura_c.min}–${m.temperatura_c.max} °C`)
   const ctx = ctxBits.length ? ` ${ctxBits.join(', ').replace(/^./, c => c.toUpperCase())}.` : ''
-  const autoDescription = `Fincas, lotes y casas campestres en venta en ${m.name}, Cundinamarca.${ctx} Asesórate gratis con expertos locales.`
+  const autoDescription = `Fincas, lotes, casas y apartamentos en venta en ${m.name}, Cundinamarca.${ctx} Asesoría profesional con conocimiento local.`
   // Meta description manual del admin si existe; si no, la autogenerada.
   const description = m.meta_description?.trim() || autoDescription
 
@@ -444,7 +444,7 @@ export default async function MunicipioPage(
                 ¿Buscas propiedad en {data.name}?
               </p>
               <p style={{ color: '#475569', fontSize: '0.83rem', lineHeight: 1.6, marginBottom: '1rem' }}>
-                Te asesoramos sin costo. Conocemos todas las veredas y los mejores precios del mercado.
+                Te guiamos en la compra de tu inmueble en {data.name}. Conocemos sus veredas y su casco urbano.
               </p>
               <a
                 href={`https://wa.me/573218826730?text=Hola%2C+me+interesa+una+propiedad+en+${encodeURIComponent(data.name)}%2C+Cundinamarca`}

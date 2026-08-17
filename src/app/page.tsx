@@ -26,7 +26,7 @@ import type { Property }      from '@/types';
 // "Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz"
 // Máx. 155 chars ↓
 // "Compra fincas, lotes y casas campestres en La Vega, Cundinamarca.
-//  Más de N propiedades disponibles a 2 h de Bogotá. Asesórate gratis: ☎ 321 882 6730."
+//  Más de N propiedades disponibles. Asesoría profesional: ☎ 321 882 6730."
 
 // La descripción lleva el inventario REAL y en presente, derivado de la base en
 // cada revalidación. Antes decía «+100 propiedades verificadas» con 34 en el
@@ -41,8 +41,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
   title: 'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
   description:
-    'Compra fincas, lotes y casas campestres en La Vega, Cundinamarca. ' +
-    `${inventario} a 2 h de Bogotá. Asesórate gratis: ☎ 321 882 6730.`,
+    'Compra fincas, lotes, casas y apartamentos en La Vega, Cundinamarca. ' +
+    `${inventario} Asesoría profesional: ☎ 321 882 6730.`,
 
   alternates: {
     canonical: SITE_URL,

@@ -34,8 +34,8 @@ export const metadata: Metadata = {
     // Sin cifra de inventario: este es el respaldo GLOBAL, lo heredan las páginas
     // que no definen la suya, y no puede afirmar un conteo que envejece en cada
     // publicación. La cifra real, en presente y derivada, va en la portada.
-    'Compra fincas, lotes y casas campestres verificados en La Vega, Cundinamarca, ' +
-    'a 2 h de Bogotá. Asesórate gratis: ☎ 321 882 6730.',
+    'Compra fincas, lotes, casas y apartamentos verificados en La Vega, Cundinamarca. ' +
+    'Asesoría profesional en finca raíz rural y urbana: ☎ 321 882 6730.',
 
   // ── Keywords (señal secundaria, útil para Bing/Yahoo) ───────────────────────
   keywords: [

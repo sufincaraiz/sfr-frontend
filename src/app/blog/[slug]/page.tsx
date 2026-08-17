@@ -292,7 +292,7 @@ export default async function BlogPostPage(
                 Nuestros asesores conocen el mercado del Gualivá en detalle.
               </p>
               <a href="https://wa.me/573218826730" target="_blank" rel="noopener noreferrer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#15803D', color: '#fff', fontWeight: 700, fontSize: '0.88rem', padding: '0.65rem', borderRadius: 10, textDecoration: 'none' }}>
-                Consultar gratis
+                Consultar ahora
               </a>
             </div>
 

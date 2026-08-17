@@ -23,14 +23,14 @@ export const metadata: Metadata = {
   title: 'Nosotros — Centro de Negocios Inmobiliarios en La Vega',
   description:
     'Conoce a Su Finca Raíz: tecnología inmersiva (recorridos 360°, drones), ' +
-    'blindaje legal y conocimiento del territorio para comprar y vender fincas, ' +
+    'criterio jurídico y conocimiento del territorio para comprar y vender fincas, ' +
     'lotes y casas campestres en La Vega, Cundinamarca.',
   alternates: { canonical: `${SITE_URL}/nosotros` },
   openGraph: {
     title: 'Nosotros — Liderando la evolución inmobiliaria en La Vega | Su Finca Raíz',
     description:
       'Fusionamos conocimiento del territorio, tecnología inmersiva de vanguardia ' +
-      'y blindaje legal para proteger tu inversión en Cundinamarca.',
+      'y criterio jurídico para acompañar tu inversión en Cundinamarca.',
     url: `${SITE_URL}/nosotros`,
     type: 'website',
     locale: 'es_CO',
@@ -163,7 +163,7 @@ export default async function NosotrosPage() {
             </h1>
             <h2 style={{ color: 'rgba(255,255,255,0.85)', fontWeight: 500, lineHeight: 1.7, fontSize: 'clamp(1rem,2.2vw,1.2rem)', maxWidth: 700, margin: '0 auto' }}>
               Fusionamos el conocimiento profundo del territorio con tecnología inmersiva
-              de vanguardia y un riguroso blindaje legal para proteger tu inversión.
+              de vanguardia y criterio jurídico para acompañarte en cada decisión.
             </h2>
             {/* Datos verificables en el HTML servido, con su fuente citada.
                 La calificación NO lleva marcado aggregateRating a propósito: las

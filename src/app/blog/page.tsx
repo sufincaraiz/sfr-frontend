@@ -218,7 +218,7 @@ function NewsletterWidget() {
     <div style={{ background: '#0D2D5E', borderRadius: 14, padding: '1.5rem', color: '#fff' }}>
       <p style={{ color: '#E8B92F', fontWeight: 800, fontSize: '0.85rem', marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>¿Buscas finca raíz?</p>
       <p style={{ color: 'rgba(255,255,255,0.82)', fontSize: '0.85rem', lineHeight: 1.6, marginBottom: '1rem' }}>
-        Te asesoramos gratis. Conocemos cada propiedad disponible en el Gualivá.
+        Asesoría profesional en compra de finca raíz rural y urbana en el Gualivá.
       </p>
       <a
         href="https://wa.me/573218826730?text=Hola%2C+me+interesa+invertir+en+finca+ra%C3%ADz+en+el+Gualiv%C3%A1"

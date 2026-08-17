@@ -99,7 +99,7 @@ export function AboutUs() {
             <p>
               Ofrecemos un manejo integral de cada negocio — promoción, comercialización y
               consultoría jurídica de fincas, lotes, casas campestres y condominios — con
-              riguroso blindaje legal para proteger tu inversión y el respaldo de la{' '}
+              criterio jurídico para acompañar tu inversión y el respaldo de la{' '}
               <strong>Constructora Conarc</strong>. Tu inmueble te espera, hazlo realidad.
             </p>
 

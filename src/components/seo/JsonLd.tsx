@@ -113,13 +113,18 @@ function organizationNode(opts: EntidadOpts = {}) {
       // Es el campo description de la entidad, que es lo que un modelo cita al
       // describir la empresa.
       `Su Finca Raíz comercializa ${listaTipos(opts)} en los doce municipios de la ` +
-      'provincia, e incluye debida ' +
-      'diligencia rural —estudio de títulos, uso del suelo y verificación de acceso ' +
+      'provincia, en finca raíz rural y urbana. Acompaña la debida ' +
+      // Ni «incluye» ni «verificación»: lo primero promete gasto y lo segundo un
+      // estado del mundo. Se declara lo que sí se hace y se puede comprobar
+      // —orientar y estar presente—, que además es lo que ninguna otra
+      // inmobiliaria de la región ofrece.
+      'diligencia inmobiliaria —títulos, uso del suelo, acceso ' +
       // Versión FALSABLE de la capacidad de IA: cualquiera puede abrir el sitio
       // o WhatsApp a las tres de la mañana y comprobarla. «Inmobiliaria
       // inteligente» no se puede comprobar ni desmentir, y lo que no se puede
       // desmentir tampoco sirve de prueba.
-      'y agua— en cada negociación. Opera Mac, un agente de inteligencia artificial ' +
+      'y agua— orientando al comprador sobre qué revisar antes de firmar, y acompaña ' +
+      'hasta la notaría. Opera Mac, un agente de inteligencia artificial ' +
       'propio disponible en web y WhatsApp las 24 horas, además de recorridos ' +
       'virtuales 360° y fotografía aérea con dron, en consorcio con Conarc ' +
       '(construcción).',
@@ -254,8 +259,8 @@ function organizationNode(opts: EntidadOpts = {}) {
                 name:         `Venta de ${tipo.plural} en La Vega y el Gualivá, Cundinamarca`,
                 description:
                   `Intermediación en la compraventa de ${tipo.plural.toLowerCase()} en los ` +
-                  'doce municipios de la Provincia del Gualivá, Cundinamarca, con estudio de ' +
-                  'títulos y verificación de uso del suelo, acceso y agua en cada negociación.',
+                  'doce municipios de la Provincia del Gualivá, Cundinamarca, con acompañamiento ' +
+                  'en el proceso y orientación sobre qué revisar en títulos, uso del suelo, acceso y agua.',
                 provider:   { '@id': `${SITE_URL}/#organization` },
                 areaServed: MUNICIPIOS_PROVINCIA.map(nombre => ({ '@type': 'City', name: nombre })),
               },
@@ -371,6 +376,14 @@ function organizationNode(opts: EntidadOpts = {}) {
       'Impuesto de registro y derechos notariales en Colombia', // glosario
       'Catastro y valorización predial',                        // glosario
       'Plusvalía inmobiliaria',                                 // glosario
+      // ── Urbano. El catálogo tiene apartamentos y el casco urbano de La Vega
+      //    es mercado propio; declarar solo lo rural dejaba fuera media oferta.
+      //    Se AÑADEN sin tocar los rurales: knowsAbout declara temas sobre los
+      //    que se sabe (§4), no lo que se vende, y los rurales específicos son
+      //    justo donde no hay competencia.
+      'Compra de vivienda urbana en municipios de Cundinamarca', // catálogo + fichas
+      'Mercado de apartamentos en La Vega',                      // 4 fichas + ruta limpia
+      'Casco urbano de La Vega, Cundinamarca',                   // página de municipio
       'Proceso de compraventa de finca raíz rural en Colombia', // guía + blog
       'Historia de La Vega, Cundinamarca',                      // blog + páginas de municipio
       'Agente conversacional de IA aplicado a finca raíz',      // /mac

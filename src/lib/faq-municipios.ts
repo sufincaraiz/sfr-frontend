@@ -81,7 +81,7 @@ function respuesta(m: MunicipioDatos, disponibles: number): string {
   return (
     base + stock +
     `, dentro de los ${DATOS_OFICIALES.municipiosProvincia} municipios de la Provincia del ` +
-    'Gualivá que cubre, e incluye estudio de títulos y verificación de uso del suelo, acceso ' +
+    'Gualivá que cubre, y acompaña al comprador en la revisión de títulos, uso del suelo, acceso ' +
     'y agua en cada negociación.'
   )
 }

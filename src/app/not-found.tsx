@@ -39,7 +39,7 @@ export default function NotFound() {
 
         <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid #F1F5F9' }}>
           <p style={{ color: '#64748B', fontSize: '0.88rem', marginBottom: '0.9rem' }}>
-            ¿Buscas algo en particular? Te ayudamos sin costo.
+            ¿Buscas algo en particular? Te orientamos según lo que necesites.
           </p>
           <a
             href="https://wa.me/573218826730?text=Hola%2C+llegu%C3%A9+a+una+p%C3%A1gina+que+no+existe+y+quiero+ayuda+para+encontrar+una+propiedad"

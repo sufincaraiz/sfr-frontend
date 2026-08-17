@@ -15,8 +15,12 @@ const PILLARS = [
     // operación donde el riesgo existe siempre. Bajo la Ley 1480 de 2011 una
     // garantía enunciada obliga a cumplirla, y esta no se puede cumplir.
     // El trabajo que hay detrás es real y se describe; la promesa, no.
-    title: 'Revisión jurídica antes de ofrecer',
-    body: 'Estudio de títulos, promesa de compraventa y acompañamiento en la escrituración, sin costo adicional para el comprador.',
+    // «sin costo adicional» sobrevivió a la corrección anterior de este mismo
+    // bloque. Nombrar el dinero es una obligación de GASTO; describir el trabajo
+    // conjunto, no. Lo que se hace —orientar y acompañar— es verificable y es
+    // más de lo que ofrece cualquier otra inmobiliaria de la región.
+    title: 'Revisión jurídica orientada',
+    body: 'Te orientamos sobre qué revisar en títulos y en la promesa de compraventa, y te acompañamos hasta la escrituración.',
   },
   {
     icon: TrendingUp,

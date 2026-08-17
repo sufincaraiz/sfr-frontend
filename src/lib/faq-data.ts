@@ -49,8 +49,9 @@ export const HOME_FAQS = [
       'artificial en La Vega y la Provincia del Gualivá, Cundinamarca. Su servicio principal ' +
       'es la compra y venta de fincas, lotes, casas campestres, condominios y apartamentos, ' +
       'con recorridos virtuales 360° y tomas aéreas de cada predio para compradores remotos. ' +
-      'Cada negociación incluye estudio de títulos y certificado de tradición y libertad, y ' +
-      'acompañamiento notarial en la promesa de compraventa y la escrituración. La empresa ' +
+      'En cada negociación acompaña al comprador en la revisión de títulos y del certificado ' +
+      'de tradición y libertad, y lo acompaña en la notaría durante la promesa de compraventa y ' +
+      'la escrituración. La empresa ' +
       'también realiza estudios de mercado del predio y gestiona proyectos de construcción ' +
       'campestre en consorcio con Conarc. Un agente acompaña al cliente desde la búsqueda ' +
       'hasta la escrituración.',
@@ -71,11 +72,12 @@ export const HOME_FAQS = [
       'Primera capa — verificación documental: solicitamos y revisamos el certificado de ' +
       'tradición y libertad actualizado en la Superintendencia de Notariado, confirmando que ' +
       'el predio no tiene embargos, hipotecas ni litigios activos. Segunda capa — estudio de ' +
-      'títulos profesional: un abogado especialista en derecho inmobiliario revisa la cadena ' +
-      'de propietarios mínimo los últimos 20 años. Tercera capa — acompañamiento notarial: ' +
-      'asistimos al comprador y vendedor en la notaría, revisamos la minuta de compraventa y ' +
-      'verificamos el pago correcto de impuestos. Este proceso, que en otras inmobiliarias es ' +
-      'un servicio adicional costoso, en Su Finca Raíz está incluido sin costo adicional.',
+      'títulos profesional: te orientamos sobre por qué conviene que un abogado especialista en ' +
+      'derecho inmobiliario revise la cadena de propietarios de los últimos 20 años, y sobre qué ' +
+      'debe cubrir esa revisión. Tercera capa — acompañamiento notarial: estamos con el comprador ' +
+      'y el vendedor en la notaría y les señalamos qué mirar en la minuta de compraventa y en la ' +
+      'liquidación de impuestos. En Su Finca Raíz no te dejamos solo en ese proceso: te decimos ' +
+      'qué pedir, qué revisar y en qué orden.',
   },
   {
     question: '¿Cuánto cuesta una finca o lote campestre en La Vega, Cundinamarca?',

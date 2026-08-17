@@ -511,7 +511,7 @@ export default async function VeredaPage(
                 ¿Buscas propiedad en {v.name}?
               </p>
               <p style={{ color: '#475569', fontSize: '0.81rem', lineHeight: 1.6, marginBottom: '0.9rem' }}>
-                Conocemos cada predio disponible en la vereda. Te asesoramos sin costo y sin compromiso.
+                Conocemos cada predio disponible en la vereda. Recibe asesoría profesional según lo que busques.
               </p>
               <a
                 href={`https://wa.me/573218826730?text=Hola%2C+busco+propiedad+en+la+vereda+${encodeURIComponent(v.name)}%2C+${encodeURIComponent(v.municipio_name)}%2C+Cundinamarca`}

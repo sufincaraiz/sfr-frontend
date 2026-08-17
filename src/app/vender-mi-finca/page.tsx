@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   title: 'Vende tu finca en La Vega, Cundinamarca',
   description:
     'Vende tu finca, lote o casa campestre en La Vega y el Gualivá con respaldo experto: ' +
-    'recorridos 360°, seguridad legal y marketing digital segmentado. Valoración gratis.',
+    'recorridos 360°, criterio jurídico y marketing digital segmentado.',
   alternates: { canonical: `${SITE_URL}/vender-mi-finca` },
   openGraph: {
     title: 'Vende tu propiedad en La Vega con respaldo experto | Su Finca Raíz',
@@ -73,7 +73,7 @@ export default function VenderMiFincaPage() {
             <p style={{ color: 'rgba(255,255,255,0.85)', lineHeight: 1.7, fontSize: '1.05rem', maxWidth: 620, margin: '0 auto' }}>
               Transformamos la forma de vender fincas, lotes y casas campestres en Cundinamarca.
               Conectamos tu predio con los inversionistas correctos a través de
-              tecnología de vanguardia y blindaje legal integral.
+              tecnología de vanguardia y criterio jurídico en cada paso.
             </p>
             <div style={{ maxWidth: 760, margin: '1.75rem auto 0', textAlign: 'left' }}>
               <RespuestaDirecta {...respuestaVender()} />

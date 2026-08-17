@@ -9,13 +9,13 @@ import { horarioEnLineas } from '@/lib/horario';
 export const metadata: Metadata = {
   title: 'Contáctanos — Asesoría inmobiliaria en La Vega',
   description:
-    'Hablemos. Asesoría gratis para comprar, vender o invertir en fincas, lotes y ' +
+    'Hablemos. Asesoría profesional para comprar, vender o invertir en fincas, lotes, casas y ' +
     'casas campestres en La Vega y el Gualivá, Cundinamarca. WhatsApp +57 321 882 6730.',
   alternates: { canonical: `${SITE_URL}/contacto` },
   openGraph: {
     title: 'Contáctanos | Su Finca Raíz',
     description:
-      'Asesoría gratis para comprar, vender o invertir en finca raíz en La Vega, Cundinamarca.',
+      'Asesoría profesional para comprar, vender o invertir en finca raíz rural y urbana en La Vega, Cundinamarca.',
     url: `${SITE_URL}/contacto`,
     type: 'website',
     locale: 'es_CO',
@@ -54,7 +54,7 @@ export default function ContactoPage() {
             </h1>
             <p style={{ color: 'rgba(255,255,255,0.85)', lineHeight: 1.7, fontSize: '1.02rem', maxWidth: 600, margin: '0 auto' }}>
               Ya sea que quieras vender, invertir o encontrar tu refugio campestre en La Vega,
-              nuestro equipo te asesora sin costo. Escríbenos y te respondemos en menos de 24 horas.
+              nuestro equipo te orienta según el negocio que quieras hacer. Escríbenos y te respondemos en menos de 24 horas.
             </p>
           </div>
         </section>

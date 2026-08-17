@@ -270,8 +270,9 @@ export async function runMac(
             // deberes del comprador.
             pregunta: 'Elabora la recomendación final de inversión para este cliente calificado como CALIENTE: ' +
               'cuál de las opciones vistas encaja mejor con su perfil y por qué, destacando lo que la hace una buena decisión. ' +
-              'Cierra con una sola idea sobre el respaldo que el cliente recibe de Su Finca Raíz en la revisión de títulos, acceso, agua y uso del suelo, ' +
+              'Cierra con una sola idea sobre el ACOMPAÑAMIENTO que recibe de Su Finca Raíz durante el proceso —orientación sobre qué revisar en títulos, acceso, agua y uso del suelo, y presencia hasta el cierre—, ' +
               'redactada como tranquilidad que él gana, NO como advertencias ni como tareas pendientes. ' +
+              'NUNCA afirmes que Su Finca Raíz ejecuta o costea estudios, certificados o trámites, ni que algo "está incluido" o "queda en regla". ' +
               'Escribe sobre el cliente y la propiedad; no te dirijas al equipo comercial ni le des instrucciones.',
             contexto: ctx.join('\n') || '(sin datos estructurados; usa el historial de la conversación)',
           },
