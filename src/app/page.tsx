@@ -42,7 +42,9 @@ export async function generateMetadata(): Promise<Metadata> {
   title: 'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
   description:
     'Compra fincas, lotes, casas y apartamentos en La Vega, Cundinamarca. ' +
-    `${inventario} Asesoría profesional: ☎ 321 882 6730.`,
+    // `fraseInventario()` no trae punto final: antes lo aportaba el texto que
+    // seguía, y al cambiarlo quedó «disponibles Asesoría profesional».
+    `${inventario}. Asesoría profesional: ☎ 321 882 6730.`,
 
   alternates: {
     canonical: SITE_URL,
