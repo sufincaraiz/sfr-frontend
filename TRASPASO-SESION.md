@@ -604,6 +604,36 @@ pantalla y dejarla ahí no la corrige: la traslada al sitio más citable.
 **Excepción única:** cuando corregirlo exige un dato que no se tiene. Entonces
 se marca TODO en el código, se reporta al titular y se sigue.
 
+### Pendientes para el lote de integridad de datos
+
+Encontrados al clasificar las casas por urbano/rural. **No corregidos**: son
+datos de ficha y los llena el titular.
+
+- **Casa Chicala** — la BD tiene `area_lot_m2 = 136` y `area_built_m2 = 136`,
+  idénticos. Su descripción dice «Área Total predio: **72 m²**, Área de
+  Construcción: aproximadamente **136 m²**». El área de lote está mal.
+- **Casa En Condominio** — el encabezado de la descripción dice «LVB 012» y dos
+  líneas después «referencia **LVA 008**». Dos referencias en la misma ficha.
+
+### ⚠ Etiquetas escritas a mano: el patrón que se repite
+
+Cuatro veces ya. Una etiqueta de tipo, municipio o vereda escrita a mano **no
+se actualiza nunca** cuando cambia su fuente, y no rompe nada visible:
+
+1. la miga de la ficha, a una vereda sin página;
+2. el breadcrumb del dron, a `/servicios`;
+3. `related-properties.ts`, repitiendo el 1;
+4. **`TIPO_LINKS` en la página de municipio** («Casas Campestres» a mano) y
+   **el footer** (`?tipo=condominio`, un tipo retirado, cero resultados en el
+   pie de TODAS las páginas del sitio).
+
+El footer es el peor de los cuatro: llevaba meses enlazando a un listado vacío
+desde cada página, y sobrevivió a la retirada del tipo porque una etiqueta de
+navegación con un parámetro de consulta no pasa por `lib/enlaces.ts`.
+
+**Antes de escribir una etiqueta a mano, comprobar si existe `tipoLabel()`,
+`tipoPlural()` o `enlaces.ts` para derivarla.**
+
 ### ⚠ El `catch` va FUERA del caché — patrón general
 
 Un `catch` que degrada dentro de `unstable_cache` **cachea el estado degradado**
