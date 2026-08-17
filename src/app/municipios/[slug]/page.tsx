@@ -14,7 +14,8 @@ import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta'
 import { respuestaMunicipio } from '@/lib/respuestas-directas'
 import { formatPrice } from '@/lib/utils'
 import { tipoLabel } from '@/lib/property-types'
-import { getTipoLabels } from '@/lib/property-types.server'
+import { getTipoLabels, getTipoPlurales } from '@/lib/property-types.server'
+import { tipoPlural } from '@/lib/property-types'
 import type { Property, PropertyMedia } from '@/types'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
@@ -136,6 +137,7 @@ export default async function MunicipioPage(
 
   const { properties } = await getMunicipalityProperties(slug)
   const tipoLabels = await getTipoLabels()
+  const tipoPlurales = await getTipoPlurales()
 
   const canonicalUrl = `${SITE_URL}/municipios/${slug}`
 
@@ -186,12 +188,14 @@ export default async function MunicipioPage(
   // (`en_condominio`). El enlace apuntaba a /propiedades/condominio/<muni>, que
   // desde la reclasificación no tiene inventario y responde con la guarda de
   // §1.3 — un enlace destacado hacia una página que dice «no hay nada aquí».
-  const TIPO_LINKS = [
-    { tipo: 'finca',       label: 'Fincas en Venta' },
-    { tipo: 'lote',        label: 'Lotes en Venta' },
-    { tipo: 'casa',        label: 'Casas Campestres' },
-    { tipo: 'apartamento', label: 'Apartamentos' },
-  ]
+  // Las etiquetas se DERIVAN del catálogo de tipos. Estaban escritas a mano, y
+  // eso significa que un cambio de etiqueta en la tabla NO llegaba aquí nunca:
+  // habría dejado «Casa» en el buscador y «Casas Campestres» en las ocho
+  // páginas de municipio, permanente y en silencio.
+  const TIPO_LINKS = ['finca', 'lote', 'casa', 'apartamento'].map(tipo => ({
+    tipo,
+    label: `${tipoPlural(tipo, tipoPlurales)} en Venta`,
+  }))
 
   return (
     <>

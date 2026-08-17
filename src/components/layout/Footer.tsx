@@ -7,7 +7,11 @@ const PROPERTY_LINKS = [
   { href: '/propiedades/finca/la-vega',                 label: 'Fincas en La Vega' },
   { href: '/propiedades/finca/sasaima',                 label: 'Fincas en Sasaima' },
   { href: '/propiedades?tipo=lote',                     label: 'Lotes en venta' },
-  { href: '/propiedades?tipo=condominio',               label: 'Condominios campestres' },
+  // Apuntaba a ?tipo=condominio, un tipo RETIRADO: cero resultados, en el pie
+  // de todas las páginas del sitio. Sobrevivió a la retirada del tipo porque es
+  // una etiqueta de navegación escrita a mano y no pasa por lib/enlaces.ts.
+  // Ahora va a la ruta del ATRIBUTO, que sí tiene 12 propiedades.
+  { href: '/propiedades/en-condominio',                 label: 'Propiedades en condominio' },
 ];
 
 const COMPANY_LINKS = [

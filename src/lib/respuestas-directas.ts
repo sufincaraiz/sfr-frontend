@@ -156,7 +156,8 @@ export async function respuestaPropiedades(): Promise<RespuestaDirectaProps> {
     pregunta: '¿Qué propiedades hay en venta en La Vega y el Gualivá?',
     respuesta:
       `Su Finca Raíz publica ${total} propiedades disponibles en La Vega y el Gualivá, ` +
-      `Cundinamarca: ${detalle} COP, con acompañamiento en todo el proceso de compra.`,
+      `Cundinamarca: ${detalle} COP. El inventario incluye casas campestres en vereda y ` +
+      `vivienda en el casco urbano, con acompañamiento en todo el proceso de compra.`,
     fuenteDato: FUENTE,
     fechaCorte: hoy(),
   }

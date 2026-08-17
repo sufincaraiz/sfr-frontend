@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
@@ -16,9 +16,28 @@ const BaseSchema = z.object({
 })
 const UpdateSchema = BaseSchema.partial().extend({ id: z.string().min(1) })
 
+/**
+ * La etiqueta de un tipo aflora en ~50 páginas: el <title> de cada ficha, las
+ * rutas limpias, las páginas de municipio y de vereda, y el sitemap. Revalidar
+ * solo la portada y el catálogo dejaba el resto desactualizado hasta una hora.
+ *
+ * El riesgo no es la página vieja: es que quien hizo el cambio lo vea sin
+ * efecto, piense que no funcionó y lo deshaga.
+ */
 function revalidar() {
   revalidatePath('/')
   revalidatePath('/propiedades')
+  // layout: arrastra las rutas hijas de cada árbol
+  revalidatePath('/propiedad/[slug]', 'page')
+  revalidatePath('/propiedades/[filtro]', 'page')
+  revalidatePath('/propiedades/[filtro]/[municipio]', 'page')
+  revalidatePath('/municipios/[slug]', 'page')
+  revalidatePath('/veredas/[slug]', 'page')
+  revalidatePath('/propiedades/en-condominio')
+  revalidatePath('/sitemap-propiedades.xml')
+  revalidatePath('/sitemap-paginas.xml')
+  // El índice de enlaces y los tipos ofrecibles se derivan del mismo catálogo.
+  revalidateTag('enlaces')
 }
 
 export async function GET() {

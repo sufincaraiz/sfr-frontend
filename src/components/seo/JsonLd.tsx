@@ -384,6 +384,11 @@ function organizationNode(opts: EntidadOpts = {}) {
       'Compra de vivienda urbana en municipios de Cundinamarca', // catálogo + fichas
       'Mercado de apartamentos en La Vega',                      // 4 fichas + ruta limpia
       'Casco urbano de La Vega, Cundinamarca',                   // página de municipio
+      // «Casa campestre» dejó de ser el nombre del TIPO —4 de las 14 casas están
+      // en casco urbano— pero sigue siendo una consulta con demanda y una
+      // tipología real. Se recupera aquí, que es donde es cierta sin forzarla
+      // sobre el inventario urbano.
+      'Casas campestres en La Vega y el Gualivá',                // 10 de 14 casas
       'Proceso de compraventa de finca raíz rural en Colombia', // guía + blog
       'Historia de La Vega, Cundinamarca',                      // blog + páginas de municipio
       'Agente conversacional de IA aplicado a finca raíz',      // /mac
