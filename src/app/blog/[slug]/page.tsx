@@ -11,6 +11,7 @@ import { renderInline } from '@/lib/richtext'
 import { ArticleCard, CategoryBadge, TagBadge } from '@/components/blog/ArticleCard'
 import { JsonLd, breadcrumbSchema, articleSchema, howToSchema, webPageSchema } from '@/components/seo/JsonLd'
 import { AutorArticulo } from '@/components/aeo/AutorArticulo'
+import { TerritorioDelArticulo } from '@/components/malla/TerritorioDelArticulo'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
@@ -212,6 +213,15 @@ export default async function BlogPostPage(
                 Última actualización: {updatedFormatted}
               </p>
             )}
+
+            {/* Blog -> territorio. Al pie, DESPUÉS del cuerpo y ANTES del autor.
+                Solo municipios y veredas que el artículo nombra de verdad y que
+                tienen página. Si nada califica, no se renderiza nada. */}
+            <TerritorioDelArticulo
+              titulo={post.title}
+              contenido={post.content ?? ''}
+              extracto={post.excerpt}
+            />
 
             {/* Firma del autor. Va ANTES del CTA porque respalda el artículo,
                 no lo vende: es lo que hace que la `Person` del JSON-LD tenga

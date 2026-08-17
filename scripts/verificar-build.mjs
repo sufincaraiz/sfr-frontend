@@ -39,7 +39,7 @@
  *     npm run build:verificado
  */
 
-import { spawn } from 'node:child_process'
+import { spawn, spawnSync } from 'node:child_process'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
 // FUERA de .next: el propio build borra ese directorio, así que el historial
@@ -119,6 +119,12 @@ hijo.on('close', codigo => {
     console.log('═════════════════════════════════════════════════════════════\n')
     process.exit(1)
   }
+
+  // Guarda de enlaces internos: recorre el HTML recién generado y comprueba
+  // que cada destino existe Y tiene contenido. Va DESPUÉS del build porque
+  // analiza su resultado. Ver scripts/verificar-enlaces.mjs.
+  const enlaces = spawnSync(process.execPath, ['scripts/verificar-enlaces.mjs'], { stdio: 'inherit' })
+  if (enlaces.status !== 0) process.exit(enlaces.status ?? 1)
 
   console.log('  → sano.')
   console.log('═════════════════════════════════════════════════════════════\n')

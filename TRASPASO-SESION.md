@@ -300,24 +300,28 @@ PerplexityBot reciben 200 y 239 KB de contenido real, sin página de desafío.
 **El sitio nunca estuvo bloqueado.** El `robots.txt` anterior ya permitía a todos
 con un comodín; los grupos explícitos son refuerzo, no rescate.
 
-### Sesión 2 — casi completa
+### ⚠ EL ESTADO NO SE ESCRIBE AQUÍ. SE DERIVA.
 
-| Bloque | Estado |
-|---|---|
-| 1. Contadores en cero | ✅ |
-| 2. Vigencia (años, slug de ejemplo, títulos) | ✅ |
-| 3. Metadatos por página | 🟡 parcial |
-| 4. URLs limpias `/propiedades/[municipio]` | ⬜ **siguiente** |
-| 5. `<RespuestaDirecta>` | ✅ componente + 7 páginas |
-| 6. `<DatosVerificables>` | ✅ municipios y fichas de propiedad |
-| 7. Encabezados en forma de pregunta | ✅ municipios, veredas, guía |
-| 8. JSON-LD de contenido y catálogo | 🟡 falta `BlogPosting` con `author` Person |
+```bash
+node scripts/estado-traspaso.mjs
+```
 
-### Sesión 3 — SIN EMPEZAR
+Aquí había dos listas de estado escritas a mano —una tabla de la Sesión 2 y una
+lista de «Sesión 3 — SIN EMPEZAR»—. Acumularon **nueve afirmaciones falsas**,
+todas en la misma dirección: decían pendiente sobre cosas ya construidas.
 
-Página de Mac, hub de preguntas frecuentes, plantilla de vereda, informe de
-mercado, extracción de intención desde Mac, tablero de visibilidad IA, malla de
-enlazado interno.
+Una de ellas costó un turno entero. El traspaso decía que el tablero de
+visibilidad IA estaba «sin empezar»; en realidad **nunca existió**, pero al
+estar en una lista junto a cinco cosas que sí se hicieron después, se dio por
+construido y se pidió «ponerlo operativo».
+
+Es el mismo fallo que `TIPO_LINKS` y que el enlace del footer, un piso más
+arriba: **un dato escrito a mano que nadie vuelve a comprobar**. Un documento de
+784 líneas que nadie relee entero se desincroniza igual que una etiqueta.
+
+Lo que queda en este archivo es lo que NO se puede derivar: decisiones, sus
+razones, y las trampas aprendidas a la mala. Eso ningún script lo reconstruye,
+y es donde está su valor.
 
 ---
 
@@ -735,12 +739,16 @@ prohíbe sin página que lo sustente, y una página con seis TODO no sustenta na
 
 ## 7. Lo siguiente en la cola
 
-1. **`CORREDOR`**: los cinco municipios a mano de la guía de inversión
-2. **Rutas limpias `/propiedades/[municipio]`** (Sesión 2, bloque 4)
-3. **JSON-LD de contenido**: `BlogPosting` con `author` como `Person` real
-   (Sesión 2, bloque 8) — necesita que el titular nombre a quien firma
-4. `<DatosVerificables>` en portada (espera los precios)
-5. Sesión 3 completa
+Solo lo que NO está construido. Para lo que sí, correr `estado-traspaso.mjs`.
+
+1. `<DatosVerificables>` en portada — es la única pieza verificable que sigue
+   sin construirse (19 de 20).
+2. Informe de mercado y extracción de intención desde Mac — sin empezar, y no
+   son verificables por archivo, así que se anotan aquí a propósito.
+
+Los tres puntos que había antes —`CORREDOR` derivado, rutas limpias y
+`BlogPosting` con `author` Person— llevaban tiempo hechos y seguían listados
+como pendientes.
 
 ---
 
