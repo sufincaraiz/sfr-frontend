@@ -483,3 +483,43 @@ model EnlaceVisitantes {
   @@index([propiedadId])
   @@map("enlaces_visitantes")
 }
+
+/// Medición manual de visibilidad en motores de IA.
+///
+/// Una fila = una consulta hecha a un motor en una fecha. El histórico se
+/// construye repitiendo las MISMAS consultas de control (src/lib/visibilidad-ia.ts)
+/// en cada ronda: si cambian, las mediciones dejan de ser comparables.
+///
+/// `consulta_id` y `motor` se guardan como texto, no como relación: su catálogo
+/// vive en código a propósito, para que nadie lo edite desde el admin y rompa
+/// la línea base.
+model MedicionIA {
+  id           String   @id @default(uuid())
+  /// Id estable de la consulta de control (c01…c11).
+  consulta_id  String
+  /// Id del motor (chatgpt, gemini, claude, copilot, perplexity, deepseek).
+  motor        String
+  /// ¿Apareció Su Finca Raíz en la respuesta?
+  aparece      Boolean
+  /// Posición en la que se menciona (1 = primera). null si no aparece.
+  posicion     Int?
+  /// Competidores mencionados, en el orden en que aparecen.
+  competidores String[]
+  /// LO MÁS IMPORTANTE: cómo describió el motor a la marca, literal.
+  /// Ahí se ve si resolvió la entidad correcta o la homónima de Rionegro.
+  descripcion  String?  @db.Text
+  /// Notas libres de quien mide.
+  notas        String?  @db.Text
+  medido_en    DateTime @default(now())
+  medido_por   String?
+  /// Commit desplegado en el momento de medir. Lo captura el servidor solo
+  /// (VERCEL_GIT_COMMIT_SHA): sin esto, dentro de tres meses no se sabe contra
+  /// qué versión del sitio se midió cada fila y la comparación pierde la mitad
+  /// de su valor.
+  commit_sitio String?
+  /// Texto libre de quien mide: «tras retirar el gratis», «antes del reencuadre»…
+  version_nota String?
+
+  @@index([consulta_id, motor, medido_en])
+  @@map("mediciones_ia")
+}
