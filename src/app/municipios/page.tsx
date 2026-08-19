@@ -96,8 +96,15 @@ export default async function MunicipiosIndexPage() {
             Municipios para invertir cerca de Bogotá
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.82)', maxWidth: 600, margin: '0 auto', lineHeight: 1.7, fontSize: '1.05rem' }}>
-            Los doce municipios de la Provincia del Gualivá, todos a menos de 2 horas
-            de Bogotá, con fincas, lotes y casas campestres en clima primaveral.
+            {/* Decía «todos a menos de 2 horas de Bogotá»: falso, Vergara está a
+                130 minutos. Sobrevivió al barrido de distancias porque el salto
+                de línea partía la frase entre «2 horas» y «de Bogotá», y el
+                patrón no cruzaba líneas. También decía «clima primaveral», un
+                adjetivo sin dato cuando el rango real está en la ficha de cada
+                municipio. */}
+            Los doce municipios de la Provincia del Gualivá, con fincas, lotes, casas y
+            apartamentos. Cada ficha lleva su altitud, su rango de temperatura y su
+            distancia real a Bogotá.
           </p>
         </div>
 

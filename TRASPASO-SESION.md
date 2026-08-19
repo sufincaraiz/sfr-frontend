@@ -845,3 +845,43 @@ La diferencia está en la dirección de la afirmación:
 
 Vive en la sección de transparencia obligatoria de Mac (divulgación de sistema
 automatizado). El «siempre» ahí protege, no promete.
+
+### La doctrina funciona: lo escrito después de ella nace limpio
+
+Dato de la pasada (e) del 19/08/2026, y es el argumento para mantenerla.
+
+Se recorrieron todas las páginas buscando afirmaciones de posición comparativa
+—propia o sobre terceros—, con o sin cifra:
+
+| Página | Escrita | Hallazgos |
+|---|---|---|
+| `/nosotros` | antes de la doctrina | **7** (en cinco barridos) |
+| `/guia-inversion` | antes | **4** + 4 rankings previos |
+| `/vender-mi-finca` | antes | **2** |
+| `/municipios` | antes, revisada | **1** superviviente |
+| **`/directorio`** | **después** | **0** |
+| **`/veredas`** | **después** | **0** |
+| **`/propiedades`, `/preguntas-frecuentes`, `/mac`, `/propiedades/en-condominio`** | **después** | **0** |
+| Artículos del blog | mixto | **0** de posición |
+
+No es que el método de búsqueda mejorara: es que **el texto escrito con la
+doctrina delante no genera este tipo de afirmación**. Las páginas que la
+concentran son exactamente las que existían antes.
+
+Corolario para quien retome: si aparece una página con varios hallazgos del
+mismo tipo, mirar cuándo se escribió antes de parchearla frase a frase.
+`/nosotros` se reescribió entera por eso.
+
+### ⚠ Un patrón de barrido que falla: el salto de línea
+
+«todos a menos de 2 horas de Bogotá» sobrevivió a un barrido dedicado a esa
+frase exacta porque en el código estaba partida:
+
+```jsx
+Los doce municipios de la Provincia del Gualivá, todos a menos de 2 horas
+de Bogotá, con fincas, lotes y casas campestres en clima primaveral.
+```
+
+El patrón buscaba `2 horas de Bogotá` en una línea. **Para frases de prosa,
+barrer con `grep -z` (multilínea) además del barrido por línea**, o buscar solo
+el fragmento más corto e inspeccionar el contexto a mano.

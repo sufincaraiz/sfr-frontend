@@ -46,8 +46,16 @@ export const metadata: Metadata = {
 
 // ─── Datos de secciones ─────────────────────────────────────────────────────────
 
-const VALORIZACION = [
-  { icon: Sun, title: 'Clima Perfecto y Topografía', text: 'Un microclima envidiable (22°C promedio) que permite disfrutar de piscinas y naturaleza los 365 días del año.' },
+// El clima se DERIVA de la ficha del municipio. Decía «un microclima
+// envidiable (22°C promedio)»: un adjetivo valorativo y una cifra escrita a
+// mano, cuando el rango real está en base y ya se publica derivado en
+// /municipios/la-vega con su fecha de corte. Es caso 1 de §2, no caso 4: el
+// dato existe, lo que sobraba era el adjetivo y el número inventado.
+function valorizacion(clima: { min: number; max: number; altitud: number } | null) {
+  return [
+  { icon: Sun, title: 'Clima y topografía', text: clima
+      ? `La Vega está a ${clima.altitud.toLocaleString('es-CO')} msnm, con temperaturas de ${clima.min} a ${clima.max} °C. Ese rango permite piscina y vida al aire libre durante todo el año.`
+      : 'La altitud de La Vega da un rango de temperatura estable durante todo el año, que permite piscina y vida al aire libre.' },
   { icon: Route, title: 'Desarrollo de Infraestructura', text: 'Vías de acceso en constante mejora que conectan rápidamente con la capital, convirtiendo a La Vega en la opción ideal para vivienda principal o turismo de fin de semana.' },
   // «garantizando retornos sólidos» era una garantía de rentabilidad
   // financiera: la clase de promesa que obliga bajo la Ley 1480 de 2011 y que
@@ -55,7 +63,8 @@ const VALORIZACION = [
   // del mercado y no de la empresa. Se sustituye por el hecho observable, que
   // además es lo que un modelo puede citar.
   { icon: TrendingUp, title: 'Demanda de alquiler vacacional', text: 'La demanda de alquileres vacacionales de corta estancia en la región supera a la oferta publicada, lo que sostiene el interés por las propiedades de descanso. La rentabilidad de cada inmueble depende de su ubicación, su estado y las condiciones del mercado en cada momento.' },
-];
+  ]
+}
 
 const CATALOGO = [
   { icon: LandPlot, title: 'Lotes y Parcelaciones Campestres', text: 'El lienzo en blanco para tu casa ideal. Nos enfocamos en terrenos urbanizados con proyección y seguridad. Proyectos estructurados con visión, como Senderos del Bosque o la Parcelación Cucharal, representan el estándar de lo que un inversionista debe buscar: vías, servicios y proyecciones arquitectónicas claras.' },
@@ -69,7 +78,10 @@ const AUTORIDAD = [
   // aquel buscaba «blindaje legal». Afirma un estado de protección; lo que sí
   // hacemos es acompañar y orientar.
   { icon: Scale, title: 'Criterio jurídico', text: 'Te acompañamos en el estudio de títulos y de tradición, y te orientamos sobre qué revisar en la promesa de compraventa.' },
-  { icon: Bot, title: 'Asesoría Inteligente', text: 'Respuestas rápidas y precisas apoyadas por nuestra tecnología de vanguardia y nuestro Agente Mac.' },
+  // «tecnología de vanguardia» es posición comparativa sin referente, y encima
+  // reemplazable por el hecho, que dice más y se puede comprobar abriendo
+  // WhatsApp a las tres de la mañana.
+  { icon: Bot, title: 'Atención con Mac', text: 'Mac, nuestro agente de inteligencia artificial propio, responde en la web y en WhatsApp las 24 horas y consulta el catálogo en tiempo real.' },
 ];
 
 // ─── Schemas ──────────────────────────────────────────────────────────────────
@@ -119,6 +131,14 @@ export default async function GuiaInversionPage() {
   // «Los OTROS municipios además de La Vega»: se excluye por slug, no por
   // nombre, para que no dependa de cómo esté escrito el nombre en la base.
   const corredor = await getMunicipiosConDatos('la-vega');
+
+  // Clima de La Vega desde su ficha, para la tarjeta de la sección 1. Si la
+  // base no responde, la tarjeta cae a su versión sin cifras en vez de
+  // publicar un número escrito a mano.
+  const laVega = (await getMunicipiosConDatos()).find(m => m.slug === 'la-vega') ?? null;
+  const climaLaVega = laVega
+    ? { min: laVega.temp_min, max: laVega.temp_max, altitud: laVega.altitud_msnm }
+    : null;
 
   // Las FAQ de municipio salen de sus datos reales; las generales, de la
   // constante. Van primero las de municipio porque son las que responden a la
@@ -184,7 +204,7 @@ export default async function GuiaInversionPage() {
               abajo, que sí describen hechos observables. */}
           <SectionTitle eyebrow="Sección 1">¿Qué sostiene la demanda de vivienda campestre en La Vega?</SectionTitle>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
-              {VALORIZACION.map(({ icon: Icon, title, text }) => (
+              {valorizacion(climaLaVega).map(({ icon: Icon, title, text }) => (
                 <div key={title} style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '1.6rem 1.4rem' }}>
                   <span style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48, borderRadius: 12, background: '#EFF6FF', marginBottom: '1rem' }}>
                     <Icon size={24} color="#1B56A1" />
@@ -299,7 +319,7 @@ export default async function GuiaInversionPage() {
                   Habla con un asesor experto
                 </h2>
                 <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.95rem', lineHeight: 1.6, maxWidth: 440, margin: '0 auto' }}>
-                  Cuéntanos tu objetivo de inversión y te orientamos hacia las mejores oportunidades
+                  Cuéntanos tu objetivo de inversión y te orientamos según lo que busques y el presupuesto que manejes
                   del corredor del Gualivá. Respuesta en menos de 24 horas.
                 </p>
               </div>

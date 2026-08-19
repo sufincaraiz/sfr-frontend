@@ -73,7 +73,7 @@ export default function VenderMiFincaPage() {
             <p style={{ color: 'rgba(255,255,255,0.85)', lineHeight: 1.7, fontSize: '1.05rem', maxWidth: 620, margin: '0 auto' }}>
               Transformamos la forma de vender fincas, lotes y casas campestres en Cundinamarca.
               Conectamos tu predio con los inversionistas correctos a través de
-              tecnología de vanguardia y criterio jurídico en cada paso.
+              recorridos 360°, fotografía aérea con dron y criterio jurídico en cada paso.
             </p>
             <div style={{ maxWidth: 760, margin: '1.75rem auto 0', textAlign: 'left' }}>
               <RespuestaDirecta {...respuestaVender()} />
