@@ -466,8 +466,13 @@ export function personaAutora() {
   return {
     '@type':   'Person',
     '@id':      AUTOR_ID,
-    name:      'Leonel Macgiver López Albadán',
-    jobTitle:  'Director',
+    // ⚠ «Mac» es también el nombre del agente de IA. La desambiguación es
+    // estructural —el agente tiene su propio @id como SoftwareApplication y
+    // esta Person el suyo— pero en PROSA a la persona no se la nombra nunca
+    // solo «Mac»: siempre nombre completo. Es el mismo riesgo de entidad que
+    // la inmobiliaria homónima de Rionegro, dentro de casa.
+    name:      'Leonel Mac López Albadán',
+    jobTitle:  'Dirección · Ingeniero de sistemas · Broker inmobiliario · Productor multimedia',
     worksFor:  { '@id': `${SITE_URL}/#organization` },
     knowsAbout: [
       'Mercado inmobiliario de La Vega y la Provincia del Gualivá',

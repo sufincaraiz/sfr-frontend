@@ -823,3 +823,25 @@ auditoría larga lo admite.
 Eso no es ruido: es la primera medición de **retraso de propagación**, y está
 registrada como tal en el tablero (`c04`, 18/08/2026, los dos motores). Al
 18/08/2026, Gemini y ChatGPT describían la marca con contenido de hace un mes.
+
+### Excepción documentada: el «siempre» de `faqs.ts` que NO se corrige
+
+```
+«ninguna respuesta de Mac constituye una oferta comercial vinculante ni
+ asesoría jurídica: eso lo confirma SIEMPRE un asesor antes de cualquier
+ negociación.»
+```
+
+Un barrido futuro de absolutos —«todas», «siempre», «cada», «antes de»— la va a
+marcar como las demás. **No se toca.**
+
+La diferencia está en la dirección de la afirmación:
+
+| Las que sí se corrigieron | Esta |
+|---|---|
+| **Amplían** lo que la empresa hace | **Restringe** lo que vale una respuesta de Mac |
+| «revisamos todas las propiedades antes de ofrecerlas» → promete trabajo no hecho | «ninguna respuesta constituye oferta» → descargo de responsabilidad |
+| Quitar el absoluto **corrige** | Quitar el absoluto **debilita el descargo** |
+
+Vive en la sección de transparencia obligatoria de Mac (divulgación de sistema
+automatizado). El «siempre» ahí protege, no promete.
