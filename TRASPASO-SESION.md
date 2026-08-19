@@ -790,3 +790,36 @@ curl -s https://www.sufincaraiz.com/servicios/dron-y-fotogrametria \
 ---
 
 *Traspaso actualizado el 13 de agosto de 2026. Doctrina vigente: v7.2.*
+
+---
+
+## 9. Recomendaciones externas RECHAZADAS — no reabrir
+
+Auditorías de Gemini y ChatGPT, 18/08/2026. Se rechazan con razón, no por
+descuido. Si vuelven a aparecer en otra auditoría, la respuesta ya está dada.
+
+**«Albán pertenece a la Provincia de Sabana Occidente».** FALSO. Albán es uno
+de los **doce municipios de la Provincia del Gualivá**, y así consta en
+`datos-oficiales.ts`. No se cambia nada por esta observación.
+
+**«Crear las 12 páginas municipales, aunque 4 tengan inventario cero».**
+Contradice §1.3: una página cuyo único contenido es que no hay contenido es una
+página delgada. Se publican solo con datos propios y verificables —altitud,
+distancia, clima, descripción—, que es la condición que ya deriva
+`lib/publicable.ts`.
+
+**«Separar el sitio en silos visuales rural y urbano».** Contradice el
+reencuadre del 17/08: el catálogo tiene apartamentos y el casco urbano de La
+Vega es mercado propio, y la corrección fue **integrar** el vocabulario urbano,
+no aislarlo. Un silo urbano separado repetiría el sesgo al revés.
+
+### Lo que las auditorías sí midieron, sin querer
+
+La mayoría de sus hallazgos «críticos» —18 %, 98 %, 150 vendidas, «primera
+inmobiliaria inteligente», blindaje, FAQ de 2025, 8 municipios— **ya estaban
+corregidos** cuando se escribieron. Estaban leyendo el índice, no el sitio; la
+auditoría larga lo admite.
+
+Eso no es ruido: es la primera medición de **retraso de propagación**, y está
+registrada como tal en el tablero (`c04`, 18/08/2026, los dos motores). Al
+18/08/2026, Gemini y ChatGPT describían la marca con contenido de hace un mes.

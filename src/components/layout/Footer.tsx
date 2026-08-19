@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import { MapPin, Phone, Mail } from 'lucide-react';
 import { getMunicipiosVisibles } from '@/lib/municipios';
+import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
+import { horarioEnLineas } from '@/lib/horario';
 
 const PROPERTY_LINKS = [
   { href: '/propiedades?tipo=finca',                    label: 'Fincas en venta' },
@@ -190,6 +192,37 @@ export async function Footer() {
                 </li>
               ))}
             </ul>
+
+            {/* El footer enlaza solo los municipios CON página —8 de 12— y eso se
+                lee como si la cobertura fuera de 8, contradiciendo el areaServed
+                del JSON-LD. No es un dato falso, es una impresión falsa: los
+                otros 4 no tienen página porque no tienen contenido propio (§1.3),
+                no porque no se opere allí. */}
+            <Link
+              href="/municipios"
+              className="block text-sm mb-5 hover:text-white transition-colors"
+              style={{ color: '#E8B92F', fontWeight: 600 }}
+            >
+              Ver los {DATOS_OFICIALES.municipiosProvincia} municipios del Gualivá →
+            </Link>
+
+            {/* ── Horario, derivado de HORARIO_SEDE ──
+                Estaba en openingHoursSpecification del JSON-LD y en /contacto,
+                pero no en el pie, que es donde se busca. Misma fuente que el
+                marcado: no pueden divergir. */}
+            <div className="mb-5">
+              <h3 className="font-bold text-white text-sm uppercase tracking-wider mb-3">
+                Horario de atención
+              </h3>
+              <ul className="space-y-1 text-sm">
+                {horarioEnLineas().map(({ label, rango }) => (
+                  <li key={label} className="flex justify-between gap-3" style={{ maxWidth: 230 }}>
+                    <span>{label}</span>
+                    <span className="text-white font-semibold">{rango}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
             {/* Google Maps iframe real */}
             <iframe
