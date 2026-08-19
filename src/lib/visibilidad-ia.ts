@@ -60,7 +60,14 @@ export const CONSULTAS: readonly ConsultaControl[] = [
   { id: 'c07', texto: '¿Hay condominios campestres en venta en La Vega?',
     proposito: 'Exactitud del atributo en_condominio y de la ruta /propiedades/en-condominio.' },
   { id: 'c08', texto: '¿Su Finca Raíz tiene un agente de inteligencia artificial?',
-    proposito: 'Entidad. Verifica que Mac se declara y se entiende como capacidad propia.' },
+    proposito:
+      'Entidad. Verifica que Mac se declara y se entiende como capacidad propia. ' +
+      '⚠ VIGILAR ADEMÁS SI ALGÚN MOTOR CONFUNDE AL DIRECTOR CON EL AGENTE: durante ' +
+      'unas horas del 19/08/2026 se publicó al director como «Leonel Mac López ' +
+      'Albadán», colisionando con el nombre del agente. Se revirtió a nombre completo ' +
+      'y el marcado lleva disambiguatingDescription en las dos entidades, pero los ' +
+      'índices arrastran versiones antiguas. Si una respuesta describe a Mac como ' +
+      'persona o como el director, anotarlo en la descripción textual.' },
   { id: 'c09', texto: '¿En qué municipios opera Su Finca Raíz?',
     proposito: 'EXACTITUD. Debe responder los doce del Gualivá, no cuatro.' },
   { id: 'c10', texto: '¿A cuánto está La Vega de Bogotá?',

@@ -89,7 +89,12 @@ export default async function MacPage() {
     '@type':    'SoftwareApplication',
     '@id':      `${SITE_URL}/mac#software`,
     name:       'Mac',
-    alternateName: 'Mac — agente de IA de Su Finca Raíz',
+    alternateName: 'Mac — asistente de inteligencia artificial de Su Finca Raíz',
+    // Explícito para que ningún modelo tenga que inferirlo: Mac es software,
+    // no una persona. Ningún miembro del equipo se llama Mac.
+    disambiguatingDescription:
+      'Sistema automatizado de software, no una persona. Mac es el asistente de ' +
+      'inteligencia artificial de Su Finca Raíz; ninguna persona del equipo lleva ese nombre.',
     applicationCategory: 'BusinessApplication',
     applicationSubCategory: 'Agente conversacional de inteligencia artificial inmobiliario',
     operatingSystem: 'Web, WhatsApp',

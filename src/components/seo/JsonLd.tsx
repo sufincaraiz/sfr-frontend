@@ -466,13 +466,23 @@ export function personaAutora() {
   return {
     '@type':   'Person',
     '@id':      AUTOR_ID,
-    // ⚠ «Mac» es también el nombre del agente de IA. La desambiguación es
-    // estructural —el agente tiene su propio @id como SoftwareApplication y
-    // esta Person el suyo— pero en PROSA a la persona no se la nombra nunca
-    // solo «Mac»: siempre nombre completo. Es el mismo riesgo de entidad que
-    // la inmobiliaria homónima de Rionegro, dentro de casa.
-    name:      'Leonel Mac López Albadán',
-    jobTitle:  'Dirección · Ingeniero de sistemas · Broker inmobiliario · Productor multimedia',
+    // NOMBRE COMPLETO, SIN ABREVIAR NUNCA. «Mac» queda reservado en exclusiva
+    // para el agente de IA: ninguna persona lleva ese nombre en ninguna
+    // superficie del sistema. Abreviarlo reabriría una ambigüedad de entidad
+    // dentro de casa, del mismo tipo que la homónima de Rionegro pero peor,
+    // porque las dos entidades vivirían en la MISMA página.
+    name:      'Leonel Macgiver López Albadán',
+    // No obliga a un modelo a inferir quién es a partir de worksFor.
+    disambiguatingDescription:
+      'Director de Su Finca Raíz, inmobiliaria de La Vega, Cundinamarca. Persona, no ' +
+      'debe confundirse con Mac, el agente de inteligencia artificial de la empresa.',
+    jobTitle:  'Director',
+    // Las tres formaciones van aquí, no en jobTitle: jobTitle es el cargo.
+    hasOccupation: [
+      { '@type': 'Occupation', name: 'Ingeniero de sistemas' },
+      { '@type': 'Occupation', name: 'Broker inmobiliario' },
+      { '@type': 'Occupation', name: 'Productor multimedia' },
+    ],
     worksFor:  { '@id': `${SITE_URL}/#organization` },
     knowsAbout: [
       'Mercado inmobiliario de La Vega y la Provincia del Gualivá',

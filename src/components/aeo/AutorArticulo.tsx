@@ -20,7 +20,8 @@
 import Link from 'next/link'
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales'
 
-export const AUTOR_NOMBRE = 'Leonel Mac López Albadán'
+// Nombre completo siempre: «Mac» es el agente, no una persona.
+export const AUTOR_NOMBRE = 'Leonel Macgiver López Albadán'
 export const AUTOR_CARGO  = 'Director'
 
 interface AutorArticuloProps {

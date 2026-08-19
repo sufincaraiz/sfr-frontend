@@ -225,13 +225,11 @@ export default async function NosotrosPage() {
           </Bloque>
 
           <Bloque icon={User} titulo="¿Quién dirige la empresa?">
-            {/* ⚠ «Mac» es también el nombre del agente de IA. A la persona no se
-                la nombra NUNCA solo «Mac»: siempre el nombre completo. La
-                desambiguación estructural la dan los @id distintos —Person y
-                SoftwareApplication—, pero en prosa depende de esta regla. */}
+            {/* Nombre completo, sin abreviar. «Mac» está reservado al agente de
+                IA: ninguna persona lleva ese nombre en el sistema. */}
             <p style={parrafo}>
-              <strong>Leonel Mac López Albadán</strong> — Dirección. Ingeniero de sistemas, broker
-              inmobiliario y productor multimedia.
+              <strong>Leonel Macgiver López Albadán</strong> — Director. Ingeniero de sistemas,
+              broker inmobiliario y productor multimedia.
             </p>
             <p style={{ ...parrafo, marginBottom: 0 }}>
               Dirige la operación de Su Finca Raíz en La Vega y la Provincia del Gualivá. La
