@@ -60,18 +60,25 @@ export const HOME_FAQS = [
     // La pregunta también decía «¿Cómo garantiza…?». Corregir solo la respuesta
     // habría dejado la garantía enunciada en el campo `name` del FAQPage, que es
     // justo el que un motor extrae como titular de la respuesta.
-    question: '¿Cómo verifica Su Finca Raíz la seguridad legal de una propiedad antes de ofrecerla?',
+    // La pregunta también afirmaba el alcance: «antes de ofrecerla».
+    question: '¿Cómo acompaña Su Finca Raíz la revisión legal de una propiedad?',
     answer:
       // «Garantizamos seguridad jurídica» → lo que se hace de verdad. Estaba
       // dentro del FAQPage de la portada, o sea en el marcado que más se
       // extrae, y una garantía enunciada obliga a cumplirla (Ley 1480 de 2011).
       // El proceso de tres capas es real y verificable; la garantía de
       // resultado no lo era. Describirlo es más fuerte que prometerlo.
-      'Su Finca Raíz aplica un proceso de verificación jurídica de tres capas antes de ' +
-      'ofrecer una propiedad. ' +
-      'Primera capa — verificación documental: solicitamos y revisamos el certificado de ' +
-      'tradición y libertad actualizado en la Superintendencia de Notariado, confirmando que ' +
-      'el predio no tiene embargos, hipotecas ni litigios activos. Segunda capa — estudio de ' +
+      // Decía «aplica un proceso de verificación de tres capas ANTES de ofrecer
+      // una propiedad», con «solicitamos y revisamos […] confirmando que el
+      // predio no tiene embargos». Mismo defecto de ALCANCE que faqs.ts: el
+      // proceso no corre sobre el catálogo al captarlo, corre sobre la propiedad
+      // de un negocio en curso. Y «confirmando que no tiene» es un estado del
+      // mundo, no una actividad.
+      'Cuando avanzas en la compra de un inmueble, Su Finca Raíz te acompaña en tres ' +
+      'frentes. ' +
+      'Primero, la documentación: te orientamos sobre cómo pedir el certificado de ' +
+      'tradición y libertad actualizado en la Superintendencia de Notariado y qué mirar en él ' +
+      '—embargos, hipotecas, litigios activos—. Segunda capa — estudio de ' +
       'títulos profesional: te orientamos sobre por qué conviene que un abogado especialista en ' +
       'derecho inmobiliario revise la cadena de propietarios de los últimos 20 años, y sobre qué ' +
       'debe cubrir esa revisión. Tercera capa — acompañamiento notarial: estamos con el comprador ' +
@@ -80,24 +87,38 @@ export const HOME_FAQS = [
       'qué pedir, qué revisar y en qué orden.',
   },
   {
+    // ⚠ RESPUESTA DERIVADA. El texto ya no vive aquí: lo construye
+    // `respuestaPreciosCatalogo()` desde el inventario. La versión escrita a
+    // mano decía «lotes desde $85.000.000» con el lote más barato en
+    // $150.000.000, y una fila entera hablaba de «condominios campestres», un
+    // tipo retirado. Ver rangos-precio.ts para el problema de ÁMBITO.
     question: '¿Cuánto cuesta una finca o lote campestre en La Vega, Cundinamarca?',
-    answer:
-      'Los precios en La Vega y el Gualivá varían según tipo de propiedad, ubicación y ' +
-      // OJO: aquí NO se parametriza el año. Decir «actualizada para 2026» sería
-      // afirmar que estos precios se revisaron en 2026, y no consta que se hayan
-      // revisado desde que se escribieron. Cambiar 2025 por 2026 convertiría un
-      // dato viejo en una falsedad sobre su propia vigencia, que es peor.
-      // Pendiente: fijar una fecha de corte real y volver a declararla.
-      'servicios disponibles. Como referencia orientativa: Lotes desde 500 m² con ' +
-      'servicios públicos completos desde $85.000.000 COP. Casas campestres en condominio ' +
-      'cerrado (80-120 m² construidos) desde $280.000.000 COP. Fincas productivas entre 1 y ' +
-      '5 hectáreas con vía de acceso entre $350.000.000 y $900.000.000 COP. Condominios ' +
-      // «avalúo personalizado» → «análisis comercial de valor»: la palabra
-      // nombra una actividad regulada (Ley 1673 de 2013, inscripción en el RAA)
-      // y ofrecerla sin inscripción es el problema, no describir el trabajo.
-      'campestres con amenidades desde $320.000.000 COP. Para un análisis comercial de valor ' +
-      'de tu predio o el ' +
-      'listado completo de propiedades disponibles filtrado por tu presupuesto, contáctanos ' +
-      'por WhatsApp al +57 321 882 6730.',
+    answer: '',
+    derivada: 'precios',
   },
 ]
+
+/**
+ * HOME_FAQS con las respuestas DERIVADAS ya resueltas.
+ *
+ * `HOME_FAQS` sigue siendo un array estático porque lo consumen componentes de
+ * cliente; las entradas marcadas con `derivada` llevan la respuesta vacía y se
+ * rellenan aquí, en servidor. Publicar una FAQPage con una respuesta vacía
+ * sería prometer contenido que la página no da, así que la entrada se OMITE si
+ * la derivación falla.
+ */
+export async function homeFaqsResueltas(): Promise<{ question: string; answer: string }[]> {
+  const { respuestaPreciosCatalogo } = await import('@/lib/rangos-precio')
+
+  const resueltas = await Promise.all(
+    HOME_FAQS.map(async f => {
+      if (!('derivada' in f) || !f.derivada) return f
+      if (f.derivada === 'precios') {
+        const answer = await respuestaPreciosCatalogo().catch(() => '')
+        return { ...f, answer }
+      }
+      return f
+    }),
+  )
+  return resueltas.filter(f => f.answer.trim().length > 0)
+}

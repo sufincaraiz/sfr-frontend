@@ -156,3 +156,53 @@ export async function rangosPrecioObservados(): Promise<RangosPrecio | null> {
  * ninguna cifra es mejor que una cifra frágil.
  */
 export const PRECIO_POR_M2_PENDIENTE = true
+
+// ─── Respuesta de la FAQ de precios, derivada ────────────────────────────────
+
+/**
+ * Texto de la FAQ «¿cuánto cuesta…?», construido desde el inventario.
+ *
+ * Sustituye a un bloque escrito a mano con cuatro cifras, de las cuales el
+ * mínimo de lotes decía $85.000.000 cuando el lote más barato del catálogo
+ * está en $150.000.000, y una fila entera nombraba «condominios campestres»,
+ * un tipo retirado.
+ *
+ * PROBLEMA DE ÁMBITO, que derivar no resuelve solo. La tabla anterior se
+ * presentaba como «referencia orientativa» de precios en La Vega, es decir,
+ * como rango de MERCADO. Nunca lo fue, y hoy no hay forma de sustentarlo: lo
+ * único medible es el catálogo propio. Si se derivan las cifras sin cambiar el
+ * encabezado, el número queda correcto y la afirmación cambia de significado en
+ * silencio — quien buscaba referencia de mercado recibe nuestro mínimo.
+ *
+ * Por eso el texto declara tres cosas que la versión anterior no declaraba:
+ * que son precios de OFERTA, que son de NUESTRO catálogo, y con qué fecha de
+ * corte. El comentario del código pedía esa fecha desde el principio.
+ */
+export async function respuestaPreciosCatalogo(): Promise<string> {
+  const r = await rangosPrecioObservados()
+  if (!r || r.porTipo.length === 0) {
+    return 'El precio depende del tipo de inmueble, la vereda, el área y los servicios ' +
+      'disponibles. Escríbenos y te pasamos las opciones que hay hoy en catálogo dentro de ' +
+      'tu presupuesto.'
+  }
+
+  const cop = (n: number) => '$' + n.toLocaleString('es-CO')
+  const suficientes = r.porTipo.filter(t => t.n >= MIN_OBSERVACIONES_RANGO)
+  const escasos     = r.porTipo.filter(t => t.n <  MIN_OBSERVACIONES_RANGO)
+
+  const filas = suficientes
+    .map(t => `${t.clave} (n=${t.n}): de ${cop(t.min)} a ${cop(t.max)}, mediana ${cop(t.mediana)}`)
+    .join('. ')
+
+  // Los tipos con menos de MIN_OBSERVACIONES_RANGO se NOMBRAN pero no se
+  // publican como rango: con dos o tres propiedades no hay rango, hay precios.
+  const cola = escasos.length
+    ? ` De ${escasos.map(t => `${t.clave} (${t.n})`).join(' y ')} hay muy pocas unidades ` +
+      'publicadas como para dar un rango; los precios concretos están en cada ficha.'
+    : ''
+
+  return `Precios de NUESTRO CATÁLOGO ACTIVO, no promedios de mercado: ${filas}.${cola} ` +
+    `Son precios de OFERTA de propiedades publicadas por Su Finca Raíz, no precios de ` +
+    `cierre. Corte a ${r.corte}, sobre ${r.total} propiedades disponibles. El valor de un ` +
+    `predio concreto depende de su vereda, su área, su acceso y sus servicios.`
+}

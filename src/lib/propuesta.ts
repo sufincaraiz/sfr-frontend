@@ -71,7 +71,7 @@ export const DEFAULT_PROPUESTA: PropuestaContent = {
       'Vender bien en este nicho no es publicar un aviso y esperar. Es llegar a la persona correcta, con la historia correcta y con material que sostenga el valor que se pide.',
     ],
     colB: [
-      'Antes de salir al mercado, revisamos la trazabilidad del predio y los escenarios reales de retorno. Lo que cierra una venta de este nivel es la confianza, y esta se construye con un proyecto bien presentado y un equipo que responde.',
+      'Antes de salir al mercado revisamos contigo la trazabilidad del predio y preparamos la presentación. Lo que cierra una venta de este nivel es la confianza, y esta se construye con un proyecto bien presentado y un equipo que responde.',
     ],
     pull: 'El mercado en La Vega no para de valorizarse.',
     market: 'Según nuestra experiencia y los datos del sector, La Vega está catalogada entre los cinco mejores municipios de Cundinamarca para el descanso y el desarrollo de proyectos. La demanda es alta por tres razones sostenibles: ubicación, clima y seguridad. A esto sumamos nuestra lectura experta de la coyuntura nacional: el ánimo inversionista se mueve con la confianza, y vista estratégicamente, cualquier coyuntura es una ventana de oportunidad para quien tiene el capital.',

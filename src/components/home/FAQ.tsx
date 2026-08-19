@@ -2,9 +2,12 @@
 
 import { useEffect, useRef } from 'react';
 
-import { HOME_FAQS as FAQS } from '@/lib/faq-data'
+// Las recibe por props: la respuesta de precios se DERIVA del inventario en
+// servidor, y un componente de cliente no puede resolverla.
+interface FaqItem { question: string; answer: string }
 
-export function FAQ() {
+export function FAQ({ faqs }: { faqs: FaqItem[] }) {
+  const FAQS = faqs;
   const sectionRef = useRef<HTMLElement>(null);
 
   useEffect(() => {

@@ -93,7 +93,14 @@ export const FAQS_GENERALES = [
     answer:
       'Para una compra segura se requiere el Certificado de Tradición y Libertad reciente, ' +
       'las escrituras públicas, paz y salvos de impuestos y administración (si aplica), y un ' +
-      'estudio de títulos realizado por un abogado independiente. En Su Finca Raíz validamos ' +
-      'toda la documentación jurídica antes de ofrecer una propiedad.',
+      // Decía «En Su Finca Raíz validamos toda la documentación jurídica antes
+      // de ofrecer una propiedad». Falso por partida doble: afirmaba que se
+      // revisa TODO el catálogo y que se revisa ANTES de publicar. El proceso
+      // real ocurre sobre la propiedad de un negocio EN CURSO, y es
+      // acompañamiento al comprador y al vendedor. No es un verbo mal elegido:
+      // describía trabajo sobre 35 propiedades que no se ha hecho.
+      'estudio de títulos realizado por un abogado independiente. Cuando avanzas en la ' +
+      'compra de un inmueble, te acompañamos en la revisión de la documentación: te ' +
+      'orientamos sobre qué pedir, qué revisar y en qué orden, hasta la escrituración.',
   },
 ];

@@ -4,7 +4,7 @@ import { Home, ChevronRight, HelpCircle, MapPin, Trees, BookOpen, Bot } from 'lu
 import { SITE_URL } from '@/lib/site'
 import { JsonLd, breadcrumbSchema, faqSchema } from '@/components/seo/JsonLd'
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta'
-import { HOME_FAQS } from '@/lib/faq-data'
+import { homeFaqsResueltas } from '@/lib/faq-data'
 import { FAQS_NOSOTROS, FAQS_MAC, FAQS_GENERALES } from '@/lib/faqs'
 import { faqsDeMunicipios } from '@/lib/faq-municipios'
 import { getMunicipiosConPagina } from '@/lib/cobertura'
@@ -82,6 +82,7 @@ export const metadata: Metadata = {
 // Las 1, 5 y 6 son además las de mayor intención de búsqueda del bloque.
 
 export default async function PreguntasFrecuentesPage() {
+  const faqsHome = await homeFaqsResueltas()
   const [faqsMunicipios, municipios, disponibles] = await Promise.all([
     faqsDeMunicipios(),
     getMunicipiosConPagina(),
@@ -91,7 +92,7 @@ export default async function PreguntasFrecuentesPage() {
 
   // Transversales: las que esta página responde y declara en su FAQPage.
   const transversales = [
-    ...HOME_FAQS,
+    ...faqsHome,
     ...FAQS_GENERALES,
     ...FAQS_NOSOTROS,
     ...FAQS_MAC,
@@ -115,7 +116,7 @@ export default async function PreguntasFrecuentesPage() {
   }
 
   const secciones = [
-    { icon: HelpCircle, titulo: 'Comprar en La Vega y el Gualivá', items: [...HOME_FAQS, ...FAQS_GENERALES] },
+    { icon: HelpCircle, titulo: 'Comprar en La Vega y el Gualivá', items: [...faqsHome, ...FAQS_GENERALES] },
     { icon: Bot,        titulo: 'Mac, el agente de inteligencia artificial', items: FAQS_MAC, href: '/mac' },
     { icon: Trees,      titulo: 'La empresa y cómo trabaja',                 items: FAQS_NOSOTROS, href: '/nosotros' },
   ]

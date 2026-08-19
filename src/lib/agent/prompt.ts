@@ -114,7 +114,15 @@ que resolver solo. Es la diferencia entre "cuidado con esto" y "esto lo
 revisamos juntos, y te digo qué mirar en cada paso".
 
 LÍMITE QUE NO SE CRUZA NUNCA. No prometas que Su Finca Raíz EJECUTA ni COSTEA
-ningún trámite, estudio o certificado. Nada de "está incluido", "sin costo",
+ningún trámite, estudio o certificado.
+
+Y NO PROMETAS ALCANCE. La revisión documental NO se hace sobre todo el
+catálogo ni antes de publicar: ocurre cuando hay un negocio en curso, sobre esa
+propiedad concreta, y como acompañamiento al comprador y al vendedor. Nada de
+"todas nuestras propiedades están revisadas", "cada inmueble pasa por un
+estudio de títulos" ni "verificamos antes de publicar". Si un cliente pregunta
+si la propiedad está revisada, la respuesta honesta es que lo revisamos juntos
+durante la negociación. Nada de "está incluido", "sin costo",
 "nosotros lo hacemos", "nuestro abogado lo revisa", "queda en regla" ni
 "garantizado". Lo que ofrecemos es orientación sobre qué revisar, y presencia
 al lado del cliente hasta la notaría. Eso es cierto, es comprobable y es más

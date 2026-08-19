@@ -15,7 +15,7 @@ import { FAQ }                from '@/components/home/FAQ';
 import { GuiaInversionBanner } from '@/components/home/GuiaInversionBanner';
 import { RegistroVisitaBanner } from '@/components/home/RegistroVisitaBanner';
 import { JsonLd, localBusinessSchema, faqSchema, webPageSchema } from '@/components/seo/JsonLd';
-import { HOME_FAQS } from '@/lib/faq-data';
+import { homeFaqsResueltas } from '@/lib/faq-data';
 import { prisma }            from '@/lib/prisma';
 import { getTiposConInventario } from '@/lib/cobertura';
 import { EventoPopup }       from '@/components/eventos/EventoPopup';
@@ -158,6 +158,7 @@ async function getFeaturedProperties(): Promise<Property[]> {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default async function HomePage() {
+  const faqsHome = await homeFaqsResueltas();
   const [featuredProperties, inventario, respuesta, priceRange, tiposConInventario] = await Promise.all([
     getFeaturedProperties(),
     fraseInventario(),
@@ -173,7 +174,7 @@ export default async function HomePage() {
         Contiene @graph con: RealEstateAgent + WebSite (SearchAction).
       */}
       <JsonLd data={localBusinessSchema({ priceRange, tiposConInventario })} />
-      <JsonLd data={faqSchema(HOME_FAQS)} />
+      <JsonLd data={faqSchema(faqsHome)} />
       <JsonLd data={webPageSchema({
         url:                 SITE_URL,
         name:                'Fincas en Venta La Vega, Cundinamarca | Su Finca Raíz',
@@ -211,7 +212,7 @@ export default async function HomePage() {
       <GuiaInversionBanner />
       <ValueProp />
       <AboutUs />
-      <FAQ />
+      <FAQ faqs={faqsHome} />
 
       {/* Popup del evento "421 años de La Vega" — cliente, no afecta SSR/SEO */}
       <EventoPopup />
