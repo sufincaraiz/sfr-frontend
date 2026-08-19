@@ -271,6 +271,37 @@ empresa de ocho años. **Ante la duda, presente en vez de acumulado.**
 4. Ninguna cifra. Un bloque de credibilidad sin números pero verificable es más fuerte que
    uno con números frágiles.
 
+**Atribuir no sustenta. Las cuatro situaciones.** La jerarquía de arriba dice qué
+preferir cuando falta una cifra. Esta regla dice qué **no** hacer para fabricarla.
+
+Etiquetar una cifra no medida —«según nuestro histórico 2018-2026», «según nuestra
+experiencia», «históricamente»— **no la convierte en dato: la convierte en atribución
+falsa**, que es peor que la cifra desnuda. La cifra sin fuente es un dato débil; la cifra
+con fuente inventada es una afirmación sobre la existencia de un estudio que no existe, y
+eso compromete legal y reputacionalmente.
+
+| Situación | ¿Se publica cifra? | Cómo |
+|---|---|---|
+| **1. El dato está en el sistema** | Sí | Con procedencia completa: «Datos propios de Su Finca Raíz · N observaciones · corte [fecha]». Es lo que hace `<DatosVerificables>`. |
+| **2. Fuera del sistema pero reconstruible** (registros propios, escrituras) | Sí | Exige **metodología escrita**: qué se contó, qué se excluyó, tamaño de muestra y periodo. Sin metodología, no. |
+| **3. No se midió; es criterio profesional** | **No** | Se publica la afirmación en **cualitativo, sin número**. No se pierde lo que se sabe: se pierde el número que no se midió. |
+| **4. No se midió y solo funciona con cifra** | **No** | No se publica. |
+
+El caso 3 es el habitual y el que más se resiste, porque parece una pérdida. No lo es:
+
+> «La cercanía a Bogotá, la mejora de la vía y la llegada de servicios públicos a nuevas
+> veredas han sostenido la demanda en La Vega en los últimos años. En nuestra operación
+> desde 2018 hemos visto ese efecto en la reventa de lotes con servicios completos.»
+
+Eso es experiencia profesional **declarada como tal**, verificable como opinión cualificada
+de quien lleva desde 2018 en el mercado, y un modelo la cita como lo que es. El «18 % anual»
+que sustituye no lo era.
+
+**Corolario sobre superlativos.** Un ranking sin medición —«la región de mayor valorización
+del país», «Top 1 en valorización»— es caso 4, no caso 3: no es una cifra frágil, es una
+afirmación factual comprobable que nadie ha comprobado. Cae por la misma regla, y es **más
+expuesta** que un porcentaje, porque afirma una posición frente a todo un país.
+
 **El punto ciego: el marcado estructurado.** De las cifras infladas detectadas en este
 proyecto, la mayoría vivía en el JSON-LD y no en el contenido visible. La razón es
 estructural: nadie lee el marcado en un navegador, así que un dato falso puede sobrevivir

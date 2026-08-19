@@ -102,8 +102,11 @@ const FILOSOFIA = [
   },
   {
     icon: ShieldCheck,
-    title: 'Responsabilidad y Blindaje Legal',
-    text: 'Proteger tu patrimonio es nuestra prioridad. Desarrollamos un acompañamiento jurídico estricto en el saneamiento de títulos, estudio de matrículas inmobiliarias y la redacción estratégica de promesas de compraventa, asegurando acuerdos sólidos donde las condiciones de posesión material y entrega sean claras y justas para todas las partes.',
+    // Decía «Blindaje Legal» y «asegurando acuerdos sólidos». Sobrevivió al
+    // barrido de verbos de resultado porque aquel buscaba «blindaje legal» en
+    // minúscula y este vive dentro de un array con otra capitalización.
+    title: 'Responsabilidad y criterio jurídico',
+    text: 'Te acompañamos en el estudio de títulos y de matrículas inmobiliarias, y te orientamos sobre qué debe quedar claro en la promesa de compraventa: condiciones de posesión material, plazos y entrega. La decisión y la firma son tuyas; el criterio para tomarlas, lo ponemos nosotros.',
   },
   {
     icon: Network,

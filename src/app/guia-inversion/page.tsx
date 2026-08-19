@@ -23,12 +23,12 @@ export const metadata: Metadata = {
   title: 'Guía de Inversión Inmobiliaria en La Vega y el Gualivá',
   description:
     'Guía definitiva para invertir en lotes, fincas, quintas y apartamentos en La Vega, ' +
-    'Cundinamarca y el corredor del Gualivá: valorización, nichos y rentabilidad (ROI).',
+    'Cundinamarca y el corredor del Gualivá: qué revisar antes de comprar, tipos de predio y costos.',
   alternates: { canonical: `${SITE_URL}/guia-inversion` },
   openGraph: {
     title: 'Guía Definitiva de Inversión Inmobiliaria en La Vega, Cundinamarca',
     description:
-      'Todo lo que necesitas saber antes de invertir en la región de mayor valorización ' +
+      'Todo lo que necesitas saber antes de invertir en La Vega y el corredor del Gualivá ' +
       'del país: La Vega y el corredor del Gualivá.',
     url: `${SITE_URL}/guia-inversion`,
     type: 'article',
@@ -65,7 +65,10 @@ const CATALOGO = [
 
 const AUTORIDAD = [
   { icon: Video, title: 'Visión Inmersiva', text: 'Explora propiedades desde Bogotá o el extranjero con nuestros recorridos 360° y cinematografía con drones. Conoce el entorno real antes de viajar.' },
-  { icon: Scale, title: 'Blindaje Jurídico', text: 'Acompañamiento estricto en el saneamiento de títulos, estudio de tradición y promesas de compraventa.' },
+  // «Blindaje Jurídico» sobrevivió al barrido de verbos de resultado porque
+  // aquel buscaba «blindaje legal». Afirma un estado de protección; lo que sí
+  // hacemos es acompañar y orientar.
+  { icon: Scale, title: 'Criterio jurídico', text: 'Te acompañamos en el estudio de títulos y de tradición, y te orientamos sobre qué revisar en la promesa de compraventa.' },
   { icon: Bot, title: 'Asesoría Inteligente', text: 'Respuestas rápidas y precisas apoyadas por nuestra tecnología de vanguardia y nuestro Agente Mac.' },
 ];
 
@@ -169,12 +172,17 @@ export default async function GuiaInversionPage() {
           <p style={{ color: '#334155', fontSize: '1.1rem', lineHeight: 1.85, marginBottom: '3.5rem' }}>
             En esta guía, diseñada por los expertos de <strong style={{ color: '#0D2D5E' }}>Su Finca Raíz</strong>,
             te mostramos todo lo que necesitas saber antes de invertir en lotes, fincas de descanso,
-            quintas o apartamentos en la región de mayor valorización del país.
+            quintas o apartamentos en La Vega y el corredor del Gualivá.
           </p>
 
           {/* Sección 1 */}
           <section style={{ marginBottom: '3.5rem' }}>
-            <SectionTitle eyebrow="Sección 1">¿Por qué La Vega es el Top 1 en Valorización?</SectionTitle>
+            {/* Decía «¿Por qué La Vega es el Top 1 en Valorización?». Un ranking sin
+              medición es caso 4 de §2: no es una cifra frágil, es una afirmación
+              factual que nadie ha comprobado, y afirma una posición frente a todo
+              un país. La pregunta nueva se responde con las tres tarjetas de
+              abajo, que sí describen hechos observables. */}
+          <SectionTitle eyebrow="Sección 1">¿Qué sostiene la demanda de vivienda campestre en La Vega?</SectionTitle>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.25rem' }}>
               {VALORIZACION.map(({ icon: Icon, title, text }) => (
                 <div key={title} style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '1.6rem 1.4rem' }}>
