@@ -885,3 +885,33 @@ de Bogotá, con fincas, lotes y casas campestres en clima primaveral.
 El patrón buscaba `2 horas de Bogotá` en una línea. **Para frases de prosa,
 barrer con `grep -z` (multilínea) además del barrido por línea**, o buscar solo
 el fragmento más corto e inspeccionar el contexto a mano.
+
+### ⚠ Cinco barridos, cinco formas de esconderse
+
+Cada barrido de saneamiento encontró lo que el anterior no podía ver, y **nunca
+por descuido: por el método**.
+
+| Barrido | Buscaba | Se escondió en |
+|---|---|---|
+| 1 | dígitos y `%` | — (encontró 15 porcentajes) |
+| 2 | palabras: «incluye», «gratis», «verificamos» | **capitalización**: «Blindaje Jurídico» con B mayúscula |
+| 3 | verbos de compromiso | **ausencia de verbo**: «Liderando», gerundio; «la región de mayor valorización», sin dígito |
+| 4 | frases de prosa completas | **salto de línea**: `todos a menos de 2 horas\nde Bogotá` |
+| 5 | todo lo anterior, en código | **la base de datos**: 44 textos publicados que ningún `grep` alcanza |
+
+**Reglas que salen de ahí:**
+
+- `grep -z` o equivalente **multilínea** para cualquier frase de prosa. Un
+  patrón por línea no ve lo que el formateador partió.
+- **Insensible a mayúsculas siempre** (`-i`). Sin excepción.
+- **El contenido de base entra en el barrido.** Descripciones de municipio, de
+  propiedad y fichas de MacKnowledge son texto publicado.
+
+Y la regla que importa más que las tres:
+
+> **Los barridos léxicos son un complemento, no el método.** Los casos difíciles
+> —los rankings, el alcance falso de «validamos toda la documentación», la
+> contradicción de La Vega consigo misma— no los encontró ningún patrón: los
+> encontró leer frases preguntándose qué afirman y si se puede comprobar.
+
+Un patrón solo sirve para acotar dónde mirar.
