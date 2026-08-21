@@ -18,7 +18,10 @@ export interface PropuestaContent {
   };
   contexto: {
     eyebrow: string; headingHtml: string; colA: string[]; colB: string[];
-    pull: string; market: string; bandImage: string;
+    /** Frase destacada. OPCIONAL: la que había —«El mercado en La Vega no para
+     *  de valorizarse»— era una afirmación de mercado sin dato, y se retiró sin
+     *  sustituto. Si no hay frase verificable que poner, el bloque no se pinta. */
+    pull?: string; market: string; bandImage: string;
   };
   metodo: { eyebrow: string; headingHtml: string; intro: string; items: MethodItem[]; closing: string };
   planes: { eyebrow: string; headingHtml: string; base: string; premium: Plan; flexible: Plan; bandImage: string };
@@ -58,7 +61,7 @@ export const DEFAULT_PROPUESTA: PropuestaContent = {
       { n: 'IA', l: 'Apoyo estratégico' },
     ],
     brands: [
-      { name: 'Su Finca Raíz', role: 'Inmobiliaria', desc: 'Conectamos propietarios con compradores e inversionistas. Especialistas en fincas, proyectos rurales y propiedades de alto potencial de valorización.' },
+      { name: 'Su Finca Raíz', role: 'Inmobiliaria', desc: 'Conectamos propietarios con compradores e inversionistas. Especialistas en fincas, proyectos rurales y propiedades seleccionadas por ubicación, acceso y servicios.' },
       { name: 'Bienes Raíces La Vega', role: 'Inmobiliaria', desc: 'Aliado inmobiliario con profundo conocimiento del territorio, que amplía el alcance comercial y la red de compradores en La Vega y la región del Gualivá.' },
       { name: 'Conarc', role: 'Constructora', desc: 'Diseñamos y construimos proyectos residenciales, turísticos y comerciales con altos estándares de calidad y sostenibilidad.' },
     ],
@@ -73,7 +76,6 @@ export const DEFAULT_PROPUESTA: PropuestaContent = {
     colB: [
       'Antes de salir al mercado revisamos contigo la trazabilidad del predio y preparamos la presentación. Lo que cierra una venta de este nivel es la confianza, y esta se construye con un proyecto bien presentado y un equipo que responde.',
     ],
-    pull: 'El mercado en La Vega no para de valorizarse.',
     market: 'Según nuestra experiencia y los datos del sector, La Vega está catalogada entre los cinco mejores municipios de Cundinamarca para el descanso y el desarrollo de proyectos. La demanda es alta por tres razones sostenibles: ubicación, clima y seguridad. A esto sumamos nuestra lectura experta de la coyuntura nacional: el ánimo inversionista se mueve con la confianza, y vista estratégicamente, cualquier coyuntura es una ventana de oportunidad para quien tiene el capital.',
     bandImage: '/images/la-vega/vista-aerea-la-vega-cundinamarca.jpg',
   },
@@ -335,7 +337,7 @@ export function renderPropuesta(c: PropuestaContent): string {
         <div class="narrow reveal d1">${colA}</div>
         <div class="narrow reveal d2">${colB}</div>
       </div>
-      <div class="pull reveal d2"><p>${c.contexto.pull}</p></div>
+      ${c.contexto.pull ? `<div class="pull reveal d2"><p>${c.contexto.pull}</p></div>` : ''}
       <div class="narrow reveal d3" style="margin-top:1.6rem;max-width:66ch;"><p>${c.contexto.market}</p></div>
     </div>
   </section>

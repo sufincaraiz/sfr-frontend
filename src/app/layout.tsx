@@ -34,7 +34,9 @@ export const metadata: Metadata = {
     // Sin cifra de inventario: este es el respaldo GLOBAL, lo heredan las páginas
     // que no definen la suya, y no puede afirmar un conteo que envejece en cada
     // publicación. La cifra real, en presente y derivada, va en la portada.
-    'Compra fincas, lotes, casas y apartamentos verificados en La Vega, Cundinamarca. ' +
+    // «a una hora de Bogotá» se quedó corto: la medición del 19/08/2026 da 74
+    // minutos desde Portal 80. Ver lib/medicion-distancia.ts.
+    'Compra fincas, lotes, casas y apartamentos verificados en La Vega, Cundinamarca, ' +
     'Asesoría profesional en finca raíz rural y urbana: ☎ 321 882 6730.',
 
   // ── Keywords (señal secundaria, útil para Bing/Yahoo) ───────────────────────

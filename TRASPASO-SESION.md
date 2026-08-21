@@ -915,3 +915,37 @@ Y la regla que importa más que las tres:
 > encontró leer frases preguntándose qué afirman y si se puede comprobar.
 
 Un patrón solo sirve para acotar dónde mirar.
+
+### ⚠ Dos fuentes que coinciden no se verifican entre sí
+
+Seis de los ocho municipios tenían el kilometraje del texto **idéntico** al del
+campo. Parecía verificación cruzada. No lo era: **campo y descripción salieron
+de la misma línea del mismo archivo**, `municipios-data.ts`, escrito a mano y
+borrado como código muerto el 11/08/2026.
+
+La Vega discrepaba —74/90 en el texto, 62/60 en el campo— **solo porque alguien
+editó el campo y no el texto**. La discrepancia fue lo que destapó el problema;
+las coincidencias lo estaban tapando.
+
+**Regla:** antes de dar por verificado un dato porque dos sitios coinciden,
+comprobar si los dos vienen del mismo origen. Si vienen, no hay dos fuentes:
+hay una copiada dos veces.
+
+### La Vega: 60 km · 1 h 14 min — MEDIDO
+
+Ni 74/90 del archivo original ni 62/60 de la edición sin rastro.
+
+```
+Origen   Portal 80, Bogotá        ← el borde real por donde se sale
+Destino  La Vega (casco urbano)
+Ruta     Puente el Cortijo – Siberia – La Punta – El Vino – La Vega
+Fuente   Google Maps, 19/08/2026, en automóvil con peajes
+```
+
+Medir desde el centro habría dado una cifra que nadie recorre. **El tiempo real
+es MAYOR que el que publicábamos**: 74 min frente a 60, así que la corrección
+va en contra del interés comercial, que es la señal de que es una medición y no
+una cifra elegida.
+
+Los otros siete siguen siendo estimación heredada, y su bloque de datos lo dice.
+Entran en `MEDICIONES` (`lib/medicion-distancia.ts`) el día que se midan.

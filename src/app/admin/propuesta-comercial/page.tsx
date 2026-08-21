@@ -163,7 +163,7 @@ export default function AdminPropuestaPage() {
         <ImageField label="Imagen de fondo (banda)" value={c.contexto.bandImage} onChange={v => upd(d => { d.contexto.bandImage = v; })} />
         <ListEditor label="Columna izquierda" items={c.contexto.colA} onChange={v => upd(d => { d.contexto.colA = v; })} />
         <ListEditor label="Columna derecha" items={c.contexto.colB} onChange={v => upd(d => { d.contexto.colB = v; })} />
-        <Txt label="Frase destacada (pull quote)" value={c.contexto.pull} onChange={v => upd(d => { d.contexto.pull = v; })} area />
+        <Txt label="Frase destacada (pull quote) — opcional" value={c.contexto.pull ?? ""} onChange={v => upd(d => { d.contexto.pull = v; })} area />
         <Txt label="Párrafo de mercado" value={c.contexto.market} onChange={v => upd(d => { d.contexto.market = v; })} area />
       </div>
 

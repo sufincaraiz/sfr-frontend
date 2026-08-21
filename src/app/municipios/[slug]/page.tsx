@@ -10,6 +10,7 @@ import { getMunicipio, getMunicipiosVisibles } from '@/lib/municipios'
 import { RichText, renderInline } from '@/lib/richtext'
 import { JsonLd, breadcrumbSchema, faqSchema, webPageSchema } from '@/components/seo/JsonLd'
 import { DatosVerificables } from '@/components/aeo/DatosVerificables'
+import { medicionDe, procedenciaDistancia, enHorasYMinutos, NOTA_GEOGRAFICA_APROXIMADA } from '@/lib/medicion-distancia'
 import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta'
 import { respuestaMunicipio } from '@/lib/respuestas-directas'
 import { formatPrice } from '@/lib/utils'
@@ -136,6 +137,8 @@ export default async function MunicipioPage(
   const respuesta = await respuestaMunicipio(data)
 
   const { properties } = await getMunicipalityProperties(slug)
+  // Distinguir lo medido de la estimación heredada. Ver lib/medicion-distancia.ts
+  const medicion = medicionDe(data.slug)
   const tipoLabels = await getTipoLabels()
   const tipoPlurales = await getTipoPlurales()
 
@@ -428,17 +431,31 @@ export default async function MunicipioPage(
                 Sin tamaño de muestra a propósito: altitud, distancia y clima son
                 datos geográficos, no observaciones estadísticas. Declarar una
                 muestra aquí sería ruido. */}
+            {/* ATRIBUCIÓN HONESTA. Este bloque publicaba «Fuente: Su Finca Raíz»
+                y fecha de corte sobre cifras que NADIE midió: salen de
+                municipios-data.ts, un archivo escrito a mano y borrado en agosto.
+                Era el caso 2 de §2 publicado como si fuera caso 1, justo en el
+                bloque que existe para ser citable.
+                Ahora cada fila dice qué es, y la procedencia distingue lo medido
+                de lo heredado. Ver lib/medicion-distancia.ts. */}
             <DatosVerificables
               titulo={`Datos de ${data.name}, Cundinamarca`}
-              fuente="Su Finca Raíz, con datos geográficos del municipio"
-              fechaCorte={data.updated_at.toISOString().slice(0, 10)}
+              fuente={medicion
+                ? 'Medición propia con Google Maps, y datos geográficos del municipio'
+                : 'Datos geográficos del municipio, aproximados'}
+              fechaCorte={medicion ? medicion.fecha : data.updated_at.toISOString().slice(0, 10)}
+              metodologia={procedenciaDistancia(data.slug)}
               filas={[
                 { etiqueta: 'Departamento',     valor: 'Cundinamarca' },
                 { etiqueta: 'Provincia',        valor: data.provincia },
-                { etiqueta: 'Altitud',          valor: data.altitud_msnm.toLocaleString('es-CO'), unidad: 'msnm' },
-                { etiqueta: 'Temperatura',      valor: `${data.temperatura_c.min}–${data.temperatura_c.max}`, unidad: '°C' },
-                { etiqueta: 'Distancia a Bogotá', valor: data.distancia_bogota_km, unidad: 'km' },
-                { etiqueta: 'Tiempo en auto',   valor: `~${data.tiempo_bogota_min}`, unidad: 'minutos' },
+                { etiqueta: 'Altitud',          valor: data.altitud_msnm.toLocaleString('es-CO'), unidad: 'msnm', nota: NOTA_GEOGRAFICA_APROXIMADA },
+                { etiqueta: 'Temperatura',      valor: `${data.temperatura_c.min}–${data.temperatura_c.max}`, unidad: '°C', nota: NOTA_GEOGRAFICA_APROXIMADA },
+                medicion
+                  ? { etiqueta: 'Distancia a Bogotá', valor: medicion.km, unidad: 'km', nota: `Medido desde ${medicion.origen}` }
+                  : { etiqueta: 'Distancia a Bogotá', valor: data.distancia_bogota_km, unidad: 'km', nota: 'Aproximada, sujeta a ruta' },
+                medicion
+                  ? { etiqueta: 'Tiempo en auto', valor: enHorasYMinutos(medicion.min), nota: `Medido ${medicion.modo}, sujeto a tráfico` }
+                  : { etiqueta: 'Tiempo en auto', valor: `~${data.tiempo_bogota_min}`, unidad: 'minutos', nota: 'Aproximado, sujeto a ruta y tráfico' },
               ]}
             />
 

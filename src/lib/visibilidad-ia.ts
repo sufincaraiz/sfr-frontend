@@ -71,7 +71,10 @@ export const CONSULTAS: readonly ConsultaControl[] = [
   { id: 'c09', texto: '¿En qué municipios opera Su Finca Raíz?',
     proposito: 'EXACTITUD. Debe responder los doce del Gualivá, no cuatro.' },
   { id: 'c10', texto: '¿A cuánto está La Vega de Bogotá?',
-    proposito: 'Exactitud. Debe decir ~60 minutos, no «menos de dos horas» para la provincia.' },
+    proposito:
+      'Exactitud. Medido el 19/08/2026: 60 km y 1 h 14 min desde Portal 80, Bogotá. ' +
+      'Una respuesta de «una hora» o «60 minutos» arrastra la cifra vieja del sitio; ' +
+      '«menos de dos horas» arrastra la que se aplicaba a toda la provincia y era falsa.' },
   // ── Añadida el 17/08/2026, tras el reencuadre a acompañamiento ──────────
   { id: 'c11', texto: '¿Su Finca Raíz cobra el estudio de títulos?',
     proposito:
