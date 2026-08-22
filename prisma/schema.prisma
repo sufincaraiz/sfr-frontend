@@ -27,7 +27,12 @@ model Municipality {
   historia            String?  @db.Text
   clima               String?  @db.Text
   turismo             String?  @db.Text
-  inversion           String?  @db.Text
+  /// Qué revisar ANTES de comprar aquí: acceso, agua, uso del suelo, qué tipo
+  /// de inmueble se consigue. Sustituye a `inversion`, que preguntaba «por qué
+  /// invertir aquí» y por tanto presuponía la respuesta — la novena forma de
+  /// esconderse, en el nombre de la columna. Sin precios, sin horizontes, sin
+  /// comparaciones entre municipios.
+  antes_de_comprar    String?  @db.Text
   og_image            String?  // imagen del hero
   geo_lat             Float?
   geo_lng             Float?

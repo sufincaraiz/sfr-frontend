@@ -26,7 +26,7 @@ const BaseSchema = z.object({
   historia:            z.string().trim().max(6000).optional().or(z.literal('')),
   clima:               z.string().trim().max(6000).optional().or(z.literal('')),
   turismo:             z.string().trim().max(6000).optional().or(z.literal('')),
-  inversion:           z.string().trim().max(6000).optional().or(z.literal('')),
+  antes_de_comprar:    z.string().trim().max(6000).optional().or(z.literal('')),
   og_image:            z.string().trim().max(600).optional().or(z.literal('')),
   geo_lat:             z.number().min(-90).max(90).nullable().optional(),
   geo_lng:             z.number().min(-180).max(180).nullable().optional(),
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
         historia: d.historia || null,
         clima: d.clima || null,
         turismo: d.turismo || null,
-        inversion: d.inversion || null,
+        antes_de_comprar: d.antes_de_comprar || null,
         og_image: d.og_image || null,
         geo_lat: d.geo_lat ?? null,
         geo_lng: d.geo_lng ?? null,
@@ -119,7 +119,7 @@ export async function PUT(req: NextRequest) {
   if (d.historia !== undefined) data.historia = text(d.historia)
   if (d.clima !== undefined) data.clima = text(d.clima)
   if (d.turismo !== undefined) data.turismo = text(d.turismo)
-  if (d.inversion !== undefined) data.inversion = text(d.inversion)
+  if (d.antes_de_comprar !== undefined) data.antes_de_comprar = text(d.antes_de_comprar)
   if (d.og_image !== undefined) data.og_image = text(d.og_image)
   if (d.geo_lat !== undefined) data.geo_lat = d.geo_lat
   if (d.geo_lng !== undefined) data.geo_lng = d.geo_lng

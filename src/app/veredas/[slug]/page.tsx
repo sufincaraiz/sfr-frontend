@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   Home, ChevronRight, MapPin, Thermometer, Clock,
-  CheckCircle, Building2, Mountain,
+  CheckCircle, Building2, Mountain, ClipboardCheck,
 } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
@@ -312,8 +312,9 @@ export default async function VeredaPage(
               </ul>
             </InfoSection>
 
-            <InfoSection title={`¿Qué hay que saber del mercado en la vereda ${v.name}?`} icon={<MapPin size={19} />} accent>
-              <p style={{ color: '#1e40af', lineHeight: 1.8, fontSize: '0.95rem', marginBottom: '1.25rem' }}>{v.valorizacion}</p>
+            {v.antes_de_comprar && (
+            <InfoSection title={`¿Qué revisar antes de comprar en la vereda ${v.name}?`} icon={<ClipboardCheck size={19} />} accent>
+              <p style={{ color: '#1e40af', lineHeight: 1.8, fontSize: '0.95rem', marginBottom: '1.25rem' }}>{v.antes_de_comprar}</p>
               <Link
                 href={`/propiedades/${v.municipio_slug}`}
                 style={{
@@ -326,6 +327,7 @@ export default async function VeredaPage(
                 Ver propiedades en {v.municipio_name} <ChevronRight size={15} />
               </Link>
             </InfoSection>
+            )}
 
             {/* ── Inventario DE LA VEREDA ────────────────────────────────────
                 Distinto de lo de abajo. Esta sección solo aparece cuando hay

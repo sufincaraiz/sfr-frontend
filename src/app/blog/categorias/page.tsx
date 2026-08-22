@@ -27,7 +27,7 @@ export default async function CategoriasIndexPage() {
     'mercado-inmobiliario':   'Análisis de precios, valorización, tendencias y datos del mercado inmobiliario rural en Cundinamarca.',
     'guias-de-compra':        'Paso a paso para comprar finca raíz: qué revisar, cómo negociar, qué documentos pedir.',
     'vivir-en-cundinamarca':  'Guías prácticas para vivir en La Vega, el Gualivá y el campo cundinamarqués.',
-    'inversion-rural':        'Estrategias, retornos y proyecciones para invertir en finca raíz rural cerca de Bogotá.',
+    'inversion-rural':        'Qué mirar antes de comprar finca raíz rural cerca de Bogotá: acceso, agua, uso del suelo y documentación.',
     'tramites-y-legal':       'Escrituración, impuestos, licencias, restricciones ambientales y trámites notariales.',
     'noticias':               'Novedades del sector, nuevos proyectos y actualizaciones del mercado del Gualivá.',
   }

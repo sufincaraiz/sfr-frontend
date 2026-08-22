@@ -17,7 +17,7 @@ export interface Municipio {
   historia: string
   clima: string
   turismo: string
-  inversion: string
+  antes_de_comprar: string
   og_image: string | null
   geo_lat: number
   geo_lng: number
@@ -44,7 +44,7 @@ function mapMunicipio(m: any): Municipio {
     historia: m.historia ?? '',
     clima: m.clima ?? '',
     turismo: m.turismo ?? '',
-    inversion: m.inversion ?? '',
+    antes_de_comprar: m.antes_de_comprar ?? '',
     og_image: m.og_image ?? null,
     geo_lat: m.geo_lat ?? 0,
     geo_lng: m.geo_lng ?? 0,

@@ -10,7 +10,17 @@ export interface VeredaData {
   acceso_vial: string
   descripcion_seo: string
   ventajas: string[]
-  valorizacion: string
+  /**
+   * Qué conviene saber ANTES de comprar en esta vereda: normativa que aplica,
+   * obras previstas con su fuente, figuras de conservación. Opcional: solo lo
+   * tienen las veredas donde hay algo verificable que decir.
+   *
+   * Se llamaba `valorizacion` y era obligatorio. El nombre declaraba el
+   * propósito —afirmar plusvalía futura— y obligaba a rellenarlo aunque no
+   * hubiera nada medido que poner, que es justo como se inventan las
+   * afirmaciones.
+   */
+  antes_de_comprar?: string
   clima: string
   og_image?: string
   geo_lat?: number
@@ -43,10 +53,6 @@ const VEREDAS: Record<string, VeredaData> = {
       'Varios condominios campestres consolidados en la vereda',
       'Paisaje de bosque andino con fuentes de agua permanentes',
     ],
-    valorizacion:
-      'En Bulucaima están consolidados condominios campestres como Altos de ' +
-      'Bulucaima. Los lotes de 1.000 m² de la vereda se ofrecen por encima de los ' +
-      '180 millones de pesos.',
     clima:
       'La vereda Bulucaima goza de un microclima excepcional a 1.280 msnm, ' +
       'con temperaturas de 17 a 25 °C durante todo el año. Las tardes frescas, ' +
@@ -101,10 +107,6 @@ const VEREDAS: Record<string, VeredaData> = {
       'Tranquilidad absoluta con baja densidad de construcción',
       'Potencial de agroturismo y fincas cafeteras en desarrollo',
     ],
-    valorizacion:
-      'El Cural es zona de fincas productivas con cultivos establecidos de café ' +
-      'y aguacate, y varias tienen agua propia. Hay lotes de más de 5.000 m² con ' +
-      'acceso a quebrada.',
     clima:
       'El Cural tiene un clima templado con temperatura promedio de 22 °C, ' +
       'ideal para agricultura de clima medio. Las brisas del valle del río Dulce ' +
@@ -164,9 +166,6 @@ const VEREDAS: Record<string, VeredaData> = {
       'Comunidad campesina activa con mercado dominical propio',
       'Potencial para parcelaciones y proyectos campestres de mediana escala',
     ],
-    valorizacion:
-      'Los lotes de San Juan se ofrecen por debajo de los de Bulucaima para áreas ' +
-      'equivalentes. La vía de acceso ha ido mejorando.',
     clima:
       'San Juan tiene un clima templado de montaña con temperatura promedio ' +
       'de 22 °C. Su posición geográfica entre los 1.100 y 1.400 msnm crea ' +
@@ -215,7 +214,7 @@ const VEREDAS: Record<string, VeredaData> = {
       'Suelos aptos para cultivos de clima frío: uchuvas, mora, fresas',
       'Vista panorámica de 360° hacia la Cordillera Occidental',
     ],
-    valorizacion:
+    antes_de_comprar:
       'Los precios en Tabacal son los más bajos de las veredas cercanas al casco ' +
       'urbano. La pavimentación de la vía está contemplada en el Plan de ' +
       'Desarrollo Municipal 2024–2027, y de ejecutarse cambiaría su ' +
@@ -273,9 +272,6 @@ const VEREDAS: Record<string, VeredaData> = {
       'Precios más accesibles que en Bulucaima para lotes equivalentes',
       'Cerca de la vía principal La Vega–Bogotá',
     ],
-    valorizacion:
-      'La Alianza tiene vía pavimentada. Hay lotes por debajo de 150 millones ' +
-      'con escritura y sin problemas jurídicos.',
     clima:
       'Clima templado andino con temperatura media de 22 °C, similar al centro ' +
       'de La Vega. Noches frescas de 17–19 °C ideales para dormir sin aire ' +
@@ -323,7 +319,7 @@ const VEREDAS: Record<string, VeredaData> = {
       'Vistas abiertas hacia el valle con menor vegetación densa',
       'Zona con varios proyectos de condominios campestres en desarrollo',
     ],
-    valorizacion:
+    antes_de_comprar:
       'La topografía de El Rosario es plana. Hay proyectos de parcelación activos ' +
       'en la vereda.',
     clima:
@@ -373,10 +369,6 @@ const VEREDAS: Record<string, VeredaData> = {
       'Suelos ricos en materia orgánica para agricultura ecológica',
       'Observación de aves: más de 70 especies registradas en la zona',
     ],
-    valorizacion:
-      'Laureles tiene bosque nativo, agua permanente y clima fresco. El POT de ' +
-      'La Vega permite allí desarrollos de ecoturismo en áreas rurales, con ' +
-      'restricciones de densidad y licencia ambiental ante la CAR Cundinamarca.',
     clima:
       'Laureles, a 1.310 msnm, tiene un clima fresco-templado con influencia ' +
       'del bosque de niebla. La temperatura rara vez supera los 24 °C y las ' +
@@ -425,7 +417,7 @@ const VEREDAS: Record<string, VeredaData> = {
       'Zona de reserva natural con restricciones de uso del suelo',
       'Acceso a pie a páramos y bosques de niebla únicos en la región',
     ],
-    valorizacion:
+    antes_de_comprar:
       'El Estado colombiano reconoce las Reservas Naturales de la Sociedad Civil ' +
       '(RNSC). Registrar un predio como RNSC da acceso a beneficios tributarios y ' +
       'permite optar a compensaciones por conservación.',
@@ -483,11 +475,6 @@ const VEREDAS: Record<string, VeredaData> = {
     // primera es asesoría de inversión sin habilitación y la segunda sostiene
     // a la primera. Se retiran ambas y queda lo observable —qué hay en la
     // vereda y por qué se demanda—, sin prometer cuánto rinde.
-    valorizacion:
-      'Guarumal está cerca del casco urbano y tiene vía pavimentada. Hay casas ' +
-      'con piscina que se alquilan por temporadas, sobre todo los fines de ' +
-      'semana. Cuánto rinda un predio concreto depende de su estado, su ubicación ' +
-      'dentro de la vereda y las condiciones del mercado en cada momento.',
     clima:
       'Guarumal, a 1.150 msnm, tiene el clima más cálido de las veredas cercanas ' +
       'al pueblo. Las temperaturas de 19 a 27 °C son perfectas para el disfrute ' +
@@ -535,10 +522,6 @@ const VEREDAS: Record<string, VeredaData> = {
       'Agua del río abundante para riego y uso doméstico',
       'Potencial para turismo rural y fincas agro-turísticas',
     ],
-    valorizacion:
-      'En Cacahual hay fincas productivas con cultivos de aguacate Hass y ' +
-      'cítricos. El resultado de un cultivo depende del manejo agrícola y de las ' +
-      'condiciones del mercado en cada momento.',
     clima:
       'Cacahual, a 1.100 msnm, tiene el clima más cálido de las veredas de La Vega. ' +
       'Las temperaturas de 20 a 28 °C son ideales para cultivos de clima ' +
@@ -590,7 +573,7 @@ const VEREDAS: Record<string, VeredaData> = {
       'Tierras de bajo precio con potencial para proyectos de conservación',
       'Candidato para declaratoria de Reserva Natural de la Sociedad Civil (RNSC)',
     ],
-    valorizacion:
+    antes_de_comprar:
       'El acceso a Chupal es difícil, y eso se refleja en el precio: son los más ' +
       'bajos de La Vega. Registrar el predio como Reserva Natural de la Sociedad ' +
       'Civil (RNSC) da acceso a beneficios fiscales y permite optar a ' +

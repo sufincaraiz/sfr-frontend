@@ -3,7 +3,7 @@ import { VeredasDelMunicipio } from '@/components/malla/VeredasDelMunicipio'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Home, ChevronRight, MapPin, Thermometer, Clock, TrendingUp, Mountain, Trees, Building2 } from 'lucide-react'
+import { Home, ChevronRight, MapPin, Thermometer, Clock, ClipboardCheck, Mountain, Trees, Building2 } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { getMunicipio, getMunicipiosVisibles } from '@/lib/municipios'
@@ -327,8 +327,8 @@ export default async function MunicipioPage(
               <RichText text={data.turismo} style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }} />
             </Section>
 
-            <Section title={`¿Por qué invertir en finca raíz en ${data.name}?`} icon={<TrendingUp size={20} />} accent>
-              <RichText text={data.inversion} style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }} />
+            <Section title={`¿Qué revisar antes de comprar en ${data.name}?`} icon={<ClipboardCheck size={20} />} accent>
+              <RichText text={data.antes_de_comprar} style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }} />
               <Link
                 href={`/propiedades/${data.slug}`}
                 style={{
