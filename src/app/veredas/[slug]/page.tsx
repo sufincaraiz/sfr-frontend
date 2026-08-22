@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import {
   Home, ChevronRight, MapPin, Thermometer, Clock,
-  TrendingUp, CheckCircle, Building2, Mountain,
+  CheckCircle, Building2, Mountain,
 } from 'lucide-react'
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
@@ -312,7 +312,7 @@ export default async function VeredaPage(
               </ul>
             </InfoSection>
 
-            <InfoSection title={`¿Qué potencial de valorización tiene la vereda ${v.name}?`} icon={<TrendingUp size={19} />} accent>
+            <InfoSection title={`¿Qué hay que saber del mercado en la vereda ${v.name}?`} icon={<MapPin size={19} />} accent>
               <p style={{ color: '#1e40af', lineHeight: 1.8, fontSize: '0.95rem', marginBottom: '1.25rem' }}>{v.valorizacion}</p>
               <Link
                 href={`/propiedades/${v.municipio_slug}`}

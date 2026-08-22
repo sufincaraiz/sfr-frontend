@@ -34,22 +34,19 @@ const VEREDAS: Record<string, VeredaData> = {
       'Bulucaima es una de las veredas más reconocidas de La Vega, Cundinamarca, ' +
       'famosa por sus fincas de recreo, condominios campestres y paisajes de montaña. ' +
       'A 8 minutos del pueblo y 100 del norte de Bogotá, combina accesibilidad, ' +
-      'naturaleza y una alta demanda inmobiliaria sostenida.',
+      'naturaleza y servicios completos.',
     ventajas: [
       'Acceso por vía pavimentada en excelente estado',
       'Servicios públicos completos: agua, luz, internet fibra óptica',
       'Comunidad consolidada con vecinos permanentes y de fin de semana',
       'Múltiples colegios y supermercados a menos de 10 minutos',
-      'Zona de alta valorización con demanda activa de compradores',
+      'Varios condominios campestres consolidados en la vereda',
       'Paisaje de bosque andino con fuentes de agua permanentes',
     ],
     valorizacion:
-      'Bulucaima es una de las veredas con mayor demanda de finca raíz del ' +
-      'Gualivá. La consolidación de condominios campestres como Altos de Bulucaima y la ' +
-      'llegada de compradores del norte de Bogotá han impulsado los precios de lotes ' +
-      'de 1.000 m² por encima de los 180 millones de pesos. Las fincas de recreo con ' +
-      'piscina y casa registran tiempos de venta inferiores a 45 días, reflejo de una ' +
-      'demanda que supera ampliamente la oferta disponible.',
+      'En Bulucaima están consolidados condominios campestres como Altos de ' +
+      'Bulucaima. Los lotes de 1.000 m² de la vereda se ofrecen por encima de los ' +
+      '180 millones de pesos.',
     clima:
       'La vereda Bulucaima goza de un microclima excepcional a 1.280 msnm, ' +
       'con temperaturas de 17 a 25 °C durante todo el año. Las tardes frescas, ' +
@@ -94,8 +91,8 @@ const VEREDAS: Record<string, VeredaData> = {
       'La vereda El Cural, en La Vega Cundinamarca, es sinónimo de fincas ' +
       'productivas y paisajes de montaña a 12 minutos del pueblo. Con un ' +
       'microclima templado ideal para cultivos de café y frutales, y propiedades ' +
-      'de gran extensión a precios competitivos, es la opción favorita para ' +
-      'quienes buscan finca raíz de inversión agroproductiva.',
+      'de gran extensión a precios competitivos, es una opción para quienes ' +
+      'buscan finca raíz agroproductiva.',
     ventajas: [
       'Suelos fértiles aptos para café, cítricos y aguacate Hass',
       'Fuentes de agua permanentes: quebrada El Cural con caudal todo el año',
@@ -105,12 +102,9 @@ const VEREDAS: Record<string, VeredaData> = {
       'Potencial de agroturismo y fincas cafeteras en desarrollo',
     ],
     valorizacion:
-      'El Cural sostiene una demanda constante, impulsada por el auge del ' +
-      'agroturismo y el interés en fincas productivas con agua propia. ' +
-      'Las propiedades con cultivos establecidos de café o aguacate tienen mayor ' +
-      'liquidez por el interés de inversionistas del sector agroalimentario. ' +
-      'Los lotes de más de 5.000 m² con acceso a quebrada representan la mejor ' +
-      'relación precio-retorno de toda la jurisdicción de La Vega.',
+      'El Cural es zona de fincas productivas con cultivos establecidos de café ' +
+      'y aguacate, y varias tienen agua propia. Hay lotes de más de 5.000 m² con ' +
+      'acceso a quebrada.',
     clima:
       'El Cural tiene un clima templado con temperatura promedio de 22 °C, ' +
       'ideal para agricultura de clima medio. Las brisas del valle del río Dulce ' +
@@ -134,14 +128,14 @@ const VEREDAS: Record<string, VeredaData> = {
         respuesta: 'Sí, aunque la vereda es más rural que Bulucaima. Hay acueducto veredal, energía eléctrica y la vía de acceso está en buen estado. Para servicios cotidianos, La Vega queda a 12 minutos en automóvil.',
       },
       {
-        pregunta: '¿Qué tan buena es la inversión en fincas productivas en El Cural?',
+        pregunta: '¿Qué se produce en las fincas de El Cural?',
         // Decía «retornos combinados (valorización + ingreso agrícola)
         // superiores al 15 % anual». Una proyección de rendimiento futuro sin
         // metodología ni advertencia va más allá de la Ley 1480 y entra en
         // terreno de asesoría de inversión, que exige habilitación. No se
         // sustituye por otra cifra: se retira la proyección y queda el hecho
         // cualitativo, que es lo que sí se puede sostener.
-        respuesta: 'El Cural produce café especial, y las fincas de la vereda combinan la valorización del predio con el ingreso agrícola. El agroturismo cafetero añade una tercera vía de ingreso a quienes abren su finca a visitantes. El rendimiento concreto depende del predio, del manejo del cultivo y de las condiciones del mercado en cada momento.',
+        respuesta: 'El Cural produce café especial. El agroturismo cafetero es una vía de ingreso adicional para quienes abren su finca a visitantes. El rendimiento concreto depende del predio, del manejo del cultivo y de las condiciones del mercado en cada momento.',
       },
     ],
   },
@@ -171,11 +165,8 @@ const VEREDAS: Record<string, VeredaData> = {
       'Potencial para parcelaciones y proyectos campestres de mediana escala',
     ],
     valorizacion:
-      'San Juan está en la fase inicial de valorización acelerada. Los precios ' +
-      'siguen por debajo de los de Bulucaima para lotes equivalentes. La mejora ' +
-      'progresiva de la vía de acceso y el desplazamiento de la demanda desde ' +
-      'veredas más consolidadas, como Chicalá y Bulucaima, sostienen el interés ' +
-      'por la zona.',
+      'Los lotes de San Juan se ofrecen por debajo de los de Bulucaima para áreas ' +
+      'equivalentes. La vía de acceso ha ido mejorando.',
     clima:
       'San Juan tiene un clima templado de montaña con temperatura promedio ' +
       'de 22 °C. Su posición geográfica entre los 1.100 y 1.400 msnm crea ' +
@@ -215,8 +206,7 @@ const VEREDAS: Record<string, VeredaData> = {
       'Tabacal es la vereda más alta y fresca de La Vega, con temperaturas de ' +
       '16 a 23 °C y una naturaleza prácticamente virgen. Ideal para quienes ' +
       'buscan retiro, privacidad y contacto con el bosque andino a menos de ' +
-      '2 horas de Bogotá. Sus tierras ofrecen una oportunidad de inversión ' +
-      'única en el Gualivá.',
+      '2 horas de Bogotá.',
     ventajas: [
       'El clima más fresco de La Vega: perfecto para residencia permanente',
       'Alta biodiversidad: orquídeas, bromelias y más de 60 especies de aves',
@@ -226,12 +216,11 @@ const VEREDAS: Record<string, VeredaData> = {
       'Vista panorámica de 360° hacia la Cordillera Occidental',
     ],
     valorizacion:
-      'Tabacal es la apuesta a largo plazo más interesante de La Vega. Los precios ' +
-      'actuales son los más bajos de las veredas cercanas al casco urbano, pero ' +
-      'la pavimentación de la vía está contemplada en el Plan de Desarrollo ' +
-      'Municipal 2024–2027, y de ejecutarse cambiaría su accesibilidad. Es una ' +
-      'obra prevista, no ejecutada: el efecto sobre los precios dependerá de que ' +
-      'se realice y de cuándo.',
+      'Los precios en Tabacal son los más bajos de las veredas cercanas al casco ' +
+      'urbano. La pavimentación de la vía está contemplada en el Plan de ' +
+      'Desarrollo Municipal 2024–2027, y de ejecutarse cambiaría su ' +
+      'accesibilidad. Es una obra prevista, no ejecutada: el efecto sobre los ' +
+      'precios dependerá de que se realice y de cuándo.',
     clima:
       'A 1.350 msnm, Tabacal tiene el clima más fresco de La Vega con temperaturas ' +
       'que raramente superan los 23 °C. Las mañanas son frescas (15–17 °C) y las ' +
@@ -255,7 +244,7 @@ const VEREDAS: Record<string, VeredaData> = {
         respuesta: 'Tabacal es entre 3 y 5 °C más fresco que el pueblo de La Vega. Si en el parque principal hace 26 °C, en Tabacal estarán entre 21 y 23 °C. Es ideal para quienes aman el clima templado-frío sin llegar a las temperaturas de Bogotá.',
       },
       {
-        pregunta: '¿Es segura la inversión en Tabacal dado que la vía no está pavimentada?',
+        pregunta: '¿Cómo influye en el precio que la vía de Tabacal no esté pavimentada?',
         respuesta: 'El precio actual refleja esa condición: los lotes en Tabacal se ofrecen por debajo de los de veredas con vía pavimentada. Si la vía se pavimenta, esa diferencia tendería a reducirse, aunque el efecto y su magnitud dependen de que la obra se ejecute.',
       },
     ],
@@ -285,11 +274,8 @@ const VEREDAS: Record<string, VeredaData> = {
       'Cerca de la vía principal La Vega–Bogotá',
     ],
     valorizacion:
-      'La Alianza se ha beneficiado del rebose de demanda desde veredas más ' +
-      'saturadas. Con vía pavimentada ya establecida, sus fundamentos de ' +
-      'valorización son sólidos y sostenibles. ' +
-      'Los lotes de menos de 150 millones con escritura y sin problemas ' +
-      'jurídicos tienen alta rotación entre compradores de primera finca.',
+      'La Alianza tiene vía pavimentada. Hay lotes por debajo de 150 millones ' +
+      'con escritura y sin problemas jurídicos.',
     clima:
       'Clima templado andino con temperatura media de 22 °C, similar al centro ' +
       'de La Vega. Noches frescas de 17–19 °C ideales para dormir sin aire ' +
@@ -338,11 +324,8 @@ const VEREDAS: Record<string, VeredaData> = {
       'Zona con varios proyectos de condominios campestres en desarrollo',
     ],
     valorizacion:
-      'El Rosario ha seguido la tendencia positiva de toda La Vega con ' +
-      'valorización sostenida. La topografía plana reduce los costos de ' +
-      'construcción frente a las veredas con pendientes pronunciadas. Los proyectos ' +
-      'de parcelación activos en la vereda están generando una revalorización ' +
-      'acelerada del suelo rural.',
+      'La topografía de El Rosario es plana. Hay proyectos de parcelación activos ' +
+      'en la vereda.',
     clima:
       'El Rosario tiene la temperatura más cálida de las veredas cercanas al ' +
       'pueblo, con máximas de 27 °C en temporada seca. La altitud de 1.170 msnm ' +
@@ -391,11 +374,9 @@ const VEREDAS: Record<string, VeredaData> = {
       'Observación de aves: más de 70 especies registradas en la zona',
     ],
     valorizacion:
-      'Laureles representa la inversión más orientada a la naturaleza en La Vega. ' +
-      'Los precios son moderados hoy pero el interés creciente por el turismo de ' +
-      'naturaleza y las fincas eco-lodge está generando una demanda nueva de ' +
-      'compradores con perfil ambiental, y el ecoturismo sigue consolidándose ' +
-      'en el Gualivá.',
+      'Laureles tiene bosque nativo, agua permanente y clima fresco. El POT de ' +
+      'La Vega permite allí desarrollos de ecoturismo en áreas rurales, con ' +
+      'restricciones de densidad y licencia ambiental ante la CAR Cundinamarca.',
     clima:
       'Laureles, a 1.310 msnm, tiene un clima fresco-templado con influencia ' +
       'del bosque de niebla. La temperatura rara vez supera los 24 °C y las ' +
@@ -416,7 +397,7 @@ const VEREDAS: Record<string, VeredaData> = {
       },
       {
         pregunta: '¿Cuánto cuestan las fincas en Laureles?',
-        respuesta: 'Las fincas en Laureles parten desde 150 millones para predios de 5.000 m² sin construcción. Las fincas con casa, bosque nativo y quebrada propia pueden superar los 600 millones, y tienen alta valorización por el turismo de naturaleza que busca estos ambientes únicos.',
+        respuesta: 'Las fincas en Laureles parten desde 150 millones para predios de 5.000 m² sin construcción. Las fincas con casa, bosque nativo y quebrada propia pueden superar los 600 millones.',
       },
     ],
   },
@@ -435,22 +416,19 @@ const VEREDAS: Record<string, VeredaData> = {
       'La Libertad es la vereda más alta de La Vega, con un paisaje de páramo ' +
       'bajo y bosque andino que no tiene igual en el municipio. A 1.380 msnm, ' +
       'ofrece el clima más fresco, la mayor biodiversidad y lotes de gran extensión ' +
-      'a precios imbatibles para quienes tienen visión de largo plazo.',
+      'a los precios por metro cuadrado más bajos de La Vega.',
     ventajas: [
       'La altitud más elevada de La Vega: clima perfecto todo el año',
       'Vistas espectaculares hacia múltiples municipios del Gualivá',
-      'Tierras vírgenes con alta potencial para proyectos de conservación',
+      'Predios con bosque nativo aptos para proyectos de conservación',
       'Precios más accesibles de toda La Vega por m²',
-      'Zona de reserva natural con restricciones que protegen el valor del suelo',
+      'Zona de reserva natural con restricciones de uso del suelo',
       'Acceso a pie a páramos y bosques de niebla únicos en la región',
     ],
     valorizacion:
-      'La Libertad es la inversión de mayor horizonte temporal en La Vega. ' +
-      'La valorización es más lenta que en veredas bajas, pero sostenida por ' +
-      'la escasez de tierras a esta altitud y el creciente interés en proyectos ' +
-      'de conservación privada y pago por servicios ambientales. El gobierno ' +
-      'colombiano reconoce como reservas naturales privadas (RNSC) que generan ' +
-      'beneficios tributarios y pueden obtener compensaciones por conservación.',
+      'El Estado colombiano reconoce las Reservas Naturales de la Sociedad Civil ' +
+      '(RNSC). Registrar un predio como RNSC da acceso a beneficios tributarios y ' +
+      'permite optar a compensaciones por conservación.',
     clima:
       'La Libertad tiene el clima más fresco de La Vega. Las temperaturas de ' +
       '15 a 23 °C, con noches que pueden bajar a 12 °C en enero, la convierten ' +
@@ -471,7 +449,7 @@ const VEREDAS: Record<string, VeredaData> = {
       },
       {
         pregunta: '¿Cuál es el precio de lotes en La Libertad?',
-        respuesta: 'La Libertad tiene los precios más bajos de La Vega por la altura y la vía destapada. Lotes de 5.000 m² parten desde 80 millones y grandes extensiones de 2 o más hectáreas pueden adquirirse desde 180 millones. Una inversión a 5 años con proyección excelente.',
+        respuesta: 'La Libertad tiene los precios más bajos de La Vega por la altura y la vía destapada. Lotes de 5.000 m² parten desde 80 millones y grandes extensiones de 2 o más hectáreas pueden adquirirse desde 180 millones.',
       },
     ],
   },
@@ -497,7 +475,7 @@ const VEREDAS: Record<string, VeredaData> = {
       'Total acceso a servicios: mercados, colegios, médicos a menos de 10 min',
       'Menor tiempo de desplazamiento a Bogotá de todas las veredas',
       'Lotificación activa con predios desde 500 m² disponibles',
-      'Alta demanda de alquiler vacacional por la accesibilidad',
+      'Casas con piscina que se alquilan por temporadas',
       'Temperatura ideal para piscina exterior durante todo el año',
     ],
     // Decía «retornos superiores al 13 % anual» y «ocupación del 70–80 %».
@@ -506,11 +484,10 @@ const VEREDAS: Record<string, VeredaData> = {
     // a la primera. Se retiran ambas y queda lo observable —qué hay en la
     // vereda y por qué se demanda—, sin prometer cuánto rinde.
     valorizacion:
-      'Guarumal combina proximidad al casco urbano, vía pavimentada y demanda de ' +
-      'alquiler vacacional, sobre todo en las casas con piscina, que se ocupan ' +
-      'principalmente los fines de semana. Cuánto rinda un predio concreto depende de ' +
-      'su estado, su ubicación dentro de la vereda y las condiciones del mercado en ' +
-      'cada momento.',
+      'Guarumal está cerca del casco urbano y tiene vía pavimentada. Hay casas ' +
+      'con piscina que se alquilan por temporadas, sobre todo los fines de ' +
+      'semana. Cuánto rinda un predio concreto depende de su estado, su ubicación ' +
+      'dentro de la vereda y las condiciones del mercado en cada momento.',
     clima:
       'Guarumal, a 1.150 msnm, tiene el clima más cálido de las veredas cercanas ' +
       'al pueblo. Las temperaturas de 19 a 27 °C son perfectas para el disfrute ' +
@@ -522,11 +499,11 @@ const VEREDAS: Record<string, VeredaData> = {
     faq: [
       {
         pregunta: '¿Por qué Guarumal es tan popular para alquiler vacacional?',
-        respuesta: 'La combinación de acceso fácil desde Bogotá (98 minutos), clima cálido ideal para piscina y cercanía a todos los servicios de La Vega la hacen atractiva para familias bogotanas en fin de semana. Las casas con piscina en Guarumal generan ingresos de 600.000 a 1.200.000 pesos por noche en temporada alta.',
+        respuesta: 'La combinación de acceso fácil desde Bogotá (98 minutos), clima cálido ideal para piscina y cercanía a todos los servicios de La Vega la hacen atractiva para familias bogotanas en fin de semana.',
       },
       {
         pregunta: '¿Cuánto cuesta una casa con piscina en Guarumal?',
-        respuesta: 'Las casas campestres con piscina en Guarumal oscilan entre 600 millones y 2.000 millones según tamaño, acabados y extensión del lote. El retorno por alquiler vacacional permite recuperar la inversión en plazos de 8 a 12 años, un indicador muy favorable en finca raíz.',
+        respuesta: 'Las casas campestres con piscina en Guarumal oscilan entre 600 millones y 2.000 millones según tamaño, acabados y extensión del lote.',
       },
       {
         pregunta: '¿Hay lotificaciones nuevas disponibles en Guarumal?',
@@ -559,11 +536,9 @@ const VEREDAS: Record<string, VeredaData> = {
       'Potencial para turismo rural y fincas agro-turísticas',
     ],
     valorizacion:
-      'Cacahual está beneficiándose de la demanda residual de La Vega y de la ' +
-      'llegada de inversionistas del sector agrícola. Las fincas productivas con ' +
-      'cultivos de aguacate Hass han demostrado retornos combinados superiores ' +
-      'la valorización del predio con el ingreso del cultivo. El resultado depende ' +
-      'del manejo agrícola y de las condiciones del mercado en cada momento.',
+      'En Cacahual hay fincas productivas con cultivos de aguacate Hass y ' +
+      'cítricos. El resultado de un cultivo depende del manejo agrícola y de las ' +
+      'condiciones del mercado en cada momento.',
     clima:
       'Cacahual, a 1.100 msnm, tiene el clima más cálido de las veredas de La Vega. ' +
       'Las temperaturas de 20 a 28 °C son ideales para cultivos de clima ' +
@@ -616,13 +591,10 @@ const VEREDAS: Record<string, VeredaData> = {
       'Candidato para declaratoria de Reserva Natural de la Sociedad Civil (RNSC)',
     ],
     valorizacion:
-      'Chupal es para el inversionista con paciencia y visión ambiental. ' +
-      'Los precios son los más bajos de La Vega por el acceso difícil, pero ' +
-      'el escenario de mayor retorno es el proyecto de conservación privada: ' +
-      'registrar el predio como RNSC genera beneficios fiscales y puede ' +
-      'recibir compensaciones de la CAR por servicios ambientales. A medida ' +
-      'que el mercado de carbono voluntario crezca en Colombia, estas tierras ' +
-      'tendrán un valor adicional significativo.',
+      'El acceso a Chupal es difícil, y eso se refleja en el precio: son los más ' +
+      'bajos de La Vega. Registrar el predio como Reserva Natural de la Sociedad ' +
+      'Civil (RNSC) da acceso a beneficios fiscales y permite optar a ' +
+      'compensaciones de la CAR por servicios ambientales.',
     clima:
       'Chupal tiene el clima más frío de La Vega: temperaturas de 14 a 22 °C ' +
       'durante el día y noches que bajan a 10–12 °C en enero. El bosque de niebla ' +

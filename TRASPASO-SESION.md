@@ -359,8 +359,21 @@ y es donde está su valor.
 
 ### Las guardas activas y qué impide cada una
 
-Ninguna es documentación: **las cinco rompen el build**. Las cinco se probaron
-rompiéndolas a propósito.
+Ninguna es documentación. Pero **no todas se disparan igual, y conviene saber
+cuál te avisa sola**:
+
+- Las que viven en TypeScript —`veredas-integridad.ts`, `tipos-integridad.ts`,
+  `publicable.ts` con su `satisfies`, `enlaces.ts`— rompen `next build`, y por
+  tanto rompen el despliegue de Vercel.
+- Las dos que son scripts —`verificar-enlaces.mjs` y `verificar-build.mjs`—
+  **NO están en `npm run build`**, que es lo que ejecuta Vercel. Solo corren si
+  alguien lanza `npm run build:verificado` a mano. Comprobado el 22/08/2026.
+
+⚠ Y ojo con ejecutar `verificar-enlaces.mjs` suelto: lee
+`.next/prerender-manifest.json`, así que **contra un `.next` de `npm run dev`
+da rojo aunque todo esté bien** —128 falsos «sin ruta que los sirva»—. Se
+ejecuta después de un build de producción, o desde `build:verificado`, que ya
+lo encadena.
 
 | Guarda | Impide |
 |---|---|

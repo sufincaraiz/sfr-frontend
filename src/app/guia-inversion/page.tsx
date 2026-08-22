@@ -62,12 +62,12 @@ function valorizacion(clima: { min: number; max: number; altitud: number } | nul
   // ningún intermediario inmobiliario puede sostener, porque el retorno depende
   // del mercado y no de la empresa. Se sustituye por el hecho observable, que
   // además es lo que un modelo puede citar.
-  { icon: TrendingUp, title: 'Demanda de alquiler vacacional', text: 'La demanda de alquileres vacacionales de corta estancia en la región supera a la oferta publicada, lo que sostiene el interés por las propiedades de descanso. La rentabilidad de cada inmueble depende de su ubicación, su estado y las condiciones del mercado en cada momento.' },
+  { icon: TrendingUp, title: 'Demanda de alquiler vacacional', text: 'En la región hay propiedades de descanso que se alquilan por temporadas cortas, sobre todo fines de semana y puentes festivos. Cuánto rinda un inmueble concreto depende de su ubicación, su estado y las condiciones del mercado en cada momento: no publicamos cifras de ocupación ni de rentabilidad porque no las hemos medido.' },
   ]
 }
 
 const CATALOGO = [
-  { icon: LandPlot, title: 'Lotes y Parcelaciones Campestres', text: 'El lienzo en blanco para tu casa ideal. Nos enfocamos en terrenos urbanizados con proyección y seguridad. Proyectos estructurados con visión, como Senderos del Bosque o la Parcelación Cucharal, representan el estándar de lo que un inversionista debe buscar: vías, servicios y proyecciones arquitectónicas claras.' },
+  { icon: LandPlot, title: 'Lotes y Parcelaciones Campestres', text: 'El lienzo en blanco para tu casa ideal. Nos enfocamos en terrenos urbanizados con documentación en regla. Proyectos como Senderos del Bosque o la Parcelación Cucharal muestran lo que conviene revisar en un lote: vías de acceso, viabilidad de servicios públicos, matrícula independiente y licencia de urbanismo.' },
   { icon: Trees, title: 'Fincas y Quintas de Descanso', text: 'Propiedades con áreas generosas, árboles frutales y diseños que se integran con la naturaleza. Ideales para el retiro o la explotación turística.' },
   { icon: Building2, title: 'Apartamentos y Proyectos Urbanos', text: 'Para quienes buscan la practicidad del casco urbano sin perder la tranquilidad del municipio. Modernidad, seguridad y fácil mantenimiento en el corazón de La Vega.' },
 ];
