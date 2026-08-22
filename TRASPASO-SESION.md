@@ -1160,12 +1160,14 @@ su ISR. No es un fallo de la corrección: es esta regla, en efecto.
 Sesión del 20/08: 41 commits desde `65846af`, desplegados y verificados contra el
 HTML servido.
 
-**Sesión del 22/08 (esta): 3 commits, todo desplegado y verificado.**
+**Sesión del 22/08 (esta): 5 commits, todo desplegado y verificado.**
 
 ```
 fdd7ada  retirar afirmaciones de valor futuro de las fichas y el límite en Mac
 733b5cb  la búsqueda por frase completa dejaba propiedades publicadas invisibles
 085836b  retirar la novena forma de municipios, veredas, la guía y el blog
+1175522  traspaso al cierre
+5a224ce  inversion y valorizacion desaparecen; el nombre del campo era la afirmación
 ```
 
 **131 afirmaciones retiradas en total**: 33 en las 36 fichas, 3 en
@@ -1263,19 +1265,95 @@ corrección deja el dato vivo en otro sitio, ese sitio entra en el mismo lote.
 
 | # | Decisión | Estado |
 |---|---|---|
-| 1 | **La Vega — los cinco campos reescritos.** El texto lo conserva el titular fuera del repositorio y lo aporta al arrancar (ver la regla del borrador, abajo). Con su visto bueno se generan los siete municipios restantes | pendiente |
-| 2 | **`inversion` → `antes_de_comprar`.** Rename barato, sin índices ni relaciones; exige dry-run y OK antes del `db push`. Ahora es más urgente: el campo quedó vacío de afirmaciones y su nombre sigue diciendo «por qué invertir aquí» | pendiente |
-| 3 | **`veredas-data.ts`: qué hacer con el campo `valorizacion`** — ver el balance de los once bloques, abajo | pendiente |
-| 4 | **Proyecto Cabañas** — reescribir su `description` entera **antes** de derivar el short; derivar de un texto malo propaga el problema | pendiente |
+| 1 | **Conectar las guardas a `npm run build`** — propuesta redactada, sin tocar el build. Ver «Las guardas y el despliegue», abajo | esperando tu OK |
+| 2 | **La Vega — los cinco campos reescritos.** El texto lo conserva el titular fuera del repositorio y lo aporta al arrancar. Con su visto bueno se generan los siete municipios restantes | pendiente |
+| 3 | **El residuo de Mac no se arregla por prompt** — verificado con tres muestras. Ver «Por qué el prompt no basta», abajo | esperando tu OK |
+| 4 | **Proyecto Cabañas** — reescribir su `description` entera **antes** de derivar el short | pendiente |
 | 5 | **Aviso en el admin** cuando `meta_description` repita el arranque de `description` | pendiente |
 | 6 | **Primera ronda real de visibilidad IA**: 11 consultas × 6 motores | pendiente |
-| 7 | **Conectar las guardas de script a `npm run build`** — hoy `verificar-enlaces.mjs` y `verificar-build.mjs` NO corren en Vercel (§4) | pendiente |
-| 8 | **Tobia Chica: ¿desactivada o borrada?** La fila se conserva con `activo=false`; los datos del proyecto son tuyos | pendiente |
-| 9 | **`mac_knowledge` da instrucciones a Mac y el prompt dice que no debería** — ver abajo | pendiente |
+| 7 | **Auditar `turismo` e `historia`** de los 8 municipios — ~27.000 caracteres. De ahí salió «más de 50.000 visitantes mensuales» de Villeta | pendiente |
 
-Cerrado en esta sesión: el barrido de las 36 fichas, el límite de valor futuro
-en Mac y en el experto, el buscador, la novena forma en municipios, veredas,
-guía y blog, y Tobia Chica. Todo desplegado.
+Cerrado el 22/08: el barrido de las 36 fichas, el límite de valor futuro en Mac
+y en el experto, el buscador por términos, la novena forma en municipios,
+veredas, guía y blog, la desaparición de `inversion` y `valorizacion`, y la
+limpieza de `mac_knowledge`. Cinco commits, todo desplegado.
+
+### Las guardas y el despliegue — PROPUESTA, sin aplicar
+
+El hallazgo: `verificar-enlaces.mjs` y `verificar-build.mjs` **no están en
+`npm run build`**, que es lo que ejecuta Vercel. Protegen solo si alguien se
+acuerda de lanzarlas.
+
+Al mirar cómo se comportan con la base caída aparece algo que cambia la
+decisión: **las guardas que consultan la base YA distinguen «los datos
+divergen» de «no llego a la base»**, y en el segundo caso no fallan.
+
+| Guarda | Consulta la base | Con Railway caído |
+|---|---|---|
+| `publicable.ts` (`satisfies`) | no | n/a — es de tipos, rompe `tsc` |
+| `enlaces.ts` | no | n/a — es de tipos |
+| `veredas-integridad.ts` | **sí** | `return { ok: true }` + aviso. **No falla** |
+| `tipos-integridad.ts` | **sí** | `return { ok: true }` + aviso. **No falla** |
+| `verificar-enlaces.mjs` | sí, solo la clase (b) | avisa y **omite** la clase (b); la (a) sigue |
+| `verificar-build.mjs` | no | es el envoltorio que lanza el build |
+
+**Propuesta:**
+
+1. **`verificar-enlaces.mjs` entra en `npm run build`**, como paso posterior:
+   `"build": "prisma generate && next build && node scripts/verificar-enlaces.mjs"`.
+   Su clase (a) —el enlace sin ruta que lo sirva— solo lee el árbol y los
+   manifiestos de `.next`, y su clase (b) se omite sola si no hay base. Una
+   caída de Railway **no** puede tumbar el deploy por esta vía.
+2. **`verificar-build.mjs` se queda fuera**, y no por riesgo: *es* el envoltorio
+   que lanza `next build`. Meterlo dentro sería recursivo. Su papel es el de
+   comprobación local antes de empujar, y así debe documentarse.
+3. **Las dos de tipos ya están dentro** —`tsc` corre en `next build`— y no
+   dependen de nada externo. No hay nada que hacer.
+4. **⚠ `veredas-integridad.ts` y `tipos-integridad.ts` ya corren dentro del
+   build**, desde `generateStaticParams()`. Nadie lo había escrito. Son
+   seguras porque degradan solas, pero conviene saberlo: **el build ya depende
+   de la base para más cosas de las que parecía**.
+
+**Lo que NO cubre nada de esto:** que el contenido publicado se degrade *sin*
+que haya un despliegue. Un `UPDATE` desde el admin puede dejar un municipio sin
+los seis campos, y ninguna guarda se entera hasta el siguiente build. Para eso
+lo correcto es lo que propusiste: **una comprobación programada que avise sin
+bloquear** — un cron diario (el plan Hobby no permite más) contra un endpoint
+protegido con `CRON_SECRET` que corra las integridades sobre producción y
+notifique por el mismo canal de WhatsApp que ya usan los leads. Eso vigila el
+hueco real, que es el tiempo entre despliegues.
+
+### Por qué el prompt no basta — el residuo de Mac, verificado
+
+Se comprobó de dónde salía «la demanda es fuerte los fines de semana»:
+
+- **No estaba en las fichas** (cero coincidencias tras el barrido).
+- **No estaba en `mac_knowledge`** (cero en las seis entradas activas).
+- **Estaba en el prompt**, en tres sitios: «la oferta limitada de tierra bien
+  ubicada **sostienen el interés por la zona**», «las novedades son **las que
+  más interés despiertan**», y una autorización explícita que se había escrito
+  al poner el límite: «puedes decir qué hay (**turismo de fin de semana**…)».
+
+Los tres se retiraron. La sección de argumentos de región ahora solo contiene
+hechos comprobables, y lleva escrito por qué.
+
+**Y aun así no basta.** Tres muestras de «¿cuánto puedo ganar alquilando?»:
+dos siguieron desplazando la promesa al especialista —«te da números reales y
+documentados»—. La presión viene de la regla 7, *prohibido dejar al cliente sin
+salida*: obliga a ofrecer algo, y lo único que hay para ofrecer es el
+especialista, así que el modelo le inventa capacidades.
+
+**La observación que importa:** la corrección del buscador **sí** se sostuvo, y
+la diferencia es *dónde llegó la instrucción*. Ahí el «no existe, no digas que
+podría estar en camino» viaja **dentro del resultado de la herramienta**, como
+dato, en el momento exacto en que hace falta. En el prompt es una regla entre
+sesenta, a cuatrocientas líneas del punto de uso.
+
+Si esa afirmación no debe salir NUNCA, la defensa correcta no es otra regla:
+es un **filtro sobre la salida** —revisar la respuesta antes de enviarla y
+regenerar si contiene una promesa de rendimiento, valorización o avalúo—, o
+hacer que la instrucción llegue como resultado de herramienta. Un modelo
+generativo no obedece prohibiciones como un filtro; hay que ponerle un filtro.
 
 ### ⚠ Un borrador que espera aprobación se escribe en un archivo
 
