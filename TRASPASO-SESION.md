@@ -979,3 +979,19 @@ Estado del barrido por campo:
 | `inversion` | ✅ auditado 20/08/2026 |
 | `clima`, `turismo` | ⬜ pendiente |
 | `historia` | ⬜ pendiente |
+
+### ⚠ Editar la base por script salta la revalidación
+
+Los `UPDATE` directos sobre `municipality` o `property` **no** disparan el
+`revalidatePath()` que sí ejecuta el admin al guardar. La página sigue sirviendo
+la versión prerenderizada hasta que venza su ISR —una hora— o hasta el
+siguiente despliegue.
+
+Es la otra cara de la regla de Mac: **Mac lee la base en tiempo real y cambia al
+instante; las páginas NO**. Un mismo `UPDATE` deja al agente y al sitio
+diciendo cosas distintas durante hasta una hora.
+
+**Regla:** tras un cambio de datos por script, o se despliega, o se edita
+además desde el admin para que dispare la revalidación. Verificar contra
+producción inmediatamente después de un `UPDATE` da un falso negativo: no
+prueba que el cambio esté mal, prueba que aún no se ha regenerado.
