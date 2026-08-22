@@ -12,6 +12,10 @@
     "noImplicitAny": true,
     "strictNullChecks": true,
     "noEmit": true,
+    // `scripts/probar-busqueda.ts` importa el módulo real con extensión .ts
+    // porque lo ejecuta Node directamente (sin bundler, sin alias). Es válido
+    // solo con noEmit, que ya está activo. El código de la app no debe usarlo.
+    "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "bundler",

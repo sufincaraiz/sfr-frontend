@@ -3,6 +3,9 @@ import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { consultarExperto } from '@/lib/agent/expert'
 import { enviarAlertaLeadWhatsApp } from '@/lib/whatsapp'
+import {
+  norm, terminos, coincideTexto, puntuar, tiposDesde, TIPO_SINONIMOS, type Puntuable,
+} from './busqueda-texto'
 import type { Tool, ToolResultBlockParam } from '@anthropic-ai/sdk/resources/messages'
 import type { LeadQualification } from '@prisma/client'
 
@@ -166,49 +169,11 @@ export type ToolInput = BuscarInput | DetalleInput | LeadInput | SolicitarInput 
 // El cliente escribe "cabaña", "Finca", "Alban", "terreno"… y la BD guarda
 // etiquetas fijas en minúscula y con tilde. Sin normalizar, el filtro exacto
 // devolvía 0 resultados y Mac respondía que no había nada (aunque sí hubiera).
-
-/** minúsculas, sin tildes, sin espacios sobrantes */
-function norm(s: string): string {
-  return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim()
-}
-
-/** Sinónimos del cliente → tipos reales de la BD (Property.type). */
-const LOTES = ['lote', 'lote-urbano', 'lote-campestre', 'lote-rural']
-
-const TIPO_SINONIMOS: Record<string, string[]> = {
-  finca: ['finca'], fincas: ['finca'], hacienda: ['finca'], parcela: ['finca'],
-  campo: ['finca'], 'finca de recreo': ['finca'], quinta: ['finca'],
-  // "lote" a secas abarca los subtipos: el catálogo los separa (lote urbano /
-  // campestre / rural), pero el cliente casi nunca los distingue al preguntar.
-  lote: LOTES, lotes: LOTES,
-  terreno: LOTES, terrenos: LOTES,
-  predio: LOTES, tierra: LOTES,
-  'lote urbano': ['lote-urbano', 'lote'],
-  'lote campestre': ['lote-campestre', 'lote'],
-  'lote rural': ['lote-rural', 'lote'],
-  casa: ['casa'], casas: ['casa'],
-  vivienda: ['casa', 'apartamento'],
-  'casa campestre': ['casa', 'finca'],
-  chalet: ['casa'],
-  cabana: ['casa', 'finca'], cabanas: ['casa', 'finca'],
-  apartamento: ['apartamento'], apartamentos: ['apartamento'],
-  apto: ['apartamento'], apartaestudio: ['apartamento'],
-  // condominio/conjunto se interceptan antes: van por en_condominio, no por type.
-  local: ['local'], locales: ['local'],
-}
-
-/** Devuelve los tipos de BD que corresponden a lo que dijo el cliente (null = no reconocido). */
-function tiposDesde(entrada: string): string[] | null {
-  const n = norm(entrada)
-  if (TIPO_SINONIMOS[n]) return TIPO_SINONIMOS[n]
-  // Coincidencia parcial: "lote campestre en La Vega", "casa en condominio"…
-  // Se prueba de la clave más larga a la más corta, para que "lote campestre"
-  // gane sobre "lote" y "casa campestre" sobre "casa".
-  const hit = Object.keys(TIPO_SINONIMOS)
-    .sort((a, b) => b.length - a.length)
-    .find(k => n.includes(k))
-  return hit ? TIPO_SINONIMOS[hit]! : null
-}
+//
+// La normalización, los sinónimos de tipo y el filtro de texto se importan
+// arriba desde `busqueda-texto.ts`: vive en un módulo
+// propio para que `scripts/probar-busqueda.ts` ejercite ESAS funciones y no
+// una copia suya.
 
 /** ids de municipios cuyo nombre coincide con lo que dijo el cliente, ignorando tildes. */
 async function municipioIds(entrada: string): Promise<string[]> {
@@ -238,7 +203,13 @@ async function buscarPropiedades(input: BuscarInput) {
   const totalDisponiblesEnTodoElPortafolio = await prisma.property.count({ where: { status: 'available' } })
 
   // ── Criterios, cada uno como filtro independiente y descartable ────────────
-  const criterios: Array<{ nombre: string; where: Record<string, unknown> }> = []
+  // Un criterio filtra en la base (`where`) o en memoria (`filtro`). El de texto
+  // es de los segundos: ver `coincideTexto`. Los dos se relajan igual.
+  const criterios: Array<{
+    nombre: string
+    where?: Record<string, unknown>
+    filtro?: (p: Puntuable) => boolean
+  }> = []
 
   if (input.tipo) {
     // «Condominio» y «conjunto» dejaron de ser un valor de `type`: son el
@@ -279,18 +250,11 @@ async function buscarPropiedades(input: BuscarInput) {
 
   const libre = [input.texto, tiposDesde(input.tipo ?? '') ? null : input.tipo]
     .filter((s): s is string => !!s && s.trim().length >= 3)
-  if (libre.length) {
-    criterios.push({
-      nombre: `búsqueda "${libre.join(' ')}"`,
-      where: {
-        OR: libre.flatMap(t => [
-          { title:             { contains: t, mode: 'insensitive' } },
-          { short_description: { contains: t, mode: 'insensitive' } },
-          { description:       { contains: t, mode: 'insensitive' } },
-          { vereda:            { name: { contains: t, mode: 'insensitive' } } },
-        ]),
-      },
-    })
+
+  // TODOS los términos deben aparecer; cada uno puede caer en cualquier campo.
+  const terms = [...new Set(libre.flatMap(terminos))]
+  if (terms.length) {
+    criterios.push({ nombre: `búsqueda "${terms.join(' ')}"`, filtro: p => coincideTexto(p, terms) })
   }
 
   if (input.precioMin !== undefined || input.precioMax !== undefined) {
@@ -313,10 +277,28 @@ async function buscarPropiedades(input: BuscarInput) {
 
   const descartados: string[] = []
   for (;;) {
-    const where = { status: 'available', AND: activos.map(c => c.where) }
-    const found = await prisma.property.findMany({ where, include: PROP_INCLUDE, orderBy, take: limite })
+    const where = { status: 'available', AND: activos.flatMap(c => (c.where ? [c.where] : [])) }
+    const filtros = activos.flatMap(c => (c.filtro ? [c.filtro] : []))
 
-    if (found.length > 0) {
+    // Con filtros en memoria hay que traer el candidato completo y no un `take`
+    // corto, o el filtro se aplicaría sobre una página arbitraria. El catálogo
+    // son decenas de fichas: cabe entero.
+    const found = await prisma.property.findMany({
+      where,
+      include: PROP_INCLUDE,
+      orderBy,
+      take: filtros.length ? 200 : limite,
+    })
+    const filtrados = filtros.length ? found.filter(p => filtros.every(f => f(p))) : found
+
+    // Con el texto activo se ordena por relevancia: la ficha que SE LLAMA como
+    // lo que pidió el cliente sale primera, no la más reciente.
+    const porTexto = terms.length > 0 && activos.some(c => c.nombre.startsWith('búsqueda'))
+    const ordenados = porTexto
+      ? [...filtrados].sort((a, b) => puntuar(b, terms) - puntuar(a, terms)).slice(0, limite)
+      : filtrados.slice(0, limite)
+
+    if (ordenados.length > 0) {
       const avisos: string[] = []
       if (zonaFuera) {
         avisos.push(
@@ -328,9 +310,14 @@ async function buscarPropiedades(input: BuscarInput) {
           `No había coincidencias exactas, así que amplié la búsqueda ignorando: ${descartados.join(', ')}. Dile al cliente con honestidad que son las opciones más cercanas a lo que pidió.`,
         )
       }
+      if (descartados.some(d => d.startsWith('búsqueda'))) {
+        avisos.push(
+          `IMPORTANTE: NO existe en el catálogo ninguna propiedad que coincida con «${terms.join(' ')}». Dilo tal cual —"no la tengo en el catálogo"— y ofrece las de "resultados" como lo más parecido. PROHIBIDO decir que podría estar en camino, que la subirán pronto, que quizá exista o cualquier variante: no lo sabes. Si el cliente insiste en esa propiedad concreta, usa solicitar_asesor con motivo PROPIEDAD_FUERA_CATALOGO.`,
+        )
+      }
       return {
-        resultados: found.map(formatProperty),
-        totalEncontrados: found.length,
+        resultados: ordenados.map(formatProperty),
+        totalEncontrados: ordenados.length,
         sugerencias: [],
         totalDisponiblesEnTodoElPortafolio,
         nota: 'Los "resultados" son las ÚNICAS propiedades que puedes mencionar. "totalDisponiblesEnTodoElPortafolio" es el catálogo completo de Su Finca Raíz en todos los municipios: NUNCA lo presentes como la cantidad disponible de lo que el cliente preguntó, ni de un proyecto o condominio en particular.',
