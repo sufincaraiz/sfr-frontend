@@ -15,6 +15,14 @@ importan de `src/lib/datos-oficiales.ts`. Si una cifra no se puede sustentar, no
 se publica: es requisito del Estatuto del Consumidor (Ley 1480 de 2011) y el
 criterio por el que un modelo generativo decide si citarnos.
 
+**Valor futuro, rentabilidad y avalúos.** No se publica —ni en una ficha, ni en
+un municipio, ni en una vereda, ni por boca de Mac— que un inmueble se valorizará,
+cuánta renta dejará o cuánto vale realmente. Tampoco en cualitativo: «alta
+valorización», «gran proyección» e «inversión segura» son la misma afirmación sin
+el número. La valuación es actividad regulada (Ley 1673 de 2013). El límite está
+además dentro de `src/lib/agent/prompt.ts` y `src/lib/agent/expert.ts`, y aplica
+aunque el texto de la ficha diga lo contrario.
+
 **Listas de municipios.** No existen escritas a mano. Las tres salidas se derivan
 en `src/lib/cobertura.ts`:
 
@@ -36,6 +44,9 @@ semana. Es la única copia. Ver `backup-service/RESTAURAR.md`.
 
 ## Cómo se trabaja aquí
 
+- **Para saber qué está construido: `node scripts/estado-traspaso.mjs`.** Manda
+  el script, no TRASPASO-SESION.md — el documento ya acumuló nueve afirmaciones
+  falsas de estado, y por eso el estado se deriva.
 - El código vive en `C:\sfr\frontend`, no en la carpeta de Google Drive.
 - Compilar requiere las variables de `.env.local`.
 - `npx prisma db push` para aplicar cambios de esquema (no `migrate dev`).

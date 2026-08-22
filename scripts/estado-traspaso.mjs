@@ -23,12 +23,26 @@
  *     node scripts/estado-traspaso.mjs
  */
 
-import { existsSync, readFileSync } from 'node:fs'
+import fs from 'node:fs'
+const { existsSync, readFileSync } = fs
 
 const hay = p => existsSync(p)
 const contiene = (p, re) => hay(p) && re.test(readFileSync(p, 'utf8'))
 
 const PIEZAS = [
+  // ── Base técnica de AEO (lo que el traspaso llamaba «Sesión 1») ───────────
+  ['robots.txt con agentes de IA',  () => contiene('src/app/robots.ts', /GPTBot|ClaudeBot/)],
+  ['Sitemap segmentado',            () => hay('src/app/sitemap.xml/route.ts') && hay('src/app/sitemap-propiedades.xml/route.ts')],
+  ['llms.txt',                      () => hay('src/app/llms.txt/route.ts')],
+  ['Datos oficiales (fuente única)',() => hay('src/lib/datos-oficiales.ts')],
+  ['JSON-LD de entidad',            () => contiene('src/components/seo/JsonLd.tsx', /RealEstateAgent/)],
+  ['Clave de IndexNow publicada',   () => fs.readdirSync('public').some(f => /^[0-9a-f]{32}.txt$/.test(f))],
+  ['Ping de IndexNow al publicar',  () => contiene('src/app/api/admin/properties/route.ts', /indexnow/i)],
+
+  // ── Guardas del contenido publicado ───────────────────────────────────────
+  ['Límite de valor futuro en Mac', () => contiene('src/lib/agent/prompt.ts', /VALOR FUTURO, RENTABILIDAD Y AVALÚOS/)],
+  ['Mismo límite en el experto',    () => contiene('src/lib/agent/expert.ts', /Ley 1673/)],
+
   // ── Rutas públicas ────────────────────────────────────────────────────────
   ['Página de Mac',                 () => hay('src/app/mac/page.tsx')],
   ['Hub de preguntas frecuentes',   () => hay('src/app/preguntas-frecuentes/page.tsx')],
