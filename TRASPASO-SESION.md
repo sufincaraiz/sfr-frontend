@@ -995,3 +995,31 @@ diciendo cosas distintas durante hasta una hora.
 además desde el admin para que dispare la revalidación. Verificar contra
 producción inmediatamente después de un `UPDATE` da un falso negativo: no
 prueba que el cambio esté mal, prueba que aún no se ha regenerado.
+
+### Todo script que toque contenido publicado debe revalidar al terminar
+
+Ampliación de la regla anterior. Un `UPDATE` directo sobre `municipality` o
+`property` deja **al agente y a las páginas diciendo cosas distintas** hasta que
+venza el ISR: Mac lee la base en tiempo real, el HTML no.
+
+**Al terminar un script que toque contenido publicado: desplegar, o editar el
+registro desde el admin para que dispare su `revalidatePath()`.** Verificar
+contra producción inmediatamente después de un `UPDATE` da un falso negativo.
+
+### ⚠ Sexta y séptima forma de esconderse
+
+**Sexta — el patrón de (f) exigía un dígito.** El barrido de fichas buscaba
+`\d+\s?%\s?(valoriz|rentab|retorn)`, así que «Alta Rentabilidad», «alta
+valorización» y «asegurar una inversión de alta rentabilidad» pasaron intactas.
+Es la MISMA forma que escondió los rankings —ausencia de dígito— repetida en
+otra tabla dos semanas después.
+
+**Séptima — una lista de adjetivos que no contiene los adjetivos usados.**
+Quebradanegra dio 0 en el conteo y se propuso como patrón limpio. No lo está:
+usa `virgen`, `verdadero`, `decente`, `auténtico`, `genuina`, `incipiente` —
+ninguno estaba en la lista, que llevaba `privilegiado`, `excelente`, `ideal`,
+`estratégico`. Y su campo `inversion` contiene «los precios de tierra **más
+bajos** de los municipios del Gualivá» (e) y «horizonte de 5 a 8 años» (f).
+
+**Un conteo de adjetivos por lista mide cuántos adjetivos DE LA LISTA hay, no
+cuánto registro publicitario tiene un texto.** Para eso hay que leerlo.
