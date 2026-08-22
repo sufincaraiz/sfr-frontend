@@ -160,6 +160,42 @@ normativas verificables en la ley colombiana, no afirmaciones de rendimiento.
 Lo que **sí** se retira es cualquier porcentaje de **valorización, rentabilidad,
 retorno u ocupación**. Se retiraron quince; ver §4.
 
+### ⚠ El error E252 del logo en `next dev` NO es del sitio
+
+En el servidor de desarrollo, la portada lanza en consola:
+
+```
+Error: Image with src "/images/logo-su-finca-raiz-blanco.png" ...
+next-image-missing-loader   (__NEXT_ERROR_CODE: E252)
+```
+
+**No es un fallo del sitio y no bloquea nada.** Comprobado el 22/08/2026:
+
+| Dónde | Resultado |
+|---|---|
+| Producción (`sufincaraiz.com`) | 200, el logo servido normal |
+| `npm run build` | EXIT=0, 172 páginas generadas |
+| `next start` sobre ese build | **cero errores de consola**, el logo renderiza |
+| HTML servido por `next dev` (curl) | 200, y NO contiene el error |
+| Consola del navegador en `next dev` | E252 |
+
+Es decir: **solo el bundle de CLIENTE en modo desarrollo**. El SSR aplica el
+`loaderFile` correctamente; el cliente en dev no lo recibe y `next/image` se
+queja de que no hay loader.
+
+**Turbopack NO es la causa** — se probó a propósito con `next dev` a secas,
+sin la bandera, y el error es idéntico. Fue la primera hipótesis y quedó
+descartada.
+
+Y `next.config.ts` ya declara **los dos** —`loader: 'custom'` Y
+`loaderFile`—, que es el requisito de Next 15, con su comentario explicando
+por qué hacen falta ambos. `src/lib/cloudinary-loader.ts` existe y tiene el
+guard que devuelve intactas las rutas locales `/images/*`.
+
+**Regla:** antes de perseguir un error de consola en `dev`, comprobar si
+aparece en `next start` sobre un build de producción. Si no aparece ahí, no
+está en el sitio.
+
 ### ⚠ Segmentos dinámicos con nombres distintos — el fallo que `next build` no detecta
 
 **Next exige que un mismo nivel dinámico lleve el MISMO nombre en todas las
