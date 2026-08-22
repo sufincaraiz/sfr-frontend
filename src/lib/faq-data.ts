@@ -22,8 +22,13 @@ export const HOME_FAQS = [
     // además nombraba justo la región de la inmobiliaria homónima (§1.4).
     answer:
       'La Vega y la Provincia del Gualivá concentran demanda de vivienda campestre por tres ' +
-      'factores comprobables: la doble calzada Bogotá-La Vega, que deja el desplazamiento por ' +
-      'debajo de los 90 minutos; el crecimiento del turismo campestre en la región; y la ' +
+      // Sin cifra exacta: es una FAQ general, no una ficha técnica. El dato
+      // preciso —60 km y 1 h 14 min desde Portal 80— vive en el bloque de datos
+      // de La Vega con su metodología. Decía «por debajo de los 90 minutos»,
+      // que además quedó desmentido por la medición del 19/08/2026.
+      'factores comprobables: la doble calzada Bogotá-La Vega, que deja el desplazamiento en ' +
+      'algo más de una hora desde el occidente de Bogotá; el crecimiento del turismo campestre ' +
+      'en la región; y la ' +
       'disponibilidad limitada de lotes con servicios públicos completos. La zona combina clima ' +
       'templado, agua potable, energía eléctrica y conectividad, condiciones que la sitúan entre ' +
       'las opciones habituales de las familias bogotanas que buscan segunda vivienda o retiro. ' +

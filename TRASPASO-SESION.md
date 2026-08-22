@@ -949,3 +949,33 @@ una cifra elegida.
 
 Los otros siete siguen siendo estimación heredada, y su bloque de datos lo dice.
 Entran en `MEDICIONES` (`lib/medicion-distancia.ts`) el día que se midan.
+
+### ⚠ Auditar «el contenido de base» no es auditar UN CAMPO
+
+Se dio por barrido el contenido de base tras revisar `descripcion_seo` de los
+ocho municipios: 8 textos, ~260 caracteres cada uno.
+
+**Faltaban cuatro campos largos por municipio** —`historia`, `clima`, `turismo`,
+`inversion`—, unos **8.000 caracteres por municipio y ~64.000 en total**.
+Publicados, citables, y fuera de todos los barridos anteriores.
+
+Es más texto que todo lo revisado en las veinte pasadas previas juntas.
+
+**Regla:** antes de dar por barrida una tabla, **enumerar sus campos de texto
+largo y confirmar uno por uno que entraron**. El nombre del campo suele decir
+dónde estará el problema: `inversion` es exactamente el registro donde vivían
+los quince porcentajes de rendimiento.
+
+```sql
+-- Los campos de texto largo de municipality, para no volver a olvidarlos:
+descripcion_seo · historia · clima · turismo · inversion
+```
+
+Estado del barrido por campo:
+
+| Campo | Estado |
+|---|---|
+| `descripcion_seo` | ✅ auditado 19/08/2026 |
+| `inversion` | ✅ auditado 20/08/2026 |
+| `clima`, `turismo` | ⬜ pendiente |
+| `historia` | ⬜ pendiente |
