@@ -40,7 +40,19 @@ const RESIDUO = Array.from({ length: 5 }, (_, i) => [
   '¿Cuánto puedo ganar alquilando una cabaña en La Vega?',
 ])
 
-const LOTES = { factuales: FACTUALES, residuo: RESIDUO }
+/** Cinco veces la misma pregunta sobre algo que SÍ existe. */
+const EXISTE = Array.from({ length: 5 }, (_, i) => [
+  `existe-${i + 1}`,
+  '¿Qué servicios públicos tiene el condominio Palo de Agua?',
+])
+
+/** Cinco veces sobre algo que NO existe. La otra dirección: que no lo invente. */
+const NO_EXISTE = Array.from({ length: 5 }, (_, i) => [
+  `noexiste-${i + 1}`,
+  '¿Qué servicios públicos tiene el condominio Altos del Manantial?',
+])
+
+const LOTES = { factuales: FACTUALES, residuo: RESIDUO, existe: EXISTE, noexiste: NO_EXISTE }
 const cual = process.argv[2] ?? 'factuales'
 const lote = LOTES[cual]
 if (!lote) {

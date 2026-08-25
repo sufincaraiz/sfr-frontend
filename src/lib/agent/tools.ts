@@ -348,13 +348,21 @@ async function buscarPropiedades(input: BuscarInput) {
     descartados.push(siguiente.nombre)
   }
 
-  // Sin nada que mostrar ni relajando todo: el portafolio está vacío.
+  // Sin nada que mostrar ni relajando todo: el portafolio está vacío. Es un
+  // caso rarísimo —hay decenas de fichas— y por eso la instrucción tiene que
+  // venir AQUÍ: es el único momento en que Mac lo va a leer, y de él depende
+  // que no convierta un catálogo vacío en «no manejamos eso».
   return {
     resultados: [],
     totalEncontrados: 0,
     sugerencias: [],
     totalDisponiblesEnTodoElPortafolio,
-    aviso: 'No hay propiedades disponibles en el catálogo en línea en este momento. Conecta al cliente con el especialista (solicitar_asesor, motivo PROPIEDAD_FUERA_CATALOGO).',
+    aviso:
+      'El catálogo en línea no devolvió NINGUNA propiedad, ni relajando todos los filtros. ' +
+      'Eso es anómalo. NO le digas al cliente que no manejamos lo que pidió ni que no existe: ' +
+      'di que en este momento no puedes consultar el catálogo, discúlpate en una frase y ' +
+      'conéctalo con el especialista (solicitar_asesor, motivo PROPIEDAD_FUERA_CATALOGO). ' +
+      'Afirmar una ausencia con la herramienta en blanco es exactamente lo que no debes hacer.',
   }
 }
 
