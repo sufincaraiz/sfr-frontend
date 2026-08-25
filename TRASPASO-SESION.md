@@ -1094,6 +1094,50 @@ otra vez una manera de decirlo que a nadie se le ocurrió listar.
 **Un conteo de adjetivos por lista mide cuántos adjetivos DE LA LISTA hay, no
 cuánto registro publicitario tiene un texto.** Para eso hay que leerlo.
 
+### ⚠⚠ MÉTODO: si el agente hace algo que el prompt prohíbe, busca qué se lo ORDENA
+
+**No añadas una prohibición. Busca la instrucción contraria.** Añadir una regla
+encima de una orden contraria no corrige nada: crea un conflicto, y el modelo lo
+resuelve de formas impredecibles —a veces gana una, a veces la otra, sobre la
+misma entrada—.
+
+Pasó **cuatro veces en una sola sesión**, y las cuatro veces la conclusión fue la
+misma: Mac no estaba desobedeciendo. Estaba obedeciendo otra cosa.
+
+| Lo que hacía «mal» | Lo que se lo ordenaba | Dónde |
+|---|---|---|
+| Daba respuestas de rentabilidad | «las preguntas ANALÍTICAS (rentabilidad, potencial de inversión…) **PRIMERO consultas al experto y das una respuesta de valor**» | `prompt.ts`, la sección a la que remite la regla 7 |
+| Prometía que el especialista da números | «Dices que **quien lo confirma con precisión es el especialista**» | el guion de tres pasos, misma sección |
+| Decía «podría estar en camino» | «díselo **con optimismo** ("Estamos sumando propiedades nuevas constantemente")» + la nota de la herramienta: «el especialista maneja propiedades que aún no se publican» | `prompt.ts` y el `nota` de `resumen_portafolio` |
+| Afirmaba valorización | «y por eso **la valorización ha sido constante**» | dentro de un EJEMPLO de respuesta modelo |
+
+#### Cómo se aplica
+
+1. **Cita la frase del agente.** Literal, no parafraseada.
+2. **Búscala en TODO el contexto que recibe**, no solo en el prompt: descripción
+   de cada herramienta, `nota`/`aviso` de sus resultados, base de conocimiento,
+   y los EJEMPLOS de respuesta. Los ejemplos son lo más imitado y lo menos
+   auditado — el de la valorización sobrevivió a tres barridos porque nadie lee
+   un ejemplo como contenido.
+3. **Si aparece una orden contraria, quítala.** Ese es el arreglo.
+4. **Solo si NO aparece nada** que lo ordene, es el modelo: y entonces la
+   defensa es que el dato no esté en su contexto, no otra prohibición.
+
+#### El corolario, medido
+
+La instrucción que viaja **dentro del resultado de una herramienta**, en el punto
+de uso, se cumple. La misma como regla número N del prompt, a cuatrocientas
+líneas del uso, no. Comprobado en las dos direcciones: la corrección del buscador
+—que iba en el `aviso`— se sostuvo; y el permiso para inventar inventario futuro
+—que iba en el `nota` de `resumen_portafolio`— **le ganó a una prohibición
+explícita del prompt** escrita el mismo día.
+
+> Cuando algo tenga que cumplirse siempre, pregúntate si puede llegar como DATO
+> en el momento, en vez de como REGLA al principio.
+
+Y la vuelta de tuerca: si el modelo no llama a la herramienta, tampoco hay
+resultado donde poner la instrucción. Ver «Por qué Mac a veces no consulta».
+
 ### ⚠ Dos fuentes que coinciden no se verifican entre sí
 
 Seis de los ocho municipios tenían el kilometraje del texto **idéntico** al del
@@ -1529,6 +1573,123 @@ la regla de `prompt.ts:250` dice que uno de los dos no debería funcionar. Si Ma
 obedece a La Rivera, obedecería a la próxima Tobia Chica. O las instrucciones
 operativas se mudan al prompt —donde se revisan— o la regla admite una excepción
 declarada. Hoy la frontera es porosa por accidente, no por diseño.
+
+### Por qué Mac a veces no consulta el catálogo — DIAGNÓSTICO, sin tocar nada
+
+Ante «¿Qué servicios públicos tiene el condominio Palo de Agua?», Mac acierta 2
+de cada 3 veces y en la tercera dice que ese condominio no está en el catálogo.
+Sí está.
+
+**Lo primero, y descarta media hipótesis: las tres muestras eran ENTRADA
+IDÉNTICA.** Mismo texto, `sessionId` nuevo cada vez, sin turnos previos. No es
+la formulación, ni el punto de la conversación, ni el contexto acumulado. Sobre
+la misma entrada, unas veces invoca y otras no.
+
+**Segundo, qué le dice hoy cuándo consultar.** La regla vive en `prompt.ts`,
+sección «buscar_propiedades — LLAMADA INMEDIATA», y está escrita **por
+ejemplos, y todos son de compra**:
+
+> «cuando el cliente mencione cualquier tipo de inmueble, zona, uso o
+> características **de búsqueda**. Ejemplos: "busco una finca", "quiero un
+> lote", "¿tienen casas en La Vega?"…»
+
+«¿Qué servicios públicos tiene X?» no se parece a ninguno. **No es una intención
+de compra: es una pregunta de dato sobre un inmueble con nombre propio.** Cabe
+perfectamente clasificarla como algo que se responde, no como algo que se busca.
+La línea «si el cliente usa un nombre propio pásalo en "texto"» dice CÓMO buscar
+si buscas; no dice que haya que buscar.
+
+**Tercero, el hueco exacto.** La regla 1 dice «NUNCA inventes propiedades…, toda
+información de inmuebles debe venir de la herramienta». Eso prohíbe **afirmar
+que algo existe** sin consultar. Cuando Mac dice «no tengo Palo de Agua» no está
+inventando una propiedad: está afirmando una AUSENCIA. **Y no hay ninguna regla
+que diga que negar también exige consultar.** Un catálogo de 35 fichas cabe
+entero en una consulta; afirmar que algo no está sin mirar es gratis y nadie lo
+prohíbe.
+
+**Por qué no es caso de filtro de salida.** Filtrar «no está en el catálogo»
+bloquearía la frase, pero Mac seguiría sin saber que la propiedad existe: no
+tendría con qué sustituirla. El defecto está en la decisión de invocar, no en lo
+que sale.
+
+**La dirección correcta, para decidir:** invertir la carga. Que consultar sea el
+comportamiento POR DEFECTO ante cualquier mención de una propiedad, un municipio
+o una vereda —se busque o se pregunte—, y responder sin consultar la excepción
+que hay que justificar. Hoy es al revés: consultar se dispara con una lista de
+frases de compra, y todo lo demás cae fuera.
+
+Pendiente de decisión. No se ha tocado.
+
+### Lo que Mac sabe y la ficha no publica — 29 datos recuperables
+
+`scripts/auditar-conocimiento-vs-ficha.ts` compara cada entrada de
+`mac_knowledge` con la ficha de su propiedad. Va en dirección contraria a todo
+el saneamiento: **material ya escrito y verificado que hoy solo alcanza a quien
+conversa con Mac.** En la ficha alcanzaría también a Google y a los motores
+generativos.
+
+**Lote campestre de 500 m²** — el que destapó esto:
+
+| Dato | La ficha dice |
+|---|---|
+| Sector **El Cucharal** | no lo nombra |
+| **8 minutos** en vehículo al Parque Principal | solo «1,3 km» |
+| Agua: **acueducto veredal** | nada |
+| Energía: **Enel-Codensa** | nada |
+| Alcantarillado: **pozo séptico** | nada |
+| Internet: operadores locales o **Starlink**, sujeto a disponibilidad | nada |
+
+**Condominio La Rivera:**
+
+- **15 a 18 minutos** en carro desde el pueblo.
+- Administración: **$400.000 a $450.000** mensuales, calculada por coeficiente.
+- Cada lote con **matrícula inmobiliaria independiente**.
+- **Alcantarillado**, y viabilidad de pozo séptico.
+- **Red eléctrica subterránea**.
+
+**Proyecto Cabañas Top 32:**
+
+- **1,2 km** al parque principal; la Laguna del Tabacal a **7 km**.
+- **Plano topográfico** por lote.
+- Internet por **fibra óptica, antena o Starlink**.
+
+⚠ Ojo al leer la lista en bruto: parte de los 29 son **diferencias de formato**,
+no huecos —la ficha de Cabañas dice «desde $285.000.000» y el conocimiento
+«$285.000.000 COP»—. Los de las tablas de arriba están comprobados uno a uno.
+
+Y una nota que no es dato: la entrada del lote incluye «NO afirmar que Starlink
+está instalado». Es una instrucción, no un hecho, y por tanto tiene el mismo
+problema de frontera que ya se cerró con Tobia Chica. En la ficha eso se escribe
+como lo que es: «sujeto a disponibilidad».
+
+### Datos escritos a mano en el prompt — qué queda y por qué
+
+Tras derivar horario, altitud, clima y distancias a `datos-canonicos.ts`, se
+revisó el prompt entero buscando cifras y hechos. Lo que queda:
+
+**Legítimo, porque no se puede derivar de nada del sistema:**
+
+| Qué | Por qué se queda |
+|---|---|
+| Ley 1673 de 2013, Ley 1581, Ley 1480 | Citas normativas. No cambian, y su fuente es externa |
+| «Leonel Macgiver López Albadán» | Identidad del titular; hay una regla sobre cómo nombrarlo |
+| `https://www.sufincaraiz.com` | Constante del despliegue |
+| Formato `$150.000.000` | Es un formato, no un dato |
+| «20 hectáreas» | Retórica de un ejemplo sobre no encasillar al cliente |
+
+**Corregido en esta pasada, porque era dato a mano Y FALSO:**
+
+- El EJEMPLO de manejo de objeciones decía «Ese clima cálido a solo **hora y
+  media** de Bogotá … y por eso **la valorización ha sido constante**». Una
+  distancia a ojo —son 1 h 14 medidos— y una afirmación de valorización, en el
+  sitio que más se imita. Reescrito con las cifras de la ficha.
+- «Proyecto destacado: **Proyecto La Vega** (lotes para cabañas)». **No existe
+  en el catálogo**: el proyecto de lotes con cabaña es «Cabañas Top 32». El
+  prompt llevaba meses invitando a nombrar algo inexistente. Retirado; los
+  proyectos salen de `buscar_propiedades`, que sabe cuáles hay hoy.
+
+**Regla:** si un dato puede derivarse, se deriva. Y los EJEMPLOS cuentan como
+contenido: son lo que el modelo copia.
 
 ## Lo que espera un DATO que solo tienes tú — lista completa
 
