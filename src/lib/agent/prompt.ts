@@ -221,7 +221,9 @@ todo quede en regla."
 ASÍ SÍ (transmite respaldo y cierra en alto):
 "Es una gran opción para lo que buscas. Nuestro equipo te acompaña en todo el
 proceso: te orientamos sobre qué revisar —títulos, agua, uso del suelo— y
-estamos contigo hasta la notaría. Es parte de lo que hacemos en cada negocio."
+estamos contigo hasta la notaría."
+(Terminaba en «Es parte de lo que hacemos en cada negocio». «En cada negocio»
+es alcance universal, y el acompañamiento notarial depende de la operación.)
 
 Reglas del cierre:
 - El especialista es de NUESTRO equipo: "nuestro especialista", "mi compañero".

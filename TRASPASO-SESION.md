@@ -1123,6 +1123,29 @@ misma: Mac no estaba desobedeciendo. Estaba obedeciendo otra cosa.
 4. **Solo si NO aparece nada** que lo ordene, es el modelo: y entonces la
    defensa es que el dato no esté en su contexto, no otra prohibición.
 
+#### El método se aplica también a las correcciones del método
+
+La quinta ocurrencia fue sobre una corrección hecha **dos turnos antes**. La
+lista de preguntas «ANALÍTICAS (rentabilidad, potencial de inversión, comparar
+predios como inversión)» estaba en **DOS sitios del prompt**. Se corrigió uno.
+El otro siguió vivo, mandando consultar al experto sobre exactamente lo que se
+acababa de establecer que no se puede responder.
+
+Es la doctrina §7 —«si la corrección deja el dato vivo en otro sitio, ese sitio
+entra en el mismo lote»— aplicándose a sí misma. **Una corrección duplicada es
+una corrección a medias**, y se siente como una corrección completa, que es lo
+que la hace peligrosa: se tacha de la lista.
+
+**Regla:** al corregir una instrucción, buscar la instrucción, no el sitio.
+`grep` de la frase entera sobre TODO el contexto del agente antes de dar por
+cerrada la corrección — y volver a hacerlo DESPUÉS, que es cuando se ve si
+quedó una copia.
+
+La sexta llegó por el mismo camino: una entrada de conocimiento prometía que Su
+Finca Raíz «puede suministrar o gestionar» documentos, contradiciendo un límite
+duro del prompt que llevaba semanas escrito. El límite existía; nadie había
+comprobado si algo lo contradecía desde otra superficie.
+
 #### El corolario, medido
 
 La instrucción que viaja **dentro del resultado de una herramienta**, en el punto
@@ -1619,6 +1642,58 @@ que hay que justificar. Hoy es al revés: consultar se dispara con una lista de
 frases de compra, y todo lo demás cae fuera.
 
 Pendiente de decisión. No se ha tocado.
+
+### ⚠⚠ LO QUE SE CALLA — la auditoría inversa
+
+Ciento y pico afirmaciones retiradas por prometer de más. El 22/08 se hizo por
+primera vez la pasada contraria: **qué sabemos y no publicamos**.
+
+**Un hecho material adverso conocido y no publicado es peor que una promesa.**
+La promesa infla una expectativa; el silencio hace que alguien conduzca una hora
+y media para descubrir en el sitio lo que estaba escrito en nuestra propia base.
+Y en Colombia el vendedor responde por los vicios que conocía —saneamiento por
+vicios redhibitorios, Código Civil arts. 1893 y ss.—, así que callarlos no es
+solo mala práctica comercial.
+
+`scripts/auditar-hechos-adversos.ts` · 37 hallazgos sobre 35 fichas.
+
+#### Corregidos: tres afirmaciones nuestras que chocaban con datos nuestros
+
+| Ficha | Decía | Nuestra propia fuente |
+|---|---|---|
+| **Condominio Oeste** | «combina la tranquilidad del campo con **fácil acceso**» | `veredas-data.ts`, vereda Tabacal: «Vía destapada desde La Vega en proceso de pavimentación. **Acceso 4x4 recomendado en temporada de lluvias**» |
+| **La Rivera** | «Vías de acceso en **placa huella** hasta la entrada de tu lote» | el conocimiento: «vía carreteable con **tramos mixtos (asfaltada, placa huella y destapada)**» |
+| **Lote campestre 500 m²** | «Entorno: Natural y con panorámicas» | el conocimiento: «El predio posee un **relieve inclinado**» |
+
+El de La Rivera es la variante fina: **no era falso, era la parte buena de la
+verdad**. Nombrar el mejor tramo y callar el peor es la misma familia de
+defecto.
+
+Los tres se escribieron **sin suavizar**: «el predio tiene relieve inclinado»,
+no «con desniveles naturales»; «vía destapada, 4x4 recomendado en lluvias», no
+«acceso campestre».
+
+#### Silencio, no contradicción — pendiente de decisión
+
+Lo que sigue no es una afirmación falsa: es un hueco. Pero en fincas y lotes son
+las dos primeras preguntas de cualquier comprador.
+
+- **20 fichas no mencionan el acceso vial.** Entre ellas Casa Chicala, Casa Lote
+  San Antonio, La Paloma, El Cural, Buenos Aires, La Ceibita, Senderos del
+  Bosque, Guadu, La Alborada, Bulucaima, La Huerta Golf, Llano Grande.
+- **16 fichas no mencionan servicios públicos.** Entre ellas Casa Chicala, Isaic
+  Laureles, La Fontana I, Casa En Condominio, Condominio Oeste, Lepin, Alameda.
+
+En un lote rural, «no dice si hay agua» y «no hay agua» se leen igual de mal, y
+el comprador asume lo segundo. Publicar «acueducto veredal» o «sin conexión,
+requiere pozo» son las dos igual de útiles; no decir nada, no.
+
+#### Datos estructurales que siguen esperando al titular
+
+- **Finca Agropecuaria**: área de lote de **22 m²** para una finca. Imposible.
+  Falta el folio.
+- **Casa En Condominio** y **Casa Central**: sin área declarada, ni de lote ni
+  construida.
 
 ### Lo que Mac sabe y la ficha no publica — 29 datos recuperables
 
