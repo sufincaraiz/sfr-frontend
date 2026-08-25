@@ -22,6 +22,8 @@ import { prisma } from '@/lib/prisma'
 import { verificarIntegridadVeredas } from '@/lib/veredas-integridad'
 import { verificarIntegridadTipos } from '@/lib/tipos-integridad'
 import { CAMPOS_CONTENIDO } from '@/lib/publicable'
+import { cruzarFichasConVeredas } from '@/lib/cruce-ficha-vereda'
+import { getAllVeredasData } from '@/lib/veredas-data'
 import { primeraCoincidencia } from '@/lib/valor-futuro'
 
 export interface Hallazgo {
@@ -130,6 +132,36 @@ export async function vigilarContenido(): Promise<ResultadoVigilancia> {
     }
   } catch (e) {
     sinComprobar.push(`valor futuro en municipios (${msg(e)})`)
+  }
+
+  // ── 4bis. La ficha contradice a su propia vereda ──────────────────────────
+  // Condominio Oeste decía «fácil acceso» y su vereda «vía destapada, 4x4 en
+  // lluvias». Ninguna lectura de la ficha lo destapa: solo el cruce. Es barato
+  // —una consulta y una comparación en memoria— así que entra en la vigilancia.
+  try {
+    const fichas = await prisma.property.findMany({
+      where: { status: 'available' },
+      select: { slug: true, short_description: true, description: true, vereda: { select: { slug: true, name: true } } },
+    })
+    const { discrepancias, huecosDerivables } = cruzarFichasConVeredas(fichas, getAllVeredasData())
+    comprobado.push('ficha vs vereda')
+    for (const d of discrepancias) {
+      hallazgos.push({
+        clase: 'ficha contradice a su vereda',
+        detalle: `${d.slug}: dice «${d.afirma}» y la vereda ${d.vereda} dice «${d.peroLaVereda}»`,
+      })
+    }
+    // El hueco derivable no es un defecto publicado, pero sí un dato que
+    // tenemos y no damos. Aparece solo: basta asignar una vereda a una ficha
+    // nueva para que salte.
+    for (const h of huecosDerivables) {
+      hallazgos.push({
+        clase: 'acceso derivable sin publicar',
+        detalle: `${h.slug}: la vereda ${h.vereda} tiene acceso publicado y la ficha no lo dice`,
+      })
+    }
+  } catch (e) {
+    sinComprobar.push(`ficha vs vereda (${msg(e)})`)
   }
 
   try {

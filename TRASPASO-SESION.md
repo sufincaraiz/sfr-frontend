@@ -990,9 +990,9 @@ El patrón buscaba `2 horas de Bogotá` en una línea. **Para frases de prosa,
 barrer con `grep -z` (multilínea) además del barrido por línea**, o buscar solo
 el fragmento más corto e inspeccionar el contexto a mano.
 
-### ⚠ LAS NUEVE FORMAS DE ESCONDERSE
+### ⚠ LAS ONCE FORMAS DE ESCONDERSE
 
-Nueve barridos, nueve maneras distintas de que una afirmación sobreviva. **Nunca
+Once maneras distintas de que una afirmación sobreviva. **Nunca
 por descuido: por el método.** Cada una se encontró después de dar por limpio lo
 que el barrido anterior no podía ver.
 
@@ -1007,6 +1007,8 @@ que el barrido anterior no podía ver.
 | 7 | una lista de adjetivos | **adjetivos fuera de la lista** | Quebradanegra: `virgen`, `decente`, `auténtico`, `incipiente` |
 | 8 | `alta valorización` | **otro adjetivo, misma afirmación** | «**mayor** valorización» ×4 |
 | 9 | afirmaciones sobre el inmueble | **el sujeto se muda al municipio** | ver abajo |
+| 10 | contenido de la sección | **un EJEMPLO de respuesta modelo** | «y por eso la valorización ha sido constante», en el diálogo que el modelo copia |
+| 11 | que la afirmación sea falsa | **que sea CIERTA, pero solo la mitad buena** | «vías en placa huella» cuando el acceso es asfaltado + placa huella + destapado |
 
 #### La novena, con detalle — es la más difícil de cazar
 
@@ -1024,13 +1026,53 @@ Dónde vive esta forma con más naturalidad, y por eso hay que mirarla ahí:
 `veredas-data.ts` y los artículos del blog. Confirmado el 22/08/2026: **la
 novena forma está viva en los 8 municipios y en 12 veredas** (ver §10).
 
-#### Las reglas que salen de las nueve
+#### Las reglas que salen de todas ellas
 
 - **Multilínea siempre** (`grep -z` o equivalente) para cualquier frase de prosa.
   Un patrón por línea no ve lo que el formateador partió.
 - **Insensible a mayúsculas siempre** (`-i`). Sin excepción.
 - **El contenido de base entra en el barrido.** Descripciones de municipio, de
   propiedad y fichas de MacKnowledge son texto publicado.
+
+#### La undécima — LA PARTE BUENA DE LA VERDAD
+
+La más difícil de todas, porque **es cierta**.
+
+> «🛣️ Vías de acceso en **placa huella** hasta la entrada de tu lote.»
+
+Verdad comprobable. Hay placa huella. Lo que no dice es que el acceso es
+«carreteable con tramos mixtos: **asfaltada, placa huella y destapada**». La
+ficha eligió el tramo bueno de un hecho mixto y lo presentó como el hecho.
+
+**No tiene marcador léxico.** Pasa cualquier verificación de veracidad —cada
+palabra es cierta—, pasa los barridos de superlativos, de cifras y de
+valorización. Y engaña igual: quien lee «placa huella» no lleva 4x4.
+
+Solo se detecta **cruzando la afirmación con lo que sabemos por otra fuente**.
+Por eso su defensa no es un patrón, es el cruce ficha ↔ vereda (§10) y la
+lectura del conocimiento contra la ficha.
+
+**Regla operativa:** cuando una ficha describa una característica que VARÍA por
+tramos o por zonas —acceso, servicios, topografía, clima— debe describir el
+**rango completo**, no el extremo favorable. «Asfaltada, placa huella y
+destapada» es la respuesta correcta; «placa huella» es la undécima forma.
+
+Corolario para las correcciones: al publicar un dato derivado hay que aplicarse
+la misma regla. El acceso de una vereda se publica como acceso **a la vereda**,
+diciendo que el tramo final se confirma en la visita — escribir «vía
+pavimentada» a secas sería cometer la undécima forma en el acto de corregirla.
+
+#### Reportar lo que queda fuera del alcance es parte del trabajo
+
+Las tres correcciones de hechos adversos salieron de aquí: se reportó el relieve
+inclinado como dato que faltaba **aunque estuviera fuera del alcance aprobado**,
+el titular preguntó por él, y esa pregunta abrió la auditoría inversa entera —la
+que más protege al comprador y la que nunca se había hecho.
+
+**Regla:** cuando aparezca algo relevante fuera del alcance, se reporta y se
+sigue con lo aprobado. No se corrige por cuenta propia, pero tampoco se calla
+para no salirse del guion. Callarlo hace que la decisión de ignorarlo la tome
+quien no puede tomarla.
 
 ### Las SEIS SUPERFICIES — dos enumeraciones, y las dos hacen falta
 
@@ -1088,8 +1130,9 @@ palabra con la primera: «proyección inmobiliaria», «patrimonio con gran pote
 de crecimiento», «valor comercial estimado», «excelente decisión de inversión»,
 «inversión segura», «incalculable valor», «negocio rentable».
 
-**No hay una décima palabra que buscar.** Cuando aparezca la décima forma, será
-otra vez una manera de decirlo que a nadie se le ocurrió listar.
+**No hay una palabra que buscar.** Las dos formas siguientes lo confirmaron: la
+décima vivía en un EJEMPLO —que nadie lee como contenido— y la undécima es una
+afirmación CIERTA. Ninguna de las dos tiene marcador léxico.
 
 **Un conteo de adjetivos por lista mide cuántos adjetivos DE LA LISTA hay, no
 cuánto registro publicitario tiene un texto.** Para eso hay que leerlo.
