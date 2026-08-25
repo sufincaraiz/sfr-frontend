@@ -182,14 +182,44 @@ export default async function PropiedadDetallePage(
   const clima      = feat(features, 'clima');
   const altitud    = feat(features, 'altitud');
   const distParque = feat(features, 'distancia_parque');
+  // Acceso vial. `acceso` es texto libre —«vía destapada, 4x4 en lluvias»— y es
+  // lo que se captura desde /admin/completar-fichas. `via_pavimentada` es el
+  // booleano viejo: se conserva como respaldo para las 7 fichas que ya lo
+  // tienen, pero el texto libre manda porque dice el rango completo y el
+  // booleano solo dice sí o no (undécima forma: la parte buena de la verdad).
+  const acceso = feat(features, 'acceso')
+    ?? (feat(features, 'via_pavimentada') === 'si' ? 'Vía pavimentada' : null);
   const descripcion = feat(features, 'descripcion') ?? p.short_description ?? '';
 
-  // Servicios públicos
+  // ── Servicios públicos ────────────────────────────────────────────────────
+  // Se guardan de DOS maneras, y durante meses solo se pintó una:
+  //   · claves sueltas (`agua`, `energia`, `gas`…), 35 filas en total;
+  //   · clave genérica `servicio`, una fila por servicio, 84 filas.
+  //
+  // `serviciosKeys` era una lista a mano y NO incluía `servicio`, así que 84
+  // datos capturados desde el admin no llegaban al comprador. Catorce de las
+  // quince fichas que la auditoría marcó como «no menciona servicios públicos»
+  // SÍ tenían el dato guardado: faltaba pintarlo.
+  //
+  // Mismo defecto que TIPO_LINKS y que la condición de municipio publicable:
+  // una lista escrita a mano que se desincroniza de lo que el sistema produce.
+  // Aquí el coste no fue un enlace roto — fue que la ficha pareciera no tener
+  // agua.
   const serviciosKeys = ['agua', 'energia', 'gas', 'internet', 'alcantarillado', 'telefono', 'acueducto'];
-  const serviciosActivos = serviciosKeys.filter(k => {
-    const v = feat(features, k);
-    return v && v !== 'no' && v !== 'false' && v !== '0';
-  });
+  const sinTilde = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  const serviciosDeClave = serviciosKeys
+    .filter(k => {
+      const v = feat(features, k);
+      return v && v !== 'no' && v !== 'false' && v !== '0';
+    })
+    .map(k => SERVICIOS_LABELS[k] ?? k);
+  const serviciosGenericos = features
+    .filter(f => f.feature_key === 'servicio' && f.feature_value.trim())
+    .map(f => f.feature_value.trim());
+  // Sin duplicados: «Acueducto municipal» por clave genérica y `acueducto` por
+  // clave suelta son el mismo servicio.
+  const serviciosActivos = [...serviciosDeClave, ...serviciosGenericos]
+    .filter((v, i, todos) => todos.findIndex(x => sinTilde(x) === sinTilde(v)) === i);
 
   // Tour 360 — preferimos la columna dedicada; fallback a media tipo tour360
   const tourUrl = p.virtual_tour_url ?? p.media?.find(m => m.type === 'tour360' && m.tour360_embed_url)?.tour360_embed_url ?? null;
@@ -380,6 +410,11 @@ export default async function PropiedadDetallePage(
                   ...(clima      ? [{ etiqueta: 'Clima',              valor: clima }]      : []),
                   ...(altitud    ? [{ etiqueta: 'Altitud',            valor: altitud }]    : []),
                   ...(distParque ? [{ etiqueta: 'Al parque principal', valor: distParque }] : []),
+                  // El acceso no se pintaba en ninguna parte, y hay 7 fichas con
+                  // `via_pavimentada` guardado que nunca se vio. En un predio
+                  // rural el acceso es de las dos primeras preguntas: no
+                  // decirlo se lee como que es malo.
+                  ...(acceso ? [{ etiqueta: 'Acceso', valor: acceso }] : []),
                 ]}
               />
             </section>
@@ -399,13 +434,13 @@ export default async function PropiedadDetallePage(
               <section style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '1.5rem 1.75rem' }}>
                 <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.1rem', marginBottom: '1rem' }}>Servicios públicos</h2>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                  {serviciosActivos.map(k => (
-                    <span key={k} style={{
+                  {serviciosActivos.map(etiqueta => (
+                    <span key={etiqueta} style={{
                       background: '#F0FDF4', color: '#15803D', border: '1.5px solid #BBF7D0',
                       borderRadius: 20, padding: '5px 14px', fontSize: '0.82rem', fontWeight: 700,
                       display: 'flex', alignItems: 'center', gap: 5,
                     }}>
-                      ✓ {SERVICIOS_LABELS[k] ?? k}
+                      ✓ {etiqueta}
                     </span>
                   ))}
                 </div>

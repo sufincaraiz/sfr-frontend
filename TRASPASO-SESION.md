@@ -1880,3 +1880,114 @@ nombre que estuvo publicada unas horas.
 
 **Falta la primera ronda real: 11 consultas × 6 motores.** Es lo único que va a
 decir si todo este trabajo se nota.
+
+---
+
+# 11. ESTADO FINAL DEL CICLO DE VERACIDAD — 22/08/2026
+
+Cierre formal del ciclo que empezó el 20/08. Esta sección es el resumen
+completo: si solo se lee una parte del documento, que sea esta.
+
+## Las cifras
+
+| | |
+|---|---|
+| **Afirmaciones retiradas o reencuadradas** | **≈ 220** |
+| Formas de esconderse catalogadas | **11** |
+| Guardas activas | **7** + 1 vigilancia diaria |
+| Superficies auditadas | 6 de 6 (una parcialmente) |
+| Defectos de producto corregidos | 4 |
+
+Desglose de las ≈220:
+
+| Lote | Cuántas |
+|---|---|
+| Sesión del 20/08 (cifras, gratuidad, alcance, rankings) | ~48 |
+| Fichas de propiedad — valor futuro | 33 |
+| `mac_knowledge` | 3 + 1 entrada entera borrada |
+| Municipios — `inversion` y FAQ | 40 |
+| Veredas — campo `valorizacion`, ventajas, FAQ | 27 |
+| Guía de inversión y blog | 14 |
+| Prompt de Mac y `expert.ts` | ~20 |
+| Hechos adversos: afirmaciones que contradecían datos propios | 3 |
+| Instrucciones migradas del conocimiento al prompt | 17 |
+
+## Las once formas de esconderse
+
+| # | Se escondió en | Ejemplo real |
+|---|---|---|
+| 1 | — (el primer barrido) | 15 porcentajes de rendimiento |
+| 2 | **capitalización** | «Blindaje Jurídico», con B mayúscula |
+| 3 | **ausencia de verbo** | «Liderando»; «la región de mayor valorización» |
+| 4 | **salto de línea** | `todos a menos de 2 horas\nde Bogotá` |
+| 5 | **la base de datos** | 44 textos que ningún `grep` alcanza |
+| 6 | **exigir un dígito en el patrón** | «Alta Rentabilidad», sin cifra |
+| 7 | **adjetivos fuera de la lista** | Quebradanegra: `virgen`, `decente`, `incipiente` |
+| 8 | **otro adjetivo, misma afirmación** | «**mayor** valorización» ×4 |
+| 9 | **el sujeto se muda al municipio** | «La Vega se ha consolidado… por su rápida valorización» |
+| 10 | **un EJEMPLO de respuesta modelo** | «y por eso la valorización ha sido constante» |
+| 11 | **ser CIERTA, pero solo la mitad buena** | «vías en placa huella», siendo asfaltado + placa huella + destapado |
+
+Las tres últimas no tienen marcador léxico. La 9 cambia el sujeto gramatical, la
+10 vive donde nadie audita, y la 11 **es verdad**.
+
+## Las guardas, y qué impide cada una
+
+| Guarda | Impide | Dónde corre |
+|---|---|---|
+| `veredas-integridad.ts` | Que `veredas-data.ts` y la tabla diverjan | dentro de `next build` |
+| `tipos-integridad.ts` | Que el catálogo de tipos y `Property.type` diverjan | dentro de `next build` |
+| `publicable.ts` (`satisfies`) | Que las tres copias del criterio de municipio publicable se desincronicen | `tsc` |
+| `enlaces.ts` | El rótulo de navegación escrito a mano | `tsc` |
+| `verificar-enlaces.mjs` | Enlaces a rutas inexistentes y a filtros sin inventario | **último paso de `npm run build`** — también en Vercel |
+| `verificar-build.mjs` | Que un `EXIT=0` esconda un P2024 o un fallo de prerender | local, antes de empujar |
+| `prompt.ts` + `expert.ts` | Que Mac afirme valorización, rentabilidad o valor comercial **aunque la ficha lo diga** | en cada conversación |
+| **`/api/cron/vigilancia`** (13:00) | La degradación **entre despliegues**: integridad, municipios incompletos, valor futuro reintroducido desde el admin, instrucciones en el conocimiento, y **ficha que contradice a su vereda** | diario, avisa por WhatsApp y **no bloquea** |
+
+Las que consultan la base distinguen «los datos divergen» de «no llego a la
+base». Cualquier guarda nueva que consulte la base **tiene** que hacerlo, o
+tumbará despliegues por caídas de Railway.
+
+## Superficies: qué quedó auditado y qué no
+
+| Superficie | Estado |
+|---|---|
+| `properties` — 5 campos × 36 fichas | ✅ valor futuro, gratuidad y hechos adversos |
+| `municipalities` — `inversion`/`antes_de_comprar` + FAQ + `descripcion_seo` | ✅ |
+| `municipalities` — **`turismo` e `historia`** | ⬜ **~27.000 caracteres SIN AUDITAR** |
+| `veredas-data.ts` | ✅ |
+| `mac_knowledge` | ✅ 0 persuasión, 0 instrucciones |
+| Prompt de Mac y `expert.ts`, **ejemplos incluidos** | ✅ |
+| `articles` — blog | ✅ los tres artículos |
+| `page_content`, `businesses` | ✅ (sin hallazgos) |
+| `llms.txt`, JSON-LD, `public/` | ✅ en la sesión del 20/08 |
+
+**Lo que falta es una cosa concreta y está medida:** `turismo` e `historia` de
+los ocho municipios, ~27.000 caracteres. De ahí salió «más de 50.000 visitantes
+mensuales» de Villeta y «uno de los destinos turísticos más atractivos de
+Cundinamarca» de La Vega, las dos encontradas de refilón. **No se ha leído
+entero.**
+
+## Los cuatro defectos de producto
+
+1. **El buscador de Mac** decía que propiedades publicadas no existían. Tres
+   causas encadenadas: `contains` de frase completa, tildes, y términos cortos
+   dentro de otras palabras. 24/24 casos.
+2. **`resumen_portafolio` contaba mal**: el `_count` por municipio no filtraba
+   por `status`, así que Mac decía «34 en La Vega» y «35 en total».
+3. **El clima de Mac no era el del sitio** — 22-28 °C contra 18-26. Y el
+   horario respondía «24/7» habiendo un horario de sede publicado.
+4. **84 servicios capturados y nunca pintados.** `serviciosKeys` era una lista
+   a mano que no incluía la clave `servicio`, así que catorce fichas parecían no
+   tener agua teniendo el dato guardado. El acceso, ídem: no se pintaba nunca.
+
+## Lo que sigue esperando dato del titular
+
+- **14 fichas sin acceso vial** y **1 sin servicios** (Senderos del Bosque):
+  se llenan en `/admin/completar-fichas`, con casillas para los servicios
+  frecuentes y campo libre. La lista **se deriva**: al llenarlas desaparecen, y
+  una ficha nueva sin el dato aparece sola.
+- **Finca Agropecuaria**: 22 m² de lote para una finca. Falta el folio.
+- **Casa En Condominio** y **Casa Central**: sin área declarada.
+- Y la lista larga de §10.
+
