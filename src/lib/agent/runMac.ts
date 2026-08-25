@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
 import { MAC_SYSTEM_PROMPT } from '@/lib/agent/prompt'
+import { datosCanonicos } from '@/lib/agent/datos-canonicos'
 import { bloqueConocimiento } from '@/lib/agent/knowledge'
 import { MAC_TOOLS, executeTool, type ToolInput } from '@/lib/agent/tools'
 import { consultarExperto, MAX_EXPERT_CALLS } from '@/lib/agent/expert'
@@ -119,12 +120,17 @@ export async function runMac(
   }
   // Base de conocimiento editable desde /admin/mac (promociones, FAQ, políticas)
   const conocimiento = await bloqueConocimiento()
+  // Hechos verificables derivados de las mismas fuentes que publica el sitio
+  // (horario de sede, altitud, clima, distancias medidas). El prompt tenía el
+  // clima de La Vega escrito a mano y NO coincidía con la ficha: Mac decía
+  // 22-28 grados y el sitio 18-26. Lo que se puede derivar no se escribe.
+  const canonicos = await datosCanonicos()
   // Prompt caching: el bloque ESTÁTICO (prompt + conocimiento, grande y estable)
   // se cachea; el contexto dinámico va aparte SIN cache porque cambia cada turno.
   // cache_control marca el fin del prefijo cacheado, así que va en el bloque
   // estable. (Haiku necesita ~2048+ tokens para activar el caché; si no llega,
   // simplemente no cachea, no rompe nada.)
-  const systemStatic  = `${MAC_SYSTEM_PROMPT}${conocimiento}`
+  const systemStatic  = `${MAC_SYSTEM_PROMPT}${canonicos}${conocimiento}`
   const systemDynamic = `\n\n# Contexto de sesión\n${contextLines.join('\n')}`
   const systemBlocks: TextBlockParam[] = [
     { type: 'text', text: systemStatic, cache_control: { type: 'ephemeral' } },

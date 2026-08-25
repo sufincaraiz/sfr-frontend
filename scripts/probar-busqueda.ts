@@ -22,7 +22,7 @@
  */
 
 import { PrismaClient } from '@prisma/client'
-import { terminos, coincideTexto, puntuar } from '../src/lib/agent/busqueda-texto.ts'
+import { terminos, coincideTexto, puntuar, filtrarPorTerminos } from '../src/lib/agent/busqueda-texto.ts'
 
 const prisma = new PrismaClient()
 
@@ -84,7 +84,32 @@ for (const consulta of SIN_TERMINOS) {
   console.log(`${ok ? '✓' : '❌'} sin términos: "${consulta}"`.padEnd(66) + (ok ? '' : `← quedó [${terms.join(' ')}]`))
 }
 
-const total = CASOS.length + SIN_TERMINOS.length
+// ── Relajación: frases naturales con palabras de sobra ──────────────────────
+// «servicios públicos del condominio Palo de Agua» devolvía CERO cuando se
+// exigían TODOS los términos —la ficha no dice literalmente «servicios
+// públicos»— y Mac volvió a responder que ese condominio no existe. El cliente
+// no escribe palabras clave: escribe una frase, y lo que sobra no puede
+// dejarlo sin respuesta.
+console.log('\n── Frases naturales (relajación progresiva) ────────────────')
+const NATURALES: Array<[string, string]> = [
+  ['¿Qué servicios públicos tiene el condominio Palo de Agua?', 'palo-de-agua'],
+  ['quiero saber del proyecto Senderos del Bosque en La Vega', 'senderos-del-bosque'],
+  ['me interesa la finca La Ceibita que está en Guacamayas', 'ceibita'],
+  ['información del lote de Albán sobre la vía principal', 'alban'],
+  ['busco una casa con piscina en condominio cerrado en La Vega', 'condominio'],
+]
+for (const [consulta, esperado] of NATURALES) {
+  const terms = terminos(consulta)
+  const r = filtrarPorTerminos(propiedades, terms)
+  const ok = !!r[0]?.slug.includes(esperado)
+  if (!ok) fallos++
+  console.log(
+    `${ok ? '✓' : '❌'} "${consulta.slice(0, 48)}"`.padEnd(56) +
+    `${r.length} result.` + (ok ? '' : `  ← 1ª: ${r[0]?.slug ?? '(ninguna)'}`)
+  )
+}
+
+const total = CASOS.length + SIN_TERMINOS.length + NATURALES.length
 console.log(`\n${total - fallos}/${total} casos correctos sobre ${propiedades.length} fichas disponibles.`)
 await prisma.$disconnect()
 if (fallos) process.exit(1)

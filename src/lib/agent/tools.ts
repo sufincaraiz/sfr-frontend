@@ -4,7 +4,7 @@ import { SITE_URL } from '@/lib/site'
 import { consultarExperto } from '@/lib/agent/expert'
 import { enviarAlertaLeadWhatsApp } from '@/lib/whatsapp'
 import {
-  norm, terminos, coincideTexto, puntuar, tiposDesde, TIPO_SINONIMOS, type Puntuable,
+  norm, terminos, filtrarPorTerminos, puntuar, tiposDesde, TIPO_SINONIMOS, type Puntuable,
 } from './busqueda-texto'
 import type { Tool, ToolResultBlockParam } from '@anthropic-ai/sdk/resources/messages'
 import type { LeadQualification } from '@prisma/client'
@@ -204,7 +204,7 @@ async function buscarPropiedades(input: BuscarInput) {
 
   // ── Criterios, cada uno como filtro independiente y descartable ────────────
   // Un criterio filtra en la base (`where`) o en memoria (`filtro`). El de texto
-  // es de los segundos: ver `coincideTexto`. Los dos se relajan igual.
+  // es de los segundos: ver `filtrarPorTerminos`. Los dos se relajan igual.
   const criterios: Array<{
     nombre: string
     where?: Record<string, unknown>
@@ -254,7 +254,11 @@ async function buscarPropiedades(input: BuscarInput) {
   // TODOS los términos deben aparecer; cada uno puede caer en cualquier campo.
   const terms = [...new Set(libre.flatMap(terminos))]
   if (terms.length) {
-    criterios.push({ nombre: `búsqueda "${terms.join(' ')}"`, filtro: p => coincideTexto(p, terms) })
+    // Criterio MARCADOR: su filtro es inerte a propósito. El texto no se aplica
+    // aquí sino en `filtrarPorTerminos`, que relaja solo. El criterio existe
+    // para que la cascada pueda descartarlo —y decírselo a Mac en el aviso— si
+    // ni siquiera un término aparece en ninguna ficha.
+    criterios.push({ nombre: `búsqueda "${terms.join(' ')}"`, filtro: () => true })
   }
 
   if (input.precioMin !== undefined || input.precioMax !== undefined) {
@@ -289,14 +293,28 @@ async function buscarPropiedades(input: BuscarInput) {
       orderBy,
       take: filtros.length ? 200 : limite,
     })
-    const filtrados = filtros.length ? found.filter(p => filtros.every(f => f(p))) : found
+    // El de texto se aplica aparte, con relajación progresiva; los demás
+    // filtros en memoria (si algún día hay otros) son estrictos.
+    const otrosFiltros = activos.flatMap(c => (c.filtro && !c.nombre.startsWith('búsqueda') ? [c.filtro] : []))
+    const otros = otrosFiltros.length ? found.filter(p => otrosFiltros.every(f => f(p))) : found
 
-    // Con el texto activo se ordena por relevancia: la ficha que SE LLAMA como
-    // lo que pidió el cliente sale primera, no la más reciente.
+    // El texto NO es un filtro más: exige todos sus términos y, si eso deja la
+    // lista vacía, va soltando el mínimo. Ver `filtrarPorTerminos`. Así una
+    // palabra de sobra en la frase del cliente no lo deja sin respuesta, y el
+    // orden por relevancia mantiene primera a la ficha que se llama como lo que
+    // pidió.
     const porTexto = terms.length > 0 && activos.some(c => c.nombre.startsWith('búsqueda'))
-    const ordenados = porTexto
-      ? [...filtrados].sort((a, b) => puntuar(b, terms) - puntuar(a, terms)).slice(0, limite)
-      : filtrados.slice(0, limite)
+    const ordenados = (porTexto ? filtrarPorTerminos(otros, terms) : otros).slice(0, limite)
+
+    // Traza de la búsqueda. Sin esto no se puede saber si Mac respondió mal
+    // porque la herramienta falló o porque no la llamó con lo que el cliente
+    // dijo — y esa diferencia decide dónde está el defecto. Barata: una línea
+    // por búsqueda.
+    console.log(
+      `[Mac:buscar] entrada=${JSON.stringify({ municipio: input.municipio, tipo: input.tipo, texto: input.texto })} ` +
+      `términos=[${terms.join(' ')}] candidatos=${found.length} → ${ordenados.length}` +
+      (descartados.length ? ` (descartados: ${descartados.join(', ')})` : ''),
+    )
 
     if (ordenados.length > 0) {
       const avisos: string[] = []
@@ -378,8 +396,12 @@ async function resumenPortafolio() {
     prisma.property.groupBy({ by: ['type'], where, _count: { type: true } }),
     prisma.property.aggregate({ where, _min: { price_cop: true }, _max: { price_cop: true } }),
     prisma.property.findMany({ where, include: PROP_INCLUDE, orderBy: { updated_at: 'desc' }, take: 5 }),
+    // El _count DEBE llevar el mismo filtro que el resto: sin él contaba
+    // TODAS las propiedades del municipio, vendidas incluidas. La Vega tiene
+    // 33 disponibles y una vendida, así que Mac decía «34 en La Vega» y luego
+    // «35 en total» — dos cifras del mismo servidor que no cuadran entre sí.
     prisma.municipality.findMany({
-      select: { name: true, _count: { select: { properties: true } } },
+      select: { name: true, _count: { select: { properties: { where } } } },
       orderBy: { name: 'asc' },
     }),
   ])
@@ -393,7 +415,12 @@ async function resumenPortafolio() {
     precioDesde: cop(agregados._min.price_cop),
     precioHasta: cop(agregados._max.price_cop),
     masRecientes: recientes.map(formatProperty),
-    nota: 'Estas son TODAS las propiedades publicadas en línea. "masRecientes" son las 5 últimas actualizadas, sin importar la fecha: no digas "de esta semana" ni inventes cuándo se publicaron. "nueva: true" significa cargada o actualizada en los últimos 30 días. Si el cliente busca algo que no está aquí, escala con solicitar_asesor (motivo PROPIEDAD_FUERA_CATALOGO): el especialista maneja propiedades que aún no se publican.',
+    // La nota decía «el especialista maneja propiedades que aún no se
+    // publican». De ahí salían las respuestas en las que Mac afirmaba que un
+    // inmueble «podría estar en camino» o «ser un proyecto aún no publicado»:
+    // no lo inventaba de la nada, lo leía AQUÍ. Una prohibición en el prompt no
+    // gana contra un permiso en el resultado de la herramienta.
+    nota: 'Estas son TODAS las propiedades publicadas en línea, y las únicas que puedes mencionar. "masRecientes" son las 5 últimas actualizadas, sin importar la fecha: no digas "de esta semana" ni inventes cuándo se publicaron. "nueva: true" significa cargada o actualizada en los últimos 30 días. Si el cliente busca algo que no está aquí, escala con solicitar_asesor (motivo PROPIEDAD_FUERA_CATALOGO) y dile que le confirmamos: NO afirmes que existe fuera del catálogo, que está por publicarse, que viene en camino ni que el especialista tiene otras. No sabes si existe.',
   }
 }
 
@@ -629,7 +656,48 @@ async function crearOActualizarLead(input: LeadInput, conversationId: string) {
   return { ok: true, leadId: lead.id, action: 'created' }
 }
 
+/**
+ * ÚLTIMA OPORTUNIDAD antes de decirle a un cliente que algo no existe.
+ *
+ * La herramienta de búsqueda encuentra «Palo de Agua» sin problema. Lo que
+ * falla, de forma intermitente, es que Mac la llame con el nombre propio que
+ * dijo el cliente: en una de cada tres conversaciones escalaba directamente y
+ * el cliente se iba creyendo que no tenemos un condominio publicado.
+ *
+ * Una regla más en el prompt no arregla eso —ya está escrita y se cumple dos de
+ * cada tres veces—. Esto sí: cuando Mac va a escalar por PROPIEDAD_FUERA_CATALOGO,
+ * el SERVIDOR busca en el resumen antes de dejarlo pasar, y si la propiedad
+ * existe se lo devuelve como resultado de herramienta, que es donde las
+ * instrucciones sí se cumplen.
+ */
+async function rescatarDelCatalogo(resumen: string) {
+  const terms = terminos(resumen)
+  if (terms.length === 0) return null
+  const fichas = await prisma.property.findMany({ where: { status: 'available' }, include: PROP_INCLUDE })
+  const hit = filtrarPorTerminos(fichas, terms)[0]
+  // Un solo término suelto («servicios», «lote») coincide con media base: solo
+  // se rescata cuando el nombre propio pesa en el TÍTULO.
+  if (!hit || puntuar(hit, terms) < 5) return null
+  return hit
+}
+
 async function solicitarAsesor(input: SolicitarInput, conversationId: string) {
+  if (input.motivo === 'PROPIEDAD_FUERA_CATALOGO') {
+    const rescatada = await rescatarDelCatalogo(input.resumen)
+    if (rescatada) {
+      console.log(`[Mac → Asesor] Escalación EVITADA: «${rescatada.title}» sí está en el catálogo | Conv: ${conversationId}`)
+      return {
+        ok: false,
+        noEscalado: true,
+        propiedad: formatProperty(rescatada),
+        instruccion:
+          'ALTO: esa propiedad SÍ está publicada, es la que va en "propiedad". No se escaló nada. ' +
+          'NO le digas al cliente que no la tienes: respóndele con estos datos. Si necesitas la ficha ' +
+          'completa, llama a detalle_propiedad con su slug.',
+      }
+    }
+  }
+
   const conv = await prisma.conversation.findUnique({
     where: { id: conversationId },
     include: { lead: true },

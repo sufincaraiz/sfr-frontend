@@ -32,14 +32,29 @@
  * ---------------------------------------------------------------------------
  * POR QUÉ NO ES EL SCRIPT `build`
  *
- * Vercel ejecuta `npm run build`. Si este chequeo fuera ese script, un hipo de
- * Railway durante un despliegue lo tumbaría. La disciplina es local: se corre
- * antes de empujar, que es cuando aún se puede arreglar.
+ * Por dos razones distintas, y conviene no confundirlas:
+ *
+ *  1. RECURSIÓN. Este script LANZA `npm run build` y analiza su log. Si él
+ *     mismo fuera ese script, se llamaría a sí mismo.
+ *  2. Su valor está en comparar contra el build anterior (`.build-historial`),
+ *     que es una disciplina local: se corre antes de empujar, cuando aún se
+ *     puede arreglar.
+ *
+ * NO por miedo a Railway. Esa preocupación era real y está resuelta dentro de
+ * cada guarda: `veredas-integridad` y `tipos-integridad` devuelven ok:true si
+ * no alcanzan la base, y `verificar-enlaces` omite su clase (b). Distinguen
+ * «los datos divergen» de «no llego a la base», que es lo que permite que una
+ * guarda viva dentro del despliegue sin tumbarlo por una caída de
+ * infraestructura. Cualquier guarda nueva que consulte la base TIENE que
+ * respetar esa distinción.
+ *
+ * Desde el 22/08/2026 `verificar-enlaces.mjs` SÍ es el último paso de
+ * `npm run build`, así que corre también en Vercel.
  *
  *     npm run build:verificado
  */
 
-import { spawn, spawnSync } from 'node:child_process'
+import { spawn } from 'node:child_process'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
 // FUERA de .next: el propio build borra ese directorio, así que el historial
@@ -102,7 +117,11 @@ hijo.on('close', codigo => {
   const graves = PATRONES.filter(p => p.grave && conteo[p.clave] > 0)
 
   if (codigo !== 0) {
-    console.log('  → next build falló por su cuenta.')
+    // `npm run build` son ahora DOS pasos: `next build` y, detrás,
+    // `verificar-enlaces.mjs`. No se puede afirmar cuál de los dos falló sin
+    // mirar la salida, y afirmarlo mal manda a buscar el fallo donde no está.
+    console.log('  → `npm run build` falló: mira arriba si fue next build o la')
+    console.log('    guarda de enlaces internos.')
     console.log('═════════════════════════════════════════════════════════════\n')
     process.exit(codigo ?? 1)
   }
@@ -120,12 +139,10 @@ hijo.on('close', codigo => {
     process.exit(1)
   }
 
-  // Guarda de enlaces internos: recorre el HTML recién generado y comprueba
-  // que cada destino existe Y tiene contenido. Va DESPUÉS del build porque
-  // analiza su resultado. Ver scripts/verificar-enlaces.mjs.
-  const enlaces = spawnSync(process.execPath, ['scripts/verificar-enlaces.mjs'], { stdio: 'inherit' })
-  if (enlaces.status !== 0) process.exit(enlaces.status ?? 1)
-
+  // La guarda de enlaces internos ya NO se lanza aquí: desde el 22/08/2026 es
+  // el último paso de `npm run build`, así que corre también en Vercel y ya
+  // se ejecutó dentro del hijo de arriba. Lanzarla otra vez sería repetir un
+  // recorrido de 118 páginas para obtener el mismo resultado.
   console.log('  → sano.')
   console.log('═════════════════════════════════════════════════════════════\n')
 })

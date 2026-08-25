@@ -131,10 +131,41 @@ function camposDe(p: Puntuable) {
  * en memoria es exacto y barato; en la base habría que instalar `unaccent`.
  */
 export function coincideTexto(p: Puntuable, terms: string[]): boolean {
+  return terminosPresentes(p, terms) === terms.length
+}
+
+/** Cuántos de los términos aparecen en la ficha. */
+export function terminosPresentes(p: Puntuable, terms: string[]): number {
   const c = camposDe(p)
-  return terms.every(t =>
+  return terms.filter(t =>
     contieneTermino(c.titulo, t) || contieneTermino(c.vrd, t) ||
-    contieneTermino(c.muni, t)   || contieneTermino(c.cuerpo, t))
+    contieneTermino(c.muni, t)   || contieneTermino(c.cuerpo, t)).length
+}
+
+/**
+ * Filtra exigiendo TODOS los términos y, si eso no devuelve nada, va soltando
+ * el mínimo exigido hasta encontrar algo.
+ *
+ * Exigir todos los términos fue el primer arreglo del `contains` de frase
+ * completa, y arrastraba el mismo defecto en otra forma: ante «servicios
+ * públicos del condominio Palo de Agua» pedía cuatro términos, la ficha de Palo
+ * de Agua no dice literalmente «servicios públicos», y Mac volvió a responder
+ * que ese condominio no existe. El cliente no escribe palabras clave: escribe
+ * una frase, y las palabras que sobran no pueden ser las que lo dejen sin
+ * respuesta.
+ *
+ * La relajación es progresiva y NO es una búsqueda difusa: los resultados
+ * siguen ordenados por `puntuar`, así que la ficha que se llama como lo que
+ * pidió el cliente sigue saliendo primera. Lo que cambia es que ahora hay
+ * resultado en vez de silencio.
+ */
+export function filtrarPorTerminos<T extends Puntuable>(fichas: T[], terms: string[]): T[] {
+  if (terms.length === 0) return fichas
+  for (let minimo = terms.length; minimo >= 1; minimo--) {
+    const hit = fichas.filter(p => terminosPresentes(p, terms) >= minimo)
+    if (hit.length > 0) return hit.sort((a, b) => puntuar(b, terms) - puntuar(a, terms))
+  }
+  return []
 }
 
 /**
