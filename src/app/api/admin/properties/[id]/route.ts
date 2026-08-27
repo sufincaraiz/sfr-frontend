@@ -1,24 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { revalidatePath, revalidateTag } from 'next/cache'
 import { prisma } from '@/lib/prisma'
+import { revalidarPropiedad } from '@/lib/revalidar-propiedad'
 import { requireRole } from '@/lib/auth'
 import { resolveMunicipality } from '@/lib/municipality-resolve'
 import { resolveTipoPropiedad } from '@/lib/property-types.server'
 import { notificarIndexNow, urlsDePropiedad } from '@/lib/indexnow'
-
-// Revalida las páginas estáticas afectadas por un cambio de propiedad,
-// para que las ediciones del admin se reflejen de inmediato en la web pública.
-function revalidatePropertyPaths(slug?: string | null) {
-  if (slug) revalidatePath(`/propiedad/${slug}`)
-  revalidatePath('/propiedades')
-  revalidatePath('/')
-  // La vista por atributo depende del mismo inventario: marcar o desmarcar
-  // «en condominio» cambia estas rutas aunque la ficha no cambie de sitio.
-  revalidatePath('/propiedades/en-condominio')
-  // Y el índice de tipos ofrecibles, que se deriva del inventario: vender la
-  // última propiedad de un tipo tiene que sacarlo del buscador.
-  revalidateTag('enlaces')
-}
 
 export async function GET(
   _req: NextRequest,
@@ -102,7 +88,7 @@ export async function PUT(
       data: updateData,
       include: { municipality: true, media: true },
     })
-    revalidatePropertyPaths(updated.slug)
+    revalidarPropiedad(updated.slug)
     // Aviso a IndexNow: indexación en minutos en vez de semanas. No se espera
     // (void) porque un fallo suyo nunca puede retrasar ni romper la publicación.
     void notificarIndexNow(
@@ -134,7 +120,7 @@ export async function DELETE(
   const { id } = await params
   try {
     const deleted = await prisma.property.delete({ where: { id } })
-    revalidatePropertyPaths(deleted.slug)
+    revalidarPropiedad(deleted.slug)
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('[DELETE /api/admin/properties/[id]]', err)

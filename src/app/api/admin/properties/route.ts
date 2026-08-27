@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { revalidarPropiedad } from '@/lib/revalidar-propiedad'
 import { requireRole } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
 import { resolveMunicipality } from '@/lib/municipality-resolve'
@@ -112,6 +113,10 @@ export async function POST(request: NextRequest) {
       },
       include: { municipality: true, media: true },
     })
+
+    // Sin esto, la propiedad recién creada NO aparecía en el catálogo ni en
+    // la portada hasta que venciera el ISR de una hora. Corría solo al editar.
+    revalidarPropiedad(property.slug)
 
     // Aviso a IndexNow. Incluye la página del municipio: publicar la PRIMERA
     // propiedad de un municipio lo mete en el filtro del buscador y cambia su
