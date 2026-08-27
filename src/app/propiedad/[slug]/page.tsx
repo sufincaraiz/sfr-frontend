@@ -37,10 +37,13 @@ async function getProperty(slug: string) {
   });
   if (!raw) return null;
 
-  const p: Property & { features: PropertyFeature[] } = {
+  const p: Property & { features: PropertyFeature[]; en_condominio: boolean } = {
     id:               raw.id,
     slug:             raw.slug,
     type:             raw.type as Property['type'],
+    // Régimen de propiedad: ortogonal al tipo, y hasta hoy solo llegaba al
+    // JSON-LD. Ver la fila «Régimen» de la ficha técnica.
+    en_condominio:    raw.en_condominio,
     transaction_type: 'venta',
     municipality_id:  raw.municipality_id,
     vereda_id:        raw.vereda_id,
@@ -393,6 +396,14 @@ export default async function PropiedadDetallePage(
                 }
                 filas={[
                   { etiqueta: 'Tipo de propiedad', valor: typeLabel },
+                  // El régimen es ORTOGONAL al tipo —hay lotes y casas en
+                  // condominio— y vivía SOLO en el JSON-LD: doce inmuebles
+                  // estaban en condominio y la ficha no lo decía a la vista,
+                  // teniendo ruta propia de filtro. La fila enlaza a esa ruta,
+                  // así que además cierra la malla.
+                  ...(p.en_condominio
+                    ? [{ etiqueta: 'Régimen', valor: 'En condominio', enlace: '/propiedades/en-condominio' }]
+                    : []),
                   { etiqueta: 'Municipio',         valor: `${muni}, Cundinamarca` },
                   // La vereda solo aparece cuando esta asignada. Es el dato que
                   // convierte «en La Vega» en «en la vereda El Cural», que es

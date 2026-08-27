@@ -2193,3 +2193,76 @@ confirma abriendo el archivo — y este es el que no lo resistió.
 **Lo único real:** el régimen de condominio. Es un dato que el comprador usa
 para filtrar —hay ruta propia, `/propiedades/en-condominio`— y la ficha del
 inmueble no lo muestra. Pendiente de decisión.
+
+## Lo aplicado el 22/08 sobre §12
+
+**Se quitó el pan del sándwich en cinco municipios.** 25 cambios, sin tocar los
+cuerpos. Comprobado que los ocho textos arrancan y cierran en frase factual:
+
+| Municipio | Ahora arranca | Ahora cierra |
+|---|---|---|
+| la-vega | «La Vega recibe visitantes de Bogotá cada fin de semana…» | «…cada domingo la Plaza Principal alberga uno de los mercados campesinos más importantes» |
+| nocaima | «Nocaima tiene sus orígenes en los antiguos pueblos indígenas…» | «…en 1959, gracias a Ismael Bohórquez Medina, se creó la Escuela Normal» |
+| nimaima | «La historia de Nimaima se remonta a la época prehispánica…» | «…la agricultura se convirtió en la principal actividad económica» |
+| sasaima | «Sasaima está a poca distancia de Bogotá…» | «…el cultivo de café, caña panelera, cítricos y frutales» |
+| villeta | «Villeta es un municipio de clima cálido…» | «…el patrimonio arquitectónico del centro histórico» |
+
+**San Francisco y Vergara: `historia` VACIADA.** 3.725 caracteres de prosa
+genérica retirados sin sustituto. Un campo vacío no dice nada falso y no ocupa
+espacio citable con relleno; el titular los escribirá con hechos. El `turismo`
+de Vergara se conserva y solo perdió su cierre.
+
+⚠ **El `turismo` de San Francisco sigue publicado tal cual**, con sus seis
+afirmaciones —«uno de los destinos más atractivos», «considerados uno de los
+ecosistemas más valiosos», «cada vez más buscado», y el cierre de invertir—.
+Queda así por instrucción: entra en la reescritura, no en el parche. **Pero está
+vivo hoy.**
+
+### Las tres contradicciones, resueltas
+
+1. **El mercado campesino**: `turismo` decía «el más grande de Cundinamarca» e
+   `historia` «uno de los más importantes». Ahora las dos dicen lo segundo, que
+   es lo sostenible.
+2. **El fundador de La Vega**: el campo publicaba «el 3 de junio de 1605, cuando
+   el licenciado **Alonso Vásquez de Cisneros** ordenó la fundación» y el
+   traspaso tenía anotado «**Juan de Borja**, sin confirmar». Ahora dice «Su
+   historia colonial comenzó **en 1605**, con la fundación de dos pueblos
+   indígenas»: sin nombre y sin día, hasta verificarlo.
+3. **La fecha repetida**: Sasaima declaraba **el mismo día y el mismo oidor** que
+   La Vega. Mismo tratamiento: «ocurrió en 1605». Nocaima conserva su 8 de junio
+   con su oidor — es coherente y distinto, y no hay razón para tocarlo.
+
+### Quebradanegra no se alarga
+
+Sus 715 caracteres dicen que el turismo es «incipiente», que los senderos están
+«sin señalización comercial» y que el municipio permite «escapar de la
+masificación». **Es exactamente el registro que se busca**, y dice más verdad
+que los 5.012 de La Vega.
+
+**Regla:** el problema de Quebradanegra es de EXTENSIÓN, no de contenido, y se
+resuelve **añadiendo hechos, no adjetivos**. Un texto corto y verdadero es mejor
+punto de partida que uno largo que hay que desinfectar.
+
+### `en_condominio`, publicado
+
+Fila «Régimen → En condominio» en la ficha técnica, **enlazada a
+`/propiedades/en-condominio`**. Doce inmuebles la tienen. Además de publicar el
+dato, cierra la malla: la fila es también la puerta a «enséñame los demás».
+
+`FilaDato` admite ahora `enlace?`, y solo para datos que ADEMÁS son un filtro del
+catálogo. No es decoración: es enlazado interno.
+
+## ⚠ La lección del falso positivo
+
+`auditar-datos-no-publicados.ts` marcó `temp_min` y `temp_max` como no
+publicados en los ocho municipios. **Era falso**: se renombran a `temperatura_c`
+en `cobertura.ts` y salen tres veces en la página.
+
+**Un heurístico que busca el NOMBRE DEL CAMPO no ve las capas de mapeo.** Entre
+la columna y la plantilla puede haber un renombrado, un `select` con alias, un
+DTO o un componente que recibe otra forma — y el `grep` no atraviesa ninguno.
+
+**Regla:** una herramienta de auditoría dice DÓNDE MIRAR, no qué concluir. Cada
+hallazgo se confirma abriendo el archivo. Es la misma disciplina que ya salvó
+tres guardas —probar el detector con casos reales antes de creerle un cero— y
+aquí evitó reportar un defecto inexistente en los ocho municipios.

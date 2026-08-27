@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -33,6 +34,13 @@ export interface FilaDato {
   unidad?: string
   /** Nota breve por fila cuando algo necesita matiz. */
   nota?: string
+  /**
+   * Ruta interna a la que lleva el valor. Solo para datos que ADEMÁS son un
+   * filtro del catálogo: el régimen de condominio tiene ruta propia
+   * (`/propiedades/en-condominio`), así que la fila es también la puerta a
+   * «enséñame los demás». No es decoración; es enlazado interno.
+   */
+  enlace?: string
 }
 
 export interface DatosVerificablesProps {
@@ -91,7 +99,9 @@ export function DatosVerificables({
                   {f.etiqueta}
                 </th>
                 <td style={{ padding: '0.7rem 1.15rem', color: '#0D2D5E', fontWeight: 700, verticalAlign: 'top' }}>
-                  {f.valor}
+                  {f.enlace
+                    ? <Link href={f.enlace} style={{ color: '#1B56A1', textDecoration: 'underline' }}>{f.valor}</Link>
+                    : f.valor}
                   {f.unidad ? <span style={{ fontWeight: 500, color: '#64748B' }}> {f.unidad}</span> : null}
                   {f.nota ? (
                     <span style={{ display: 'block', fontWeight: 400, fontSize: '0.82rem', color: '#64748B', marginTop: 2 }}>
