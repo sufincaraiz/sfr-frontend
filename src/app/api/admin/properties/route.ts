@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { revalidarPropiedad } from '@/lib/revalidar-propiedad'
+import { filtrarCampos, vaciosANull } from '@/lib/propiedad-campos'
+import { fusionarFeatures, type FeatureEntrada } from '@/lib/propiedad-features'
 import { requireRole } from '@/lib/auth'
 import { slugify } from '@/lib/utils'
 import { resolveMunicipality } from '@/lib/municipality-resolve'
@@ -85,9 +87,17 @@ export async function POST(request: NextRequest) {
 
     const { municipality_name, type_label, media, features, ...rest } = data
 
+    // Misma lista blanca que en el PUT: el cliente no elige qué columnas
+    // escribe. `slug`, `published_at` y `municipality_id` los pone el
+    // servidor, unas líneas más abajo.
+    const { datos, descartados } = filtrarCampos(rest)
+    if (descartados.length) {
+      console.warn(`[POST propiedad] campos ignorados por la lista blanca: ${descartados.join(', ')}`)
+    }
+
     const property = await prisma.property.create({
       data: {
-        ...rest,
+        ...vaciosANull(datos),
         type: tipoSlug,
         slug,
         municipality_id: muni.id,
@@ -103,16 +113,20 @@ export async function POST(request: NextRequest) {
             alt_text: m.alt_text || data.title,
           })),
         } : undefined,
-        // Features
-        features: features?.length ? {
-          create: features.map((f: { key: string; value: string }) => ({
-            feature_key: f.key,
-            feature_value: f.value,
-          })),
-        } : undefined,
       },
       include: { municipality: true, media: true },
     })
+
+    // Las features van por el MISMO camino que en la edición, para que no haya
+    // dos formas de escribirlas. En creación el merge equivale a insertar,
+    // pero comparte la validación de claves multivalor.
+    if (Array.isArray(features) && features.length) {
+      try {
+        await fusionarFeatures(property.id, features as FeatureEntrada[])
+      } catch (e) {
+        console.warn('[POST propiedad] features inválidas:', e instanceof Error ? e.message : e)
+      }
+    }
 
     // Sin esto, la propiedad recién creada NO aparecía en el catálogo ni en
     // la portada hasta que venciera el ISR de una hora. Corría solo al editar.

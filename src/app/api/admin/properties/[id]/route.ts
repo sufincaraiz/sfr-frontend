@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { revalidarPropiedad } from '@/lib/revalidar-propiedad'
+import { filtrarCampos, vaciosANull } from '@/lib/propiedad-campos'
+import { fusionarFeatures, type FeatureEntrada } from '@/lib/propiedad-features'
 import { requireRole } from '@/lib/auth'
 import { resolveMunicipality } from '@/lib/municipality-resolve'
 import { resolveTipoPropiedad } from '@/lib/property-types.server'
@@ -34,8 +36,16 @@ export async function PUT(
     const data = await request.json()
     const { municipality_name, type_label, media, features, ...rest } = data
 
+    // LISTA BLANCA. Antes era `{ ...rest }`: cualquier columna que el cliente
+    // mandara llegaba a Prisma, `slug` y `published_at` incluidos. Y los
+    // vacíos de un campo de texto opcional se guardan como NULL, no como '',
+    // para que abrir el formulario y guardar sin tocar nada no mute la base.
+    const { datos, descartados } = filtrarCampos(rest)
+    if (descartados.length) {
+      console.warn(`[PUT propiedad ${id}] campos ignorados por la lista blanca: ${descartados.join(', ')}`)
+    }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const updateData: any = { ...rest }
+    const updateData: any = vaciosANull(datos)
     if (data.price_cop !== undefined) updateData.price_cop = BigInt(data.price_cop || 0)
 
     // Tipo escrito a mano ("Otro tipo…"): se crea en el catálogo si no existe.
@@ -73,13 +83,16 @@ export async function PUT(
       }
     }
 
-    // Actualizar features si se envía
-    if (features) {
-      await prisma.propertyFeature.deleteMany({ where: { property_id: id } })
-      updateData.features = {
-        create: features.map((f: { key: string; value: string }) => ({
-          feature_key: f.key, feature_value: f.value,
-        })),
+    // Features por MERGE: solo se tocan las claves que llegan. Antes era un
+    // deleteMany de TODO seguido de recrear lo enviado, así que un formulario
+    // que mandara solo los servicios habría borrado clima, altitud,
+    // distancia_parque y tour360_url. Ver src/lib/propiedad-features.ts.
+    if (Array.isArray(features) && features.length) {
+      try {
+        const r = await fusionarFeatures(id, features as FeatureEntrada[])
+        console.log(`[PUT propiedad ${id}] features · tocadas: ${r.tocadas.join(', ') || 'ninguna'} · borradas: ${r.borradas.join(', ') || 'ninguna'}`)
+      } catch (e) {
+        return NextResponse.json({ error: e instanceof Error ? e.message : 'Features inválidas' }, { status: 400 })
       }
     }
 
