@@ -1954,7 +1954,7 @@ tumbará despliegues por caídas de Railway.
 |---|---|
 | `properties` — 5 campos × 36 fichas | ✅ valor futuro, gratuidad y hechos adversos |
 | `municipalities` — `inversion`/`antes_de_comprar` + FAQ + `descripcion_seo` | ✅ |
-| `municipalities` — **`turismo` e `historia`** | ⬜ **~27.000 caracteres SIN AUDITAR** |
+| `municipalities` — `turismo` e `historia` | ✅ auditados el 22/08 — 30.662 car., ≈38 afirmaciones. Ver §12 |
 | `veredas-data.ts` | ✅ |
 | `mac_knowledge` | ✅ 0 persuasión, 0 instrucciones |
 | Prompt de Mac y `expert.ts`, **ejemplos incluidos** | ✅ |
@@ -1991,3 +1991,205 @@ entero.**
 - **Casa En Condominio** y **Casa Central**: sin área declarada.
 - Y la lista larga de §10.
 
+---
+
+# 12. AUDITORÍA DE `turismo` E `historia` — 30.662 caracteres
+
+La última superficie. **Son 30.662 caracteres, no 27.000.** Ocho municipios, dos
+campos. Criterios: los seis del §9 más (g) contradicción con datos propios y la
+undécima forma.
+
+**Reporte, no corrección.** Es texto para reescribir con la estructura de cinco
+campos: lo que hace falta es saber qué hay antes de decidir.
+
+## El patrón, y es el hallazgo que más ahorra trabajo
+
+**Los cuerpos son buenos. Los defectos se concentran en la primera y la última
+frase.** Cinco de los ocho tienen historia específica, fechada y con nombres
+propios —exactamente lo que un motor generativo cita— envuelta en un sándwich:
+un ranking para abrir, una llamada a invertir para cerrar.
+
+En esos cinco **no hay que reescribir: hay que quitar el pan del sándwich.**
+
+Los otros tres son harina de otro costal, y ahí sí no compensa parchear.
+
+## Municipio por municipio
+
+### 🔴 san-francisco — turismo 1.790 · historia 1.777 · NO COMPENSA PARCHEAR
+
+El único cuya **historia no contiene historia**: ni una fecha, ni un nombre, ni
+un hecho. «Desde su constitución como municipio en el siglo XIX» es todo.
+
+- (e) «uno de los destinos de naturaleza **más atractivos** del occidente»
+- (e) «se ha convertido en **el lugar ideal**»
+- (e) «bosques de niebla, **considerados uno de los ecosistemas más valiosos**» — ranking + atribución a nadie
+- «una **excelente infraestructura** para el turismo rural»
+- demanda «un destino **cada vez más buscado**»
+- (e) cierre: «**continúa posicionándose como uno de los municipios con mayor atractivo** para vivir, vacacionar e **invertir**»
+- (e) historia: «uno de los municipios **más representativos** de la provincia»
+- «convirtiéndose en un **referente de desarrollo sostenible**»
+- mercado: «ha impulsado el crecimiento del turismo y **del mercado inmobiliario, atrayendo a familias e inversionistas**»
+- (e) cierre: «una de las zonas con **mayor atractivo natural** del departamento»
+
+**Retirando las afirmaciones queda prosa genérica sobre café y bosques de
+niebla.** Rehacer.
+
+### 🔴 vergara — turismo 1.888 · historia 1.948 · HISTORIA: NO COMPENSA
+
+El **turismo está bien** —Cañón del Tobia, ríos Negro y Tobia, aviturismo, «poco
+masificado»— y solo pide limpiar el cierre.
+
+La **historia no tiene ni una fecha ni un nombre propio**, igual que San
+Francisco:
+
+- (e) «uno de los municipios con **mayor tradición agrícola** de la provincia»
+- (e) «un **referente de producción agrícola** en el occidente»
+- cifra heredada: «aproximadamente **112 kilómetros** de Bogotá» — estimación de `municipios-data.ts`, nunca medida
+- cierre entero: «**se proyecta** como un municipio con **grandes oportunidades**… **consolidándose como un destino ideal** para vivir, **invertir**»
+
+### 🟠 la-vega — turismo 2.028 · historia 2.984 · QUITAR EL SÁNDWICH
+
+Cuerpo histórico sólido: Doymas y Bulucaymas, nación Panche, 1605, censos del
+XVIII, parroquia de San Juan de La Vega, la carretera a Bogotá a mediados del XX.
+
+- (e) «se ha consolidado como uno de los destinos turísticos **más atractivos** de Cundinamarca»
+- **cifra sin fuente: «cada fin de semana, MILES de visitantes»**
+- «un **importante motor económico** de la región»
+- (e) + atribución vaga: el mercado dominical «**considerado el más grande de Cundinamarca**»
+- demanda: «**muy apreciadas** tanto por turistas como por **inversionistas**»
+- (e) cierre: «**continúa posicionándose como uno de los mejores destinos** para vacacionar, vivir o **invertir**»
+- (e) historia: «uno de los municipios con **mayor riqueza histórica** de la región»
+- (e) historia: «**reconocida como uno de los municipios más atractivos** de Cundinamarca para vivir, **invertir**»
+
+**⚠ (g) DOS CONTRADICCIONES, y las dos importan:**
+
+1. **La misma página se contradice sobre el mercado campesino.** `turismo` dice
+   que es «**el más grande** de Cundinamarca»; `historia` dice que es «**uno de
+   los** mercados campesinos **más importantes**». Dos afirmaciones distintas
+   sobre el mismo hecho, a dos pantallas de distancia.
+2. **El fundador.** `historia` afirma, con fecha exacta, «el **3 de junio de
+   1605**, cuando el licenciado **Alonso Vásquez de Cisneros** ordenó la
+   fundación». En §10, entre lo que espera dato tuyo, está anotado «fundación en
+   **1605 por Juan de Borja**, sin confirmar». **El campo ya publica un fundador
+   distinto del que el traspaso da por pendiente.** Uno de los dos está mal.
+
+### 🟠 villeta — turismo 2.219 · historia 1.675 · QUITAR EL SÁNDWICH
+
+- (e) doble en la primera frase: «uno de los destinos turísticos **más
+  importantes** del departamento y uno de los **preferidos**»
+- (e) «Tobia, uno de los destinos **más reconocidos de Colombia** para el turismo
+  de aventura»
+- **⚠ VALOR FUTURO VIVO**: cierre «invertir en apartamentos, casas campestres,
+  hoteles, fincas y **proyectos turísticos con gran potencial**». El barrido de
+  valor futuro del 22/08 **no cubrió `turismo`**: esta es la prueba de que la
+  superficie faltaba.
+- (e) historia: «uno de los municipios con **mayor tradición histórica, cultural
+  y agroindustrial** del departamento»
+- sin fuente: Bolívar «recorrió este corredor estratégico en varias ocasiones»
+
+«Capital panelera de Cundinamarca» es un título de uso corriente y verificable;
+no lo cuento como ranking.
+
+### 🟡 sasaima — turismo 1.997 · historia 2.374 · QUITAR EL SÁNDWICH
+
+Historia **excelente**: Gran Cacique Cacaima, 1541 y Hernán Pérez de Quesada, la
+ranchería destruida en El Cural, 1550 y fray Fernando de Montoya, la fundación
+en Cocunche entre la quebrada Talauta y el río Dulce.
+
+- (e) apertura: «uno de los destinos **más atractivos** del occidente»
+- cierre turismo: «se consolida como un destino ideal para… **invertir**»
+- cierre historia: «**modernas oportunidades de inversión**»
+
+**⚠ (g) FECHA COMPARTIDA.** Sasaima declara su fundación el «**3 de junio de
+1605**, cuando el oidor **Alonso Vásquez de Cisneros** ordenó el establecimiento
+del nuevo pueblo». La Vega declara **exactamente la misma fecha y el mismo
+oidor**. Nocaima declara el **8 de junio de 1605**, mismo oidor — coherente.
+Que el mismo visitador fundara dos pueblos el mismo día es posible; que la fecha
+esté copiada de un municipio a otro, también. **Hay que verificarlo: son tres
+fechas de fundación publicadas y dos coinciden.**
+
+### 🟢 nocaima — turismo 1.779 · historia 3.180 · SOLO EL SÁNDWICH
+
+La **mejor historia de las ocho**: Ucalatatauiti, el cacique Pedro Payandá, 8 de
+junio de 1605, Diego de Herrera Bustos, las minas de Cocunche y los cañones que
+se conservan en museos de Bogotá, curato en 1732, parroquia en 1777, el combate
+de 1899 donde capturaron a Olaya Herrera, el colegio de 1940, la Normal de 1959.
+
+Todo eso es material citable de primera. Lo único que sobra:
+
+- (e) apertura: «uno de los municipios con **mayor riqueza histórica** del occidente»
+- (e) cierre: «uno de los **lugares preferidos** para adquirir fincas»
+- cierre turismo: «se consolida como un destino **perfecto** para… **invertir**»
+
+### 🟢 nimaima — turismo 1.875 · historia 2.433 · CASI LIMPIO
+
+Historia impecable: 1595 y el oidor Miguel de Ibarra, Don Cristóbal Fixo, 1604,
+1621 con **186 habitantes**, minas de cobre y fuentes salinas, municipio
+definitivo en 1904. **Cero afirmaciones.**
+
+Turismo, solo el cierre: «se consolida como un destino ideal para… **invertir**».
+
+### 🟢 quebradanegra — turismo 367 · historia 348 · LIMPIO
+
+El más corto y el más honesto de los ocho. Dice que su turismo es
+«**incipiente**», que los senderos están «**sin señalización comercial**» y
+ofrece «escapar de la masificación». Fundada como corregimiento de Útica,
+municipio en 1959.
+
+**Nada que retirar.** Su problema es el contrario: 715 caracteres frente a los
+5.012 de La Vega. Le falta contenido, no le sobra.
+
+## Resumen para decidir
+
+| Municipio | Registro | Qué hacer |
+|---|---|---|
+| san-francisco | 🔴 alto, sin sustancia | **rehacer los dos campos** |
+| vergara | 🔴 historia sin fechas | **rehacer `historia`**; `turismo` solo el cierre |
+| la-vega | 🟠 alto, cuerpo bueno | quitar sándwich + **resolver las dos contradicciones** |
+| villeta | 🟠 alto, cuerpo bueno | quitar sándwich + el «gran potencial» que sobrevivió |
+| sasaima | 🟡 medio | quitar sándwich + **verificar la fecha de fundación** |
+| nocaima | 🟢 bajo | quitar 3 frases |
+| nimaima | 🟢 muy bajo | quitar 1 frase |
+| quebradanegra | 🟢 limpio | ampliar, no corregir |
+
+**≈38 afirmaciones** en total. Y la conclusión que ahorra el trabajo: **cinco de
+los ocho no necesitan reescritura, necesitan que les quiten la primera y la
+última frase.**
+
+## Lo que esta auditoría prueba sobre el ciclo
+
+El cierre de Villeta —«proyectos turísticos con **gran potencial**»— es una
+afirmación de valor futuro que sobrevivió a todo el barrido del 22/08. No se
+escondió de ninguna forma nueva: **estaba en la única superficie que no se
+recorrió**. Cuando §11 decía «no se ha leído entero», esto es lo que había.
+
+---
+
+# 13. DATOS CAPTURADOS QUE NO SE PUBLICAN — el patrón NO se repitió
+
+Después de encontrar 84 servicios y 7 accesos invisibles, la pregunta razonable
+era si había más. `scripts/auditar-datos-no-publicados.ts` enumera lo que hay en
+la base y busca cada nombre en las plantillas.
+
+**Resultado honesto: no había más.** Un solo hallazgo menor, y una falsa alarma
+de la propia herramienta.
+
+| Qué | Veredicto |
+|---|---|
+| 11 claves de `property_features` | todas se pintan salvo una |
+| `tour360_url` como feature (1 fila) | **duplica** `virtual_tour_url`, que sí se pinta. Fila redundante, no dato perdido |
+| 14 columnas de `property` | todas usadas; `year_built` y `modelo3d_url` sin dato en ninguna ficha |
+| **`en_condominio`** | ⚠ **solo en el JSON-LD.** 12 inmuebles están en condominio y **la ficha no lo dice a la vista** |
+| 18 campos de `municipality` | todos publicados |
+| 17 campos de `veredas-data.ts` | todos publicados |
+
+**La falsa alarma, que conviene anotar:** la herramienta marcó `temp_min` y
+`temp_max` como no publicados en los 8 municipios. Es falso: se renombran a
+`temperatura_c` en `cobertura.ts` y salen **tres veces** en la página. El
+heurístico busca el nombre del campo en la plantilla y no ve las capas de
+mapeo. **Sirve para saber dónde mirar, no para concluir.** Cada hallazgo se
+confirma abriendo el archivo — y este es el que no lo resistió.
+
+**Lo único real:** el régimen de condominio. Es un dato que el comprador usa
+para filtrar —hay ruta propia, `/propiedades/en-condominio`— y la ficha del
+inmueble no lo muestra. Pendiente de decisión.
