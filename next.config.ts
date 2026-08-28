@@ -106,6 +106,29 @@ const nextConfig: NextConfig = {
       source: `/propiedad/${from}`, destination: `/propiedad/${to}`, permanent: true,
     }))
 
+    // Redirects DINÁMICOS desde la tabla `redirects`. Hasta hoy la tabla existía
+    // y no la leía nadie; los 301 de propiedades vivían solo en el array de
+    // arriba, que exige editar código y desplegar por cada renombrado. Al
+    // leerla aquí, renombrar un slug = escribir una fila (lo hace el script de
+    // renombrado) y el siguiente build sirve el 301, sin tocar este archivo.
+    //
+    // GUARDA: envuelto en try/catch. Si Railway no responde en el build, se
+    // usan solo los estáticos en vez de romper el despliegue —la misma
+    // distinción «datos divergen» vs «no llego a la base» de las otras guardas—.
+    // El alias `@/…` no está disponible en next.config (corre antes de que se
+    // resuelvan los paths de tsconfig), así que se instancia PrismaClient
+    // directo desde el node_module, que sí resuelve.
+    let dinamicos: { source: string; destination: string; permanent: boolean }[] = []
+    try {
+      const { PrismaClient } = await import('@prisma/client')
+      const db = new PrismaClient()
+      const filas = await db.redirect.findMany({ select: { source: true, destination: true, permanent: true } })
+      dinamicos = filas.map(f => ({ source: f.source, destination: f.destination, permanent: f.permanent }))
+      await db.$disconnect()
+    } catch (e) {
+      console.warn('[next.config] no se pudo leer la tabla redirects; solo estáticos:', e instanceof Error ? e.message : e)
+    }
+
     return [
       { source: '/inmuebles', destination: '/propiedades', permanent: true },
       { source: '/fincas-en-venta/la-vega', destination: '/propiedades/finca/la-vega', permanent: true },
@@ -131,6 +154,7 @@ const nextConfig: NextConfig = {
       { source: '/propiedades/condominio', destination: '/propiedades/en-condominio', permanent: true },
       ...landing,
       ...props,
+      ...dinamicos,
     ]
   },
 
