@@ -12,6 +12,15 @@ const OTRO   = '__otro__';
 
 interface MediaItem { url: string; alt_text: string }
 
+// Casillas de servicios más frecuentes, incluidas las de AUSENCIA: «sin
+// conexión de agua» es tan publicable como «acueducto veredal», y no decirlo se
+// lee como que no lo hay. Lo que no encaje va en el campo libre.
+const SERVICIOS_SUGERIDOS = [
+  'Acueducto municipal', 'Acueducto veredal', 'Energía eléctrica', 'Gas natural',
+  'Internet', 'Alcantarillado', 'Pozo séptico', 'Recolección de basura',
+  'Sin conexión de agua', 'Sin conexión de gas',
+];
+
 const inputStyle: React.CSSProperties = {
   padding: '9px 12px', border: '1.5px solid #E2E8F0', borderRadius: 9,
   fontSize: '0.875rem', outline: 'none', color: '#0D2D5E', background: '#fff',
@@ -69,6 +78,10 @@ export default function EditarPropiedadPage() {
   // Booleano aparte: el resto del formulario son cadenas, y ensanchar el
   // Record obligaría a comprobar el tipo en cada campo de texto.
   const [enCondominio, setEnCondominio] = useState(false);
+  // Servicios: un array aparte porque son multivalor y se editan con casillas.
+  // Escriben la clave `servicio` —la unificada en la migración del 25/08—, NO
+  // las claves sueltas agua/energia/gas que se retiraron.
+  const [servicios, setServicios] = useState<string[]>([]);
   const [media,   setMedia]   = useState<MediaItem[]>([]);
   const [uploading, setUploading] = useState(false);
   const [saving,  setSaving]  = useState(false);
@@ -82,6 +95,12 @@ export default function EditarPropiedadPage() {
       .then(d => {
         setData(d);
         setEnCondominio(!!d.en_condominio);
+        // Features guardadas como filas {feature_key, feature_value}. Se leen
+        // AQUÍ y se cargan en el formulario para que reenviarlas sin tocarlas
+        // no borre nada: el estado del form es un espejo fiel de la base.
+        const feats: Array<{ feature_key: string; feature_value: string }> = d.features ?? [];
+        const feat = (k: string) => feats.find(f => f.feature_key === k)?.feature_value ?? '';
+        setServicios(feats.filter(f => f.feature_key === 'servicio').map(f => f.feature_value));
         setForm({
           title:            d.title ?? '',
           type:             d.type ?? 'finca',
@@ -93,6 +112,10 @@ export default function EditarPropiedadPage() {
           bedrooms:         String(d.bedrooms ?? 0),
           bathrooms:        String(d.bathrooms ?? 0),
           parking:          String(d.parking ?? 0),
+          year_built:       String(d.year_built ?? ''),
+          geo_lat:          d.geo_lat != null ? String(d.geo_lat) : '',
+          geo_lng:          d.geo_lng != null ? String(d.geo_lng) : '',
+          address_visible:  d.address_visible ?? '',
           short_description: d.short_description ?? '',
           description:      d.description ?? '',
           meta_title:       d.meta_title ?? '',
@@ -100,6 +123,11 @@ export default function EditarPropiedadPage() {
           video_url:        d.video_url ?? '',
           virtual_tour_url: d.virtual_tour_url ?? '',
           modelo3d_url:     d.modelo3d_url ?? '',
+          // Features de un solo valor.
+          clima:            feat('clima'),
+          altitud:          feat('altitud'),
+          distancia_parque: feat('distancia_parque'),
+          acceso:           feat('acceso'),
         });
         // Media ordenada (la primera = portada)
         const imgs = (d.media ?? [])
@@ -193,9 +221,27 @@ export default function EditarPropiedadPage() {
           bedrooms:     parseInt(form['bedrooms'] ?? '0') || 0,
           bathrooms:    parseInt(form['bathrooms'] ?? '0') || 0,
           parking:      parseInt(form['parking'] ?? '0') || 0,
+          // Columnas directas. Un número vacío va como null EXPLÍCITO; el
+          // endpoint no puede adivinar «vacío a propósito» de un campo ausente,
+          // así que se manda el null.
+          year_built:   form['year_built']?.trim() ? parseInt(form['year_built']) : null,
+          geo_lat:      form['geo_lat']?.trim()    ? parseFloat(form['geo_lat'])  : null,
+          geo_lng:      form['geo_lng']?.trim()    ? parseFloat(form['geo_lng'])  : null,
+          address_visible: form['address_visible']?.trim() || null,
           video_url:        form['video_url']?.trim() || null,
           virtual_tour_url: form['virtual_tour_url']?.trim() || null,
           modelo3d_url:     form['modelo3d_url']?.trim() || null,
+          // Features por MERGE: solo se tocan las claves que van aquí. `clima`,
+          // `tour360_url` y cualquier otra que el formulario no maneje quedan
+          // intactas. Un valor vacío BORRA esa clave (acción declarada); los
+          // servicios van como array bajo la clave `servicio`.
+          features: [
+            { key: 'clima',            value: form['clima']?.trim() ?? '' },
+            { key: 'altitud',          value: form['altitud']?.trim() ?? '' },
+            { key: 'distancia_parque', value: form['distancia_parque']?.trim() ?? '' },
+            { key: 'acceso',           value: form['acceso']?.trim() ?? '' },
+            { key: 'servicio',         value: servicios },
+          ],
           media,  // orden actual; la primera = portada
         }),
       });
@@ -328,7 +374,77 @@ export default function EditarPropiedadPage() {
           <Field label="Área construida (m²)"><input type="number" value={form.area_built_m2} onChange={e => set('area_built_m2', e.target.value)} style={inputStyle} /></Field>
           <Field label="Habitaciones"><input type="number" min="0" value={form.bedrooms} onChange={e => set('bedrooms', e.target.value)} style={inputStyle} /></Field>
           <Field label="Baños"><input type="number" min="0" value={form.bathrooms} onChange={e => set('bathrooms', e.target.value)} style={inputStyle} /></Field>
+          <Field label="Parqueaderos"><input type="number" min="0" value={form.parking} onChange={e => set('parking', e.target.value)} style={inputStyle} /></Field>
+          <Field label="Año de construcción (opcional)"><input type="number" value={form.year_built} onChange={e => set('year_built', e.target.value)} placeholder="Ej. 2021" style={inputStyle} /></Field>
         </div>
+        <p style={{ color: '#94A3B8', fontSize: '0.75rem', marginTop: '0.7rem', lineHeight: 1.5 }}>
+          <strong>Título:</strong> no repitas el tipo ni el municipio (ya son campos aparte). Escribe solo lo que
+          distingue el inmueble: conjunto o sector, área, característica. Ej.: <em>Conjunto Villa Esperanza, primer piso, 65 m²</em>.
+        </p>
+      </div>
+
+      {/* Ubicación y entorno */}
+      <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', padding: '1.5rem' }}>
+        <h3 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '0.95rem', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '2px solid #EFF6FF' }}>
+          📍 Ubicación y entorno
+        </h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+          <Field label="Coordenada GPS — latitud"><input value={form.geo_lat} onChange={e => set('geo_lat', e.target.value)} placeholder="Ej. 4.9902" style={inputStyle} /></Field>
+          <Field label="Coordenada GPS — longitud"><input value={form.geo_lng} onChange={e => set('geo_lng', e.target.value)} placeholder="Ej. -74.3401" style={inputStyle} /></Field>
+          <Field label="Dirección / referencia (no se publica exacta)"><input value={form.address_visible} onChange={e => set('address_visible', e.target.value)} style={inputStyle} /></Field>
+          <Field label="Altitud (msnm)"><input value={form.altitud} onChange={e => set('altitud', e.target.value)} placeholder="Ej. 1.230 msnm" style={inputStyle} /></Field>
+          <Field label="Clima"><input value={form.clima} onChange={e => set('clima', e.target.value)} placeholder="Ej. 18–26 °C" style={inputStyle} /></Field>
+          <Field label="Distancia al parque principal"><input value={form.distancia_parque} onChange={e => set('distancia_parque', e.target.value)} placeholder="Ej. 8 minutos en carro" style={inputStyle} /></Field>
+        </div>
+        <div style={{ marginTop: '1rem' }}>
+          <Field label="Acceso vial (texto libre — describe el rango completo, no solo el tramo bueno)">
+            <input value={form.acceso} onChange={e => set('acceso', e.target.value)} placeholder="Ej. asfaltada, placa huella y destapada; 4x4 recomendado en lluvias" style={inputStyle} />
+          </Field>
+        </div>
+      </div>
+
+      {/* Servicios públicos */}
+      <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', padding: '1.5rem' }}>
+        <h3 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '0.95rem', marginBottom: '0.4rem', paddingBottom: '0.5rem', borderBottom: '2px solid #EFF6FF' }}>
+          💧 Servicios públicos
+        </h3>
+        <p style={{ color: '#64748B', fontSize: '0.78rem', marginBottom: '1rem', lineHeight: 1.5 }}>
+          Marca lo que hay. «Sin conexión de agua» es tan publicable como «acueducto veredal»: no decirlo se lee como que no lo hay.
+        </p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: '0.9rem' }}>
+          {[...new Set([...SERVICIOS_SUGERIDOS, ...servicios])].map(op => {
+            const activo = servicios.includes(op);
+            return (
+              <button
+                key={op}
+                type="button"
+                onClick={() => setServicios(s => activo ? s.filter(x => x !== op) : [...s, op])}
+                style={{
+                  border: `1.5px solid ${activo ? '#15803D' : '#CBD5E1'}`,
+                  background: activo ? '#F0FDF4' : '#fff',
+                  color: activo ? '#15803D' : '#475569',
+                  borderRadius: 20, padding: '5px 13px', fontSize: '0.8rem',
+                  fontWeight: activo ? 800 : 600, cursor: 'pointer',
+                }}
+              >
+                {activo ? '✓ ' : ''}{op}
+              </button>
+            );
+          })}
+        </div>
+        <Field label="Añadir otro servicio y Enter">
+          <input
+            placeholder="Ej. Panel solar, Tanque de reserva de 5.000 L"
+            style={inputStyle}
+            onKeyDown={e => {
+              if (e.key !== 'Enter') return;
+              e.preventDefault();
+              const v = e.currentTarget.value.trim();
+              if (v && !servicios.some(s => s.toLowerCase() === v.toLowerCase())) setServicios(s => [...s, v]);
+              e.currentTarget.value = '';
+            }}
+          />
+        </Field>
       </div>
 
       {/* Fotos */}
@@ -427,8 +543,19 @@ export default function EditarPropiedadPage() {
             <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={14} style={{ ...inputStyle, resize: 'vertical', minHeight: 280, lineHeight: 1.6 }} />
           </Field>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-            <Field label="Meta title"><input value={form.meta_title} onChange={e => set('meta_title', e.target.value)} style={inputStyle} /></Field>
-            <Field label="Meta description"><input value={form.meta_description} onChange={e => set('meta_description', e.target.value)} style={inputStyle} /></Field>
+            <Field label="Meta title">
+              <input value={form.meta_title} onChange={e => set('meta_title', e.target.value)} maxLength={70} style={inputStyle} />
+              <p style={{ color: '#94A3B8', fontSize: '0.72rem', marginTop: 4, lineHeight: 1.45 }}>
+                Aquí SÍ va tipo y municipio (es lenguaje de búsqueda). Orden: tipo + acción + municipio. Máx 60.
+                Ej.: <em>Apartamento en Venta La Vega, 65 m² | Su Finca Raíz</em>.
+              </p>
+            </Field>
+            <Field label="Meta description">
+              <input value={form.meta_description} onChange={e => set('meta_description', e.target.value)} maxLength={170} style={inputStyle} />
+              <p style={{ color: '#94A3B8', fontSize: '0.72rem', marginTop: 4, lineHeight: 1.45 }}>
+                Qué es + datos duros + un diferencial concreto. Sin adjetivos ni promesas de valor. Máx 160.
+              </p>
+            </Field>
           </div>
         </div>
       </div>
