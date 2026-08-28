@@ -4,7 +4,7 @@ import { revalidarPropiedad } from '@/lib/revalidar-propiedad'
 import { filtrarCampos, vaciosANull } from '@/lib/propiedad-campos'
 import { fusionarFeatures, type FeatureEntrada } from '@/lib/propiedad-features'
 import { requireRole } from '@/lib/auth'
-import { slugify } from '@/lib/utils'
+import { slugify, slugBasePropiedad } from '@/lib/utils'
 import { resolveMunicipality } from '@/lib/municipality-resolve'
 import { resolveTipoPropiedad } from '@/lib/property-types.server'
 import { notificarIndexNow, urlsDePropiedad } from '@/lib/indexnow'
@@ -80,12 +80,34 @@ export async function POST(request: NextRequest) {
     }
     if (!tipoSlug) return NextResponse.json({ error: 'Falta el tipo de inmueble' }, { status: 400 })
 
-    const baseSlug = `${tipoSlug}-${slugify(data.title)}-${slugify(muni.name)}-cundinamarca`
-    // Ensure unique slug
-    const existing = await prisma.property.count({ where: { slug: { startsWith: baseSlug } } })
-    const slug = existing > 0 ? `${baseSlug}-${Date.now()}` : baseSlug
-
     const { municipality_name, type_label, media, features, ...rest } = data
+
+    // Slug base con la regla nueva (no duplica el tipo). Ver slugBasePropiedad.
+    const baseSlug = slugBasePropiedad(data.title, tipoSlug, slugify(muni.name))
+    const libre = async (s: string) => (await prisma.property.count({ where: { slug: s } })) === 0
+
+    let slug = baseSlug
+    if (!(await libre(slug))) {
+      // Colisión. Primero se intenta desambiguar con la vereda, si viene en el
+      // payload; es más legible que un número. La mayoría de creaciones no
+      // traen vereda, así que casi siempre cae al contador.
+      let veredaSlug: string | null = null
+      if (rest.vereda_id) {
+        const v = await prisma.vereda.findUnique({ where: { id: rest.vereda_id }, select: { slug: true } })
+        veredaSlug = v?.slug ?? null
+      }
+      const conVereda = veredaSlug
+        ? `${baseSlug.replace(/-cundinamarca$/, '')}-${veredaSlug}-cundinamarca`
+        : null
+      if (conVereda && await libre(conVereda)) {
+        slug = conVereda
+      } else {
+        // Contador legible (-2, -3…) en vez del Date.now() de 13 dígitos.
+        const raiz = conVereda ?? baseSlug
+        slug = raiz
+        for (let n = 2; n < 100 && !(await libre(slug)); n++) slug = `${raiz}-${n}`
+      }
+    }
 
     // Misma lista blanca que en el PUT: el cliente no elige qué columnas
     // escribe. `slug`, `published_at` y `municipality_id` los pone el

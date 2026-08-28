@@ -50,14 +50,10 @@ export function cloudinaryOptimize(url: string, width = 1280): string {
   return url.replace('/upload/', `/upload/${transform}/`);
 }
 
-export function slugify(text: string): string {
-  return text
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
-}
+// slugify y slugBasePropiedad viven en el módulo hoja `@/lib/slug` para poder
+// ejercitarlos con Node desde scripts/probar-slug.ts. Se reexportan aquí para
+// no romper los muchos imports existentes de `@/lib/utils`.
+export { slugify, slugBasePropiedad } from '@/lib/slug';
 
 export const STATUS_LABELS: Record<string, { label: string; color: string }> = {
   available: { label: 'Disponible', color: 'bg-green text-primary-dark' },
