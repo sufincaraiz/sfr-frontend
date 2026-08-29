@@ -46,6 +46,10 @@ const PROPUESTAS = {
   // el resto ya estaba publicado y se conserva.
   'finca-quinta-san-francisco-cundinamarca':
     'Quinta de 4.050 m² en la Vereda Toriba, San Francisco, Cundinamarca. 393 m² construidos, arquitectura contemporánea y topografía plana.',
+  // Guadu: fuera el precio ($255M, cambia) y «vista panorámica» (apreciación);
+  // piscina y tenis se conservan (amenidades del condominio en la descripción).
+  'condominio-venta-de-lotes-planos-en-condominio-guadu-la-vega-la-vega-cundinamarca':
+    'Lotes planos en el Condominio Campestre Guadu, La Vega, Cundinamarca. Dos lotes de 875 y 898 m², con piscina y cancha de tenis en zonas comunes.',
 }
 
 const props = await prisma.property.findMany({

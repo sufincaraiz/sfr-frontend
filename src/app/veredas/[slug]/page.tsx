@@ -295,6 +295,11 @@ export default async function VeredaPage(
                 distintos: «El Chuscal» sin su municipio no identifica un lugar. */}
             <InfoSection title={`¿Cómo se llega a la vereda ${v.name}, en ${v.municipio_name}?`} icon={<MapPin size={19} />}>
               <p style={{ color: '#475569', lineHeight: 1.8, fontSize: '0.95rem' }}>{v.acceso_vial}</p>
+              {/* Límite declarado: el acceso es HASTA la vereda, no hasta cada predio. */}
+              <p style={{ color: '#64748B', lineHeight: 1.7, fontSize: '0.82rem', marginTop: '0.6rem' }}>
+                Describe el acceso hasta la vereda. El tramo final hasta un predio concreto
+                —vía interna, servidumbre— puede ser distinto y se confirma en la visita.
+              </p>
             </InfoSection>
 
             <InfoSection title={`¿Qué clima tiene la vereda ${v.name}?`} icon={<Thermometer size={19} />}>

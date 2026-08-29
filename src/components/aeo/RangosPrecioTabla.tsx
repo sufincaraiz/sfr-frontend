@@ -93,6 +93,13 @@ export async function RangosMunicipio({ municipio }: { municipio: string }) {
         { etiqueta: 'Mediana',         valor: cop(fila.mediana), unidad: 'COP' },
         { etiqueta: 'Propiedades en la muestra', valor: fila.n },
       ]}
-    />
+    >
+      {/* Límite declarado: la variante por municipio también lo lleva, no solo la
+          tabla general. Un rango sin este marco se lee como referencia de mercado. */}
+      <span style={{ display: 'block', marginTop: 6, color: '#B45309', fontWeight: 600 }}>
+        Rango de lo publicado hoy en {municipio}, no una tasación ni un estudio de mercado.
+        Con muestras pequeñas el rango es orientativo.
+      </span>
+    </DatosVerificables>
   )
 }

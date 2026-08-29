@@ -258,7 +258,14 @@ export default async function PreguntasFrecuentesPage() {
             </Link>
           </section>
 
-          <p style={{ marginTop: '1.5rem', fontSize: '0.82rem', color: '#64748B' }}>
+          {/* Límite declarado: esta guía es orientación, no sustituye el estudio
+              de títulos con abogado ni la revisión notarial de cada negocio. */}
+          <p style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#475569', lineHeight: 1.7, background: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: 10, padding: '0.9rem 1.1rem' }}>
+            Esta guía es orientación general. Los documentos exactos y su estado dependen del
+            predio y del municipio, y no reemplazan el estudio de títulos con un abogado ni la
+            revisión notarial de cada negocio.
+          </p>
+          <p style={{ marginTop: '1rem', fontSize: '0.82rem', color: '#64748B' }}>
             Última actualización: <time dateTime={ACTUALIZADO}>13 de agosto de 2026</time>.
           </p>
         </div>

@@ -78,7 +78,9 @@ export function enHorasYMinutos(min: number): string {
 export function procedenciaDistancia(slug: string): string {
   const m = medicionDe(slug)
   return m
-    ? `Distancia y tiempo medidos en ${m.fuente} el ${m.fecha}, ${m.modo}, desde ${m.origen} hasta ${m.destino}. Ruta: ${m.ruta}.`
+    ? `Distancia y tiempo medidos en ${m.fuente} el ${m.fecha}, ${m.modo}, desde ${m.origen} hasta ${m.destino}. Ruta: ${m.ruta}. ` +
+      `Medido hasta el casco urbano, no hasta un predio o vereda concretos, que suman tiempo por vía interna. ` +
+      `Es una lectura de un día: varía con el tráfico y suele ser mayor los fines de semana.`
     : 'Distancia y tiempo aproximados por carretera desde Bogotá, sujetos a ruta y tráfico. Pendientes de medición.'
 }
 
