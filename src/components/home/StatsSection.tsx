@@ -21,7 +21,15 @@ const STATS = [
   { icon: '🏆', value: DATOS_OFICIALES.aniosOperacion,      suffix: '', label: `Años en el territorio (desde ${DATOS_OFICIALES.anioFundacion})` },
 ];
 
-export function StatsSection() {
+// La reputación (calificación + texto) llega por props desde el servidor, que la
+// lee de la fila editable `cifras-publicas`. Municipios y años siguen siendo
+// constantes de DATOS_OFICIALES: no cambian con el tiempo.
+interface StatsSectionProps {
+  calificacionGoogle: number;
+  textoReputacion: string;
+}
+
+export function StatsSection({ calificacionGoogle, textoReputacion }: StatsSectionProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const animatedRef = useRef(false);
 
@@ -97,10 +105,10 @@ export function StatsSection() {
               className="font-sans font-bold"
               style={{ fontSize: 'clamp(2.2rem, 5vw, 3rem)', color: '#E8B92F', lineHeight: 1 }}
             >
-              {DATOS_OFICIALES.calificacionGoogle.toFixed(1).replace('.', ',')}
+              {calificacionGoogle.toFixed(1).replace('.', ',')}
             </div>
             <p className="font-sans font-semibold text-sm text-white/80 text-center" style={{ maxWidth: 150 }}>
-              {DATOS_OFICIALES.googleRatingTexto}
+              {textoReputacion}
             </p>
           </div>
 

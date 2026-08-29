@@ -52,14 +52,17 @@ export const DATOS_OFICIALES = {
   // publica su propia calificación— y hacerlo pone en riesgo la elegibilidad de
   // resultados enriquecidos de TODO el dominio, no solo de esa página.
   // Va como TEXTO VISIBLE en el HTML servido, siempre citando la fuente.
+  // ⚠ FUENTE VIVA: estas dos cifras se editan desde el dashboard y viven en la
+  // fila `cifras-publicas` de PageContent. Lo de aquí es el RESPALDO de
+  // compilación y el valor por defecto cuando la fila aún no existe. Para
+  // LEERLAS en runtime usa `cargarCifras()` de @/lib/cifras-publicas; nunca
+  // `DATOS_OFICIALES.resenasGoogle` directo, o el número quedará viejo.
   /** Calificación media en Google Business Profile. Perfil verificado. */
   calificacionGoogle: 5.0,
-  /** Número de opiniones en Google Business Profile. */
-  resenasGoogle: 26,
+  /** Número de opiniones en Google Business Profile (respaldo; fuente viva en cifras-publicas). */
+  resenasGoogle: 38,
   fuenteReputacion: 'Google Business Profile',
   fechaCorteReputacion: '2026-08',
-  /** Cómo debe citarse siempre esta cifra: nunca el número solo. */
-  googleRatingTexto: '5,0 sobre 26 opiniones en Google',
 
   // ── Ubicación ──────────────────────────────────────────────────────────────
   // Las coordenadas son las de la ficha de Google Business Profile, no las del

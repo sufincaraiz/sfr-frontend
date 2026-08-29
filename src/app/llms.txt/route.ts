@@ -5,6 +5,7 @@ import { formatPrice } from '@/lib/utils'
 import { horarioEnProsa, contrasteConMac } from '@/lib/horario'
 import { PUBLICABLE } from '@/lib/publicable'
 import { getTiposOfrecibles } from '@/lib/property-types.server'
+import { cargarCifras, textoReputacion } from '@/lib/cifras-publicas'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /llms.txt — presentación de la entidad para modelos generativos.
@@ -157,10 +158,11 @@ export async function GET() {
   ]
 
   // ── Datos verificables ─────────────────────────────────────────────────────
+  const cifras = await cargarCifras()
   lineas.push(`## Datos verificables`, ``)
   lineas.push(`- Matrícula mercantil: 199483`)
   lineas.push(`- En operación desde: ${DATOS_OFICIALES.anioFundacion} (${DATOS_OFICIALES.aniosOperacion} años a la fecha de corte)`)
-  lineas.push(`- Reputación: ${DATOS_OFICIALES.googleRatingTexto}, perfil verificado y administrado por el titular`)
+  lineas.push(`- Reputación: ${textoReputacion(cifras)}, perfil verificado y administrado por el titular`)
   lineas.push(`- Municipios de cobertura: ${DATOS_OFICIALES.municipiosProvincia} (Provincia del Gualivá completa)`)
   if (municipiosConPagina.length) {
     lineas.push(`- Municipios con página de contenido propio: ${municipiosConPagina.length}`)

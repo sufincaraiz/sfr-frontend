@@ -5,6 +5,7 @@ import { RespuestaDirecta } from '@/components/aeo/RespuestaDirecta';
 import { TaglineMarca } from '@/components/layout/TaglineMarca';
 import { RangosPrecioTabla } from '@/components/aeo/RangosPrecioTabla';
 import { respuestaPortada } from '@/lib/respuestas-directas';
+import { cargarCifras, textoReputacion } from '@/lib/cifras-publicas';
 import { Hero }               from '@/components/home/Hero';
 import { FeaturedProperties } from '@/components/home/FeaturedProperties';
 import { StatsSection }       from '@/components/home/StatsSection';
@@ -159,13 +160,15 @@ async function getFeaturedProperties(): Promise<Property[]> {
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default async function HomePage() {
   const faqsHome = await homeFaqsResueltas();
-  const [featuredProperties, inventario, respuesta, priceRange, tiposConInventario] = await Promise.all([
+  const [featuredProperties, inventario, respuesta, priceRange, tiposConInventario, cifras] = await Promise.all([
     getFeaturedProperties(),
     fraseInventario(),
     respuestaPortada(),
     rangoPreciosCatalogo(),
     getTiposConInventario(),
+    cargarCifras(),
   ]);
+  const textoRep = textoReputacion(cifras);
 
   return (
     <>
@@ -208,10 +211,10 @@ export default async function HomePage() {
       </section>
       <RegistroVisitaBanner />
       <Tour360Section />
-      <StatsSection />
+      <StatsSection calificacionGoogle={cifras.calificacionGoogle} textoReputacion={textoRep} />
       <GuiaInversionBanner />
       <ValueProp />
-      <AboutUs />
+      <AboutUs textoReputacion={textoRep} />
       <FAQ faqs={faqsHome} />
 
       {/* Popup del evento "421 años de La Vega" — cliente, no afecta SSR/SEO */}

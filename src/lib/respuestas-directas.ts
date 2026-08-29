@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales'
+import { cargarCifras, textoReputacion } from '@/lib/cifras-publicas'
 import { getTiposOfrecibles, getTipoPlurales } from '@/lib/property-types.server'
 import { tipoPlural } from '@/lib/property-types'
 import type { RespuestaDirectaProps } from '@/components/aeo/RespuestaDirecta'
@@ -179,7 +180,10 @@ export function respuestaGuiaInversion(): RespuestaDirectaProps {
 
 // ─── 4. Nosotros ─────────────────────────────────────────────────────────────
 
-export function respuestaNosotros(): RespuestaDirectaProps {
+export async function respuestaNosotros(): Promise<RespuestaDirectaProps> {
+  // La reputación es la fuente única viva (cifras-publicas), no el respaldo
+  // estático: Mac no puede decir 26 mientras el home dice 38.
+  const cifras = await cargarCifras()
   return {
     pregunta: '¿Qué es Su Finca Raíz y dónde opera?',
     respuesta:
@@ -187,7 +191,7 @@ export function respuestaNosotros(): RespuestaDirectaProps {
       `mercantil 199483, en operación desde ${DATOS_OFICIALES.anioFundacion}. Cubre los ` +
       `${DATOS_OFICIALES.municipiosProvincia} municipios de la Provincia del Gualivá y trabaja ` +
       'en consorcio con Conarc, de construcción. Tiene ' +
-      `${DATOS_OFICIALES.googleRatingTexto} y opera un agente de inteligencia artificial propio, Mac.`,
+      `${textoReputacion(cifras)} y opera un agente de inteligencia artificial propio, Mac.`,
     fuenteDato: `${FUENTE} y ${DATOS_OFICIALES.fuenteReputacion}`,
     fechaCorte: hoy(),
   }

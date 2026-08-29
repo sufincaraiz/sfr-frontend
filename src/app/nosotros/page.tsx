@@ -12,6 +12,7 @@ import { getTiposOfrecibles } from '@/lib/property-types.server';
 import { veredasPublicables } from '@/lib/malla-veredas';
 import { cargarEnlaces } from '@/lib/enlaces';
 import { respuestaNosotros } from '@/lib/respuestas-directas';
+import { cargarCifras, textoReputacion } from '@/lib/cifras-publicas';
 import { FAQS_NOSOTROS } from '@/lib/faqs';
 import { horarioEnProsa } from '@/lib/horario';
 
@@ -58,10 +59,9 @@ export const metadata: Metadata = {
 };
 
 export default async function NosotrosPage() {
-  const respuesta = respuestaNosotros();
-
-  const [priceRange, tiposConInventario, municipiosConPagina, veredas, disponibles, tiposOfrecibles, enlaces] =
+  const [respuesta, priceRange, tiposConInventario, municipiosConPagina, veredas, disponibles, tiposOfrecibles, enlaces, cifras] =
     await Promise.all([
+      respuestaNosotros(),
       rangoPreciosCatalogo(),
       getTiposConInventario(),
       getMunicipiosConPagina(),
@@ -69,6 +69,7 @@ export default async function NosotrosPage() {
       contarPropiedadesDisponibles(),
       getTiposOfrecibles(),
       cargarEnlaces(),
+      cargarCifras(),
     ]);
 
   const breadcrumbs = breadcrumbSchema([
@@ -93,7 +94,7 @@ export default async function NosotrosPage() {
     { etiqueta: 'Tipos en catálogo', valor: tiposOfrecibles.map(t => t.plural).join(', ') },
     // Como TEXTO, nunca aggregateRating: marcar reseñas propias sobre la propia
     // empresa es lo que Google penaliza, y el dato es igual de citable así.
-    { etiqueta: 'Calificación en Google', valor: DATOS_OFICIALES.googleRatingTexto, nota: DATOS_OFICIALES.fuenteReputacion },
+    { etiqueta: 'Calificación en Google', valor: textoReputacion(cifras), nota: DATOS_OFICIALES.fuenteReputacion },
   ];
 
   return (
