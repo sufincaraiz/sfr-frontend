@@ -219,8 +219,13 @@ export const DATOS_OFICIALES = {
   // Reputación: verificable por un tercero. Sustituye al 98 % sin respaldo.
   // NUNCA como aggregateRating en JSON-LD (reseñas autorreferenciales).
   // Solo como texto visible, citando la fuente.
+  // ⚠ FUENTE VIVA: calificación y reseñas se editan desde el dashboard
+  //    (fila `cifras-publicas` de PageContent). Lo de aquí es el RESPALDO de
+  //    compilación. En runtime se leen con cargarCifras() de lib/cifras-publicas,
+  //    nunca este literal, o el número queda viejo. El número de reseñas sube
+  //    solo con el tiempo: es un dato que cambia y por eso NO se escribe a mano.
   calificacionGoogle:    5.0,
-  resenasGoogle:         26,
+  resenasGoogle:         38,          // respaldo; fuente viva en cifras-publicas
   fuenteReputacion:      'Google Business Profile',
   fechaCorteReputacion:  '2026-08',
 
@@ -339,6 +344,22 @@ superficies, y el resultado se reporta superficie por superficie.
 
 **Regla de renderizado:** toda cifra debe existir en el **HTML servido**. Los contadores
 animados arrancan desde el valor final o lo llevan en texto de respaldo. Nunca desde `0`.
+
+**Regla de la `meta_description`: solo atributos estables.** La `meta_description` (y el
+`meta_title`) se escribe una vez y nadie la revisa cuando el dato cambia. Es a la vez el
+campo más visible del sitio en el resultado de búsqueda y el que menos se audita. Por eso
+**ningún dato que cambie va en la meta**: ni precio, ni estado (disponible/reservado/vendido),
+ni conteos, ni distancias no medidas, ni fechas. Es el mismo patrón de las listas a mano
+—§1.3— trasladado al `<head>`: una meta con el precio adentro queda contradiciendo a la ficha
+el día que el precio baja, y nadie lo nota, porque el `<head>` no se lee en el navegador.
+
+En la meta van solo **atributos estables** de la ficha: área, número de habitaciones y baños,
+tipo, ubicación (municipio y vereda) y características físicas observables (topografía plana,
+esquinero, piso). Lo que cambia vive **derivado en la página**: el precio en el `Offer` del
+JSON-LD y en el cuerpo; el estado en su *badge*; los conteos en su bloque. La meta describe lo
+que la propiedad *es*, no lo que en este momento *cuesta o está*. La distancia solo entra si
+está **medida y registrada** en un campo de la ficha (§7, medición con fecha); una distancia
+al oído —«a 5 minutos del parque»— es caso 4 de la tabla de sustentación: fuera.
 
 ---
 
