@@ -152,6 +152,22 @@ const nextConfig: NextConfig = {
       // misma; solo cambió el vocabulario de los datos.
       { source: '/propiedades/condominio/:municipio', destination: '/propiedades/en-condominio/:municipio', permanent: true },
       { source: '/propiedades/condominio', destination: '/propiedades/en-condominio', permanent: true },
+      // Landing legacy de NIVEL DEPARTAMENTO (tipo + «-cundinamarca», sin
+      // municipio). El generador `landing` cubre `/tipo-en-venta` y
+      // `/tipo-en-venta-<muni>-cundinamarca`, pero NO esta forma intermedia, que
+      // daba 404 en producción. Se listan explícitas —no por generador— porque
+      // «condominios-campestres» no lleva «-en-venta» y su destino es la ruta de
+      // ATRIBUTO `/propiedades/en-condominio`, no un tipo (condominio ya no lo es).
+      // Destinos verificados con inventario: casa 14, lote 10, finca 8, condominio 12.
+      // OJO al destino: `/propiedades/finca` NO es final — [filtro]/page.tsx hace
+      // permanentRedirect a `/propiedades?tipo=finca`. Apuntar a la ruta limpia
+      // encadenaría 308→308; se apunta al canónico final para no perder señal
+      // (misma regla que el bloque `landing` de arriba). `en-condominio` sí es
+      // 200 directo, así que ese va a la ruta de atributo.
+      { source: '/fincas-en-venta-cundinamarca',           destination: '/propiedades?tipo=finca',    permanent: true },
+      { source: '/lotes-en-venta-cundinamarca',            destination: '/propiedades?tipo=lote',     permanent: true },
+      { source: '/casas-campestres-en-venta-cundinamarca', destination: '/propiedades?tipo=casa',     permanent: true },
+      { source: '/condominios-campestres-cundinamarca',    destination: '/propiedades/en-condominio', permanent: true },
       ...landing,
       ...props,
       ...dinamicos,
