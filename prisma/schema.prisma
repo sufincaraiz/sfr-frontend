@@ -528,3 +528,27 @@ model MedicionIA {
   @@index([consulta_id, motor, medido_en])
   @@map("mediciones_ia")
 }
+
+/// Hallazgos de la vigilancia diaria de contenido (cron/vigilancia).
+///
+/// Existe para que el cron RECUERDE qué ya reportó: sin esto, el mismo hallazgo
+/// se avisa cada día idéntico y un lead real se pierde entre las alertas. Cada
+/// hallazgo se identifica por su `hash` (de clase+detalle); una corrida solo
+/// notifica los NUEVOS o los que sigan abiertos tras N días. Cuando una corrida
+/// ya no ve un hash, se marca `resuelto` (se corrigió).
+model VigilanciaHallazgo {
+  id            String    @id @default(uuid())
+  /// sha1(clase   detalle). Identidad estable del hallazgo.
+  hash          String    @unique
+  clase         String
+  detalle       String    @db.Text
+  primero_visto DateTime  @default(now())
+  ultimo_visto  DateTime  @default(now())
+  /// true cuando una corrida deja de verlo (contenido corregido).
+  resuelto      Boolean   @default(false)
+  /// Última vez que se avisó por WhatsApp de este hallazgo. null = nunca.
+  notificado_en DateTime?
+
+  @@index([resuelto, primero_visto])
+  @@map("vigilancia_hallazgos")
+}

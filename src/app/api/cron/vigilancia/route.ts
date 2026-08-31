@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { vigilarContenido } from '@/lib/vigilancia'
+import { reconciliarHallazgos } from '@/lib/vigilancia-registro'
 import { enviarAlertaLeadWhatsApp } from '@/lib/whatsapp'
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -44,27 +45,34 @@ export async function GET(req: NextRequest) {
     )
     for (const h of r.hallazgos) console.log(`[cron/vigilancia]   · ${h.clase}: ${h.detalle}`)
 
-    if (r.hallazgos.length > 0) {
-      // Se reutiliza el canal de los leads a propósito: es el que el titular ya
-      // mira. Va por la plantilla `nuevo_lead_sfr`, así que el primer parámetro
-      // —que en un lead es el nombre— se usa como titular del aviso.
-      const porClase = new Map<string, number>()
-      for (const h of r.hallazgos) porClase.set(h.clase, (porClase.get(h.clase) ?? 0) + 1)
-      const resumen =
-        [...porClase].map(([c, n]) => `${n} ${c}`).join('; ') +
-        '. Primero: ' + (r.hallazgos[0]?.detalle ?? '')
+    // DEDUPLICACIÓN: el estado se guarda en la tabla `vigilancia_hallazgos`. Solo
+    // se avisa lo NUEVO o lo que sigue abierto tras N días (ver reconciliar). Si
+    // la corrida fue parcial (sinComprobar), NO se marca nada resuelto: un
+    // hallazgo que solo no se escaneó no está corregido.
+    const rec = await reconciliarHallazgos(r.hallazgos, { marcarResueltos: r.sinComprobar.length === 0 })
+    console.log(
+      `[cron/vigilancia] nuevos: ${rec.nuevos.length}, re-aviso (+3d): ${rec.vencidos.length}, ` +
+      `abiertos: ${rec.abiertos}, resueltos ahora: ${rec.resueltosAhora}`,
+    )
 
+    if (rec.aNotificar) {
+      // WhatsApp ahora es un PUNTERO, no el contenido: el detalle vive en
+      // /admin/vigilancia. Reutiliza la plantilla `nuevo_lead_sfr` (sin trámite
+      // con Meta), pero como solo dispara ante cambios, deja de ahogar los leads.
+      const partes: string[] = []
+      if (rec.nuevos.length) partes.push(`${rec.nuevos.length} nuevo${rec.nuevos.length > 1 ? 's' : ''}`)
+      if (rec.vencidos.length) partes.push(`${rec.vencidos.length} sin corregir hace +3 días`)
       await enviarAlertaLeadWhatsApp(
         '⚠ VIGILANCIA DE CONTENIDO',
-        'revisar /admin',
-        resumen,
+        'revisar /admin/vigilancia',
+        `${partes.join(' y ')}. Revísalos en el panel /admin/vigilancia.`,
       )
     }
 
     // Que falten comprobaciones no es un fallo: es Railway. Pero se reporta,
     // porque un «0 hallazgos» que en realidad no comprobó nada es peor que un
     // hallazgo.
-    return NextResponse.json({ ok: true, ...r })
+    return NextResponse.json({ ok: true, ...r, dedup: rec })
   } catch (err) {
     console.error('[cron/vigilancia] error:', err)
     return NextResponse.json({ error: 'Error al vigilar.' }, { status: 500 })
