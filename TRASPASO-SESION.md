@@ -2266,3 +2266,41 @@ DTO o un componente que recibe otra forma — y el `grep` no atraviesa ninguno.
 hallazgo se confirma abriendo el archivo. Es la misma disciplina que ya salvó
 tres guardas —probar el detector con casos reales antes de creerle un cero— y
 aquí evitó reportar un defecto inexistente en los ocho municipios.
+
+---
+
+## El 70/20/10 es un indicador de DERIVA, no un objetivo a alcanzar
+
+`scripts/medir-70-20-10.mjs` mide la proporción de texto publicado entre tres
+cubos:
+
+- **INFORMACIÓN** (~70 %): contenido que sirve aunque no compres nada —municipios,
+  veredas, guía de inversión, glosario, FAQ, blog.
+- **INVENTARIO** (~20 %): descripciones de propiedad, catálogo.
+- **MARCA** (~10 %): /nosotros, /mac, servicios, hero, propuesta.
+
+**Su valor no es llegar al 70.** Es detectar la deriva: si entran 15 fichas
+nuevas y nadie publica información, la proporción de inventario sube y el sitio
+se convierte en catálogo sin que nadie lo note. Se re-ejecuta y se compara con la
+medición anterior. **61 % de información es una proporción sana.**
+
+**Línea base (medición de esta sesión):**
+
+| Cubo | Caracteres | % | Objetivo |
+|---|---:|---:|---:|
+| Información | 166.191 | 60.8 % | 70 % |
+| Inventario | 95.174 | 34.8 % | 20 % |
+| Marca | 12.137 | 4.4 % | 10 % |
+
+**Método:** INFO e INVENTARIO se miden sobre el TEXTO CRUDO de la base y archivos
+de datos (exacto). MARCA sobre el HTML SERVIDO de sus rutas (su texto vive en
+TSX, no en BD; parsear literales de JSX lo subcontaba a ~1.7 %, falso-bajo). No
+cuenta nav, footer, código ni llms.txt. Las FAQ generadas de VEREDA no están
+contadas (INFO extra, no incluida), así que el inventario real es un techo.
+
+**Lectura:** el inventario pesa casi el doble del objetivo (35 % vs 20 %), pero
+la información YA lidera —no había que recortar fichas, que son el producto, sino
+que falta información publicada. Marca (4.4 %) tiene margen de sobra: el único
+cubo con techo real —si pasa del 10 % hay que recortar— está lejos de él. Para
+llevar inventario del 35 % al 20 % sin tocar fichas, INFO tiene que crecer ~+225
+mil caracteres: las guías de territorio, las cinco FAQ y el informe de mercado.
