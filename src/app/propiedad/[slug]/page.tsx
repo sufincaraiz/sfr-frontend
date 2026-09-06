@@ -8,6 +8,7 @@ import { Home, MapPin, ChevronRight } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
 import { formatPrice } from '@/lib/utils';
 import { tipoLabel } from '@/lib/property-types';
+import { metaDescripcionPropiedad } from '@/lib/meta-propiedad';
 import { getTipoLabels } from '@/lib/property-types.server';
 import { urlDeMunicipio } from '@/lib/cobertura';
 import { cargarEnlaces } from '@/lib/enlaces';
@@ -108,7 +109,19 @@ export async function generateMetadata(
   const labels = await getTipoLabels();
   const rawTitle = p.meta_title ?? p.title ?? `${tipoLabel(p.type, labels)} en ${p.municipality?.name ?? 'La Vega'}`;
   const title = rawTitle.replace(/\s*\|\s*Su Finca Ra[íi]z\s*$/i, '').trim();
-  const description = p.meta_description ?? p.short_description ?? `${tipoLabel(p.type, labels)} en venta en ${p.municipality?.name ?? 'La Vega'}, Cundinamarca. ${formatPrice(p.price_cop)}.`;
+  // Fallback derivado de atributos ESTABLES (sin precio): la misma función que
+  // regenera las metas viejas y con la que nace cualquier ficha sin meta escrita.
+  // No cae a short_description: tras el saneamiento eso es el cuerpo completo,
+  // demasiado largo para una meta.
+  const description = p.meta_description ?? metaDescripcionPropiedad({
+    tipo: p.type,
+    tipoLabel: tipoLabel(p.type, labels),
+    areaConstruida: p.area_built_m2,
+    areaLote: p.area_lot_m2,
+    habitaciones: p.bedrooms,
+    banos: p.bathrooms,
+    municipio: p.municipality?.name ?? 'La Vega',
+  });
   // Portada de la propiedad para la preview al compartir. `ogImageUrl` la
   // reduce a 1200x630 (los originales pesan ~400-500 KB y WhatsApp los descarta)
   // y cae a la imagen del sitio si la propiedad no tuviera fotos.
