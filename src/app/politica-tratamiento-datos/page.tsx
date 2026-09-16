@@ -88,14 +88,34 @@ export default function PoliticaDatosPage() {
         <p>
           Este tratamiento solo se realiza con la autorización previa y expresa del titular, que
           se recoge mediante casillas de aceptación en el formulario de registro. El visitante
-          conserva en todo momento los derechos descritos en el numeral 4.
+          conserva en todo momento los derechos descritos en el numeral 5.
         </p>
         <p>
           Los datos del registro de visitas se conservan por un máximo de dos (2) años contados
           desde la fecha de la visita, tras lo cual son eliminados de forma automática.
         </p>
 
-        <h2>4. Derechos de los Titulares (Habeas Data)</h2>
+        <h2>4. Enlace de Consulta Contable</h2>
+        <p>
+          Para la preparación de declaraciones tributarias, Su Finca Raíz puede generar enlaces de
+          consulta de <strong>solo lectura</strong> dirigidos a su contador o asesor tributario.
+          Estos enlaces exponen información financiera del negocio —ingresos, egresos y retenciones
+          de un periodo determinado— y no contienen datos personales de clientes ni de visitantes.
+        </p>
+        <p>
+          El acceso exige un enlace privado y un PIN, compartidos por canales distintos. El enlace
+          tiene fecha de expiración, queda limitado a un periodo contable concreto —fuera de ese
+          rango no muestra información— y puede revocarse en cualquier momento desde el panel
+          administrativo.
+        </p>
+        <p>
+          Cada apertura del enlace queda registrada. La dirección IP y el navegador desde los que se
+          accede se conservan por un máximo de <strong>doce (12) meses</strong>; cumplido ese plazo
+          se eliminan de forma automática y se conserva únicamente la fecha del acceso y el enlace
+          consultado, como registro de auditoría.
+        </p>
+
+        <h2>5. Derechos de los Titulares (Habeas Data)</h2>
         <p>Como titular de la información, usted tiene derecho a:</p>
         <ul>
           <li>Conocer, actualizar y rectificar sus datos personales.</li>
@@ -104,7 +124,7 @@ export default function PoliticaDatosPage() {
           <li>Revocar la autorización o solicitar la supresión de sus datos cuando lo considere pertinente.</li>
         </ul>
 
-        <h2>5. Canales de Atención</h2>
+        <h2>6. Canales de Atención</h2>
         <p>
           Para ejercer sus derechos, puede enviar una solicitud formal a través de los siguientes
           medios:

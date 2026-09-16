@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { purgarVisitasVencidas } from '@/lib/retencion-visitas'
+import { anonimizarAccesosVencidos } from '@/lib/retencion-accesos-contador'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Purga automática del registro de visitas (retención de 2 años).
@@ -29,7 +30,23 @@ export async function GET(req: NextRequest) {
     const { eliminadas, corte } = await purgarVisitasVencidas()
     // Queda en los logs de Vercel como evidencia de que la retención se cumple.
     console.log(`[cron/purge-visitas] Eliminadas ${eliminadas} visitas anteriores a ${corte.toISOString()}.`)
-    return NextResponse.json({ ok: true, eliminadas, corte: corte.toISOString() })
+
+    // Misma corrida, otra retención: la bitácora del enlace del contador se
+    // ANONIMIZA a los 12 meses (ip y userAgent a null), conservando fecha y
+    // enlace. Va aquí y no en un cron propio porque el plan Hobby limita los
+    // crons y el disparador es el mismo: una pasada diaria de retención.
+    const accesos = await anonimizarAccesosVencidos()
+    console.log(
+      `[cron/purge-visitas] Anonimizados ${accesos.anonimizados} accesos de contador anteriores a ` +
+      `${accesos.corte.toISOString()} (ip y userAgent a null; fecha y enlace conservados).`,
+    )
+
+    return NextResponse.json({
+      ok: true,
+      eliminadas,
+      corte: corte.toISOString(),
+      accesosContadorAnonimizados: accesos.anonimizados,
+    })
   } catch (err) {
     console.error('[cron/purge-visitas] error purgando:', err)
     return NextResponse.json({ error: 'Error al purgar.' }, { status: 500 })

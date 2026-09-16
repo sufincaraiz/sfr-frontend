@@ -673,11 +673,28 @@ model Tercero {
 }
 
 /// Parámetros fiscales de UN año. Nacen VACÍOS: el contador los llena.
+enum EstadoParametro {
+  /// Se guarda incompleto y se retoma. El módulo NO calcula con él.
+  BORRADOR
+  /// Validado y en uso. Solo se activa cuando están los obligatorios.
+  ACTIVO
+}
+
 model ParametroFiscal {
   id             String   @id @default(uuid())
   anio           Int      @unique
+  /// BORRADOR permite guardar a medias sin romper la guarda: el cálculo exige
+  /// ACTIVO. Así se trabaja en el año que viene sin bloquear el actual.
+  estado         EstadoParametro @default(BORRADOR)
+  /// ¿Somos responsables de IVA ESE año? NULLABLE a propósito: null = sin
+  /// decidir, y bloquea la activación. Un `false` por defecto silencioso en un
+  /// año donde sí se cruzaron los topes es justo el error que nadie ve.
+  /// Con false: no se factura IVA, el IVA pagado es COSTO (no descontable) y
+  /// tampoco hay reteIVA en ninguna dirección.
+  responsable_iva Boolean?
   /// Valor del UVT del año. Null = sin cargar → el cálculo se detiene.
   uvt            Decimal? @db.Decimal(14, 2)
+  /// Solo obligatoria si responsable_iva = true.
   tarifa_iva     Decimal? @db.Decimal(5, 2)
   tarifa_reteiva Decimal? @db.Decimal(5, 2)
   /// Año cerrado: no se editan sus parámetros ni se registran movimientos.
@@ -826,7 +843,10 @@ model Egreso {
   fecha                    DateTime
   descripcion              String
   valor_base               Decimal         @db.Decimal(16, 2)
-  iva_descontable          Decimal         @db.Decimal(16, 2) @default(0)
+  /// IVA PAGADO al proveedor. Se llama así y no «descontable» a propósito: si
+  /// no somos responsables de IVA, NO es recuperable, es COSTO. El nombre viejo
+  /// habría dicho una cosa y el cálculo otra. Ver costoEgreso().
+  iva_pagado               Decimal         @db.Decimal(16, 2) @default(0)
   /// Las que YO le practico al proveedor (y luego declaro y pago).
   retefuente_practicada    Decimal         @db.Decimal(16, 2) @default(0)
   reteica_practicada       Decimal         @db.Decimal(16, 2) @default(0)
@@ -930,4 +950,56 @@ model DistribucionComision {
 
   @@index([ingreso_id])
   @@map("distribuciones_comision")
+}
+
+/// ENLACE DE SOLO LECTURA PARA EL CONTADOR — token + PIN, como el del dueño.
+///
+/// Mismo mecanismo probado de `EnlaceVisitantes` (token de 256 bits, PIN con
+/// bcrypt, bloqueo por intentos, sesión JWT con scope propio). Lo que añade es
+/// el ALCANCE POR PERIODO: el enlace solo ve el rango que tiene guardado aquí.
+///
+/// ⚠ El periodo sale SIEMPRE de esta fila, nunca de la petición. El endpoint no
+/// acepta fechas, así que no hay parámetro que manipular. Es la misma garantía
+/// que el `select` de `visitantesDe()`: la promesa se cumple en el servidor.
+model EnlaceContador {
+  id               String   @id @default(uuid())
+  createdAt        DateTime @default(now())
+  /// Para identificarlo en el panel: «Contador — bimestre 5 de 2026».
+  etiqueta         String
+  token            String   @unique
+  /// bcrypt del PIN. NUNCA en texto plano.
+  pinHash          String
+  /// Alcance del enlace. Fuera de este rango no devuelve nada.
+  periodo_desde    DateTime
+  periodo_hasta    DateTime
+  expiraAt         DateTime
+  revocado         Boolean  @default(false)
+  ultimoAcceso     DateTime?
+  intentosFallidos Int      @default(0)
+  creado_por       String?
+  accesos          AccesoEnlaceContador[]
+
+  @@map("enlaces_contador")
+}
+
+/// Bitácora de accesos al enlace del contador.
+///
+/// RETENCIÓN (Ley 1581, minimización): a los 12 meses el cron ANONIMIZA la
+/// fila — pone `ip` y `userAgent` en null — y CONSERVA `fecha` y `enlace_id`.
+/// Así queda el rastro de que el enlace se usó y cuándo, que es lo que tiene
+/// valor de auditoría, sin retener el dato personal más de lo necesario.
+model AccesoEnlaceContador {
+  id         String   @id @default(uuid())
+  enlace_id  String
+  enlace     EnlaceContador @relation(fields: [enlace_id], references: [id], onDelete: Cascade)
+  fecha      DateTime @default(now())
+  /// Se anonimizan a los 12 meses (quedan en null); la fila NO se borra.
+  ip         String?
+  userAgent  String?
+  /// Marca de que ya fue anonimizada, para no reprocesarla cada noche.
+  anonimizado_en DateTime?
+
+  @@index([enlace_id, fecha])
+  @@index([anonimizado_en, fecha])
+  @@map("accesos_enlace_contador")
 }
