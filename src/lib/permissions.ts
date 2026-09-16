@@ -6,7 +6,7 @@
 // módulo solo describe QUÉ rol puede ver QUÉ.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const ROLES = ['admin', 'asistente_crm', 'autor_blog'] as const;
+export const ROLES = ['admin', 'asistente_crm', 'autor_blog', 'contador'] as const;
 export type Role = (typeof ROLES)[number];
 
 export function isRole(v: unknown): v is Role {
@@ -17,6 +17,7 @@ export const ROLE_LABELS: Record<Role, string> = {
   admin: 'Administrador',
   asistente_crm: 'Asistente CRM',
   autor_blog: 'Autor de blog',
+  contador: 'Contador',
 };
 
 export interface AdminSection {
@@ -52,6 +53,12 @@ export const ADMIN_SECTIONS: AdminSection[] = [
   { prefix: '/admin/tipos',               label: 'Tipos de inmueble',   icon: 'Tags',            roles: ['admin'] },
   { prefix: '/admin/visitas',             label: 'Visitas',             icon: 'UserCheck',       roles: ['admin'] },
   { prefix: '/admin/registro-visita',     label: 'Registro de visita',  icon: 'ClipboardCheck',  roles: ['admin'] },
+  // Finanzas. `/admin/finanzas` cubre por prefijo ingresos, egresos, terceros y
+  // reportes; `/admin/finanzas/parametros` se lista aparte SOLO para admin y gana
+  // por ser el prefijo más específico. El contador no llega a propiedades ni al
+  // CRM porque no están listados para su rol: deny-by-default.
+  { prefix: '/admin/finanzas',            label: 'Finanzas',            icon: 'Wallet',          roles: ['admin', 'contador'] },
+  { prefix: '/admin/finanzas/parametros', label: 'Parámetros fiscales', icon: 'SlidersHorizontal', roles: ['admin'] },
   { prefix: '/admin/blog',                label: 'Blog',                icon: 'PenSquare',       roles: ['admin', 'autor_blog'] },
   { prefix: '/admin/usuarios',            label: 'Usuarios',            icon: 'Shield',          roles: ['admin'] },
 ];
@@ -61,6 +68,7 @@ export function roleHome(role: string): string {
   switch (role) {
     case 'asistente_crm': return '/admin/crm';
     case 'autor_blog':    return '/admin/blog';
+    case 'contador':      return '/admin/finanzas';
     default:              return '/admin/dashboard'; // admin (y fallback seguro)
   }
 }

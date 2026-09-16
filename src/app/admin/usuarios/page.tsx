@@ -15,6 +15,7 @@ const ROLE_BADGE: Record<Role, { bg: string; color: string }> = {
   admin:         { bg: '#EEF2FF', color: '#4338CA' },
   asistente_crm: { bg: '#ECFDF5', color: '#047857' },
   autor_blog:    { bg: '#FEF3C7', color: '#B45309' },
+  contador:      { bg: '#F1F5F9', color: '#334155' },
 };
 
 export default function AdminUsuariosPage() {
