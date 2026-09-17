@@ -14,7 +14,10 @@
     "noEmit": true,
     // `scripts/probar-busqueda.ts` importa el módulo real con extensión .ts
     // porque lo ejecuta Node directamente (sin bundler, sin alias). Es válido
-    // solo con noEmit, que ya está activo. El código de la app no debe usarlo.
+    // solo con noEmit, que ya está activo. El código de la app no debe usarlo,
+    // CON UNA excepción acotada: un módulo hoja que importa otro módulo hoja y
+    // que Node ejecuta directamente en una prueba (lib/finanzas/calculo.ts →
+    // ./pendientes.ts). Sin la extensión, Node no resuelve el import.
     "allowImportingTsExtensions": true,
     "esModuleInterop": true,
     "module": "esnext",

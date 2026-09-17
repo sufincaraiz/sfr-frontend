@@ -1,6 +1,10 @@
 # Datos que necesitamos del contador — parámetros fiscales del año
 
-**Su Finca Raíz** · NIT/Matrícula mercantil **199483** · La Vega, Cundinamarca
+**Su Finca Raíz** · Matrícula mercantil **199483** · La Vega, Cundinamarca
+
+> Versión rellenable en pantalla (se envía por WhatsApp y se importa sin reteclear):
+> **https://www.sufincaraiz.com/interno/datos-contador** — documento interno, fuera de buscadores.
+
 Año fiscal: **__________**   ·   Diligenciado por: ______________________   ·   Fecha: ____________
 
 ---

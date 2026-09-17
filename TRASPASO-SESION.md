@@ -881,14 +881,18 @@ curl -s https://www.sufincaraiz.com/ | grep -oE '"priceRange":"[^"]*"'
 curl -s https://www.sufincaraiz.com/ | grep -oE '"name":"Venta de [^"]*"'
 curl -s https://www.sufincaraiz.com/ | grep -oE '"logo":\{[^}]*\}'
 
+# ⚠ El HTML servido es UNA sola línea: `grep -c` cuenta LÍNEAS y daría 0 o 1
+#   siempre. Contar apariciones con `grep -o … | wc -l`. Ver «Instrumentos que
+#   engañan» al final.
+
 # «Avalúo» solo debe aparecer en el glosario
 for u in / /nosotros /propuesta-comercial; do
-  echo "$u: $(curl -s https://www.sufincaraiz.com$u | grep -oic 'avalúo')"
+  echo "$u: $(curl -s https://www.sufincaraiz.com$u | grep -oi 'avalúo' | wc -l)"
 done
 
 # La página de dron NO debe emitir Service mientras sea borrador
 curl -s https://www.sufincaraiz.com/servicios/dron-y-fotogrametria \
-  | grep -c '"@type":"Service"'
+  | grep -o '"@type":"Service"' | wc -l
 ```
 
 ---
@@ -2304,3 +2308,22 @@ que falta información publicada. Marca (4.4 %) tiene margen de sobra: el único
 cubo con techo real —si pasa del 10 % hay que recortar— está lejos de él. Para
 llevar inventario del 35 % al 20 % sin tocar fichas, INFO tiene que crecer ~+225
 mil caracteres: las guías de territorio, las cinco FAQ y el informe de mercado.
+
+---
+
+## Instrumentos que engañan — cuatro casos, una regla
+
+**Regla: el resultado de un comando se verifica leyendo el EFECTO, no confiando
+en su salida.** La salida dice lo que el instrumento cree que hizo; el efecto
+es lo que pasó. Las cuatro veces el instrumento respondió con normalidad y la
+conclusión era falsa.
+
+| Instrumento | Qué dijo | Qué pasaba en realidad | Cómo se verifica |
+|---|---|---|---|
+| `grep -c` sobre HTML o JSON-LD servido | «1» (o «0») | El HTML servido es **una sola línea**: `grep -c` cuenta LÍNEAS, no apariciones. Sobre `/nosotros` dice 1 donde hay 67. Dos comandos de la §8 de este traspaso tenían justo este defecto (corregidos). | `grep -o 'patrón' \| wc -l` |
+| `next build` con `EXIT=0` | Verde | Next reintenta cada página hasta tres veces: un build con 7 `P2024` termina en verde. | Contar errores dentro del log — `npm run build:verificado` |
+| `script \| Select-Object -First N` en PowerShell | Mostró N líneas y terminó | Al cerrarse la tubería se **mata el proceso**. Si el script escribía en la base, la escritura queda a medias sin ningún error visible. | Nunca truncar la salida de un script que escribe; redirigir a archivo y leerlo después, y comprobar el estado final en la base |
+| `Get-Content` / `Set-Content` de PowerShell 5.1 sobre archivos UTF-8 | Sin error | Lee UTF-8 como ANSI y reescribe **doble-codificado** («Política» → «PolÃ­tica»); además los `-replace` con acentos no coinciden y fallan en silencio. Pasó con la política de tratamiento y con `MODULO-FINANZAS.md`. | Editar código con las herramientas de edición, no con PowerShell. Si ya pasó: `git checkout -- archivo` y rehacer |
+
+Lo común: ninguno **falló**. Todos devolvieron una respuesta verosímil. Un
+error ruidoso se corrige solo; uno silencioso llega a producción.

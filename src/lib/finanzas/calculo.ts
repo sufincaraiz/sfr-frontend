@@ -15,6 +15,9 @@
  *     nadie ve.
  */
 import { Prisma } from '@prisma/client'
+// Extensión `.ts` explícita: Node la exige al ejecutar la prueba directamente.
+// Excepción acotada a los módulos hoja de lib/finanzas (ver tsconfig).
+import { pendientesParaActivar, type ProcedenciaEscalares } from './pendientes.ts'
 
 export class ParametroFiscalFaltante extends Error {
   constructor(mensaje: string) {
@@ -29,10 +32,23 @@ const vacio = (v: unknown): boolean => v === null || v === undefined
 
 export interface ConceptoRetencionLike {
   concepto: string
+  label?: string
   tarifa_declarante: Num
   tarifa_no_declarante: Num
   /** Base mínima EN UVT. 0 = se retiene desde el primer peso. */
   base_minima_uvt: Num
+  /** false = copiado o importado sin confirmar → pendiente. */
+  revisado?: boolean
+  origen?: string
+  copiado_de_anio?: number | null
+}
+
+export interface TarifaIcaLike {
+  municipio: string
+  tarifa_por_mil: Num
+  revisado?: boolean
+  origen?: string
+  copiado_de_anio?: number | null
 }
 
 export interface ParametrosAnioLike {
@@ -45,29 +61,17 @@ export interface ParametrosAnioLike {
   tarifa_iva: Num | null
   tarifa_reteiva?: Num | null
   conceptos: ConceptoRetencionLike[]
+  tarifasIca?: TarifaIcaLike[]
+  procedencia?: ProcedenciaEscalares | null
 }
 
 // ─── Activación de un año ────────────────────────────────────────────────────
 
-/**
- * ÚNICA fuente de «qué falta para activar este año». La usan a la vez la
- * pantalla (para pintar la lista de pendientes) y el endpoint de activación
- * (para validar). Si fueran dos listas, la pantalla diría «listo» y el
- * servidor «falta».
- */
-export function pendientesParaActivar(p: ParametrosAnioLike): string[] {
-  const falta: string[] = []
-  if (vacio(p.uvt)) falta.push('Cargar el UVT del año')
-  if (vacio(p.responsable_iva)) {
-    falta.push('Decidir si el año es responsable de IVA (no se asume que no)')
-  } else if (p.responsable_iva === true && vacio(p.tarifa_iva)) {
-    falta.push('Cargar la tarifa de IVA (obligatoria porque el año es responsable de IVA)')
-  }
-  if (!p.conceptos || p.conceptos.length === 0) {
-    falta.push('Configurar al menos un concepto de retención')
-  }
-  return falta
-}
+// La lista de pendientes vive en el módulo hoja `pendientes.ts` (sin imports),
+// porque la pantalla la ejecuta en el navegador y no puede arrastrar
+// @prisma/client al bundle. Se reexporta aquí para que el servidor la tenga
+// en el mismo sitio que el resto del cálculo. UNA sola implementación.
+export { pendientesParaActivar }
 
 declare const marcaActivable: unique symbol
 /**

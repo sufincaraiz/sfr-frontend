@@ -543,7 +543,7 @@ model MedicionIA {
 /// ya no ve un hash, se marca `resuelto` (se corrigió).
 model VigilanciaHallazgo {
   id            String    @id @default(uuid())
-  /// sha1(clase   detalle). Identidad estable del hallazgo.
+  /// sha1(clase  ␀  detalle). Identidad estable del hallazgo.
   hash          String    @unique
   clase         String
   detalle       String    @db.Text
@@ -700,6 +700,16 @@ model ParametroFiscal {
   /// Año cerrado: no se editan sus parámetros ni se registran movimientos.
   cerrado        Boolean  @default(false)
   notas          String?  @db.Text
+  /// Procedencia de CADA campo escalar: quién lo cargó, cuándo, de dónde vino
+  /// (manual | copia | contador) y si ya se revisó. Forma:
+  ///   { uvt?: P, responsable_iva?: P, tarifa_iva?: P, tarifa_reteiva?: P }
+  ///   P = { por, en, origen, copiadoDe?, revisado }
+  /// Un valor copiado del año anterior o importado del contador nace con
+  /// revisado=false y cuenta como PENDIENTE hasta que alguien lo confirme: si
+  /// no, «copiar el año anterior» sería una puerta trasera a la guarda.
+  procedencia    Json?
+  activado_por   String?
+  activado_en    DateTime?
   created_at     DateTime @default(now())
   updated_at     DateTime @updatedAt
 
@@ -723,6 +733,14 @@ model ConceptoRetencion {
   tarifa_no_declarante Decimal @db.Decimal(5, 2)
   /// Base mínima EN UVT. 0 = sin base mínima (se retiene desde el primer peso).
   base_minima_uvt      Decimal @db.Decimal(10, 2) @default(0)
+  // ── Procedencia (misma semántica que ParametroFiscal.procedencia) ──
+  cargado_por          String?
+  cargado_en           DateTime @default(now())
+  /// manual | copia | contador
+  origen               String   @default("manual")
+  copiado_de_anio      Int?
+  /// false = copiado o importado y aún sin confirmar → cuenta como pendiente.
+  revisado             Boolean  @default(true)
 
   @@unique([parametro_id, concepto])
   @@map("conceptos_retencion")
@@ -736,6 +754,13 @@ model TarifaIca {
   parametro      ParametroFiscal @relation(fields: [parametro_id], references: [id], onDelete: Cascade)
   municipio      String
   tarifa_por_mil Decimal @db.Decimal(6, 3)
+  cargado_por    String?
+  cargado_en     DateTime @default(now())
+  /// manual | copia | contador
+  origen         String   @default("manual")
+  copiado_de_anio Int?
+  /// false = copiada o importada y aún sin confirmar → cuenta como pendiente.
+  revisado       Boolean  @default(true)
 
   @@unique([parametro_id, municipio])
   @@map("tarifas_ica")
