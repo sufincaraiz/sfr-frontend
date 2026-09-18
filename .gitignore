@@ -15,6 +15,18 @@ backups/
 *.sql
 *.sql.gz
 *.dump
+# EXCEPCIÓN — prisma/migraciones-aplicadas/*.sql SÍ va al repo.
+# Por qué existe: es el SQL de cada migración ejecutada sobre la base. En el
+# módulo tributario, poder reconstruir qué se aplicó y cuándo es rastro de
+# auditoría; si solo vive en un disco local, no existe.
+# Qué la protege: scripts/verificar-migraciones-sql.mjs, que corre al inicio
+# de `npm run build` y ROMPE si algún archivo de la carpeta trae datos
+# (INSERT, COPY, UPDATE…SET, DELETE, TRUNCATE o marcas de pg_dump).
+# ⚠ NO quites esa guarda por redundante: esta línea abre un hueco en la regla
+# de arriba (dumps con cédulas, Ley 1581). La guarda es lo único que impide
+# que un respaldo dejado en esta carpeta acabe en GitHub. Si se quita la
+# guarda, hay que quitar también esta excepción.
+!prisma/migraciones-aplicadas/*.sql
 
 # OS / Editor
 .DS_Store

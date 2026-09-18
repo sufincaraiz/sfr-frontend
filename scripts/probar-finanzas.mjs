@@ -15,6 +15,7 @@ import {
 import { roleCanAccessAdminPath, roleHome } from '../src/lib/permissions.ts'
 import { CODIFICADOR_JS, PREFIJO_RESPUESTA, decodificarRespuesta } from '../src/lib/finanzas/formulario-contador.ts'
 import { leerNumero } from '../src/lib/finanzas/numeros.ts'
+import { EMPRESA, MARCA_PENDIENTE, digitoVerificacion, encabezadoReporte, exigirNitValido } from '../src/lib/finanzas/empresa.ts'
 
 let ok = 0, fail = 0
 const check = (nombre, cond, extra = '') => {
@@ -159,6 +160,47 @@ check('tasa «9.66» → 9.66 (en tasa el punto es decimal)', leerNumero('9.66',
 check('tasa «11 %» → 11', leerNumero('11 %', 'tasa', 'x') === '11')
 check('vacío → null', leerNumero('  ', 'tasa', 'x') === null)
 try { leerNumero('once', 'tasa', 'Comisiones'); check('texto no numérico lanza', false) } catch (e) { check('texto no numérico lanza', e.name === 'ErrorNumero') }
+
+// Cómo escribe de verdad un contador colombiano el UVT en un campo libre.
+for (const [entrada, esperado] of [
+  ['52.374 UVT', '52374'], ['$52.374', '52374'], ['52374,00', '52374.00'], ['52.374,00', '52374.00'],
+  ['$52.374,00', '52374.00'], ['COP 52.374', '52374'], ['$52.374 COP', '52374'], ['52.374 pesos', '52374'],
+  ['$52.374 M/CTE', '52374'], ['52.374.-', '52374'], ['1 UVT = $52.374', '52374'], ['52 374', '52374'],
+]) check(`UVT «${entrada}» → ${esperado}`, leerNumero(entrada, 'pesos', 'UVT') === esperado)
+for (const [entrada, esperado] of [['9,66 por mil', '9.66'], ['11,04 x mil', '11.04'], ['3,5 %', '3.5'], ['4 por ciento', '4']])
+  check(`tasa «${entrada}» → ${esperado}`, leerNumero(entrada, 'tasa', 't') === esperado)
+// Lo que NO debe convertirse en un número equivocado: falla con el nombre del campo.
+for (const entrada of ['52 mil', '$52 mil', 'cincuenta y dos mil', '52.374 aprox'])
+  try { leerNumero(entrada, 'pesos', 'UVT'); check(`«${entrada}» lanza (no adivina)`, false) } catch (e) { check(`«${entrada}» lanza (no adivina)`, e.name === 'ErrorNumero' && e.message.startsWith('UVT:')) }
+// «52,374» (estilo EE. UU.) se lee 52.374: la regla UVT ≥ 1000 de guardarBorrador lo rechaza.
+check('«52,374» se lee 52.374 → lo frena el mínimo de 1000 del UVT', leerNumero('52,374', 'pesos', 'UVT') === '52.374')
+
+console.log('\n══ 7d. ENCABEZADO DE REPORTES: NIT pendiente a la vista ══')
+{
+  const h = encabezadoReporte('2026-01 a 2026-06', new Date('2026-09-17T15:00:00Z'), { ...EMPRESA, nit: null, dv: null })
+  const nit = h.lineas.find(l => l.etiqueta === 'NIT')
+  check('sin NIT: la línea NIT existe (no se omite)', !!nit)
+  check('sin NIT: dice PENDIENTE, no vacío', nit?.valor === MARCA_PENDIENTE && nit?.pendiente === true)
+  check('sin NIT: no es válido para declarar', h.validoParaDeclarar === false)
+  check('sin NIT: el aviso lo dice dentro del propio reporte', /NO VÁLIDO PARA DECLARAR/.test(h.aviso ?? '') && /NIT/.test(h.aviso ?? ''))
+  check('matrícula 199483 siempre presente', h.lineas.some(l => l.valor === '199483'))
+}
+check('DV DIAN: 800197268 → 4', digitoVerificacion('800197268') === '4')
+{
+  const malo = encabezadoReporte('p', new Date(), { ...EMPRESA, razonSocial: 'X S.A.S.', nit: '800197268', dv: '5' })
+  check('NIT con DV errado: no válido y dice cuál debería ser', !malo.validoParaDeclarar && /debería ser 4/.test(malo.aviso ?? ''))
+  const bien = encabezadoReporte('p', new Date(), { ...EMPRESA, razonSocial: 'X S.A.S.', nit: '800197268', dv: '4' })
+  check('NIT completo y correcto: válido, sin aviso, «800.197.268-4»',
+    bien.validoParaDeclarar && bien.aviso === null && bien.lineas.find(l => l.etiqueta === 'NIT')?.valor === '800.197.268-4')
+}
+const rechaza = (nombre, e) => { try { exigirNitValido({ ...EMPRESA, ...e }); check(nombre, false, '(NO lanzó: se guardaría)') } catch (x) { check(nombre, /EMPRESA:/.test(x.message)) } }
+rechaza('NIT con DV errado → se RECHAZA (no solo avisa)', { nit: '800197268', dv: '5' })
+rechaza('NIT sin DV → se rechaza', { nit: '800197268', dv: null })
+rechaza('DV sin NIT → se rechaza', { nit: null, dv: '4' })
+rechaza('NIT con puntos o guion → se rechaza', { nit: '800.197.268', dv: '4' })
+check('NIT correcto → se acepta', (() => { exigirNitValido({ ...EMPRESA, nit: '800197268', dv: '4' }); return true })())
+check('NIT pendiente (ambos null) → se tolera', (() => { exigirNitValido({ ...EMPRESA, nit: null, dv: null }); return true })())
+check('HOY el NIT real sigue pendiente (esta línea cambia cuando el titular lo pase)', EMPRESA.nit === null)
 
 console.log('\n══ 8. ROL «contador» ══')
 check('contador → /admin/finanzas', roleCanAccessAdminPath('contador', '/admin/finanzas'))

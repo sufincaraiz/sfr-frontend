@@ -1,3 +1,7 @@
+import 'server-only'
+// ↑ Si un componente de cliente importa esto (directa o indirectamente), el build
+// ROMPE y nombra la cadena de imports. Sin esta línea el ORM se colaba al
+// navegador en silencio: pasó con /admin/cifras vía lib/cifras-publicas.
 import { PrismaClient } from '@prisma/client'
 
 const globalForPrisma = globalThis as unknown as {

@@ -2327,3 +2327,30 @@ conclusión era falsa.
 
 Lo común: ninguno **falló**. Todos devolvieron una respuesta verosímil. Un
 error ruidoso se corrige solo; uno silencioso llega a producción.
+
+---
+
+## La guarda va ANTES del arreglo
+
+Hasta este lote el orden era: corregir el defecto y después añadir la guarda
+que impide que vuelva. El orden bueno es el inverso:
+
+1. **Instalar la defensa** con el defecto todavía en el código.
+2. **Provocar el fallo**: compilar o ejecutar y exigir que rompa.
+3. **Leer el diagnóstico** que da la herramienta.
+4. Solo entonces **corregir**, y comprobar que vuelve a verde.
+
+Sale mejor diagnóstico (la herramienta dice más que la búsqueda a mano) y la
+defensa queda puesta y probada contra un caso REAL, no contra uno inventado.
+Si el paso 2 no rompe, la guarda no sirve, y eso se descubre antes de confiar en ella.
+
+| Caso | Guarda | Lo que dijo al provocarla |
+|---|---|---|
+| Prisma en el bundle de `/admin/cifras` | `import 'server-only'` en `src/lib/prisma.ts` | La cadena exacta: `admin/cifras/page.tsx → lib/cifras-publicas.ts → lib/prisma.ts`. Arreglo: la parte pura a `cifras-publicas-base.ts` |
+| `*.sql` de migraciones fuera de git | `scripts/verificar-migraciones-sql.mjs` al inicio de `npm run build` | Con un `INSERT` de prueba, `EXIT=1` y el archivo nombrado. Un «UPDATE» dentro de un comentario NO la dispara. Solo después se abrió la excepción en `.gitignore` |
+| NIT con dígito de verificación errado | `exigirNitValido(EMPRESA)` en `next.config.ts` | **Primer intento FALLIDO**: el `throw` al cargar `lib/finanzas/empresa.ts` dio `EXIT=0`, porque el layout de admin no renderiza a sus hijos en el prerender (espera la sesión). Movida a `next.config.ts`: `EXIT=1`, «NIT 800197268-5 rechazado: el dígito de verificación DIAN es 4» |
+
+El tercer caso es la prueba de que el paso 2 no es ceremonia: sin provocarlo,
+la guarda del NIT habría quedado escrita, comentada como «rompe el build», y
+no rompía nada. Es otro instrumento que engaña (ver la sección anterior): el
+comentario afirmaba un efecto que nadie había visto.

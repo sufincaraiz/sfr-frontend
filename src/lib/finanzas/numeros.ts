@@ -27,7 +27,17 @@ export class ErrorNumero extends Error {
  */
 export function leerNumero(entrada: unknown, modo: 'pesos' | 'tasa', campo: string): string | null {
   if (entrada === null || entrada === undefined) return null
-  let s = String(entrada).trim().replace(/\s|\$|%|‰/g, '')
+  let s = String(entrada).trim()
+  // «1 UVT = $52.374» → lo que va después del igual.
+  if (s.includes('=')) s = s.slice(s.lastIndexOf('=') + 1)
+  // Solo las UNIDADES que un contador escribe junto al número. Una lista
+  // cerrada, no «quitar letras»: «52 mil» tiene que seguir fallando, no volverse 52.
+  s = s
+    .replace(/\b(cop|pesos?|uvt|mcte|m\/cte)\b\.?/gi, '')
+    .replace(/(por|x)\s*(mil|1\.?000)\b/gi, '')
+    .replace(/por\s*ciento\b/gi, '')
+    .replace(/[.,]-$/, '')
+    .replace(/\s|\$|%|‰/g, '')
   if (s === '') return null
 
   if (modo === 'pesos') {

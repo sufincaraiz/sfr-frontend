@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Loader2, Save, RotateCcw, ExternalLink, Star } from 'lucide-react';
-import { DEFAULT_CIFRAS, textoReputacion, type CifrasPublicas } from '@/lib/cifras-publicas';
+import { DEFAULT_CIFRAS, textoReputacion, type CifrasPublicas } from '@/lib/cifras-publicas-base';
 
 const inputS: React.CSSProperties = {
   padding: '10px 13px', border: '1.5px solid #E2E8F0', borderRadius: 9,

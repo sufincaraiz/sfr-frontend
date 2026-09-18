@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { SlidersHorizontal, Clock } from 'lucide-react';
+import { SlidersHorizontal, Clock, AlertTriangle } from 'lucide-react';
+import { faltantesEmpresa } from '@/lib/finanzas/empresa';
 
 // Entrada del módulo de finanzas. Por ahora solo existe la pantalla de
 // parámetros; terceros, egresos, ingresos, custodia y reportes llegan en ese
@@ -21,10 +22,20 @@ export default function FinanzasPage() {
       .catch(() => setNav([]));
   }, []);
 
+  const faltan = faltantesEmpresa();
   const verParametros = nav?.some(n => n.prefix === '/admin/finanzas/parametros');
 
   return (
     <div style={{ maxWidth: 820, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+      {faltan.length > 0 && (
+        <div style={{ display: 'flex', gap: '0.75rem', background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 14, padding: '1rem 1.25rem' }}>
+          <AlertTriangle size={20} style={{ color: '#B45309', flexShrink: 0, marginTop: 2 }} />
+          <div style={{ fontSize: '0.86rem', color: '#78350F', lineHeight: 1.5 }}>
+            <strong>Datos de la empresa pendientes: {faltan.join(', ')}.</strong><br />
+            Todo reporte que se genere mientras falten sale marcado «NO VÁLIDO PARA DECLARAR». Se cargan en <code>src/lib/finanzas/empresa.ts</code>.
+          </div>
+        </div>
+      )}
       {verParametros && (
         <Link href="/admin/finanzas/parametros" style={{ display: 'flex', gap: '0.9rem', alignItems: 'center', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: '1.1rem 1.25rem', textDecoration: 'none' }}>
           <SlidersHorizontal size={22} style={{ color: '#1B56A1', flexShrink: 0 }} />
