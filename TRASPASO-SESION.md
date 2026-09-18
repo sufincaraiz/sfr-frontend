@@ -2350,7 +2350,44 @@ Si el paso 2 no rompe, la guarda no sirve, y eso se descubre antes de confiar en
 | `*.sql` de migraciones fuera de git | `scripts/verificar-migraciones-sql.mjs` al inicio de `npm run build` | Con un `INSERT` de prueba, `EXIT=1` y el archivo nombrado. Un «UPDATE» dentro de un comentario NO la dispara. Solo después se abrió la excepción en `.gitignore` |
 | NIT con dígito de verificación errado | `exigirNitValido(EMPRESA)` en `next.config.ts` | **Primer intento FALLIDO**: el `throw` al cargar `lib/finanzas/empresa.ts` dio `EXIT=0`, porque el layout de admin no renderiza a sus hijos en el prerender (espera la sesión). Movida a `next.config.ts`: `EXIT=1`, «NIT 800197268-5 rechazado: el dígito de verificación DIAN es 4» |
 
-El tercer caso es la prueba de que el paso 2 no es ceremonia: sin provocarlo,
-la guarda del NIT habría quedado escrita, comentada como «rompe el build», y
-no rompía nada. Es otro instrumento que engaña (ver la sección anterior): el
-comentario afirmaba un efecto que nadie había visto.
+### ⚠ El caso del NIT: la guarda estaba MUERTA
+
+La guarda del NIT se escribió, se comentó como «rompe `next build`», pasó
+typecheck y 105 pruebas, y **no rompía nada**. Se descubrió solo porque se
+provocó el fallo en el build real: NIT de prueba 800197268 con DV 5 (el correcto
+es 4) → **`EXIT=0`, build verde**. El `throw` vivía en un módulo que solo
+importan páginas de admin, y el layout de admin no renderiza a sus hijos en el
+prerender (espera la sesión): el código nunca se ejecutaba.
+
+Sin el paso 2 habría quedado **escrita, commiteada y documentada como
+funcionando**. Un NIT con dígito errado habría llegado a los encabezados de las
+declaraciones con todas las luces en verde. Movida a `next.config.ts`, que corre
+al arrancar todo `next build`: `EXIT=1` con «NIT 800197268-5 rechazado: el
+dígito de verificación DIAN es 4».
+
+**Es el tercer caso del mismo tipo en el proyecto:**
+
+| Guarda | Qué decía que hacía | Qué hacía | Cómo apareció |
+|---|---|---|---|
+| `build:verificado` (324ba68) | Comparar cada build con el anterior | Guardaba el historial en `.next`, que el propio build borra: **nunca comparó nada** | Al mirar si la comparación ocurría de verdad (corregido en 4a664d5: historial fuera de `.next`) |
+| El detector de valor futuro | Cazar las promesas de valorización | Un cero sobre datos limpios no probaba nada: nunca se le había visto cazar una | Dándole las frases reales ya retiradas (DEBE marcarlas) y textos legítimos (NO debe marcarlos). Lo que se aprendió: a un detector se le prueba con casos que tiene que cazar, no con un corpus limpio |
+| `exigirNitValido` | Romper el build con un NIT malo | Nada: nunca se ejecutaba en el build | Provocando el fallo con un NIT de DV errado |
+
+> **Regla: una guarda no probada rompiéndola no es una guarda, es un
+> comentario con más pasos.**
+
+Es otro instrumento que engaña (sección anterior), y el más peligroso: aquí no
+mentía la salida de un comando, mentía nuestra propia documentación, que
+afirmaba un efecto que nadie había visto.
+
+### Verificado en local ≠ verificado en producción
+
+Estado de las verificaciones de este lote, con su alcance exacto:
+
+| Qué | Dónde se verificó |
+|---|---|
+| Ningún chunk del navegador lleva `PrismaClient` (incluido `/admin/cifras`) | **LOCAL** — build local, 0 archivos en `.next/static`. En producción no se pudo: la página está tras el login y el hash del chunk de Vercel no coincide con el local. El build local es la misma salida que despliega Vercel, pero eso es una inferencia, no una observación |
+| Deploy de `4b1b1cc` completado | Producción — estado de Vercel en GitHub |
+| Reputación en home, nosotros y `llms.txt` tras separar `cifras-publicas` | Producción — `grep -o … \| wc -l` sobre lo servido |
+| `/interno/datos-contador` con `noindex, nofollow` y fuera de los 5 sitemaps | Producción |
+| Guarda del NIT y guarda de migraciones `.sql` | Local, provocando el fallo. En Vercel solo consta que el build pasó con NIT vacío (el camino verde), no que rompa con uno malo |
