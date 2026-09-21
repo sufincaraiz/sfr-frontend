@@ -35,7 +35,7 @@ async function leerCrudo(anio: number) {
     where: { anio },
     include: {
       conceptos: { orderBy: { label: 'asc' } },
-      tarifasIca: { orderBy: { municipio: 'asc' } },
+      tarifasIca: { orderBy: [{ municipio: 'asc' }, { ciiu: 'asc' }] },
     },
   })
 }
@@ -95,6 +95,7 @@ export async function anioParaPantalla(anio: number) {
       })),
       tarifasIca: p.tarifasIca.map(t => ({
         municipio: t.municipio,
+        ciiu: t.ciiu,
         tarifa_por_mil: t.tarifa_por_mil.toString(),
         cargado_por: t.cargado_por,
         cargado_en: t.cargado_en.toISOString(),
@@ -140,7 +141,7 @@ export interface EntradaGuardado {
   /** Escalares cuyo valor viene del formulario del contador (nacen sin revisar). */
   importados?: Escalar[]
   conceptos: { label: string; tarifa_declarante: unknown; tarifa_no_declarante: unknown; base_minima_uvt: unknown; revisado?: boolean; origen?: string }[]
-  tarifasIca: { municipio: string; tarifa_por_mil: unknown; revisado?: boolean; origen?: string }[]
+  tarifasIca: { municipio: string; ciiu?: string; tarifa_por_mil: unknown; revisado?: boolean; origen?: string }[]
 }
 
 // ─── Guardar borrador ────────────────────────────────────────────────────────
@@ -222,10 +223,14 @@ export async function guardarBorrador(e: EntradaGuardado, por: string) {
     if (!municipio) throw new ErrorParametros(`ICA ${i + 1}: falta el municipio.`)
     const tarifa = numero(t.tarifa_por_mil, `ICA ${municipio}`, 0, 100)
     if (tarifa === null) throw new ErrorParametros(`ICA ${municipio}: falta la tarifa.`)
-    return { municipio, tarifa, revisado: t.revisado !== false, importado: t.origen === 'contador' }
+    // CIIU vacío = tarifa general del municipio. Es un valor válido AQUÍ (en un
+    // ingreso significaría lo contrario: no calculable). Ver calculo.ts.
+    const ciiu = String(t.ciiu ?? '').trim()
+    return { municipio, ciiu, tarifa, revisado: t.revisado !== false, importado: t.origen === 'contador' }
   })
-  const dupI = icas.find((t, i) => icas.findIndex(x => x.municipio.toLowerCase() === t.municipio.toLowerCase()) !== i)
-  if (dupI) throw new ErrorParametros(`El municipio «${dupI.municipio}» está repetido en ICA.`)
+  const claveIca = (t: { municipio: string; ciiu: string }) => `${t.municipio.toLowerCase()}|${t.ciiu}`
+  const dupI = icas.find((t, i) => icas.findIndex(x => claveIca(x) === claveIca(t)) !== i)
+  if (dupI) throw new ErrorParametros(`«${dupI.municipio}»${dupI.ciiu ? ` (CIIU ${dupI.ciiu})` : ''} está repetido en ICA.`)
 
   await prisma.$transaction(async tx => {
     const p = await tx.parametroFiscal.upsert({
@@ -268,24 +273,25 @@ export async function guardarBorrador(e: EntradaGuardado, por: string) {
     const sobraC = [...prevC.values()].filter(c => !clavesC.has(c.concepto)).map(c => c.id)
     if (sobraC.length) await tx.conceptoRetencion.deleteMany({ where: { id: { in: sobraC } } })
 
-    const prevI = new Map((actual?.tarifasIca ?? []).map(t => [t.municipio.toLowerCase(), t]))
+    const prevI = new Map((actual?.tarifasIca ?? []).map(t => [`${t.municipio.toLowerCase()}|${t.ciiu}`, t]))
     for (const t of icas) {
-      const prev = prevI.get(t.municipio.toLowerCase())
+      const prev = prevI.get(claveIca(t))
       if (!prev) {
         await tx.tarifaIca.create({ data: {
-          parametro_id: p.id, municipio: t.municipio, tarifa_por_mil: t.tarifa,
+          parametro_id: p.id, municipio: t.municipio, ciiu: t.ciiu, tarifa_por_mil: t.tarifa,
           cargado_por: por, origen: t.importado ? 'contador' : 'manual', revisado: t.importado ? t.revisado : true,
         } })
       } else if (!prev.tarifa_por_mil.eq(t.tarifa) || prev.municipio !== t.municipio) {
         await tx.tarifaIca.update({ where: { id: prev.id }, data: {
-          municipio: t.municipio, tarifa_por_mil: t.tarifa, cargado_por: por, cargado_en: new Date(),
+          municipio: t.municipio,
+        ciiu: t.ciiu, tarifa_por_mil: t.tarifa, cargado_por: por, cargado_en: new Date(),
           origen: t.importado ? 'contador' : 'manual', copiado_de_anio: null, revisado: t.importado ? t.revisado : true,
         } })
       } else if (t.revisado && !prev.revisado) {
         await tx.tarifaIca.update({ where: { id: prev.id }, data: { revisado: true, cargado_por: por, cargado_en: new Date() } })
       }
     }
-    const clavesI = new Set(icas.map(t => t.municipio.toLowerCase()))
+    const clavesI = new Set(icas.map(claveIca))
     const sobraI = [...prevI.entries()].filter(([k]) => !clavesI.has(k)).map(([, t]) => t.id)
     if (sobraI.length) await tx.tarifaIca.deleteMany({ where: { id: { in: sobraI } } })
   })
@@ -340,11 +346,11 @@ export async function copiarDelAnioAnterior(anio: number, por: string) {
       } })
       copiado.push(`concepto ${c.label}`)
     }
-    const yaI = new Set((destino?.tarifasIca ?? []).map(t => t.municipio.toLowerCase()))
+    const yaI = new Set((destino?.tarifasIca ?? []).map(t => `${t.municipio.toLowerCase()}|${t.ciiu}`))
     for (const t of fuente.tarifasIca) {
-      if (yaI.has(t.municipio.toLowerCase())) { omitido.push(`ICA ${t.municipio} (ya estaba)`); continue }
+      if (yaI.has(`${t.municipio.toLowerCase()}|${t.ciiu}`)) { omitido.push(`ICA ${t.municipio} (ya estaba)`); continue }
       await tx.tarifaIca.create({ data: {
-        parametro_id: p.id, municipio: t.municipio, tarifa_por_mil: t.tarifa_por_mil,
+        parametro_id: p.id, municipio: t.municipio, ciiu: t.ciiu, tarifa_por_mil: t.tarifa_por_mil,
         cargado_por: por, origen: 'copia', copiado_de_anio: origenAnio, revisado: false,
       } })
       copiado.push(`ICA ${t.municipio}`)

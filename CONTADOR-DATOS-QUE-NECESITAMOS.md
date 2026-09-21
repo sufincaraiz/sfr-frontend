@@ -77,23 +77,44 @@ Ocasionalmente se reciben **arras o anticipos**, que el sistema trata como
 
 ---
 
-## 4. ICA — tarifa por municipio
+## 4. CIIU de cada línea de servicio
+
+> El RUT registra cuatro actividades: **6820** (principal), **5911**, **7010** y
+> **6201**. La tarifa de ICA se fija por actividad, así que necesitamos saber
+> bajo cuál se factura cada servicio. Lo de la derecha es **nuestra suposición,
+> sin confirmar**: corríjala si no es la correcta. Un servicio sin CIIU no
+> calcula ICA: el sistema se detiene en lugar de usar la tarifa general.
+
+| Línea de servicio | CIIU que aplica | (suponemos) |
+|---|---|---|
+| Comisión por venta de inmuebles | ________ | 6820 |
+| Acompañamiento en estudio de títulos | ________ | 6820 |
+| Análisis comercial de valor | ________ | 6820 |
+| Fotografía con dron y fotogrametría | ________ | 5911 |
+| Gestión de proyectos y consorcio de construcción | ________ | 7010 |
+
+---
+
+## 5. ICA — tarifa por municipio y actividad
 
 > Se declara donde se **genera** el ingreso. La Vega es el habitual, pero
 > pedimos los demás por si hay operaciones fuera.
 
-| Municipio | Tarifa (por mil) |
-|---|---|
-| La Vega, Cundinamarca | ______ ‰ |
-| ____________________ | ______ ‰ |
-| ____________________ | ______ ‰ |
+> Si en un municipio la tarifa es la misma para todas las actividades, deje el
+> CIIU **en blanco**: eso significa «tarifa general del municipio».
+
+| Municipio | CIIU | Tarifa (por mil) |
+|---|---|---|
+| La Vega, Cundinamarca | ________ | ______ ‰ |
+| ____________________ | ________ | ______ ‰ |
+| ____________________ | ________ | ______ ‰ |
 
 *Estas no bloquean el arranque del año: el sistema las pide cuando aparece un
 ingreso en ese municipio.*
 
 ---
 
-## 5. Datos del tercero (se piden UNA vez por cliente o proveedor)
+## 6. Datos del tercero (se piden UNA vez por cliente o proveedor)
 
 > No son del año: son de cada persona o empresa con la que facturamos. Los
 > tomamos de **su RUT**, porque determinan qué retención aplica. **No los

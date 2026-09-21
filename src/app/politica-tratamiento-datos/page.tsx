@@ -23,7 +23,7 @@ export default function PoliticaDatosPage() {
       <JsonLd data={breadcrumbs} />
       <LegalLayout
         title="Política de Tratamiento de Datos Personales"
-        updated="7 de agosto de 2026"
+        updated="21 de septiembre de 2026"
         breadcrumbLabel="Política de Datos"
       >
         <p className="intro">
@@ -88,7 +88,7 @@ export default function PoliticaDatosPage() {
         <p>
           Este tratamiento solo se realiza con la autorización previa y expresa del titular, que
           se recoge mediante casillas de aceptación en el formulario de registro. El visitante
-          conserva en todo momento los derechos descritos en el numeral 5.
+          conserva en todo momento los derechos descritos en el numeral 6.
         </p>
         <p>
           Los datos del registro de visitas se conservan por un máximo de dos (2) años contados
@@ -115,7 +115,29 @@ export default function PoliticaDatosPage() {
           consultado, como registro de auditoría.
         </p>
 
-        <h2>5. Derechos de los Titulares (Habeas Data)</h2>
+        <h2>5. Soportes Contables y Fotografías de Recibos</h2>
+        <p>
+          Al registrar un gasto del negocio, Su Finca Raíz puede conservar la <strong>fotografía del
+          recibo o la factura</strong> como soporte contable. Esos documentos pueden contener datos
+          de terceros —nombre o razón social del proveedor, número de identificación tributaria y el
+          detalle de lo pagado—, y se tratan con la finalidad exclusiva de soportar la contabilidad y
+          las declaraciones tributarias ante la DIAN y los municipios.
+        </p>
+        <p>
+          Las imágenes se almacenan en un repositorio <strong>privado</strong>: no son accesibles
+          mediante una dirección pública ni quedan indexadas por buscadores. Solo pueden consultarse
+          desde el panel administrativo, con sesión iniciada, y el enlace interno que permite verlas
+          se genera en el momento de la consulta y caduca en un (1) minuto. Su Finca Raíz no publica,
+          comparte ni cede estos documentos, salvo entrega al contador o a la autoridad tributaria
+          cuando la ley lo exija.
+        </p>
+        <p>
+          Los soportes contables se conservan por el término legal de conservación de los documentos
+          del comerciante —<strong>diez (10) años</strong>, artículo 28 de la Ley 962 de 2005—,
+          plazo que prevalece sobre la supresión anticipada por tratarse de una obligación legal.
+        </p>
+
+        <h2>6. Derechos de los Titulares (Habeas Data)</h2>
         <p>Como titular de la información, usted tiene derecho a:</p>
         <ul>
           <li>Conocer, actualizar y rectificar sus datos personales.</li>
@@ -124,7 +146,7 @@ export default function PoliticaDatosPage() {
           <li>Revocar la autorización o solicitar la supresión de sus datos cuando lo considere pertinente.</li>
         </ul>
 
-        <h2>6. Canales de Atención</h2>
+        <h2>7. Canales de Atención</h2>
         <p>
           Para ejercer sus derechos, puede enviar una solicitud formal a través de los siguientes
           medios:

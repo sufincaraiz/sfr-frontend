@@ -10,39 +10,39 @@ datasource db {
 // ─── Geographic hierarchy ────────────────────────────────────────────────────
 
 model Municipality {
-  id           String     @id @default(uuid())
-  slug         String     @unique
-  name         String
-  province     String     @default("Cundinamarca") // departamento
-  demand_score Int        @default(0)
+  id                  String     @id @default(uuid())
+  slug                String     @unique
+  name                String
+  province            String     @default("Cundinamarca") // departamento
+  demand_score        Int        @default(0)
   // ── Contenido editable desde el admin (migrado desde municipios-data.ts) ──
-  provincia           String?  @default("Gualivá") // subregión/provincia
+  provincia           String?    @default("Gualivá") // subregión/provincia
   distancia_bogota_km Int?
   tiempo_bogota_min   Int?
   altitud_msnm        Int?
   temp_min            Int?
   temp_max            Int?
-  descripcion_seo     String?  @db.Text
-  meta_description    String?  @db.Text // meta description SEO (~150 car.); vacío = autogenerada
-  historia            String?  @db.Text
-  clima               String?  @db.Text
-  turismo             String?  @db.Text
+  descripcion_seo     String?    @db.Text
+  meta_description    String?    @db.Text // meta description SEO (~150 car.); vacío = autogenerada
+  historia            String?    @db.Text
+  clima               String?    @db.Text
+  turismo             String?    @db.Text
   /// Qué revisar ANTES de comprar aquí: acceso, agua, uso del suelo, qué tipo
   /// de inmueble se consigue. Sustituye a `inversion`, que preguntaba «por qué
   /// invertir aquí» y por tanto presuponía la respuesta — la novena forma de
   /// esconderse, en el nombre de la columna. Sin precios, sin horizontes, sin
   /// comparaciones entre municipios.
-  antes_de_comprar    String?  @db.Text
-  og_image            String?  // imagen del hero
+  antes_de_comprar    String?    @db.Text
+  og_image            String? // imagen del hero
   geo_lat             Float?
   geo_lng             Float?
   wikipedia_url       String?
-  faqs                Json?    // [{ question, answer }]
-  tour360_url         String?  // enlace del recorrido 360 del parque principal (Panoee)
-  oculto              Boolean  @default(false)
-  updated_at          DateTime @default(now()) @updatedAt
-  veredas      Vereda[]
-  properties   Property[]
+  faqs                Json? // [{ question, answer }]
+  tour360_url         String? // enlace del recorrido 360 del parque principal (Panoee)
+  oculto              Boolean    @default(false)
+  updated_at          DateTime   @default(now()) @updatedAt
+  veredas             Vereda[]
+  properties          Property[]
 
   @@map("municipalities")
 }
@@ -64,50 +64,50 @@ model Vereda {
 // ─── Core ────────────────────────────────────────────────────────────────────
 
 model Property {
-  id               String          @id @default(uuid())
-  slug             String          @unique
+  id                String               @id @default(uuid())
+  slug              String               @unique
   /// Tipo FÍSICO del inmueble. «condominio» ya no es un tipo: era el régimen
   /// de propiedad colándose en el campo que describe qué es el bien, y por eso
   /// un lote y una casa dentro del mismo condominio caían en la misma bolsa.
   /// El régimen vive ahora en `en_condominio`.
-  type             String          // finca | lote | casa | apartamento | local
+  type              String // finca | lote | casa | apartamento | local
   /// Régimen de propiedad horizontal: el inmueble está dentro de un condominio
   /// o conjunto cerrado. Es ORTOGONAL al tipo — hay lotes en condominio y casas
   /// en condominio, y son búsquedas distintas.
-  en_condominio    Boolean         @default(false)
-  transaction_type String          @default("venta")
-  municipality_id  String
-  vereda_id        String?
-  address_visible  String?
-  price_cop        BigInt
-  area_lot_m2      Float?
-  area_built_m2    Float?
-  bedrooms         Int             @default(0)
-  bathrooms        Int             @default(0)
-  parking          Int             @default(0)
-  year_built       Int?
-  status           String          @default("available") // available | reserved | sold
-  geo_lat          Float?
-  geo_lng          Float?
-  published_at     DateTime        @default(now())
-  updated_at       DateTime        @updatedAt
+  en_condominio     Boolean              @default(false)
+  transaction_type  String               @default("venta")
+  municipality_id   String
+  vereda_id         String?
+  address_visible   String?
+  price_cop         BigInt
+  area_lot_m2       Float?
+  area_built_m2     Float?
+  bedrooms          Int                  @default(0)
+  bathrooms         Int                  @default(0)
+  parking           Int                  @default(0)
+  year_built        Int?
+  status            String               @default("available") // available | reserved | sold
+  geo_lat           Float?
+  geo_lng           Float?
+  published_at      DateTime             @default(now())
+  updated_at        DateTime             @updatedAt
   // SEO / content
-  title            String?
+  title             String?
   short_description String?
-  description      String?
-  meta_title       String?
-  meta_description String?
+  description       String?
+  meta_title        String?
+  meta_description  String?
   // Media embeds
-  video_url        String?
-  virtual_tour_url String?
-  modelo3d_url     String?   // URL a un modelo 3D .glb (fotogrametría con dron)
+  video_url         String?
+  virtual_tour_url  String?
+  modelo3d_url      String? // URL a un modelo 3D .glb (fotogrametría con dron)
   // Relations
-  municipality     Municipality    @relation(fields: [municipality_id], references: [id])
-  vereda           Vereda?         @relation(fields: [vereda_id], references: [id])
-  media            PropertyMedia[]
-  features         PropertyFeature[]
-  leads            Lead[]
-  visitas          Visita[]
+  municipality      Municipality         @relation(fields: [municipality_id], references: [id])
+  vereda            Vereda?              @relation(fields: [vereda_id], references: [id])
+  media             PropertyMedia[]
+  features          PropertyFeature[]
+  leads             Lead[]
+  visitas           Visita[]
   enlacesVisitantes EnlaceVisitantes[]
   ingresos          Ingreso[]
   egresos           Egreso[]
@@ -149,8 +149,8 @@ model PropertyFeature {
 model PropertyMedia {
   id                String   @id @default(uuid())
   property_id       String
-  type              String   // image | video | tour360
-  tour360_type      String?  // self_hosted | embed
+  type              String // image | video | tour360
+  tour360_type      String? // self_hosted | embed
   tour360_embed_url String?
   url               String
   order             Int      @default(0)
@@ -164,14 +164,14 @@ model PropertyMedia {
 // ─── Agents ─────────────────────────────────────────────────────────────────
 
 model Agent {
-  id      String  @id @default(uuid())
-  name    String
-  slug    String  @unique
-  photo   String?
-  license String?
+  id       String  @id @default(uuid())
+  name     String
+  slug     String  @unique
+  photo    String?
+  license  String?
   whatsapp String
-  email   String  @unique
-  leads   Lead[]
+  email    String  @unique
+  leads    Lead[]
 
   @@map("agents")
 }
@@ -225,9 +225,9 @@ model Lead {
   nextAction        String?
   nextActionDate    DateTime?
   lastContactAt     DateTime?
-  consentAt         DateTime?         // Ley 1581/2012: 1ª vez que se capta un dato de contacto
-  summary           String?           @db.Text  // Resumen de la conversación para el asesor (se genera una vez, al captar el lead)
-  summaryAt         DateTime?         // Cuándo se generó el resumen
+  consentAt         DateTime? // Ley 1581/2012: 1ª vez que se capta un dato de contacto
+  summary           String?           @db.Text // Resumen de la conversación para el asesor (se genera una vez, al captar el lead)
+  summaryAt         DateTime? // Cuándo se generó el resumen
   property          Property?         @relation(fields: [property_id], references: [id], onDelete: SetNull)
   agent             Agent?            @relation(fields: [assigned_agent_id], references: [id])
   conversations     Conversation[]
@@ -243,18 +243,18 @@ model Contacto {
   telefono            String?
   email               String?
   tipo                String    @default("comprador") // comprador | vendedor | arrendatario
-  interes             String?   @db.Text              // qué busca
-  etapa               String    @default("nuevo")     // nuevo | contactado | en_seguimiento | cerrado
+  interes             String?   @db.Text // qué busca
+  etapa               String    @default("nuevo") // nuevo | contactado | en_seguimiento | cerrado
   proximo_seguimiento DateTime?
-  origen              String    @default("manual")    // manual | lead-web | referido | otro
+  origen              String    @default("manual") // manual | lead-web | referido | otro
   notas               String?   @db.Text
-  lead_id             String?   @unique               // si vino de un Lead web (evita doble conversión)
+  lead_id             String?   @unique // si vino de un Lead web (evita doble conversión)
   lead                Lead?     @relation(fields: [lead_id], references: [id], onDelete: SetNull)
-  created_by          String?   // id del usuario (Admin) que lo cargó — conserva historial
+  created_by          String? // id del usuario (Admin) que lo cargó — conserva historial
   created_at          DateTime  @default(now())
   updated_at          DateTime  @updatedAt
 
-  tercero             Tercero?
+  tercero Tercero?
 
   @@index([etapa])
   @@index([proximo_seguimiento])
@@ -282,29 +282,29 @@ enum MsgRole {
 }
 
 model Conversation {
-  id          String     @id @default(cuid())
-  channel     Channel    @default(WEB)
-  externalId  String
-  leadId      String?
-  lead        Lead?      @relation(fields: [leadId], references: [id])
-  status      ConvStatus @default(ACTIVE)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id              String     @id @default(cuid())
+  channel         Channel    @default(WEB)
+  externalId      String
+  leadId          String?
+  lead            Lead?      @relation(fields: [leadId], references: [id])
+  status          ConvStatus @default(ACTIVE)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
   // Contabilidad de tokens y topes de consumo (agente Mac)
-  tokensIn     Int       @default(0)
-  tokensOut    Int       @default(0)
-  turnCount    Int       @default(0)
-  offTopicCount Int      @default(0)
-  closedAt     DateTime?
-  closedReason String?
+  tokensIn        Int        @default(0)
+  tokensOut       Int        @default(0)
+  turnCount       Int        @default(0)
+  offTopicCount   Int        @default(0)
+  closedAt        DateTime?
+  closedReason    String?
   // 1ª (y única) escalación al asesor humano: evita notificaciones ilimitadas por sesión.
-  escalatedAt  DateTime?
+  escalatedAt     DateTime?
   // Escalamiento al modelo experto (Opus). Se contabilizan APARTE de los tokens de
   // Haiku porque el costo por token es muy distinto y hay que verlos por separado.
-  expertCallCount Int    @default(0)
-  expertTokensIn  Int    @default(0)
-  expertTokensOut Int    @default(0)
-  messages    Message[]
+  expertCallCount Int        @default(0)
+  expertTokensIn  Int        @default(0)
+  expertTokensOut Int        @default(0)
+  messages        Message[]
 
   @@unique([channel, externalId])
   @@map("conversations")
@@ -326,15 +326,15 @@ model Message {
 /// prompt en cada conversación (promociones, formas de pago, FAQ, políticas).
 /// Se administra en /admin/mac — no requiere desplegar para actualizarse.
 model MacKnowledge {
-  id         String   @id @default(uuid())
-  titulo     String
-  contenido  String   @db.Text
-  categoria  String   @default("General")
-  activo     Boolean  @default(true)
-  orden      Int      @default(0)
-  vigente_hasta DateTime?  // opcional: se ignora automáticamente al vencer (promos)
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id            String    @id @default(uuid())
+  titulo        String
+  contenido     String    @db.Text
+  categoria     String    @default("General")
+  activo        Boolean   @default(true)
+  orden         Int       @default(0)
+  vigente_hasta DateTime? // opcional: se ignora automáticamente al vencer (promos)
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @updatedAt
 
   @@index([activo, orden])
   @@map("mac_knowledge")
@@ -343,15 +343,15 @@ model MacKnowledge {
 // ─── Admin ──────────────────────────────────────────────────────────────────
 
 model Admin {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  nombre    String
-  role      String   @default("admin") // admin | asistente_crm | autor_blog
-  activo    Boolean  @default(true)    // desactivar (no borrar) para conservar historial
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
-  articulos Article[]
+  id         String    @id @default(uuid())
+  email      String    @unique
+  password   String
+  nombre     String
+  role       String    @default("admin") // admin | asistente_crm | autor_blog
+  activo     Boolean   @default(true) // desactivar (no borrar) para conservar historial
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  articulos  Article[]
 
   @@map("admins")
 }
@@ -359,14 +359,14 @@ model Admin {
 // ─── Content ────────────────────────────────────────────────────────────────
 
 model Article {
-  id               String   @id @default(uuid())
-  slug             String   @unique
+  id               String    @id @default(uuid())
+  slug             String    @unique
   title            String
   excerpt          String?
-  content          String   @db.Text
+  content          String    @db.Text
   cover_image_url  String?
   published_at     DateTime?
-  updated_at       DateTime @updatedAt
+  updated_at       DateTime  @updatedAt
   meta_title       String?
   meta_description String?
   // Aportes de la comunidad (blog colaborativo)
@@ -375,8 +375,8 @@ model Article {
   author_email     String?
   // Autor con cuenta propia (rol autor_blog). null = artículo MDX/comunidad/legacy.
   author_id        String?
-  autor            Admin?   @relation(fields: [author_id], references: [id], onDelete: SetNull)
-  created_at       DateTime @default(now())
+  autor            Admin?    @relation(fields: [author_id], references: [id], onDelete: SetNull)
+  created_at       DateTime  @default(now())
 
   @@index([author_id])
   @@map("articles")
@@ -387,8 +387,8 @@ model Article {
 /// PRUEBA del consentimiento: el momento exacto y las dos autorizaciones por
 /// separado, como exige la Ley 1581 de 2012 (Habeas Data).
 model Visita {
-  id                    String   @id @default(uuid())
-  createdAt             DateTime @default(now())
+  id                    String    @id @default(uuid())
+  createdAt             DateTime  @default(now())
   nombresCompletos      String
   cedula                String
   // ── Inmueble visitado ──
@@ -399,14 +399,14 @@ model Visita {
   propiedadId           String?
   propiedad             Property? @relation(fields: [propiedadId], references: [id], onDelete: SetNull)
   inmuebleReferencia    String // título de la propiedad elegida, o texto libre si esOtro
-  esOtro                Boolean  @default(false) // inmueble no listado (de un colega)
+  esOtro                Boolean   @default(false) // inmueble no listado (de un colega)
   correo                String
   celular               String
   municipioOrigen       String
   // ── Prueba del consentimiento ──
   consentAt             DateTime // cuándo aceptó
-  consentPolitica       Boolean  @default(false) // casilla 1: política de tratamiento
-  consentControlIngreso Boolean  @default(false) // casilla 2: control de ingreso y seguridad
+  consentPolitica       Boolean   @default(false) // casilla 1: política de tratamiento
+  consentControlIngreso Boolean   @default(false) // casilla 2: control de ingreso y seguridad
   ip                    String? // trazabilidad de seguridad; puede faltar
 
   @@index([createdAt])
@@ -418,10 +418,10 @@ model Visita {
 model Business {
   id              String   @id @default(uuid())
   nombre          String
-  imagen_url      String?  // legacy: portada única (respaldo). Ahora se usa `imagenes`.
+  imagen_url      String? // legacy: portada única (respaldo). Ahora se usa `imagenes`.
   imagenes        String[] @default([]) // hasta 5 fotos; imagenes[0] = portada
-  descripcion     String?  // descripción corta
-  categoria       String   // Restaurante | Ferretería | Droguería | Vivero | Otros
+  descripcion     String? // descripción corta
+  categoria       String // Restaurante | Ferretería | Droguería | Vivero | Otros
   municipio       String   @default("La Vega")
   whatsapp        String?
   domicilios      Boolean  @default(false)
@@ -444,8 +444,8 @@ model PageContent {
 }
 
 model Redirect {
-  id          String @id @default(uuid())
-  source      String @unique
+  id          String  @id @default(uuid())
+  source      String  @unique
   destination String
   permanent   Boolean @default(true)
 
@@ -453,13 +453,13 @@ model Redirect {
 }
 
 model SearchLog {
-  id          String   @id @default(uuid())
-  query       String?
-  tipo        String?
-  municipio   String?
-  precio_max  BigInt?
-  results     Int      @default(0)
-  created_at  DateTime @default(now())
+  id         String   @id @default(uuid())
+  query      String?
+  tipo       String?
+  municipio  String?
+  precio_max BigInt?
+  results    Int      @default(0)
+  created_at DateTime @default(now())
 
   @@map("search_logs")
 }
@@ -479,16 +479,16 @@ model SearchLog {
 // con ella. Lo que se preserva es el registro de la visita, no el acceso.
 // ─────────────────────────────────────────────────────────────────────────────
 model EnlaceVisitantes {
-  id               String   @id @default(uuid())
-  createdAt        DateTime @default(now())
+  id               String    @id @default(uuid())
+  createdAt        DateTime  @default(now())
   propiedadId      String
-  propiedad        Property @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
-  token            String   @unique // 32 bytes aleatorios en base64url; parte secreta de la URL
+  propiedad        Property  @relation(fields: [propiedadId], references: [id], onDelete: Cascade)
+  token            String    @unique // 32 bytes aleatorios en base64url; parte secreta de la URL
   pinHash          String // bcrypt del PIN. NUNCA en texto plano
   expiraAt         DateTime // createdAt + 1 año
-  revocado         Boolean  @default(false) // apagado manual desde el admin
+  revocado         Boolean   @default(false) // apagado manual desde el admin
   ultimoAcceso     DateTime? // trazabilidad: cuándo lo usó el dueño
-  intentosFallidos Int      @default(0) // acumulado; al llegar al tope el enlace se bloquea
+  intentosFallidos Int       @default(0) // acumulado; al llegar al tope el enlace se bloquea
 
   @@index([propiedadId])
   @@map("enlaces_visitantes")
@@ -558,7 +558,6 @@ model VigilanciaHallazgo {
   @@map("vigilancia_hallazgos")
 }
 
-
 // ═══════════════════════════════════════════════════════════════════════════
 // MÓDULO TRIBUTARIO Y FINANCIERO
 //
@@ -603,6 +602,32 @@ enum EstadoIngreso {
   ANULADO
 }
 
+/// Quién paga el egreso AL FINAL. No es la categoría (qué se compró), es de
+/// quién sale la plata. El tercero es el crítico: un REEMBOLSABLE contado como
+/// gasto —y su reembolso como ingreso— infla las dos cifras y hace pagar
+/// impuesto sobre plata que no se ganó. Misma trampa que MovimientoCustodia,
+/// en el sentido contrario del dinero.
+enum NaturalezaEgreso {
+  /// Gasto general: internet, papelería, arriendo.
+  DEL_NEGOCIO
+  /// Gasto propio imputado a una propiedad u operación. Reduce la ganancia
+  /// de ESA venta.
+  DE_OPERACION
+  /// Pagado por cuenta del cliente, que lo va a devolver. NO ES GASTO: es una
+  /// cuenta por cobrar. No entra al estado de resultados.
+  REEMBOLSABLE
+}
+
+/// Solo para egresos REEMBOLSABLE.
+enum EstadoReembolso {
+  PENDIENTE
+  /// El cliente devolvió la plata. Tampoco es ingreso: cancela la cuenta.
+  REEMBOLSADO
+  /// El cliente no pagó y lo absorbió el negocio: se reclasificó a
+  /// DE_OPERACION y desde ese momento SÍ es gasto.
+  ASUMIDO
+}
+
 /// Naturaleza del dinero recibido que NO es ingreso. Ver MovimientoCustodia.
 enum NaturalezaCustodia {
   /// Arras o depósitos recibidos EN NOMBRE DEL VENDEDOR. Nunca son nuestros.
@@ -629,7 +654,7 @@ enum RolParticipacion {
 /// determinan qué retención aplica. Se enlaza opcionalmente con el contacto del
 /// que salió, para no volver a teclear los datos.
 model Tercero {
-  id                    String       @id @default(uuid())
+  id                    String        @id @default(uuid())
   tipo_documento        TipoDocumento
   numero_documento      String
   /// Dígito de verificación del NIT.
@@ -638,11 +663,11 @@ model Tercero {
   nombre                String
   tipo_persona          TipoPersona
   // ── Banderas del RUT. NO se infieren: se capturan del RUT del tercero. ──
-  es_responsable_iva    Boolean      @default(false)
-  es_autorretenedor     Boolean      @default(false)
-  es_gran_contribuyente Boolean      @default(false)
+  es_responsable_iva    Boolean       @default(false)
+  es_autorretenedor     Boolean       @default(false)
+  es_gran_contribuyente Boolean       @default(false)
   /// Determina si se aplica la tarifa de declarante o de no declarante.
-  es_declarante_renta   Boolean      @default(false)
+  es_declarante_renta   Boolean       @default(false)
   regimen               String?
   direccion             String?
   /// Texto libre: el domicilio fiscal puede ser cualquier municipio del país,
@@ -650,21 +675,22 @@ model Tercero {
   municipio             String?
   telefono              String?
   email                 String?
-  rol                   RolTercero   @default(CLIENTE)
+  rol                   RolTercero    @default(CLIENTE)
   /// Puente OPCIONAL con el CRM. Nullable a propósito: un proveedor no es un
   /// contacto, y un contacto no necesita datos de RUT hasta que factura.
-  contacto_id           String?      @unique
-  contacto              Contacto?    @relation(fields: [contacto_id], references: [id], onDelete: SetNull)
-  activo                Boolean      @default(true)
-  notas                 String?      @db.Text
-  created_at            DateTime     @default(now())
-  updated_at            DateTime     @updatedAt
+  contacto_id           String?       @unique
+  contacto              Contacto?     @relation(fields: [contacto_id], references: [id], onDelete: SetNull)
+  activo                Boolean       @default(true)
+  notas                 String?       @db.Text
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
 
-  ingresos              Ingreso[]
-  egresos               Egreso[]
-  participaciones       DistribucionComision[]
-  custodiasRecibidas    MovimientoCustodia[]   @relation("CustodiaOrigen")
-  custodiasEntregadas   MovimientoCustodia[]   @relation("CustodiaDestino")
+  ingresos            Ingreso[]
+  egresos             Egreso[]
+  egresosQueReembolsa Egreso[]               @relation("EgresoReembolsa")
+  participaciones     DistribucionComision[]
+  custodiasRecibidas  MovimientoCustodia[]   @relation("CustodiaOrigen")
+  custodiasEntregadas MovimientoCustodia[]   @relation("CustodiaDestino")
 
   @@unique([tipo_documento, numero_documento])
   @@index([nombre])
@@ -681,11 +707,11 @@ enum EstadoParametro {
 }
 
 model ParametroFiscal {
-  id             String   @id @default(uuid())
-  anio           Int      @unique
+  id              String          @id @default(uuid())
+  anio            Int             @unique
   /// BORRADOR permite guardar a medias sin romper la guarda: el cálculo exige
   /// ACTIVO. Así se trabaja en el año que viene sin bloquear el actual.
-  estado         EstadoParametro @default(BORRADOR)
+  estado          EstadoParametro @default(BORRADOR)
   /// ¿Somos responsables de IVA ESE año? NULLABLE a propósito: null = sin
   /// decidir, y bloquea la activación. Un `false` por defecto silencioso en un
   /// año donde sí se cruzaron los topes es justo el error que nadie ve.
@@ -693,13 +719,13 @@ model ParametroFiscal {
   /// tampoco hay reteIVA en ninguna dirección.
   responsable_iva Boolean?
   /// Valor del UVT del año. Null = sin cargar → el cálculo se detiene.
-  uvt            Decimal? @db.Decimal(14, 2)
+  uvt             Decimal?        @db.Decimal(14, 2)
   /// Solo obligatoria si responsable_iva = true.
-  tarifa_iva     Decimal? @db.Decimal(5, 2)
-  tarifa_reteiva Decimal? @db.Decimal(5, 2)
+  tarifa_iva      Decimal?        @db.Decimal(5, 2)
+  tarifa_reteiva  Decimal?        @db.Decimal(5, 2)
   /// Año cerrado: no se editan sus parámetros ni se registran movimientos.
-  cerrado        Boolean  @default(false)
-  notas          String?  @db.Text
+  cerrado         Boolean         @default(false)
+  notas           String?         @db.Text
   /// Procedencia de CADA campo escalar: quién lo cargó, cuándo, de dónde vino
   /// (manual | copia | contador) y si ya se revisó. Forma:
   ///   { uvt?: P, responsable_iva?: P, tarifa_iva?: P, tarifa_reteiva?: P }
@@ -707,14 +733,14 @@ model ParametroFiscal {
   /// Un valor copiado del año anterior o importado del contador nace con
   /// revisado=false y cuenta como PENDIENTE hasta que alguien lo confirme: si
   /// no, «copiar el año anterior» sería una puerta trasera a la guarda.
-  procedencia    Json?
-  activado_por   String?
-  activado_en    DateTime?
-  created_at     DateTime @default(now())
-  updated_at     DateTime @updatedAt
+  procedencia     Json?
+  activado_por    String?
+  activado_en     DateTime?
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
 
-  conceptos      ConceptoRetencion[]
-  tarifasIca     TarifaIca[]
+  conceptos  ConceptoRetencion[]
+  tarifasIca TarifaIca[]
 
   @@map("parametros_fiscales")
 }
@@ -722,25 +748,25 @@ model ParametroFiscal {
 /// Retención por CONCEPTO y año. Tabla, no columnas fijas: los conceptos
 /// cambian y no puede exigir migración añadir uno.
 model ConceptoRetencion {
-  id                   String  @id @default(uuid())
+  id                   String          @id @default(uuid())
   parametro_id         String
   parametro            ParametroFiscal @relation(fields: [parametro_id], references: [id], onDelete: Cascade)
   /// honorarios | comisiones | servicios | arrendamiento | compras | …
   concepto             String
   label                String
   /// La tarifa depende de si el tercero declara renta.
-  tarifa_declarante    Decimal @db.Decimal(5, 2)
-  tarifa_no_declarante Decimal @db.Decimal(5, 2)
+  tarifa_declarante    Decimal         @db.Decimal(5, 2)
+  tarifa_no_declarante Decimal         @db.Decimal(5, 2)
   /// Base mínima EN UVT. 0 = sin base mínima (se retiene desde el primer peso).
-  base_minima_uvt      Decimal @db.Decimal(10, 2) @default(0)
+  base_minima_uvt      Decimal         @default(0) @db.Decimal(10, 2)
   // ── Procedencia (misma semántica que ParametroFiscal.procedencia) ──
   cargado_por          String?
-  cargado_en           DateTime @default(now())
+  cargado_en           DateTime        @default(now())
   /// manual | copia | contador
-  origen               String   @default("manual")
+  origen               String          @default("manual")
   copiado_de_anio      Int?
   /// false = copiado o importado y aún sin confirmar → cuenta como pendiente.
-  revisado             Boolean  @default(true)
+  revisado             Boolean         @default(true)
 
   @@unique([parametro_id, concepto])
   @@map("conceptos_retencion")
@@ -749,20 +775,24 @@ model ConceptoRetencion {
 /// Tarifa de ICA por municipio y año (por mil). Municipio como texto: se
 /// declara donde se genera el ingreso, que puede estar fuera del Gualivá.
 model TarifaIca {
-  id             String  @id @default(uuid())
-  parametro_id   String
-  parametro      ParametroFiscal @relation(fields: [parametro_id], references: [id], onDelete: Cascade)
-  municipio      String
-  tarifa_por_mil Decimal @db.Decimal(6, 3)
-  cargado_por    String?
-  cargado_en     DateTime @default(now())
+  id              String          @id @default(uuid())
+  parametro_id    String
+  parametro       ParametroFiscal @relation(fields: [parametro_id], references: [id], onDelete: Cascade)
+  municipio       String
+  /// CIIU al que aplica la tarifa. "" = tarifa general del municipio, sin
+  /// distinguir actividad. Aquí «en blanco» SÍ significa «todas»; en un
+  /// Ingreso significa lo contrario (no calculable). Ver calculo.ts.
+  ciiu            String          @default("")
+  tarifa_por_mil  Decimal         @db.Decimal(6, 3)
+  cargado_por     String?
+  cargado_en      DateTime        @default(now())
   /// manual | copia | contador
-  origen         String   @default("manual")
+  origen          String          @default("manual")
   copiado_de_anio Int?
   /// false = copiada o importada y aún sin confirmar → cuenta como pendiente.
-  revisado       Boolean  @default(true)
+  revisado        Boolean         @default(true)
 
-  @@unique([parametro_id, municipio])
+  @@unique([parametro_id, municipio, ciiu])
   @@map("tarifas_ica")
 }
 
@@ -775,6 +805,10 @@ model TipoServicio {
   /// Clave hacia ConceptoRetencion. Se guarda el CONCEPTO, nunca la tarifa.
   concepto_retencion_sugerido String?
   genera_iva                  Boolean   @default(true)
+  /// Código CIIU del RUT bajo el que se factura esta línea (6820, 5911, 7010,
+  /// 6201). null = PENDIENTE de que lo confirme el contador: sin él no se
+  /// calcula ICA. No se precarga ninguna suposición.
+  ciiu                        String?
   orden                       Int       @default(0)
   activo                      Boolean   @default(true)
   ingresos                    Ingreso[]
@@ -799,37 +833,37 @@ model CategoriaEgreso {
 }
 
 model Ingreso {
-  id                    String       @id @default(uuid())
+  id                    String        @id @default(uuid())
   tipo_servicio_id      String
-  tipoServicio          TipoServicio @relation(fields: [tipo_servicio_id], references: [id])
+  tipoServicio          TipoServicio  @relation(fields: [tipo_servicio_id], references: [id])
   /// Las comisiones se atan a la propiedad vendida.
   property_id           String?
-  property              Property?    @relation(fields: [property_id], references: [id], onDelete: SetNull)
+  property              Property?     @relation(fields: [property_id], references: [id], onDelete: SetNull)
   tercero_id            String
-  tercero               Tercero      @relation(fields: [tercero_id], references: [id])
+  tercero               Tercero       @relation(fields: [tercero_id], references: [id])
   /// Causación y recaudo son FECHAS DISTINTAS y ambas importan: la primera
   /// manda en renta e IVA, la segunda en el flujo de caja.
   fecha_causacion       DateTime
   fecha_recaudo         DateTime?
-  valor_base            Decimal      @db.Decimal(16, 2)
+  valor_base            Decimal       @db.Decimal(16, 2)
   /// HECHOS del documento, no cálculos: el IVA facturado y lo que el cliente
   /// retuvo según su comprobante. El sistema calcula un sugerido y AVISA si
   /// difiere, pero guarda lo que realmente ocurrió.
-  iva_generado          Decimal      @db.Decimal(16, 2) @default(0)
-  retefuente_practicada Decimal      @db.Decimal(16, 2) @default(0)
-  reteica_practicada    Decimal      @db.Decimal(16, 2) @default(0)
-  reteiva_practicada    Decimal      @db.Decimal(16, 2) @default(0)
+  iva_generado          Decimal       @default(0) @db.Decimal(16, 2)
+  retefuente_practicada Decimal       @default(0) @db.Decimal(16, 2)
+  reteica_practicada    Decimal       @default(0) @db.Decimal(16, 2)
+  reteiva_practicada    Decimal       @default(0) @db.Decimal(16, 2)
   /// Lo que el sistema CALCULÓ con los parámetros del año en el momento de
   /// registrar. Null = no se pudo calcular (faltaba el parámetro).
   /// La DISCREPANCIA no se guarda: se deriva de practicada − sugerida. Un
   /// cliente que retiene de más es dinero recuperable, y sin esto no habría
   /// forma de saberlo.
-  iva_sugerido          Decimal?     @db.Decimal(16, 2)
-  retefuente_sugerida   Decimal?     @db.Decimal(16, 2)
-  reteica_sugerida      Decimal?     @db.Decimal(16, 2)
-  reteiva_sugerida      Decimal?     @db.Decimal(16, 2)
+  iva_sugerido          Decimal?      @db.Decimal(16, 2)
+  retefuente_sugerida   Decimal?      @db.Decimal(16, 2)
+  reteica_sugerida      Decimal?      @db.Decimal(16, 2)
+  reteiva_sugerida      Decimal?      @db.Decimal(16, 2)
   /// Por qué difiere, si se investigó (y si se reclamó).
-  nota_discrepancia     String?      @db.Text
+  nota_discrepancia     String?       @db.Text
   // valor_neto_recibido NO existe como columna: se deriva siempre.
   numero_factura        String?
   /// CUFE de la factura electrónica emitida por el sistema DIAN que se use.
@@ -837,17 +871,22 @@ model Ingreso {
   estado                EstadoIngreso @default(CAUSADO)
   /// Municipio donde se causa el ICA de este ingreso.
   municipio_ica         String?
+  /// FOTO del CIIU al causar, igual que municipio_ica: si mañana se corrige el
+  /// CIIU del tipo de servicio, lo ya declarado no cambia.
+  /// ⚠ null o "" aquí NO significa «todas las actividades» (eso solo vale en
+  /// TarifaIca): significa NO CALCULABLE y el cálculo de ICA se detiene.
+  ciiu                  String?
   /// true = facturamos la comisión TOTAL (las partes ajenas son egreso);
   /// false = cada corredor facturó lo suyo y aquí va solo nuestra parte.
-  facturamos_total      Boolean      @default(true)
-  notas                 String?      @db.Text
+  facturamos_total      Boolean       @default(true)
+  notas                 String?       @db.Text
   /// Id del Admin que lo registró. String sin FK, igual que Contacto.created_by.
   registrado_por        String?
-  created_at            DateTime     @default(now())
-  updated_at            DateTime     @updatedAt
+  created_at            DateTime      @default(now())
+  updated_at            DateTime      @updatedAt
 
-  distribuciones        DistribucionComision[]
-  custodiasAplicadas    MovimientoCustodia[]
+  distribuciones     DistribucionComision[]
+  custodiasAplicadas MovimientoCustodia[]
 
   @@index([fecha_causacion])
   @@index([fecha_recaudo])
@@ -858,47 +897,70 @@ model Ingreso {
 }
 
 model Egreso {
-  id                       String          @id @default(uuid())
+  id                       String            @id @default(uuid())
   categoria_id             String
-  categoria                CategoriaEgreso @relation(fields: [categoria_id], references: [id])
+  categoria                CategoriaEgreso   @relation(fields: [categoria_id], references: [id])
   /// NULLABLE a propósito: un peaje o un tanque de gasolina se captura en tres
   /// toques y muchas veces sin tercero identificado. Se completa después.
   tercero_id               String?
-  tercero                  Tercero?        @relation(fields: [tercero_id], references: [id], onDelete: SetNull)
+  tercero                  Tercero?          @relation(fields: [tercero_id], references: [id], onDelete: SetNull)
   fecha                    DateTime
   descripcion              String
-  valor_base               Decimal         @db.Decimal(16, 2)
+  valor_base               Decimal           @db.Decimal(16, 2)
   /// IVA PAGADO al proveedor. Se llama así y no «descontable» a propósito: si
   /// no somos responsables de IVA, NO es recuperable, es COSTO. El nombre viejo
   /// habría dicho una cosa y el cálculo otra. Ver costoEgreso().
-  iva_pagado               Decimal         @db.Decimal(16, 2) @default(0)
+  iva_pagado               Decimal           @default(0) @db.Decimal(16, 2)
   /// Las que YO le practico al proveedor (y luego declaro y pago).
-  retefuente_practicada    Decimal         @db.Decimal(16, 2) @default(0)
-  reteica_practicada       Decimal         @db.Decimal(16, 2) @default(0)
-  reteiva_practicada       Decimal         @db.Decimal(16, 2) @default(0)
+  retefuente_practicada    Decimal           @default(0) @db.Decimal(16, 2)
+  reteica_practicada       Decimal           @default(0) @db.Decimal(16, 2)
+  reteiva_practicada       Decimal           @default(0) @db.Decimal(16, 2)
   /// Lo calculado con los parámetros del año al registrar. Aquí la
   /// discrepancia significa que RETUVIMOS MAL nosotros: o se le debe al
   /// proveedor, o se le debe a la DIAN. Ambas hay que verlas.
-  iva_sugerido             Decimal?        @db.Decimal(16, 2)
-  retefuente_sugerida      Decimal?        @db.Decimal(16, 2)
-  reteica_sugerida         Decimal?        @db.Decimal(16, 2)
-  reteiva_sugerida         Decimal?        @db.Decimal(16, 2)
-  nota_discrepancia        String?         @db.Text
+  iva_sugerido             Decimal?          @db.Decimal(16, 2)
+  retefuente_sugerida      Decimal?          @db.Decimal(16, 2)
+  reteica_sugerida         Decimal?          @db.Decimal(16, 2)
+  reteiva_sugerida         Decimal?          @db.Decimal(16, 2)
+  nota_discrepancia        String?           @db.Text
   // valor_pagado NO existe como columna: se deriva.
   /// No todo gasto real es deducible fiscalmente.
-  es_deducible             Boolean         @default(true)
+  es_deducible             Boolean           @default(true)
+  naturaleza               NaturalezaEgreso  @default(DEL_NEGOCIO)
+  /// Cliente que devuelve la plata. Solo con naturaleza REEMBOLSABLE.
+  reembolsa_tercero_id     String?
+  reembolsaTercero         Tercero?          @relation("EgresoReembolsa", fields: [reembolsa_tercero_id], references: [id], onDelete: SetNull)
+  estado_reembolso         EstadoReembolso?
+  fecha_reembolso          DateTime?
+  /// Rastro de la reclasificación: de qué naturaleza venía, quién y por qué.
+  reclasificado_de         NaturalezaEgreso?
+  reclasificado_por        String?
+  reclasificado_en         DateTime?
+  motivo_reclasificacion   String?
+  /// Capturado en la calle sin los datos opcionales. YA cuenta en los
+  /// reportes: aparece en «Por completar», no se pierde por estar incompleto.
+  por_completar            Boolean           @default(false)
   property_id              String?
-  property                 Property?       @relation(fields: [property_id], references: [id], onDelete: SetNull)
+  property                 Property?         @relation(fields: [property_id], references: [id], onDelete: SetNull)
+  /// URL pública heredada. Para recibos NUEVOS no se usa: van a Cloudinary
+  /// privado y aquí solo queda el public_id.
   soporte_url              String?
+  /// public_id del recibo en Cloudinary, tipo `authenticated`. NO es una URL:
+  /// la imagen se sirve por /api/admin/finanzas/recibos/… con sesión, y el
+  /// enlace firmado se genera en el momento y caduca. Ley 1581: un recibo
+  /// lleva datos de terceros y no puede quedar en una URL pública permanente.
+  soporte_public_id        String?
   metodo_pago              String?
   numero_factura_proveedor String?
   registrado_por           String?
-  created_at               DateTime        @default(now())
-  updated_at               DateTime        @updatedAt
+  created_at               DateTime          @default(now())
+  updated_at               DateTime          @updatedAt
 
-  distribucion             DistribucionComision?
+  distribucion DistribucionComision?
 
   @@index([fecha])
+  @@index([naturaleza, estado_reembolso])
+  @@index([por_completar])
   @@index([categoria_id])
   @@index([property_id])
   @@index([tercero_id])
@@ -987,20 +1049,20 @@ model DistribucionComision {
 /// acepta fechas, así que no hay parámetro que manipular. Es la misma garantía
 /// que el `select` de `visitantesDe()`: la promesa se cumple en el servidor.
 model EnlaceContador {
-  id               String   @id @default(uuid())
-  createdAt        DateTime @default(now())
+  id               String                 @id @default(uuid())
+  createdAt        DateTime               @default(now())
   /// Para identificarlo en el panel: «Contador — bimestre 5 de 2026».
   etiqueta         String
-  token            String   @unique
+  token            String                 @unique
   /// bcrypt del PIN. NUNCA en texto plano.
   pinHash          String
   /// Alcance del enlace. Fuera de este rango no devuelve nada.
   periodo_desde    DateTime
   periodo_hasta    DateTime
   expiraAt         DateTime
-  revocado         Boolean  @default(false)
+  revocado         Boolean                @default(false)
   ultimoAcceso     DateTime?
-  intentosFallidos Int      @default(0)
+  intentosFallidos Int                    @default(0)
   creado_por       String?
   accesos          AccesoEnlaceContador[]
 
@@ -1014,13 +1076,13 @@ model EnlaceContador {
 /// Así queda el rastro de que el enlace se usó y cuándo, que es lo que tiene
 /// valor de auditoría, sin retener el dato personal más de lo necesario.
 model AccesoEnlaceContador {
-  id         String   @id @default(uuid())
-  enlace_id  String
-  enlace     EnlaceContador @relation(fields: [enlace_id], references: [id], onDelete: Cascade)
-  fecha      DateTime @default(now())
+  id             String         @id @default(uuid())
+  enlace_id      String
+  enlace         EnlaceContador @relation(fields: [enlace_id], references: [id], onDelete: Cascade)
+  fecha          DateTime       @default(now())
   /// Se anonimizan a los 12 meses (quedan en null); la fila NO se borra.
-  ip         String?
-  userAgent  String?
+  ip             String?
+  userAgent      String?
   /// Marca de que ya fue anonimizada, para no reprocesarla cada noche.
   anonimizado_en DateTime?
 

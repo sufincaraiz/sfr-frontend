@@ -1,21 +1,23 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { SlidersHorizontal, Clock, AlertTriangle } from 'lucide-react';
+import { AlertTriangle, Clock, HandCoins, ListChecks, Receipt, SlidersHorizontal } from 'lucide-react';
 import { requireSession } from '@/lib/auth';
 import { roleCanAccessAdminPath } from '@/lib/permissions';
 import { faltantesEmpresa } from '@/lib/finanzas/empresa';
+import { resumenDelMes } from '@/lib/finanzas/egresos';
 
-// Entrada del módulo de finanzas. Por ahora solo existe la pantalla de
-// parámetros; terceros, egresos, ingresos, custodia y reportes llegan en ese
-// orden.
+// Entrada del módulo de finanzas: el mes, lo que falta por completar y lo que
+// hay por cobrar. El botón «+ Gasto» lo pone el layout, y está en todas las
+// pantallas del módulo.
 //
 // COMPONENTE DE SERVIDOR a propósito: el NIT y la razón social viven en
 // variables de entorno SIN NEXT_PUBLIC_, que no existen en el navegador. Si
 // esta pantalla fuera de cliente, `faltantesEmpresa()` vería siempre todo
-// vacío y el aviso de «datos pendientes» no desaparecería nunca, aunque las
-// variables estuvieran bien configuradas en Vercel.
+// vacío y el aviso de «datos pendientes» no desaparecería nunca.
 
-const PROXIMOS = ['Terceros', 'Egresos', 'Ingresos y distribución de comisión', 'Custodia de dineros de terceros', 'Reportes'];
+const PROXIMOS = ['Ingresos y distribución de comisión', 'Custodia de dineros de terceros', 'Reportes'];
+const C = { navy: '#0D2D5E', blue: '#1B56A1', line: '#E2E8F0', muted: '#64748B', warn: '#B45309' };
+const dinero = (v: string) => `$ ${Number(v).toLocaleString('es-CO')}`;
 
 export const dynamic = 'force-dynamic';
 
@@ -26,32 +28,80 @@ export default async function FinanzasPage() {
 
   const faltan = faltantesEmpresa();
   const verParametros = roleCanAccessAdminPath(sesion.role, '/admin/finanzas/parametros');
+  const r = await resumenDelMes();
+
+  const tarjeta: React.CSSProperties = { background: '#fff', border: `1px solid ${C.line}`, borderRadius: 14, padding: '1.1rem 1.25rem', textDecoration: 'none', display: 'block' };
 
   return (
-    <div style={{ maxWidth: 820, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+    <div style={{ maxWidth: 860, display: 'flex', flexDirection: 'column', gap: '1rem', paddingBottom: '5rem' }}>
       {faltan.length > 0 && (
         <div style={{ display: 'flex', gap: '0.75rem', background: '#FFFBEB', border: '1.5px solid #FDE68A', borderRadius: 14, padding: '1rem 1.25rem' }}>
-          <AlertTriangle size={20} style={{ color: '#B45309', flexShrink: 0, marginTop: 2 }} />
+          <AlertTriangle size={20} style={{ color: C.warn, flexShrink: 0, marginTop: 2 }} />
           <div style={{ fontSize: '0.86rem', color: '#78350F', lineHeight: 1.5 }}>
             <strong>Datos de la empresa pendientes: {faltan.join(', ')}.</strong><br />
             Mientras falten, todo reporte sale marcado «NO VÁLIDO PARA DECLARAR».
           </div>
         </div>
       )}
-      {verParametros && (
-        <Link href="/admin/finanzas/parametros" style={{ display: 'flex', gap: '0.9rem', alignItems: 'center', background: '#fff', border: '1px solid #E2E8F0', borderRadius: 14, padding: '1.1rem 1.25rem', textDecoration: 'none' }}>
-          <SlidersHorizontal size={22} style={{ color: '#1B56A1', flexShrink: 0 }} />
-          <div>
-            <div style={{ color: '#0D2D5E', fontWeight: 800 }}>Parámetros fiscales del año</div>
-            <div style={{ color: '#64748B', fontSize: '0.84rem' }}>UVT, decisión de IVA, conceptos de retención e ICA. Sin un año ACTIVO el módulo no calcula nada.</div>
+
+      <div style={{ ...tarjeta, display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
+        <div>
+          <div style={{ color: C.muted, fontSize: '0.8rem', textTransform: 'capitalize' }}>Gastos de {r.mes}</div>
+          <div style={{ color: C.navy, fontWeight: 800, fontSize: '1.7rem' }}>{dinero(r.gastos)}</div>
+          <div style={{ color: C.muted, fontSize: '0.78rem' }}>{r.movimientos} movimiento{r.movimientos === 1 ? '' : 's'} registrados</div>
+        </div>
+        <div style={{ borderLeft: `1px solid ${C.line}`, paddingLeft: '2rem' }}>
+          <div style={{ color: C.muted, fontSize: '0.8rem' }}>Por cobrar a clientes</div>
+          <div style={{ color: C.navy, fontWeight: 800, fontSize: '1.7rem' }}>{dinero(r.porCobrar.total)}</div>
+          <div style={{ color: C.muted, fontSize: '0.78rem' }}>no es gasto ni ingreso</div>
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: '1rem' }}>
+        <Link href="/admin/finanzas/egresos?por_completar=1" style={tarjeta}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.navy, fontWeight: 800 }}>
+            <ListChecks size={18} style={{ color: C.blue }} /> Por completar
+          </div>
+          <div style={{ color: r.porCompletar ? C.warn : C.muted, fontSize: '0.84rem', marginTop: 4 }}>
+            {r.porCompletar
+              ? `${r.porCompletar} gasto${r.porCompletar === 1 ? '' : 's'} sin proveedor, factura o recibo. Ya cuentan en los reportes.`
+              : 'Nada pendiente de completar.'}
           </div>
         </Link>
-      )}
+
+        <Link href="/admin/finanzas/por-cobrar" style={tarjeta}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.navy, fontWeight: 800 }}>
+            <HandCoins size={18} style={{ color: C.blue }} /> Por cobrar
+          </div>
+          <div style={{ color: r.porCobrar.cantidad ? C.warn : C.muted, fontSize: '0.84rem', marginTop: 4 }}>
+            {r.porCobrar.cantidad
+              ? `${r.porCobrar.cantidad} adelanto${r.porCobrar.cantidad === 1 ? '' : 's'} que el cliente debe devolver.`
+              : 'Nada por cobrar.'}
+          </div>
+        </Link>
+
+        <Link href="/admin/finanzas/egresos" style={tarjeta}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.navy, fontWeight: 800 }}>
+            <Receipt size={18} style={{ color: C.blue }} /> Gastos
+          </div>
+          <div style={{ color: C.muted, fontSize: '0.84rem', marginTop: 4 }}>Listado con filtros por naturaleza y categoría.</div>
+        </Link>
+
+        {verParametros && (
+          <Link href="/admin/finanzas/parametros" style={tarjeta}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.navy, fontWeight: 800 }}>
+              <SlidersHorizontal size={18} style={{ color: C.blue }} /> Parámetros fiscales
+            </div>
+            <div style={{ color: C.muted, fontSize: '0.84rem', marginTop: 4 }}>UVT, decisión de IVA, conceptos e ICA. Sin un año ACTIVO no se calcula nada.</div>
+          </Link>
+        )}
+      </div>
+
       <div style={{ background: '#fff', border: '1px dashed #CBD5E1', borderRadius: 14, padding: '1.1rem 1.25rem' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748B', fontWeight: 800, fontSize: '0.88rem', marginBottom: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.muted, fontWeight: 800, fontSize: '0.88rem', marginBottom: 6 }}>
           <Clock size={16} /> En construcción
         </div>
-        <ul style={{ margin: 0, paddingLeft: 20, color: '#64748B', fontSize: '0.85rem', lineHeight: 1.6 }}>
+        <ul style={{ margin: 0, paddingLeft: 20, color: C.muted, fontSize: '0.85rem', lineHeight: 1.6 }}>
           {PROXIMOS.map(p => <li key={p}>{p}</li>)}
         </ul>
       </div>

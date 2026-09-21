@@ -36,7 +36,15 @@ const filaIca = (municipio: string | null, i: number) => `
           <td data-l="Municipio">${municipio
             ? `<span class="fijo">${municipio}</span><input type="hidden" data-i="municipio" value="${municipio}">`
             : `<input type="text" data-i="municipio" placeholder="Otro municipio" aria-label="Otro municipio ${i}">`}</td>
+          <td data-l="CIIU"><input type="text" data-i="ciiu" placeholder="6820" aria-label="CIIU de la tarifa ${i}"></td>
           <td data-l="Tarifa (por mil)"><span class="pct"><input type="text" inputmode="decimal" data-i="tarifa" aria-label="Tarifa por mil"> ‰</span></td>
+        </tr>`
+
+/** Una línea de servicio del negocio, para que el contador le asigne su CIIU. */
+const filaServicio = (linea: string, sugerido: string) => `
+        <tr data-servicio>
+          <td data-l="Línea de servicio"><span class="fijo">${linea}</span><input type="hidden" data-s="linea" value="${linea}"></td>
+          <td data-l="CIIU que aplica"><input type="text" data-s="ciiu" placeholder="${sugerido}" aria-label="CIIU de ${linea}"></td>
         </tr>`
 
 const HTML = `<!doctype html>
@@ -174,17 +182,37 @@ const HTML = `<!doctype html>
   </section>
 
   <section>
-    <h2>4. ICA — tarifa por municipio</h2>
-    <p class="nota">Se declara donde se <strong>genera</strong> el ingreso. La Vega es el habitual; añada otros si hay operaciones fuera.</p>
+    <h2>4. CIIU de cada línea de servicio</h2>
+    <p class="nota">
+      El RUT registra cuatro actividades: <strong>6820</strong> (principal), <strong>5911</strong>,
+      <strong>7010</strong> y <strong>6201</strong>. Como la tarifa de ICA se fija por actividad,
+      necesitamos saber bajo cuál se factura cada servicio. El texto gris es
+      <strong>nuestra suposición, sin confirmar</strong>: corríjala si no es la correcta.
+      Un servicio sin CIIU no calcula ICA; el sistema se detiene en vez de usar la tarifa general.
+    </p>
     <table>
-      <thead><tr><th>Municipio</th><th>Tarifa (por mil)</th></tr></thead>
+      <thead><tr><th>Línea de servicio</th><th>CIIU que aplica</th></tr></thead>
+      <tbody>${filaServicio('Comisión por venta de inmuebles', '6820')}${filaServicio('Acompañamiento en estudio de títulos', '6820')}${filaServicio('Análisis comercial de valor', '6820')}${filaServicio('Fotografía con dron y fotogrametría', '5911')}${filaServicio('Gestión de proyectos y consorcio de construcción', '7010')}
+      </tbody>
+    </table>
+  </section>
+
+  <section>
+    <h2>5. ICA — tarifa por municipio y actividad</h2>
+    <p class="nota">
+      Se declara donde se <strong>genera</strong> el ingreso. La Vega es el habitual; añada otros si
+      hay operaciones fuera. Si en un municipio la tarifa es la misma para todas las actividades,
+      <strong>deje el CIIU en blanco</strong>: eso significa «tarifa general del municipio».
+    </p>
+    <table>
+      <thead><tr><th>Municipio</th><th>CIIU</th><th>Tarifa (por mil)</th></tr></thead>
       <tbody>${filaIca('La Vega, Cundinamarca', 0)}${filaIca(null, 1)}${filaIca(null, 2)}
       </tbody>
     </table>
   </section>
 
   <section class="contexto">
-    <h2>5. Datos que pedimos UNA vez por cada cliente o proveedor</h2>
+    <h2>6. Datos que pedimos UNA vez por cada cliente o proveedor</h2>
     <p class="nota" style="margin-top:0">No son del año. Los tomamos de <strong>su RUT</strong> porque determinan qué retención aplica, y no los deducimos nosotros: documento (y DV si es NIT), nombre o razón social, persona natural o jurídica, y si es <strong>responsable de IVA</strong>, <strong>autorretenedor</strong>, <strong>gran contribuyente</strong> y <strong>declarante de renta</strong> (esta última define cuál tarifa del punto 3 aplica).</p>
   </section>
 
@@ -238,8 +266,12 @@ ${CODIFICADOR_JS}
       }).filter(function (c) { return c.label && (c.declarante || c.no_declarante || c.base_uvt); }),
       ica: $$('tr[data-ica]').map(function (tr) {
         var i = function (k) { return String(tr.querySelector('[data-i="' + k + '"]').value || '').trim(); };
-        return { municipio: i('municipio'), tarifa: i('tarifa') };
-      }).filter(function (t) { return t.municipio && t.tarifa; })
+        return { municipio: i('municipio'), ciiu: i('ciiu'), tarifa: i('tarifa') };
+      }).filter(function (t) { return t.municipio && t.tarifa; }),
+      servicios: $$('tr[data-servicio]').map(function (tr) {
+        var v = function (k) { return String(tr.querySelector('[data-s="' + k + '"]').value || '').trim(); };
+        return { linea: v('linea'), ciiu: v('ciiu') };
+      }).filter(function (sv) { return sv.ciiu; })
     };
   }
 
@@ -249,8 +281,8 @@ ${CODIFICADOR_JS}
       if (el.type === 'radio') { if (el.checked) datos.radios[el.name] = el.value; }
       else datos.campos[el.getAttribute('data-f')] = el.value;
     });
-    $$('tr[data-concepto], tr[data-ica]').forEach(function (tr, n) {
-      datos.filas[n] = $$('tr[data-concepto], tr[data-ica]')[n].querySelectorAll('input:not([type=hidden])').length
+    $$('tr[data-concepto], tr[data-ica], tr[data-servicio]').forEach(function (tr, n) {
+      datos.filas[n] = $$('tr[data-concepto], tr[data-ica], tr[data-servicio]')[n].querySelectorAll('input:not([type=hidden])').length
         ? Array.prototype.map.call(tr.querySelectorAll('input:not([type=hidden])'), function (i) { return i.value; })
         : [];
     });
@@ -272,7 +304,7 @@ ${CODIFICADOR_JS}
     Object.keys(datos.radios || {}).forEach(function (n) {
       var el = document.querySelector('input[name="' + n + '"][value="' + datos.radios[n] + '"]'); if (el) el.checked = true;
     });
-    $$('tr[data-concepto], tr[data-ica]').forEach(function (tr, n) {
+    $$('tr[data-concepto], tr[data-ica], tr[data-servicio]').forEach(function (tr, n) {
       var vals = (datos.filas || {})[n] || [];
       Array.prototype.forEach.call(tr.querySelectorAll('input:not([type=hidden])'), function (i, k) { if (vals[k] !== undefined) i.value = vals[k]; });
     });
@@ -307,10 +339,15 @@ ${CODIFICADOR_JS}
     l.push('');
     l.push('Retención (declara / no declara / base UVT):');
     d.conceptos.forEach(function (c) { l.push('- ' + c.label + ': ' + (c.declarante || '—') + ' % / ' + (c.no_declarante || '—') + ' % / ' + (c.base_uvt || '—')); });
+    if (d.servicios.length) {
+      l.push('');
+      l.push('CIIU por linea de servicio:');
+      d.servicios.forEach(function (sv) { l.push('- ' + sv.linea + ': ' + sv.ciiu); });
+    }
     if (d.ica.length) {
       l.push('');
       l.push('ICA (por mil):');
-      d.ica.forEach(function (t) { l.push('- ' + t.municipio + ': ' + t.tarifa); });
+      d.ica.forEach(function (t) { l.push('- ' + t.municipio + (t.ciiu ? ' (CIIU ' + t.ciiu + ')' : ' (todas las actividades)') + ': ' + t.tarifa); });
     }
     l.push('');
     l.push('Código para el sistema (no editar):');

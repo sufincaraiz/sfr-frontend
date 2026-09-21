@@ -1,8 +1,20 @@
 # Captura de ingresos y egresos — diseño para aprobación
 
-> Estado: **BORRADOR, sin construir**. Escrito el 2026-09-21 para revisión del
-> titular. Nada de esto está aplicado a la base ni al código.
-> Al aprobarse, el detalle vivo pasa a `MODULO-FINANZAS.md` y al esquema.
+> Estado: **APROBADO Y EN CONSTRUCCIÓN** (2026-09-21).
+>
+> Decisiones del titular: sin señal → **opción B** (cola local con reintento y
+> aviso imposible de ignorar); recibos → **carpeta privada con enlaces firmados
+> de vida corta**, declarado en la política de datos; CIIU en blanco → vale
+> «todas las actividades» **solo en TarifaIca**; en un INGRESO significa NO
+> CALCULABLE y el cálculo se detiene.
+>
+> Ya construido: migración (CIIU, naturalezas, reembolsos, `soporte_public_id`),
+> guardas `gastoDeResultado` y `calcularIca` (probadas rompiéndolas), captura
+> móvil de egresos, listado, por-cobrar, cola local, recibos privados por proxy,
+> CIIU en el formulario del contador y en los parámetros.
+>
+> Pendiente del siguiente lote: pantalla de terceros, captura de ingresos con
+> CIIU heredado del tipo de servicio, y los reportes (solo con datos reales).
 
 Contexto confirmado del RUT: persona natural, régimen ordinario (resp. 05), **no
 responsable de IVA** (resp. 49), inicio de actividad 2018-05-10, código postal

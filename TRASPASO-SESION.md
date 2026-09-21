@@ -2380,6 +2380,27 @@ Es otro instrumento que engaña (sección anterior), y el más peligroso: aquí 
 mentía la salida de un comando, mentía nuestra propia documentación, que
 afirmaba un efecto que nadie había visto.
 
+### La variable de entorno que el código inventó
+
+`src/lib/finanzas/recibos.ts` leía `CLOUDINARY_CLOUD_NAME`. Esa variable **no
+existe**: en este proyecto el cloud name siempre se ha llamado
+`NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME`. El typecheck pasaba, 156 pruebas pasaban y
+el build salía sano, porque `process.env.LO_QUE_SEA` es `undefined` y no
+rompe nada. El efecto habría aparecido solo en producción: con las llaves ya
+configuradas, la subida de recibos respondiendo «no configurado» y cada gasto
+guardándose sin foto, en silencio.
+
+**Regla: una variable de entorno se verifica contra la lista REAL del entorno
+—Vercel, `.env.local`— no contra lo que el código espera encontrar.**
+
+    grep -o "^[A-Z_]*CLOUDINARY[A-Z_]*" .env.local | sort -u
+
+Es la misma familia que las guardas muertas: nada falla, todo parece verde, y
+la afirmación («lee las llaves») no se había comprobado nunca contra el efecto.
+Y el arreglo tampoco puede ser leer dos nombres «por si acaso»: dos nombres
+para el mismo dato son dos verdades en cuanto alguien los define distintos.
+Una sola fuente, y si falta, que falle con un mensaje claro.
+
 ### Verificado en local ≠ verificado en producción
 
 Estado de las verificaciones de este lote, con su alcance exacto:

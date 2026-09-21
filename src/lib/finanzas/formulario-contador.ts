@@ -53,7 +53,14 @@ export interface RespuestaContador {
   agente_reteiva: string
   tarifa_reteiva: string
   conceptos: ConceptoRespuesta[]
-  ica: { municipio: string; tarifa: string }[]
+  /** La tarifa de ICA depende de la ACTIVIDAD: por eso municipio + CIIU. */
+  ica: { municipio: string; ciiu: string; tarifa: string }[]
+  /**
+   * CIIU que aplica a cada línea de servicio. Lo confirma el contador: sin él
+   * el ICA de ese ingreso no se calcula (no se asume la tarifa general).
+   * Opcional en el código para no romper los formularios ya enviados.
+   */
+  servicios: { linea: string; ciiu: string }[]
 }
 
 export class ErrorFormatoRespuesta extends Error {
@@ -109,14 +116,24 @@ export function decodificarRespuesta(texto: string): RespuestaContador {
     if (!t || !esTexto(t.municipio) || !esTexto(t.tarifa)) {
       throw new ErrorFormatoRespuesta(`La tarifa de ICA ${n + 1} del código está incompleta.`)
     }
-    return { municipio: t.municipio, tarifa: t.tarifa }
+    // CIIU en blanco en una TARIFA significa «tarifa general del municipio».
+    // Es un valor válido; en un ingreso significaría lo contrario.
+    return { municipio: t.municipio, ciiu: esTexto(t.ciiu) ? t.ciiu : '', tarifa: t.tarifa }
   })
+  const servicios = Array.isArray(d.servicios)
+    ? (d.servicios as Record<string, unknown>[]).map((sv, n) => {
+        if (!sv || !esTexto(sv.linea) || !esTexto(sv.ciiu)) {
+          throw new ErrorFormatoRespuesta(`La línea de servicio ${n + 1} del código está incompleta.`)
+        }
+        return { linea: sv.linea, ciiu: sv.ciiu }
+      })
+    : []
 
   return {
     v: 1, anio: d.anio as number,
     por: d.por as string, fecha: d.fecha as string, uvt: d.uvt as string,
     responsable_iva: d.responsable_iva as string, tarifa_iva: d.tarifa_iva as string,
     agente_reteiva: d.agente_reteiva as string, tarifa_reteiva: d.tarifa_reteiva as string,
-    conceptos, ica,
+    conceptos, ica, servicios,
   }
 }

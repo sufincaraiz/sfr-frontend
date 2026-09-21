@@ -45,6 +45,8 @@ export interface ConceptoRetencionLike {
 
 export interface TarifaIcaLike {
   municipio: string
+  /** "" = tarifa general del municipio, sin distinguir actividad. */
+  ciiu?: string
   tarifa_por_mil: Num
   revisado?: boolean
   origen?: string
@@ -246,6 +248,99 @@ export function costoEgreso(
   return responsableIva
     ? dec(e.valor_base)
     : dec(e.valor_base).plus(dec(e.iva_pagado)).toDecimalPlaces(2)
+}
+
+/**
+ * GASTO que entra al estado de resultados.
+ *
+ * Un egreso REEMBOLSABLE no es gasto: es plata que adelantamos por cuenta del
+ * cliente y que él devuelve — una cuenta POR COBRAR. Contarlo como gasto, y su
+ * reembolso como ingreso, infla las dos cifras y hace pagar impuesto sobre
+ * plata que no se ganó. Es la misma trampa que `MovimientoCustodia`, en el
+ * sentido contrario del dinero.
+ *
+ * Por eso aquí no se avisa ni se ignora: se DETIENE. Si el cliente no va a
+ * pagar, alguien tiene que reclasificarlo a DE_OPERACION dejando su rastro
+ * (quién, cuándo y por qué); a partir de ahí sí es gasto y esta función lo suma.
+ */
+export class ErrorNaturalezaEgreso extends Error {
+  constructor(mensaje: string) {
+    super(mensaje)
+    this.name = 'ErrorNaturalezaEgreso'
+  }
+}
+
+export interface EgresoDeResultado {
+  id?: string
+  naturaleza: 'DEL_NEGOCIO' | 'DE_OPERACION' | 'REEMBOLSABLE'
+  valor_base: Num
+  iva_pagado: Num
+  estado_reembolso?: 'PENDIENTE' | 'REEMBOLSADO' | 'ASUMIDO' | null
+}
+
+export function gastoDeResultado(
+  e: EgresoDeResultado,
+  responsableIva: boolean | null | undefined,
+): Prisma.Decimal {
+  if (e.naturaleza === 'REEMBOLSABLE') {
+    throw new ErrorNaturalezaEgreso(
+      `El egreso ${e.id ?? '(sin id)'} es REEMBOLSABLE: no es gasto, es una cuenta por cobrar al cliente. ` +
+      'No entra al estado de resultados. Si el cliente no va a pagar, reclasifícalo a DE_OPERACION ' +
+      'desde «Por cobrar», dejando el motivo.',
+    )
+  }
+  return costoEgreso(e, responsableIva)
+}
+
+/** Los que SÍ son gasto. Única puerta para sumar egresos en un reporte. */
+export function egresosDeResultado<T extends { naturaleza: string }>(egresos: T[]): T[] {
+  return egresos.filter(e => e.naturaleza !== 'REEMBOLSABLE')
+}
+
+/**
+ * ICA del ingreso. Dos reglas que parecen la misma y son opuestas:
+ *
+ * · En `TarifaIca`, un CIIU en blanco significa «tarifa general del municipio,
+ *   sin distinguir actividad». Es un valor válido y se usa como respaldo.
+ * · En un INGRESO, un CIIU en blanco NO significa «todas»: significa NO
+ *   CALCULABLE, y el cálculo se detiene igual que si faltara el parámetro del
+ *   año. Si se tratara como «todas», un servicio al que nadie le asignó CIIU
+ *   tributaría con la tarifa general sin que nadie lo note — y el error solo
+ *   aparecería en una declaración.
+ */
+export function calcularIca(
+  base: Num,
+  a: { municipio: string | null | undefined; ciiu: string | null | undefined },
+  parametros: ParametrosAnioLike,
+): Prisma.Decimal {
+  // `vacio()` solo mira null/undefined a propósito (un 0 no es un vacío). Aquí
+  // el texto en blanco SÍ cuenta como ausente.
+  const sinTexto = (v: string | null | undefined) => v === null || v === undefined || v.trim() === ''
+  if (sinTexto(a.municipio)) {
+    throw new ParametroFiscalFaltante(
+      'El ingreso no tiene municipio de ICA: no se puede saber ante qué municipio se declara.',
+    )
+  }
+  if (sinTexto(a.ciiu)) {
+    throw new ParametroFiscalFaltante(
+      `Ingreso sin CIIU: el ICA se liquida por actividad y no se asume ninguna. ` +
+      `Asigna el CIIU al tipo de servicio (lo confirma el contador) y vuelve a causarlo. ` +
+      `En blanco NO es «todas las actividades»: eso solo vale para la tarifa del municipio.`,
+    )
+  }
+  const muni = String(a.municipio).trim().toLowerCase()
+  const ciiu = String(a.ciiu).trim()
+  const tarifas = parametros.tarifasIca ?? []
+  const exacta = tarifas.find(t => t.municipio.trim().toLowerCase() === muni && (t.ciiu ?? '').trim() === ciiu)
+  const general = tarifas.find(t => t.municipio.trim().toLowerCase() === muni && (t.ciiu ?? '').trim() === '')
+  const tarifa = exacta ?? general
+  if (!tarifa) {
+    throw new ParametroFiscalFaltante(
+      `No hay tarifa de ICA para ${a.municipio} (CIIU ${ciiu}) en ${parametros.anio}. ` +
+      'Cárgala en los parámetros del año: no se asume cero ni se usa la de otro municipio.',
+    )
+  }
+  return dec(base).mul(dec(tarifa.tarifa_por_mil)).div(1000).toDecimalPlaces(2)
 }
 
 /** Valor neto que se recibe de un ingreso. DERIVADO — nunca columna. */

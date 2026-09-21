@@ -26,7 +26,7 @@ interface FilaConcepto {
   revisado: boolean; origen: string; copiado_de_anio: number | null; cargado_por: string | null; cargado_en: string | null;
 }
 interface FilaIca {
-  municipio: string; tarifa_por_mil: string;
+  municipio: string; ciiu: string; tarifa_por_mil: string;
   revisado: boolean; origen: string; copiado_de_anio: number | null; cargado_por: string | null; cargado_en: string | null;
 }
 interface ParametroServidor {
@@ -69,7 +69,7 @@ function carga(anio: number, f: Form) {
     anio, uvt: f.uvt, responsable_iva: f.responsable_iva, tarifa_iva: f.tarifa_iva, tarifa_reteiva: f.tarifa_reteiva,
     notas: f.notas || null, confirmar: f.confirmar, importados: f.importados,
     conceptos: f.conceptos.map(c => ({ label: c.label, tarifa_declarante: c.tarifa_declarante, tarifa_no_declarante: c.tarifa_no_declarante, base_minima_uvt: c.base_minima_uvt, revisado: c.revisado, origen: c.origen })),
-    tarifasIca: f.tarifasIca.map(t => ({ municipio: t.municipio, tarifa_por_mil: t.tarifa_por_mil, revisado: t.revisado, origen: t.origen })),
+    tarifasIca: f.tarifasIca.map(t => ({ municipio: t.municipio, ciiu: t.ciiu ?? '', tarifa_por_mil: t.tarifa_por_mil, revisado: t.revisado, origen: t.origen })),
   };
 }
 
@@ -172,7 +172,7 @@ export default function ParametrosFiscalesPage() {
     tarifa_iva: form.tarifa_iva || null,
     tarifa_reteiva: form.tarifa_reteiva || null,
     conceptos: form.conceptos.filter(c => c.label.trim()).map(c => ({ concepto: claveConcepto(c.label), label: c.label, revisado: c.revisado, origen: c.origen, copiado_de_anio: c.copiado_de_anio })),
-    tarifasIca: form.tarifasIca.filter(t => t.municipio.trim()).map(t => ({ municipio: t.municipio, revisado: t.revisado, origen: t.origen, copiado_de_anio: t.copiado_de_anio })),
+    tarifasIca: form.tarifasIca.filter(t => t.municipio.trim()).map(t => ({ municipio: t.ciiu ? `${t.municipio} (CIIU ${t.ciiu})` : t.municipio, revisado: t.revisado, origen: t.origen, copiado_de_anio: t.copiado_de_anio })),
     procedencia: proc,
   }), [anio, form, proc]);
 
@@ -264,14 +264,20 @@ export default function ParametrosFiscalesPage() {
           if (i >= 0) n.conceptos[i] = fila; else n.conceptos.push(fila);
         });
         r.ica.forEach(t => {
-          const fila = { municipio: t.municipio, tarifa_por_mil: t.tarifa, ...importadaC };
-          const i = n.tarifasIca.findIndex(x => x.municipio.trim().toLowerCase() === t.municipio.trim().toLowerCase());
+          const ciiu = (t.ciiu ?? '').trim();
+          const fila = { municipio: t.municipio, ciiu, tarifa_por_mil: t.tarifa, ...importadaC };
+          const i = n.tarifasIca.findIndex(x => x.municipio.trim().toLowerCase() === t.municipio.trim().toLowerCase() && (x.ciiu ?? '').trim() === ciiu);
           if (i >= 0) n.tarifasIca[i] = fila; else n.tarifasIca.push(fila);
         });
         return n;
       });
       setImportando(false); setTextoImport('');
-      setAviso(`Importado el formulario de ${r.por || 'el contador'} (${r.fecha}). Todo quedó SIN REVISAR: confírmalo valor por valor y guarda.`);
+      const notaServicios = r.servicios.length
+        // El CIIU por línea de servicio vive en TipoServicio, que todavía no
+        // tiene pantalla (llega con ingresos). No se descarta en silencio.
+        ? ` El código también trae el CIIU de ${r.servicios.length} línea(s) de servicio (${r.servicios.map(x => `${x.linea}: ${x.ciiu}`).join('; ')}); se aplicará al configurar los tipos de servicio.`
+        : '';
+      setAviso(`Importado el formulario de ${r.por || 'el contador'} (${r.fecha}). Todo quedó SIN REVISAR: confírmalo valor por valor y guarda.${notaServicios}`);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'No se pudo leer el código.');
     }
@@ -435,15 +441,18 @@ export default function ParametrosFiscalesPage() {
           {/* ICA */}
           <div style={cardS}>
             <h3 style={h3S}>5. Tarifas de ICA por municipio</h3>
-            <p style={notaS}>Por mil. No son obligatorias para activar; pero una copiada o importada sin revisar sí bloquea, porque se usaría como si estuviera confirmada.</p>
+            <p style={notaS}>Por mil, por municipio y actividad. <strong>CIIU en blanco = tarifa general del municipio</strong> (aquí sí significa «todas»; en un ingreso significa que no se puede calcular). No son obligatorias para activar; pero una copiada o importada sin revisar sí bloquea, porque se usaría como si estuviera confirmada.</p>
             <div className="pf-scroll">
               <table className="pf-tabla">
-                <thead><tr><th>Municipio</th><th>Tarifa ‰</th><th>Procedencia</th><th /></tr></thead>
+                <thead><tr><th>Municipio</th><th>CIIU</th><th>Tarifa ‰</th><th>Procedencia</th><th /></tr></thead>
                 <tbody>
-                  {form.tarifasIca.length === 0 && <tr><td colSpan={4} style={{ color: C.muted, padding: '12px 6px' }}>Sin tarifas de ICA.</td></tr>}
+                  {form.tarifasIca.length === 0 && <tr><td colSpan={5} style={{ color: C.muted, padding: '12px 6px' }}>Sin tarifas de ICA.</td></tr>}
                   {form.tarifasIca.map((t, i) => (
                     <tr key={i} className={t.revisado ? '' : 'pf-fila-nr'}>
                       <td><input value={t.municipio} onChange={e => editarIca(i, 'municipio', e.target.value)} placeholder="La Vega, Cundinamarca" style={inputS} /></td>
+                      <td style={{ width: 110 }}>
+                        <input value={t.ciiu} onChange={e => editarIca(i, 'ciiu', e.target.value)} placeholder="todas" style={inputS} />
+                      </td>
                       <td style={{ width: 110 }}><input value={t.tarifa_por_mil} onChange={e => editarIca(i, 'tarifa_por_mil', e.target.value)} inputMode="decimal" style={inputS} /></td>
                       <td style={{ minWidth: 150 }}>
                         <LineaProcedencia p={procFila(t)} bloqueado={bloqueado}
@@ -457,7 +466,7 @@ export default function ParametrosFiscalesPage() {
                 </tbody>
               </table>
             </div>
-            <button type="button" onClick={() => set('tarifasIca', [...form.tarifasIca, { municipio: '', tarifa_por_mil: '', revisado: true, origen: 'manual', copiado_de_anio: null, cargado_por: null, cargado_en: null }])}
+            <button type="button" onClick={() => set('tarifasIca', [...form.tarifasIca, { municipio: '', ciiu: '', tarifa_por_mil: '', revisado: true, origen: 'manual', copiado_de_anio: null, cargado_por: null, cargado_en: null }])}
               style={{ marginTop: 10, display: 'inline-flex', alignItems: 'center', gap: 6, border: `1.5px dashed ${C.line}`, background: '#fff', color: C.blue, fontWeight: 800, borderRadius: 9, padding: '7px 12px', cursor: 'pointer', fontSize: '0.84rem' }}>
               <Plus size={14} /> Añadir municipio
             </button>
