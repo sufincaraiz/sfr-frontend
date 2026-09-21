@@ -1,29 +1,31 @@
-'use client';
-
-import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { SlidersHorizontal, Clock, AlertTriangle } from 'lucide-react';
+import { requireSession } from '@/lib/auth';
+import { roleCanAccessAdminPath } from '@/lib/permissions';
 import { faltantesEmpresa } from '@/lib/finanzas/empresa';
 
 // Entrada del módulo de finanzas. Por ahora solo existe la pantalla de
 // parámetros; terceros, egresos, ingresos, custodia y reportes llegan en ese
-// orden. La tarjeta de parámetros solo se muestra si el menú del rol la incluye
-// (la fuente es /api/admin/me, la misma que pinta la barra lateral).
+// orden.
+//
+// COMPONENTE DE SERVIDOR a propósito: el NIT y la razón social viven en
+// variables de entorno SIN NEXT_PUBLIC_, que no existen en el navegador. Si
+// esta pantalla fuera de cliente, `faltantesEmpresa()` vería siempre todo
+// vacío y el aviso de «datos pendientes» no desaparecería nunca, aunque las
+// variables estuvieran bien configuradas en Vercel.
 
 const PROXIMOS = ['Terceros', 'Egresos', 'Ingresos y distribución de comisión', 'Custodia de dineros de terceros', 'Reportes'];
 
-export default function FinanzasPage() {
-  const [nav, setNav] = useState<{ prefix: string }[] | null>(null);
+export const dynamic = 'force-dynamic';
 
-  useEffect(() => {
-    fetch('/api/admin/me')
-      .then(r => { if (r.status === 401) { window.location.href = '/admin/login'; return null; } return r.json(); })
-      .then(d => d && setNav(d.nav ?? []))
-      .catch(() => setNav([]));
-  }, []);
+export default async function FinanzasPage() {
+  const sesion = await requireSession();
+  if (!sesion) redirect('/admin/login');
+  if (!roleCanAccessAdminPath(sesion.role, '/admin/finanzas')) redirect('/admin');
 
   const faltan = faltantesEmpresa();
-  const verParametros = nav?.some(n => n.prefix === '/admin/finanzas/parametros');
+  const verParametros = roleCanAccessAdminPath(sesion.role, '/admin/finanzas/parametros');
 
   return (
     <div style={{ maxWidth: 820, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -32,7 +34,7 @@ export default function FinanzasPage() {
           <AlertTriangle size={20} style={{ color: '#B45309', flexShrink: 0, marginTop: 2 }} />
           <div style={{ fontSize: '0.86rem', color: '#78350F', lineHeight: 1.5 }}>
             <strong>Datos de la empresa pendientes: {faltan.join(', ')}.</strong><br />
-            Todo reporte que se genere mientras falten sale marcado «NO VÁLIDO PARA DECLARAR». Se cargan en <code>src/lib/finanzas/empresa.ts</code>.
+            Mientras falten, todo reporte sale marcado «NO VÁLIDO PARA DECLARAR».
           </div>
         </div>
       )}

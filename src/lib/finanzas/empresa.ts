@@ -25,7 +25,40 @@ export interface DatosEmpresa {
   domicilio: string
 }
 
-export const EMPRESA: DatosEmpresa = {
+/**
+ * El NIT y la razón social NO viven en el código: se configuran como secretos
+ * en Vercel (Production y Preview) y en `.env.local`.
+ *   EMPRESA_NIT           solo el número, sin puntos ni guion
+ *   EMPRESA_NIT_DV        el dígito de verificación, aparte
+ *   EMPRESA_RAZON_SOCIAL  el nombre tal como figura en el RUT
+ *
+ * Son variables de SERVIDOR (sin NEXT_PUBLIC_): no existen en el navegador.
+ * Cualquier pantalla que muestre estos datos tiene que ser de servidor o
+ * pedirlos por API; si no, vería siempre «pendiente». Pasó con el hub.
+ *
+ * Si faltan o vienen vacías, el comportamiento es el de siempre: pendiente a
+ * la vista y reporte marcado NO VÁLIDO PARA DECLARAR. Nunca se inventa un NIT.
+ */
+const limpio = (v: string | undefined): string | null => {
+  const s = (v ?? '').trim()
+  return s === '' ? null : s
+}
+
+export function empresa(): DatosEmpresa {
+  const env: Record<string, string | undefined> =
+    typeof process === 'undefined' ? {} : (process.env ?? {})
+  return {
+    nombreComercial: 'Su Finca Raíz',
+    razonSocial: limpio(env.EMPRESA_RAZON_SOCIAL),
+    nit: limpio(env.EMPRESA_NIT),
+    dv: limpio(env.EMPRESA_NIT_DV),
+    matriculaMercantil: '199483',
+    domicilio: 'La Vega, Cundinamarca',
+  }
+}
+
+/** Datos fijos del RUT que no son secretos (para pruebas y valores base). */
+export const EMPRESA_BASE: DatosEmpresa = {
   nombreComercial: 'Su Finca Raíz',
   razonSocial: null,
   nit: null,
@@ -66,7 +99,7 @@ export function digitoVerificacion(nit: string): string {
 }
 
 /** Lista de lo que falta para que un reporte sirva para declarar. */
-export function faltantesEmpresa(e: DatosEmpresa = EMPRESA): string[] {
+export function faltantesEmpresa(e: DatosEmpresa = empresa()): string[] {
   const f: string[] = []
   if (!e.nit) f.push('NIT')
   else if (!e.dv) f.push('Dígito de verificación del NIT')
@@ -85,7 +118,7 @@ export interface Encabezado {
   aviso: string | null
 }
 
-export function encabezadoReporte(periodo: string, generadoEn: Date, e: DatosEmpresa = EMPRESA): Encabezado {
+export function encabezadoReporte(periodo: string, generadoEn: Date, e: DatosEmpresa = empresa()): Encabezado {
   const faltantes = faltantesEmpresa(e)
   const nitOk = !faltantes.some(f => f.startsWith('NIT') || f.startsWith('Dígito'))
   const lineas = [

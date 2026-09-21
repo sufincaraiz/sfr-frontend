@@ -1,12 +1,12 @@
 import type { NextConfig } from 'next'
-import { EMPRESA, exigirNitValido } from './src/lib/finanzas/empresa'
+import { empresa, exigirNitValido } from './src/lib/finanzas/empresa'
 
 // Un NIT con dígito de verificación errado no puede llegar a producción: haría
 // inservible cada reporte tributario, y además parecería completo. Esta llamada
 // corre al arrancar TODO next build y next dev. No se puede poner en la página:
 // el layout de admin no renderiza hijos en el prerender (espera la sesión), así
 // que un throw allí no rompía el build. Se probó con un NIT de DV errado.
-exigirNitValido(EMPRESA)
+exigirNitValido(empresa())
 
 const nextConfig: NextConfig = {
   // Oculta el indicador "N" de desarrollo

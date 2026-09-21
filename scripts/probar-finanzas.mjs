@@ -15,7 +15,7 @@ import {
 import { roleCanAccessAdminPath, roleHome } from '../src/lib/permissions.ts'
 import { CODIFICADOR_JS, PREFIJO_RESPUESTA, decodificarRespuesta } from '../src/lib/finanzas/formulario-contador.ts'
 import { leerNumero } from '../src/lib/finanzas/numeros.ts'
-import { EMPRESA, MARCA_PENDIENTE, digitoVerificacion, encabezadoReporte, exigirNitValido } from '../src/lib/finanzas/empresa.ts'
+import { EMPRESA_BASE, empresa, MARCA_PENDIENTE, digitoVerificacion, encabezadoReporte, exigirNitValido, faltantesEmpresa } from '../src/lib/finanzas/empresa.ts'
 
 let ok = 0, fail = 0
 const check = (nombre, cond, extra = '') => {
@@ -177,7 +177,7 @@ check('«52,374» se lee 52.374 → lo frena el mínimo de 1000 del UVT', leerNu
 
 console.log('\n══ 7d. ENCABEZADO DE REPORTES: NIT pendiente a la vista ══')
 {
-  const h = encabezadoReporte('2026-01 a 2026-06', new Date('2026-09-17T15:00:00Z'), { ...EMPRESA, nit: null, dv: null })
+  const h = encabezadoReporte('2026-01 a 2026-06', new Date('2026-09-17T15:00:00Z'), { ...EMPRESA_BASE, nit: null, dv: null })
   const nit = h.lineas.find(l => l.etiqueta === 'NIT')
   check('sin NIT: la línea NIT existe (no se omite)', !!nit)
   check('sin NIT: dice PENDIENTE, no vacío', nit?.valor === MARCA_PENDIENTE && nit?.pendiente === true)
@@ -187,20 +187,35 @@ console.log('\n══ 7d. ENCABEZADO DE REPORTES: NIT pendiente a la vista ═�
 }
 check('DV DIAN: 800197268 → 4', digitoVerificacion('800197268') === '4')
 {
-  const malo = encabezadoReporte('p', new Date(), { ...EMPRESA, razonSocial: 'X S.A.S.', nit: '800197268', dv: '5' })
+  const malo = encabezadoReporte('p', new Date(), { ...EMPRESA_BASE, razonSocial: 'X S.A.S.', nit: '800197268', dv: '5' })
   check('NIT con DV errado: no válido y dice cuál debería ser', !malo.validoParaDeclarar && /debería ser 4/.test(malo.aviso ?? ''))
-  const bien = encabezadoReporte('p', new Date(), { ...EMPRESA, razonSocial: 'X S.A.S.', nit: '800197268', dv: '4' })
+  const bien = encabezadoReporte('p', new Date(), { ...EMPRESA_BASE, razonSocial: 'X S.A.S.', nit: '800197268', dv: '4' })
   check('NIT completo y correcto: válido, sin aviso, «800.197.268-4»',
     bien.validoParaDeclarar && bien.aviso === null && bien.lineas.find(l => l.etiqueta === 'NIT')?.valor === '800.197.268-4')
 }
-const rechaza = (nombre, e) => { try { exigirNitValido({ ...EMPRESA, ...e }); check(nombre, false, '(NO lanzó: se guardaría)') } catch (x) { check(nombre, /EMPRESA:/.test(x.message)) } }
+const rechaza = (nombre, e) => { try { exigirNitValido({ ...EMPRESA_BASE, ...e }); check(nombre, false, '(NO lanzó: se guardaría)') } catch (x) { check(nombre, /EMPRESA:/.test(x.message)) } }
 rechaza('NIT con DV errado → se RECHAZA (no solo avisa)', { nit: '800197268', dv: '5' })
 rechaza('NIT sin DV → se rechaza', { nit: '800197268', dv: null })
 rechaza('DV sin NIT → se rechaza', { nit: null, dv: '4' })
 rechaza('NIT con puntos o guion → se rechaza', { nit: '800.197.268', dv: '4' })
-check('NIT correcto → se acepta', (() => { exigirNitValido({ ...EMPRESA, nit: '800197268', dv: '4' }); return true })())
-check('NIT pendiente (ambos null) → se tolera', (() => { exigirNitValido({ ...EMPRESA, nit: null, dv: null }); return true })())
-check('HOY el NIT real sigue pendiente (esta línea cambia cuando el titular lo pase)', EMPRESA.nit === null)
+check('NIT correcto → se acepta', (() => { exigirNitValido({ ...EMPRESA_BASE, nit: '800197268', dv: '4' }); return true })())
+check('NIT pendiente (ambos null) → se tolera', (() => { exigirNitValido({ ...EMPRESA_BASE, nit: null, dv: null }); return true })())
+check('empresa() lee EMPRESA_NIT del entorno', (() => { process.env.EMPRESA_NIT = '800197268'; process.env.EMPRESA_NIT_DV = '4'; process.env.EMPRESA_RAZON_SOCIAL = 'NOMBRE DEL RUT'; const e = empresa(); delete process.env.EMPRESA_NIT; delete process.env.EMPRESA_NIT_DV; delete process.env.EMPRESA_RAZON_SOCIAL; return e.nit === '800197268' && e.dv === '4' && e.razonSocial === 'NOMBRE DEL RUT' })())
+check('sin variables de entorno → pendiente, no inventa NIT', (() => { const e = empresa(); return e.nit === null && e.dv === null && e.razonSocial === null && faltantesEmpresa(e).length === 2 })())
+check('variable vacía cuenta como ausente', (() => { process.env.EMPRESA_NIT = '   '; const e = empresa(); delete process.env.EMPRESA_NIT; return e.nit === null })())
+check('con las tres variables bien: 0 pendientes y el aviso del hub desaparece', (() => {
+  process.env.EMPRESA_NIT = '800197268'; process.env.EMPRESA_NIT_DV = '4'; process.env.EMPRESA_RAZON_SOCIAL = 'NOMBRE DEL RUT'
+  const f = faltantesEmpresa(); const h = encabezadoReporte('2026', new Date())
+  delete process.env.EMPRESA_NIT; delete process.env.EMPRESA_NIT_DV; delete process.env.EMPRESA_RAZON_SOCIAL
+  return f.length === 0 && h.validoParaDeclarar && h.aviso === null
+})())
+check('DV errado en el entorno: exigirNitValido lo rechaza (es lo que rompe el build)', (() => {
+  process.env.EMPRESA_NIT = '800197268'; process.env.EMPRESA_NIT_DV = '5'
+  let lanzo = false
+  try { exigirNitValido(empresa()) } catch { lanzo = true }
+  delete process.env.EMPRESA_NIT; delete process.env.EMPRESA_NIT_DV
+  return lanzo
+})())
 
 console.log('\n══ 8. ROL «contador» ══')
 check('contador → /admin/finanzas', roleCanAccessAdminPath('contador', '/admin/finanzas'))
