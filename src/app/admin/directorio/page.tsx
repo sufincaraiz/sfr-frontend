@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Save, Loader2, Upload, Trash2, Pencil, Plus, ExternalLink, X, Star } from 'lucide-react';
 import { CATEGORIAS, MUNICIPIOS_DIR, MAX_FOTOS, fotosDe, type Business } from '@/lib/directorio';
+import { subirArchivo } from '@/lib/subir-imagen';
 
 interface Form {
   id?: string;
@@ -10,8 +11,6 @@ interface Form {
   whatsapp: string; domicilios: boolean; google_maps_url: string;
 }
 
-const CLOUD  = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
-const PRESET = 'sufincaraiz_properties';
 const DESC_MAX = 300;
 
 const inputS: React.CSSProperties = { padding: '9px 12px', border: '1.5px solid #E2E8F0', borderRadius: 9, fontSize: '0.875rem', outline: 'none', color: '#0D2D5E', background: '#fff', width: '100%', boxSizing: 'border-box' };
@@ -43,12 +42,12 @@ export default function AdminDirectorioPage() {
     const lote = Array.from(files).slice(0, Math.max(0, espacio));
     const subidas: string[] = [];
     for (const file of lote) {
-      const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', PRESET); fd.append('folder', 'directorio');
       try {
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
-        const d = await res.json();
-        if (d.secure_url) subidas.push(d.secure_url.replace('/upload/', '/upload/c_fill,ar_4:3,g_auto,f_auto,q_auto,w_900/'));
-      } catch { /* */ }
+        const url = await subirArchivo(file, 'directorio');
+        subidas.push(url.replace('/upload/', '/upload/c_fill,ar_4:3,g_auto,f_auto,q_auto,w_900/'));
+      } catch (err) {
+        setMsg(err instanceof Error ? `⚠️ ${err.message}` : '⚠️ No se pudo subir una foto.');
+      }
     }
     if (subidas.length) setForm(f => ({ ...f, imagenes: [...f.imagenes, ...subidas].slice(0, MAX_FOTOS) }));
     if (files.length > espacio) setMsg(`⚠️ Máximo ${MAX_FOTOS} fotos. Se agregaron las primeras disponibles.`);

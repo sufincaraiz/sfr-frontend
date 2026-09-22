@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Loader2, Plus, Save, X, Pencil, Trash2, Upload, PenSquare, ExternalLink, Send } from 'lucide-react';
 import { cloudinaryOptimize, cloudinarySquare } from '@/lib/utils';
 import { RichTextarea } from '@/components/ui/RichTextarea';
+import { subirArchivo } from '@/lib/subir-imagen';
 
 interface Articulo {
   id: string; slug: string; title: string; excerpt: string | null;
@@ -19,19 +20,13 @@ interface Form {
 
 const EMPTY: Form = { title: '', content: '', cover_image_url: '', author_name: '', author_photo_url: '', author_email: '' };
 
-const CLOUD  = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
-const PRESET = 'sufincaraiz_properties';
 
 const inputS: React.CSSProperties = { padding: '10px 13px', border: '1.5px solid #E2E8F0', borderRadius: 9, fontSize: '0.9rem', outline: 'none', color: '#0D2D5E', background: '#fff', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' };
 const labelS: React.CSSProperties = { fontSize: '0.78rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: 6 };
 
 async function uploadToCloudinary(file: File): Promise<string | null> {
-  const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', PRESET); fd.append('folder', 'blog');
-  try {
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
-    const d = await res.json();
-    return d.secure_url ?? null;
-  } catch { return null; }
+  // Subida firmada por el servidor; devuelve null si falla, como antes.
+  try { return await subirArchivo(file, 'blog'); } catch { return null; }
 }
 
 const fmt = (iso: string | null) => iso ? new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: '2-digit' }) : '—';

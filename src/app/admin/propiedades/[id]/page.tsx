@@ -5,9 +5,8 @@ import { useRouter, useParams } from 'next/navigation';
 import { Save, Loader2, ArrowLeft, Trash2, Upload, X, Star, ChevronLeft, ChevronRight, MapPin, ArrowRight } from 'lucide-react';
 import { PROPERTY_TYPES, formatPrice } from '@/lib/utils';
 import { MUNICIPIOS_PROVINCIA } from '@/lib/datos-oficiales';
+import { subirArchivo } from '@/lib/subir-imagen';
 
-const CLOUD  = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
-const PRESET = 'sufincaraiz_properties';
 const OTRO   = '__otro__';
 
 interface MediaItem { url: string; alt_text: string }
@@ -145,15 +144,12 @@ export default function EditarPropiedadPage() {
     setUploading(true);
     const uploaded: MediaItem[] = [];
     for (const file of Array.from(files)) {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('upload_preset', PRESET);
-      fd.append('folder', 'properties');
       try {
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
-        const d = await res.json();
-        if (d.secure_url) uploaded.push({ url: d.secure_url, alt_text: '' });
-      } catch { /* skip */ }
+        const url = await subirArchivo(file, 'properties');
+        uploaded.push({ url, alt_text: '' });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'No se pudo subir una foto.');
+      }
     }
     setMedia(prev => [...prev, ...uploaded]);
     setUploading(false);
@@ -170,17 +166,11 @@ export default function EditarPropiedadPage() {
       return;
     }
     setUp3d(true);
-    const fd = new FormData();
-    fd.append('file', file);
-    fd.append('upload_preset', PRESET);
-    fd.append('folder', 'modelos3d');
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/auto/upload`, { method: 'POST', body: fd });
-      const d = await res.json();
-      if (d.secure_url) set('modelo3d_url', d.secure_url);
-      else setErr3d(d.error?.message ?? 'No se pudo subir el modelo (revisa el tamaño; puede exceder el límite de Cloudinary). Como alternativa, pega la URL del .glb.');
-    } catch {
-      setErr3d('Error de conexión al subir el modelo.');
+      // El .glb sube como `raw` (no es una imagen) y con su propia firma.
+      set('modelo3d_url', await subirArchivo(file, 'modelos3d'));
+    } catch (err) {
+      setErr3d(err instanceof Error ? err.message : 'Error de conexión al subir el modelo. Como alternativa, pega la URL del .glb.');
     }
     setUp3d(false);
     if (modelRef.current) modelRef.current.value = '';

@@ -3,9 +3,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { Save, Loader2, ExternalLink, Upload, Plus, Trash2 } from 'lucide-react';
 import type { PropuestaContent } from '@/lib/propuesta';
+import { subirArchivo } from '@/lib/subir-imagen';
 
-const CLOUD  = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
-const PRESET = 'sufincaraiz_properties';
 
 const card: React.CSSProperties = { background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', padding: '1.5rem' };
 const inputS: React.CSSProperties = { padding: '9px 12px', border: '1.5px solid #E2E8F0', borderRadius: 9, fontSize: '0.875rem', outline: 'none', color: '#0D2D5E', background: '#fff', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' };
@@ -28,12 +27,10 @@ function ImageField({ label, value, onChange }: { label: string; value: string; 
   const [up, setUp] = useState(false);
   const upload = async (file: File) => {
     setUp(true);
-    const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', PRESET); fd.append('folder', 'propuesta');
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
-      const d = await res.json();
-      if (d.secure_url) onChange(`${d.secure_url.replace('/upload/', '/upload/f_auto,q_auto,c_limit,w_1600/')}`);
-    } catch { /* */ }
+      const url = await subirArchivo(file, 'propuesta');
+      onChange(url.replace('/upload/', '/upload/f_auto,q_auto,c_limit,w_1600/'));
+    } catch { /* el campo admite pegar la URL a mano */ }
     setUp(false);
   };
   return (
