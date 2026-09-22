@@ -12,6 +12,7 @@ const C = { navy: '#0D2D5E', line: '#E2E8F0', muted: '#64748B', warn: '#B45309',
 interface Fila {
   id: string; fecha: string; descripcion: string; valor: string; naturaleza: string;
   estado_reembolso: string | null; por_completar: boolean; tiene_recibo: boolean;
+  faltan: string[]; sin_descripcion_propia: boolean;
   categoria: string; propiedad: string | null; reembolsa: string | null; proveedor: string | null;
 }
 
@@ -139,21 +140,28 @@ export default function EgresosPage() {
                 <div style={{ minWidth: 46, color: C.muted, fontSize: '0.78rem', fontWeight: 700, paddingTop: 2 }}>{dia(f.fecha)}</div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: C.navy, fontWeight: 700 }}>{f.descripcion}</div>
-                  <div style={{ color: C.muted, fontSize: '0.8rem' }}>
-                    {f.categoria}
-                    {f.propiedad && ` · ${f.propiedad}`}
-                    {f.reembolsa && ` · cobrar a ${f.reembolsa}`}
-                    {f.proveedor && ` · ${f.proveedor}`}
-                  </div>
+                  {/* Sin descripción propia, la primera línea YA es la
+                      categoría: repetirla debajo no añade nada. */}
+                  {(!f.sin_descripcion_propia || f.propiedad || f.reembolsa || f.proveedor) && (
+                    <div style={{ color: C.muted, fontSize: '0.8rem' }}>
+                      {[
+                        f.sin_descripcion_propia ? null : f.categoria,
+                        f.propiedad,
+                        f.reembolsa ? `cobrar a ${f.reembolsa}` : null,
+                        f.proveedor,
+                      ].filter(Boolean).join(' · ')}
+                    </div>
+                  )}
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
                     <span style={{ background: e.bg, color: e.fg, fontWeight: 800, fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999 }}>{e.txt}</span>
                     {f.naturaleza === 'REEMBOLSABLE' && f.estado_reembolso === 'PENDIENTE' && (
                       <span style={{ background: C.warnBg, color: C.warn, fontWeight: 700, fontSize: '0.7rem', padding: '2px 8px', borderRadius: 999 }}>no es gasto</span>
                     )}
                     {f.estado_reembolso === 'REEMBOLSADO' && <span style={{ color: '#15803D', fontSize: '0.72rem', fontWeight: 700 }}>reembolsado</span>}
-                    {f.por_completar && (
+                    {f.faltan.length > 0 && (
                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: C.warn, fontSize: '0.72rem', fontWeight: 700 }}>
-                        <AlertCircle size={12} /> por completar
+                        <AlertCircle size={12} />
+                        {f.faltan.map(x => `falta ${x === 'foto del recibo' ? 'recibo' : x === 'número de factura' ? 'factura' : x}`).join(' · ')}
                       </span>
                     )}
                     {f.tiene_recibo

@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { leerNumero } from '@/lib/finanzas/numeros'
 import {
-  erroresDeCaptura, estaPorCompletar, ordenarPorUso,
+  erroresDeCaptura, estaPorCompletar, faltantesDeCaptura, ordenarPorUso,
   type EgresoCapturado, type Naturaleza,
 } from '@/lib/finanzas/captura'
 import { egresosDeResultado, gastoDeResultado } from '@/lib/finanzas/calculo'
@@ -153,6 +153,7 @@ export async function listarEgresos(f: { naturaleza?: string; categoria_id?: str
     select: {
       id: true, fecha: true, descripcion: true, valor_base: true, naturaleza: true,
       estado_reembolso: true, fecha_reembolso: true, por_completar: true, soporte_public_id: true,
+      tercero_id: true, numero_factura_proveedor: true,
       categoria: { select: { nombre: true } },
       property: { select: { title: true, slug: true } },
       reembolsaTercero: { select: { nombre: true } },
@@ -165,6 +166,22 @@ export async function listarEgresos(f: { naturaleza?: string; categoria_id?: str
     id: e.id,
     fecha: e.fecha.toISOString(),
     descripcion: e.descripcion,
+    /**
+     * QUÉ falta, con la MISMA función que usa la captura y el hub. Antes la
+     * etiqueta decía solo «por completar» y había que adivinar si el problema
+     * era el recibo —que no se puede reponer— o el proveedor, que sí.
+     */
+    faltan: faltantesDeCaptura({
+      valor: e.valor_base.toString(), categoria_id: 'x', naturaleza: 'DEL_NEGOCIO',
+      tercero_id: e.tercero_id,
+      // La descripción por defecto es el nombre de la categoría: no cuenta
+      // como descripción propia.
+      descripcion: e.descripcion === e.categoria.nombre ? '' : e.descripcion,
+      numero_factura_proveedor: e.numero_factura_proveedor,
+      soporte_public_id: e.soporte_public_id,
+    }),
+    /** true cuando la descripción es solo el nombre de la categoría. */
+    sin_descripcion_propia: e.descripcion === e.categoria.nombre,
     valor: e.valor_base.toString(),
     naturaleza: e.naturaleza,
     estado_reembolso: e.estado_reembolso,

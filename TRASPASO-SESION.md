@@ -2380,6 +2380,33 @@ Es otro instrumento que engaña (sección anterior), y el más peligroso: aquí 
 mentía la salida de un comando, mentía nuestra propia documentación, que
 afirmaba un efecto que nadie había visto.
 
+### La prueba que no probaba: la llave «rota» que no rompía nada
+
+2026-09-22, verificando los recibos privados. Para comprobar que una subida
+fallida avisa en vez de callar, la prueba cambiaba la llave en memoria:
+
+    process.env.CLOUDINARY_API_SECRET = 'llave-rota-a-proposito'
+    await subirRecibo(...)   // debía fallar
+
+**Y la subida funcionó.** `lib/finanzas/recibos.ts` lee la llave en una
+constante de módulo, al cargarse, así que mutar `process.env` después no
+cambia nada. La prueba no probaba lo que decía su nombre, y encima **subió a
+Cloudinary un archivo llamado NO-DEBE-SUBIR.png**, que hubo que borrar.
+
+Solo se supo mirando el efecto: el listado final de la carpeta privada tenía
+dos archivos donde debía haber uno. Si la prueba se hubiera dado por buena por
+su nombre —«la subida falla con la llave rota»— habríamos declarado verificado
+justo lo contrario de lo que pasaba.
+
+La forma correcta fue un **proceso aparte** con la llave mala desde el
+arranque, sin tocar el `.env.local` del titular: ahí sí falla, con
+«Invalid Signature» como motivo.
+
+Es la misma clase que la guarda del NIT muerta: una afirmación sobre el
+comportamiento que nadie había visto ocurrir. La regla de la sección anterior
+—verificar el efecto, no la salida— vale igual para las pruebas: **el nombre
+de una prueba no es prueba de nada; lo es el efecto que deja.**
+
 ### El indicador agregado que inventó un fallo
 
 2026-09-22. El hub de finanzas decía «1 gasto sin proveedor, factura o recibo».
