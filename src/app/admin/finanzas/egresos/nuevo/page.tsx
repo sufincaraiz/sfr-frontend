@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-  ArrowLeft, Camera, Check, CloudOff, Coffee, FileText, Fuel, Image as ImageIcon,
+  AlertTriangle, ArrowLeft, Camera, Check, CloudOff, Coffee, FileText, Fuel, Image as ImageIcon,
   Loader2, Megaphone, MoreHorizontal, Package, Plane, Repeat, Search, X,
 } from 'lucide-react';
 import { NATURALEZAS, erroresDeCaptura, repetirEgreso, type EgresoCapturado, type Naturaleza, type UltimoEgreso } from '@/lib/finanzas/captura';
-import { almacenNavegador, encolar, leerCola, avisoDeCola, type PendienteEnCola } from '@/lib/finanzas/cola-egresos';
+import {
+  almacenNavegador, encolar, leerCola, avisoDeCola, encolarRecibo,
+  type PendienteEnCola,
+} from '@/lib/finanzas/cola-egresos';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CAPTURA DE UN GASTO — pensada para el teléfono, en la calle, con el recibo
@@ -73,7 +76,7 @@ export default function NuevoEgresoPage() {
   const [foto, setFoto] = useState<string | null>(null);
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState('');
-  const [hecho, setHecho] = useState<{ valor: string; categoria: string; enCola: boolean } | null>(null);
+  const [hecho, setHecho] = useState<{ valor: string; categoria: string; enCola: boolean; reciboPendiente: boolean; motivoFoto: string | null } | null>(null);
   const [cola, setCola] = useState<PendienteEnCola[]>([]);
   const [ultimo, setUltimo] = useState<UltimoEgreso | null>(null);
   const camara = useRef<HTMLInputElement>(null);
@@ -101,23 +104,37 @@ export default function NuevoEgresoPage() {
     reembolsa_tercero_id: naturaleza === 'REEMBOLSABLE' ? destino?.id ?? null : null,
   });
 
+  /**
+   * Sube la foto. Devuelve el public_id, o el MOTIVO por el que no se pudo.
+   * Nunca devuelve «nada» en silencio: el silencio es lo que hizo creer que un
+   * gasto tenía recibo cuando no lo tenía.
+   */
+  async function subirFoto(): Promise<{ publicId: string | null; motivo: string | null }> {
+    if (!foto) return { publicId: null, motivo: null };
+    try {
+      const fd = new FormData();
+      fd.append('archivo', dataUrlAFile(foto));
+      const r = await fetch('/api/admin/finanzas/recibos', { method: 'POST', body: fd });
+      if (r.ok) return { publicId: (await r.json()).public_id, motivo: null };
+      const j = await r.json().catch(() => ({}));
+      // 503 = subida privada sin configurar. Tampoco pasa callado: el recibo se
+      // queda en cola. NUNCA se sube a una URL pública como alternativa.
+      return { publicId: null, motivo: j.error ?? `Cloudinary respondió ${r.status}.` };
+    } catch {
+      return { publicId: null, motivo: 'sin conexión al subir la foto' };
+    }
+  }
+
   async function guardar() {
     const datos = cuerpo();
     const errores = erroresDeCaptura(datos);
     if (errores.length) { setError(errores.join(' ')); return; }
     setGuardando(true); setError('');
 
+    const { publicId, motivo } = await subirFoto();
+
+    let creado: { id?: string } | null = null;
     try {
-      let publicId: string | null = null;
-      if (foto) {
-        const fd = new FormData();
-        fd.append('archivo', dataUrlAFile(foto));
-        const r = await fetch('/api/admin/finanzas/recibos', { method: 'POST', body: fd });
-        if (r.ok) publicId = (await r.json()).public_id;
-        else if (r.status !== 503) throw new Error('foto');
-        // 503 = la subida privada no está configurada. El gasto se guarda sin
-        // foto y queda por completar: NUNCA se sube a una URL pública.
-      }
       const res = await fetch('/api/admin/finanzas/egresos', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...datos, soporte_public_id: publicId }),
@@ -125,17 +142,35 @@ export default function NuevoEgresoPage() {
       if (res.status === 401) { window.location.href = '/admin/login'; return; }
       const j = await res.json();
       if (!res.ok) { setError(j.error ?? 'No se pudo guardar.'); setGuardando(false); return; }
-      recordarUltimo();
-      setHecho({ valor: pesos(valor), categoria: categoria!.nombre, enCola: false });
+      creado = j;
     } catch {
-      // Sin señal (o la subida falló): a la cola local, con la foto dentro.
+      // Sin señal: el gasto ENTERO a la cola, con la foto dentro.
       const a = almacenNavegador();
       if (!a) { setError('Sin conexión y este navegador no deja guardar en el teléfono. Anota el gasto y regístralo luego.'); setGuardando(false); return; }
       encolar(a, { ...datos }, foto);
       setCola(leerCola(a));
       recordarUltimo();
-      setHecho({ valor: pesos(valor), categoria: categoria!.nombre, enCola: true });
+      setHecho({ valor: pesos(valor), categoria: categoria!.nombre, enCola: true, reciboPendiente: false, motivoFoto: null });
+      setGuardando(false);
+      return;
     }
+
+    // El gasto SÍ se guardó. Si la foto no subió, la foto no se descarta: se
+    // encola atada a ese gasto y se avisa fuerte.
+    let reciboPendiente = false;
+    if (foto && !publicId) {
+      const a = almacenNavegador();
+      if (a && creado?.id) {
+        encolarRecibo(a, creado.id, foto, `$${pesos(valor)} · ${categoria!.nombre}`, motivo ?? undefined);
+        reciboPendiente = true;
+      }
+    }
+    recordarUltimo();
+    setHecho({
+      valor: pesos(valor), categoria: categoria!.nombre, enCola: false,
+      reciboPendiente,
+      motivoFoto: reciboPendiente ? motivo : null,
+    });
     setGuardando(false);
   }
 
@@ -174,16 +209,31 @@ export default function NuevoEgresoPage() {
   if (hecho) {
     return (
       <div style={{ maxWidth: 520, margin: '0 auto', padding: '2rem 0', textAlign: 'center' }}>
-        <div style={{ width: 64, height: 64, borderRadius: 999, background: hecho.enCola ? C.warnBg : '#F0FDF4', display: 'grid', placeItems: 'center', margin: '0 auto 1rem' }}>
-          {hecho.enCola ? <CloudOff size={30} style={{ color: C.warn }} /> : <Check size={32} style={{ color: C.ok }} />}
+        <div style={{ width: 64, height: 64, borderRadius: 999, background: hecho.reciboPendiente ? C.badBg : hecho.enCola ? C.warnBg : '#F0FDF4', display: 'grid', placeItems: 'center', margin: '0 auto 1rem' }}>
+          {hecho.reciboPendiente
+            ? <AlertTriangle size={30} style={{ color: C.bad }} />
+            : hecho.enCola ? <CloudOff size={30} style={{ color: C.warn }} /> : <Check size={32} style={{ color: C.ok }} />}
         </div>
         <h2 style={{ color: C.navy, margin: '0 0 6px' }}>${hecho.valor}</h2>
         <p style={{ color: C.muted, margin: '0 0 4px' }}>{hecho.categoria}</p>
-        <p style={{ color: hecho.enCola ? C.warn : C.ok, fontWeight: 700, margin: '0 0 1.5rem' }}>
-          {hecho.enCola
-            ? 'Guardado en este teléfono. Subirá solo cuando vuelva la señal; no cierres la pestaña hasta entonces.'
-            : 'Guardado. Falta completarlo en el escritorio (proveedor, factura).'}
-        </p>
+        {hecho.reciboPendiente ? (
+          /* El caso que antes pasaba callado: el gasto viajó y la foto no. */
+          <div style={{ background: C.badBg, border: `2px solid #FCA5A5`, borderRadius: 12, padding: '0.9rem 1rem', margin: '0 0 1.25rem', textAlign: 'left' }}>
+            <p style={{ color: '#7F1D1D', fontWeight: 800, margin: '0 0 6px' }}>
+              El gasto se guardó, pero la foto del recibo NO se subió.
+            </p>
+            <p style={{ color: '#7F1D1D', fontSize: '0.85rem', margin: '0 0 6px' }}>
+              La foto sigue guardada en este teléfono y se reintenta sola. No cierres la pestaña hasta que suba.
+            </p>
+            {hecho.motivoFoto && <p style={{ color: '#7F1D1D', fontSize: '0.78rem', margin: 0 }}>Motivo: {hecho.motivoFoto}</p>}
+          </div>
+        ) : (
+          <p style={{ color: hecho.enCola ? C.warn : C.ok, fontWeight: 700, margin: '0 0 1.5rem' }}>
+            {hecho.enCola
+              ? 'Guardado en este teléfono. Subirá solo cuando vuelva la señal; no cierres la pestaña hasta entonces.'
+              : 'Guardado. Falta completarlo en el escritorio (proveedor, factura).'}
+          </p>
+        )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           <button onClick={otro} style={{ ...btnGrande, justifyContent: 'center', background: C.navy, color: '#fff', border: 'none' }}>Otro gasto</button>
           <button onClick={() => router.push('/admin/finanzas')} style={{ ...btnGrande, justifyContent: 'center' }}>Volver a finanzas</button>

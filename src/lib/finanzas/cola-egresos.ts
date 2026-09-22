@@ -108,3 +108,87 @@ export async function vaciarCola(
   }
   return { subidos, fallidos }
 }
+
+// ─── Cola de RECIBOS pendientes ──────────────────────────────────────────────
+//
+// Caso distinto al de arriba: el gasto SÍ se guardó en el servidor, pero su
+// foto no llegó a subir. Antes eso pasaba en silencio y el gasto quedaba sin
+// soporte creyendo uno que lo tenía. En un módulo contable el silencio es peor
+// que el fallo: el recibo se pierde y nadie se entera hasta una revisión.
+//
+// Por eso la foto NO se descarta: queda aquí, atada al id del gasto ya
+// creado, hasta que suba o se borre a propósito.
+
+export interface ReciboPendiente {
+  id: string
+  egreso_id: string
+  /** Resumen legible del gasto, para que el aviso diga a cuál pertenece. */
+  resumen: string
+  creado_en: string
+  /** La foto, en base64 (data URL). */
+  foto: string
+  intentos: number
+  ultimo_error?: string | null
+}
+
+export const CLAVE_RECIBOS = 'sfr-recibos-pendientes'
+
+export function leerRecibos(a: AlmacenCola): ReciboPendiente[] {
+  try {
+    const crudo = a.leer(CLAVE_RECIBOS)
+    if (!crudo) return []
+    const v = JSON.parse(crudo)
+    return Array.isArray(v) ? (v as ReciboPendiente[]) : []
+  } catch {
+    return []
+  }
+}
+
+const guardarRecibos = (a: AlmacenCola, cola: ReciboPendiente[]) => a.escribir(CLAVE_RECIBOS, JSON.stringify(cola))
+
+export function encolarRecibo(a: AlmacenCola, egresoId: string, foto: string, resumen: string, error?: string): ReciboPendiente {
+  const r: ReciboPendiente = {
+    id: `recibo-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 7)}`,
+    egreso_id: egresoId,
+    resumen,
+    creado_en: new Date().toISOString(),
+    foto,
+    intentos: error ? 1 : 0,
+    ultimo_error: error ?? null,
+  }
+  guardarRecibos(a, [...leerRecibos(a), r])
+  return r
+}
+
+export function quitarRecibo(a: AlmacenCola, id: string): void {
+  guardarRecibos(a, leerRecibos(a).filter(r => r.id !== id))
+}
+
+export function marcarFalloRecibo(a: AlmacenCola, id: string, error: string): void {
+  guardarRecibos(a, leerRecibos(a).map(r => (r.id === id ? { ...r, intentos: r.intentos + 1, ultimo_error: error } : r)))
+}
+
+/** Aviso del recibo que no subió. Nombra el gasto: ya existe, le falta soporte. */
+export function avisoDeRecibos(cola: ReciboPendiente[]): string | null {
+  if (cola.length === 0) return null
+  if (cola.length === 1) {
+    return `El gasto de ${cola[0]!.resumen} se guardó, pero la foto del recibo NO se subió. ` +
+      'La foto sigue en este teléfono: reintenta antes de cerrar la pestaña.'
+  }
+  return `${cola.length} gastos se guardaron sin su foto del recibo. Las fotos siguen en este teléfono: ` +
+    'reintenta antes de cerrar la pestaña.'
+}
+
+export async function vaciarRecibos(
+  a: AlmacenCola,
+  enviar: (r: ReciboPendiente) => Promise<{ ok: boolean; error?: string }>,
+): Promise<{ subidos: number; fallidos: number }> {
+  let subidos = 0, fallidos = 0
+  for (const r of leerRecibos(a)) {
+    let res: { ok: boolean; error?: string }
+    try { res = await enviar(r) } catch (e) { res = { ok: false, error: e instanceof Error ? e.message : 'error' } }
+    if (res.ok) { quitarRecibo(a, r.id); subidos++ }
+    else { marcarFalloRecibo(a, r.id, res.error ?? 'error'); fallidos++ }
+  }
+  return { subidos, fallidos }
+}

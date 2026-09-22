@@ -17,7 +17,7 @@ import { roleCanAccessAdminPath, roleHome } from '../src/lib/permissions.ts'
 import { CODIFICADOR_JS, PREFIJO_RESPUESTA, decodificarRespuesta } from '../src/lib/finanzas/formulario-contador.ts'
 import { leerNumero } from '../src/lib/finanzas/numeros.ts'
 import { erroresDeCaptura, faltantesDeCaptura, estaPorCompletar, ordenarPorUso, tramoAntiguedad, repetirEgreso } from '../src/lib/finanzas/captura.ts'
-import { leerCola, encolar, vaciarCola, avisoDeCola } from '../src/lib/finanzas/cola-egresos.ts'
+import { leerCola, encolar, vaciarCola, avisoDeCola, leerRecibos, encolarRecibo, vaciarRecibos, avisoDeRecibos } from '../src/lib/finanzas/cola-egresos.ts'
 import { EMPRESA_BASE, empresa, MARCA_PENDIENTE, digitoVerificacion, encabezadoReporte, exigirNitValido, faltantesEmpresa } from '../src/lib/finanzas/empresa.ts'
 
 let ok = 0, fail = 0
@@ -346,6 +346,32 @@ check('y el aviso desaparece', avisoDeCola(leerCola(almacen)) === null)
 // Si el navegador bloquea el almacenamiento (modo privado), no se rompe nada.
 check('almacén ilegible → cola vacía, sin excepción',
   leerCola({ leer: () => '{no es json', escribir: () => {} }).length === 0)
+
+console.log('\n══ 10c. LA FOTO QUE NO SUBIÓ: ruidosa y guardada ══')
+// El gasto SÍ se guardó y su foto NO: el caso que antes pasaba en silencio y
+// dejaba el gasto sin soporte creyendo uno que lo tenía.
+const mem2 = new Map()
+const alm2 = { leer: k => mem2.get(k) ?? null, escribir: (k, v) => mem2.set(k, v) }
+check('sin recibos pendientes no hay aviso', avisoDeRecibos(leerRecibos(alm2)) === null)
+encolarRecibo(alm2, 'egreso-1', 'data:image/jpeg;base64,AAAA', '$20.000 · Transporte a visitas', 'Cloudinary respondió 503')
+const av = avisoDeRecibos(leerRecibos(alm2))
+check('el aviso dice que el GASTO se guardó y la FOTO no', /se guardó/.test(av) && /NO se subió/.test(av))
+check('…nombra el gasto concreto', /20\.000/.test(av) && /Transporte a visitas/.test(av))
+check('…y dice que la foto sigue en el teléfono', /sigue en este teléfono/i.test(av))
+check('la foto NO se descarta: queda en la cola', leerRecibos(alm2)[0].foto.startsWith('data:image'))
+check('guarda el id del gasto para adjuntarla después', leerRecibos(alm2)[0].egreso_id === 'egreso-1')
+check('guarda el motivo del fallo', leerRecibos(alm2)[0].ultimo_error === 'Cloudinary respondió 503')
+const rr1 = await vaciarRecibos(alm2, async () => ({ ok: false, error: 'sigue fallando' }))
+check('si el reintento falla, el recibo SIGUE en la cola', rr1.fallidos === 1 && leerRecibos(alm2).length === 1)
+check('…y suma intentos', leerRecibos(alm2)[0].intentos === 2)
+const rr2 = await vaciarRecibos(alm2, async () => ({ ok: true }))
+check('cuando sube, sale de la cola y el aviso desaparece',
+  rr2.subidos === 1 && leerRecibos(alm2).length === 0 && avisoDeRecibos(leerRecibos(alm2)) === null)
+encolarRecibo(alm2, 'e2', 'data:image/jpeg;base64,BBBB', '$5.000 · Viáticos')
+encolarRecibo(alm2, 'e3', 'data:image/jpeg;base64,CCCC', '$7.000 · Peajes')
+check('con dos, el aviso habla en plural', /2 gastos se guardaron sin su foto/.test(avisoDeRecibos(leerRecibos(alm2))))
+check('las dos colas son independientes (gastos sin señal vs recibos)',
+  leerCola(alm2).length === 0 && leerRecibos(alm2).length === 2)
 
 console.log('\n══ 8. ROL «contador» ══')
 check('contador → /admin/finanzas', roleCanAccessAdminPath('contador', '/admin/finanzas'))

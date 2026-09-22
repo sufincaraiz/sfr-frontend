@@ -2380,6 +2380,36 @@ Es otro instrumento que engaña (sección anterior), y el más peligroso: aquí 
 mentía la salida de un comando, mentía nuestra propia documentación, que
 afirmaba un efecto que nadie había visto.
 
+### El indicador agregado que inventó un fallo
+
+2026-09-22. El hub de finanzas decía «1 gasto sin proveedor, factura o recibo».
+El titular registró un gasto de $20.000 con foto, leyó esa línea y concluyó que
+la subida del recibo había fallado en producción. La conclusión parecía sólida:
+había una corrección reciente del nombre de una variable de Cloudinary, y
+encajaba. **Las dos conclusiones eran falsas.** En la base, el gasto tenía su
+`soporte_public_id`; en Cloudinary, el archivo existía, era `authenticated` y
+el enlace firmado lo servía. El recibo estaba donde debía desde el principio.
+
+Lo que el indicador escondía: ese gasto estaba «por completar» por **proveedor
+y factura**, dos causas distintas mezcladas con una tercera —el recibo— en una
+sola frase. Agrupar causas distintas en un indicador convierte cualquier
+lectura en una suposición.
+
+**Regla: cuando un indicador agrupa causas distintas, no se diagnostica desde
+él. Se va al dato.** Aquí bastaron dos consultas —la fila del egreso y el
+recurso en Cloudinary— para cerrar en minutos algo que iba camino de ser una
+investigación de logs de producción.
+
+El indicador ya está desglosado: «N sin recibo» (primero y resaltado, porque es
+el que no se puede reponer) · «N sin proveedor · N sin factura».
+
+Y algo que el susto sí destapó: había un silencio real en el camino. Si la
+subida de la foto fallaba, el gasto se guardaba igual y la pantalla decía
+«Guardado» sin mencionarla; la foto se perdía al salir. Corregido: el fallo
+ahora es rojo, dice el motivo, y la foto queda en una cola local atada al
+gasto hasta que suba. En un módulo contable el silencio es peor que el fallo:
+el fallo se corrige, el silencio se descubre en una revisión de la DIAN.
+
 ### La variable de entorno que el código inventó
 
 `src/lib/finanzas/recibos.ts` leía `CLOUDINARY_CLOUD_NAME`. Esa variable **no

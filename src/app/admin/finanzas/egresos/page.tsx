@@ -1,8 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { AlertCircle, Loader2, Paperclip } from 'lucide-react';
+import { AlertCircle, Camera, Loader2, Paperclip } from 'lucide-react';
 
 // Listado de egresos con filtros por naturaleza y categoría. La naturaleza se
 // ve siempre: es la diferencia entre un gasto y una cuenta por cobrar.
@@ -22,6 +22,18 @@ const ETIQUETA: Record<string, { txt: string; bg: string; fg: string }> = {
 };
 
 const dinero = (v: string) => `$ ${Number(v).toLocaleString('es-CO')}`;
+
+/** Misma compresión que en la captura: la foto se toma con datos móviles. */
+async function comprimir(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file);
+  const lado = 1600;
+  const escala = Math.min(1, lado / Math.max(bitmap.width, bitmap.height));
+  const w = Math.round(bitmap.width * escala), h = Math.round(bitmap.height * escala);
+  const lienzo = document.createElement('canvas');
+  lienzo.width = w; lienzo.height = h;
+  lienzo.getContext('2d')!.drawImage(bitmap, 0, 0, w, h);
+  return new Promise(r => lienzo.toBlob(b => r(b!), 'image/jpeg', 0.7));
+}
 const dia = (iso: string) => new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
 
 export default function EgresosPage() {
@@ -29,6 +41,10 @@ export default function EgresosPage() {
   const [cargando, setCargando] = useState(true);
   const [naturaleza, setNaturaleza] = useState('');
   const [soloPorCompletar, setSoloPorCompletar] = useState(false);
+  const [adjuntando, setAdjuntando] = useState('');
+  const [errorAdjuntar, setErrorAdjuntar] = useState('');
+  const camara = useRef<HTMLInputElement>(null);
+  const objetivo = useRef<string>('');
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -44,6 +60,42 @@ export default function EgresosPage() {
 
   useEffect(() => { cargar(); }, [cargar]);
 
+  /**
+   * Adjunta el recibo a un gasto YA guardado: el caso del gasto capturado en
+   * la calle sin foto, o de aquel cuya subida falló. Mismo camino firmado y
+   * privado que en la captura; al terminar, el gasto deja de estar «sin
+   * recibo» y el conteo del hub se actualiza en la siguiente carga.
+   */
+  async function adjuntar(file: File) {
+    const id = objetivo.current;
+    if (!id) return;
+    setAdjuntando(id); setErrorAdjuntar('');
+    try {
+      const fd = new FormData();
+      fd.append('archivo', new File([await comprimir(file)], 'recibo.jpg', { type: 'image/jpeg' }));
+      const rf = await fetch('/api/admin/finanzas/recibos', { method: 'POST', body: fd });
+      if (!rf.ok) {
+        const j = await rf.json().catch(() => ({}));
+        throw new Error(j.error ?? `La subida respondió ${rf.status}.`);
+      }
+      const { public_id } = await rf.json();
+      const res = await fetch(`/api/admin/finanzas/egresos/${id}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accion: 'adjuntar-recibo', public_id }),
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error ?? 'No se pudo adjuntar el recibo.');
+      }
+      await cargar();
+    } catch (e) {
+      // Ruidoso a propósito: un recibo que no se adjunta y nadie lo nota es el
+      // defecto que ya nos pasó una vez.
+      setErrorAdjuntar(e instanceof Error ? e.message : 'No se pudo adjuntar el recibo.');
+    }
+    setAdjuntando('');
+  }
+
   const chip = (activo: boolean): React.CSSProperties => ({
     padding: '7px 13px', borderRadius: 999, border: `1.5px solid ${activo ? C.navy : C.line}`,
     background: activo ? C.navy : '#fff', color: activo ? '#fff' : C.navy,
@@ -52,6 +104,13 @@ export default function EgresosPage() {
 
   return (
     <div style={{ maxWidth: 900 }}>
+      <input ref={camara} type="file" accept="image/*" capture="environment" style={{ display: 'none' }}
+        onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) adjuntar(f); }} />
+      {errorAdjuntar && (
+        <div role="alert" style={{ background: '#FEF2F2', border: '2px solid #FCA5A5', color: '#7F1D1D', borderRadius: 12, padding: '0.8rem 1rem', marginBottom: '1rem', fontSize: '0.85rem', fontWeight: 600 }}>
+          El recibo NO se adjuntó: {errorAdjuntar}
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1rem' }}>
         <button onClick={() => setNaturaleza('')} style={chip(naturaleza === '')}>Todos</button>
         {Object.entries(ETIQUETA).map(([k, v]) => (
@@ -97,7 +156,16 @@ export default function EgresosPage() {
                         <AlertCircle size={12} /> por completar
                       </span>
                     )}
-                    {f.tiene_recibo && <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: C.muted, fontSize: '0.72rem' }}><Paperclip size={12} /> recibo</span>}
+                    {f.tiene_recibo
+                      ? <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: C.muted, fontSize: '0.72rem' }}><Paperclip size={12} /> recibo</span>
+                      : (
+                        <button type="button" disabled={adjuntando === f.id}
+                          onClick={() => { objetivo.current = f.id; camara.current?.click(); }}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 5, border: `1.5px solid ${C.warn}`, background: '#fff', color: C.warn, borderRadius: 999, padding: '3px 10px', fontWeight: 800, fontSize: '0.72rem', cursor: 'pointer' }}>
+                          {adjuntando === f.id ? <Loader2 size={12} style={{ animation: 'girar 1s linear infinite' }} /> : <Camera size={12} />}
+                          {adjuntando === f.id ? 'Subiendo…' : 'Adjuntar recibo'}
+                        </button>
+                      )}
                   </div>
                 </div>
                 <div style={{ color: C.navy, fontWeight: 800, whiteSpace: 'nowrap' }}>{dinero(f.valor)}</div>

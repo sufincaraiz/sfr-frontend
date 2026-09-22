@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireRole } from '@/lib/auth'
-import { marcarReembolsado, asumirComoGasto, ErrorEgreso } from '@/lib/finanzas/egresos'
+import { marcarReembolsado, asumirComoGasto, adjuntarRecibo, ErrorEgreso } from '@/lib/finanzas/egresos'
 
 // Acciones sobre una cuenta por cobrar. Saldar NO crea un ingreso: cancela la
 // cuenta. Asumirla la convierte en gasto, con motivo y rastro.
@@ -11,12 +11,18 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ id: string
   if (!s) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const { id } = await ctx.params
-  let body: { accion?: string; motivo?: string }
+  let body: { accion?: string; motivo?: string; public_id?: string }
   try { body = await req.json() } catch {
     return NextResponse.json({ error: 'Solicitud inválida.' }, { status: 400 })
   }
 
   try {
+    if (body.accion === 'adjuntar-recibo') {
+      // El reintento de una foto que no subió, y el botón «Adjuntar recibo»
+      // de un gasto viejo: el mismo camino.
+      const r = await adjuntarRecibo(id, String(body.public_id ?? ''), s.nombre)
+      return NextResponse.json({ ok: true, por_completar: r.por_completar })
+    }
     if (body.accion === 'reembolsado') await marcarReembolsado(id, s.nombre)
     else if (body.accion === 'asumir') await asumirComoGasto(id, String(body.motivo ?? ''), s.nombre)
     else return NextResponse.json({ error: 'Acción desconocida.' }, { status: 400 })

@@ -7,6 +7,7 @@ import {
   type EgresoCapturado, type Naturaleza,
 } from '@/lib/finanzas/captura'
 import { egresosDeResultado, gastoDeResultado } from '@/lib/finanzas/calculo'
+import { esPublicIdDeRecibo } from '@/lib/finanzas/recibos'
 
 /**
  * EGRESOS — captura rápida y listados.
@@ -250,12 +251,18 @@ export async function asumirComoGasto(id: string, motivo: string, por: string) {
 export async function resumenDelMes() {
   const ahora = new Date()
   const desde = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
-  const [egresosMes, pendientes, cobrar] = await Promise.all([
+  const [egresosMes, pendientes, sinRecibo, sinProveedor, sinFactura, cobrar] = await Promise.all([
     prisma.egreso.findMany({
       where: { fecha: { gte: desde } },
       select: { valor_base: true, iva_pagado: true, naturaleza: true },
     }),
     prisma.egreso.count({ where: { por_completar: true } }),
+    // Desglosado, no agregado: «sin recibo» es un problema de soporte ante la
+    // DIAN; «sin proveedor» es papeleo normal que se completa en el escritorio.
+    // Juntarlos en una sola cifra esconde justo el que importa.
+    prisma.egreso.count({ where: { soporte_public_id: null } }),
+    prisma.egreso.count({ where: { tercero_id: null } }),
+    prisma.egreso.count({ where: { numero_factura_proveedor: null } }),
     prisma.egreso.aggregate({
       where: { naturaleza: 'REEMBOLSABLE', estado_reembolso: 'PENDIENTE' },
       _sum: { valor_base: true }, _count: { _all: true },
@@ -268,6 +275,44 @@ export async function resumenDelMes() {
     gastos: gastos.toString(),
     movimientos: egresosMes.length,
     porCompletar: pendientes,
+    falta: { recibo: sinRecibo, proveedor: sinProveedor, factura: sinFactura },
     porCobrar: { total: (cobrar._sum.valor_base ?? new Prisma.Decimal(0)).toString(), cantidad: cobrar._count._all },
   }
+}
+
+/**
+ * Adjunta el recibo a un gasto YA guardado. Sirve para dos cosas:
+ *   · el reintento automático cuando la foto no subió con el gasto, y
+ *   · el botón «Adjuntar recibo» de un gasto viejo sin soporte.
+ *
+ * Recalcula `por_completar` con la MISMA función que la captura, para que el
+ * conteo del hub no dependa de dos criterios distintos.
+ */
+export async function adjuntarRecibo(id: string, publicId: string, por: string) {
+  if (!esPublicIdDeRecibo(publicId)) throw new ErrorEgreso('Ese identificador no corresponde a un recibo.', 400)
+  const e = await prisma.egreso.findUnique({
+    where: { id },
+    select: { id: true, tercero_id: true, descripcion: true, numero_factura_proveedor: true, soporte_public_id: true, categoria: { select: { nombre: true } } },
+  })
+  if (!e) throw new ErrorEgreso('Ese gasto no existe.', 404)
+  if (e.soporte_public_id) throw new ErrorEgreso('Ese gasto ya tiene un recibo adjunto.', 409)
+
+  const actualizado = await prisma.egreso.update({
+    where: { id },
+    data: {
+      soporte_public_id: publicId,
+      por_completar: estaPorCompletar({
+        valor: '1', categoria_id: 'x', naturaleza: 'DEL_NEGOCIO',
+        tercero_id: e.tercero_id,
+        // La descripción por defecto es el nombre de la categoría: eso NO
+        // cuenta como descripción propia, igual que al capturar.
+        descripcion: e.descripcion === e.categoria.nombre ? '' : e.descripcion,
+        numero_factura_proveedor: e.numero_factura_proveedor,
+        soporte_public_id: publicId,
+      }),
+      registrado_por: por,
+    },
+    select: { id: true, por_completar: true },
+  })
+  return actualizado
 }

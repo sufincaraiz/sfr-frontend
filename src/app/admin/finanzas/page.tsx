@@ -16,8 +16,15 @@ import { resumenDelMes } from '@/lib/finanzas/egresos';
 // vacío y el aviso de «datos pendientes» no desaparecería nunca.
 
 const PROXIMOS = ['Ingresos y distribución de comisión', 'Custodia de dineros de terceros', 'Reportes'];
-const C = { navy: '#0D2D5E', blue: '#1B56A1', line: '#E2E8F0', muted: '#64748B', warn: '#B45309' };
+const C = { navy: '#0D2D5E', blue: '#1B56A1', line: '#E2E8F0', muted: '#64748B', warn: '#B45309', bad: '#B91C1C' };
 const dinero = (v: string) => `$ ${Number(v).toLocaleString('es-CO')}`;
+// Aquí había un `text-transform: capitalize` que ponía mayúscula a CADA
+// palabra: «Gastos De Septiembre De 2026». En español ni los meses ni las
+// preposiciones se capitalizan, así que la frase va tal cual la devuelve
+// `toLocaleString`, en minúscula, dentro de «Gastos de …».
+
+/** «1 movimiento registrado» / «2 movimientos registrados». */
+const plural = (n: number, singular: string, plural_: string) => `${n} ${n === 1 ? singular : plural_}`;
 
 export const dynamic = 'force-dynamic';
 
@@ -46,9 +53,9 @@ export default async function FinanzasPage() {
 
       <div style={{ ...tarjeta, display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
         <div>
-          <div style={{ color: C.muted, fontSize: '0.8rem', textTransform: 'capitalize' }}>Gastos de {r.mes}</div>
+          <div style={{ color: C.muted, fontSize: '0.8rem' }}>Gastos de {r.mes}</div>
           <div style={{ color: C.navy, fontWeight: 800, fontSize: '1.7rem' }}>{dinero(r.gastos)}</div>
-          <div style={{ color: C.muted, fontSize: '0.78rem' }}>{r.movimientos} movimiento{r.movimientos === 1 ? '' : 's'} registrados</div>
+          <div style={{ color: C.muted, fontSize: '0.78rem' }}>{plural(r.movimientos, 'movimiento registrado', 'movimientos registrados')}</div>
         </div>
         <div style={{ borderLeft: `1px solid ${C.line}`, paddingLeft: '2rem' }}>
           <div style={{ color: C.muted, fontSize: '0.8rem' }}>Por cobrar a clientes</div>
@@ -62,11 +69,21 @@ export default async function FinanzasPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.navy, fontWeight: 800 }}>
             <ListChecks size={18} style={{ color: C.blue }} /> Por completar
           </div>
-          <div style={{ color: r.porCompletar ? C.warn : C.muted, fontSize: '0.84rem', marginTop: 4 }}>
-            {r.porCompletar
-              ? `${r.porCompletar} gasto${r.porCompletar === 1 ? '' : 's'} sin proveedor, factura o recibo. Ya cuentan en los reportes.`
-              : 'Nada pendiente de completar.'}
-          </div>
+          {r.porCompletar ? (
+            <div style={{ fontSize: '0.84rem', marginTop: 6 }}>
+              {/* El recibo primero y resaltado: sin soporte, el gasto no se
+                  sostiene ante la DIAN. Los otros dos son papeleo. */}
+              <div style={{ color: r.falta.recibo ? C.bad : C.muted, fontWeight: r.falta.recibo ? 800 : 400 }}>
+                {r.falta.recibo} sin recibo
+              </div>
+              <div style={{ color: C.muted }}>
+                {r.falta.proveedor} sin proveedor · {r.falta.factura} sin factura
+              </div>
+              <div style={{ color: C.muted, marginTop: 4 }}>Ya cuentan en los reportes.</div>
+            </div>
+          ) : (
+            <div style={{ color: C.muted, fontSize: '0.84rem', marginTop: 4 }}>Nada pendiente de completar.</div>
+          )}
         </Link>
 
         <Link href="/admin/finanzas/por-cobrar" style={tarjeta}>
@@ -75,7 +92,7 @@ export default async function FinanzasPage() {
           </div>
           <div style={{ color: r.porCobrar.cantidad ? C.warn : C.muted, fontSize: '0.84rem', marginTop: 4 }}>
             {r.porCobrar.cantidad
-              ? `${r.porCobrar.cantidad} adelanto${r.porCobrar.cantidad === 1 ? '' : 's'} que el cliente debe devolver.`
+              ? `${plural(r.porCobrar.cantidad, 'adelanto que el cliente debe devolver', 'adelantos que el cliente debe devolver')}.`
               : 'Nada por cobrar.'}
           </div>
         </Link>
