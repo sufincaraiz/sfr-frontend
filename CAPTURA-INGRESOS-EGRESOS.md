@@ -182,13 +182,16 @@ En los tres casos la foto se comprime en el teléfono antes de subir
 
 ### Aparte: la foto del recibo es un documento privado
 
-Hoy las imágenes del sitio suben a Cloudinary con un preset **sin firmar** y
-quedan en una URL pública. Para fotos de propiedades está bien; un recibo lleva
-nombres, valores y a veces NIT de terceros. Propuesta: subirlos por nuestro
-propio endpoint con firma, a una carpeta `finanzas/recibos` de tipo
-`authenticated`, y servirlos con URL firmada y caducidad desde el admin.
-Coste ~medio día. Si se prefiere arrancar con el preset actual, que sea una
-decisión tomada, no un descuido.
+**RESUELTO (2026-10-02).** Los recibos van a `finanzas/recibos` de tipo
+`authenticated`, se suben firmados desde el servidor y se sirven por un proxy
+con sesión y enlace de 60 s; en la base solo queda el `public_id`. Y de paso se
+cerró el agujero de al lado: las fotos de propiedades también subían con un
+preset **sin firmar** —cloud name y preset viajan los dos en el bundle, así que
+cualquiera podía subir a la cuenta sin sesión—. Las siete subidas del sitio
+pasaron a firma de servidor; la ENTREGA de las fotos de propiedades sigue
+pública, porque se ven en las fichas. El preset quedó **desactivado en
+Cloudinary** y la variable `NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET` **borrada de
+Vercel**, tras probar la subida en una propiedad real.
 
 ---
 

@@ -824,9 +824,9 @@ prohíbe sin página que lo sustente, y una página con seis TODO no sustenta na
   destruiría el contenido editorial. **Es lo siguiente en la cola.**
 - **`image` de la entidad** apunta a una panorámica del municipio, no a nada de
   la empresa. No hay ninguna foto propia: `public/images` tiene 9 archivos y solo
-  los dos logos son de la empresa. **No hay API key de Cloudinary en el entorno**
-  (solo `CLOUD_NAME` y `UPLOAD_PRESET`), así que no se pudo enumerar la
-  biblioteca. El titular lo resuelve.
+  los dos logos son de la empresa. (Desde el 2026-10-02 **sí** hay API key de
+  Cloudinary en el entorno, así que ya se puede enumerar la biblioteca; lo que
+  falta es una foto propia de la empresa.) El titular lo resuelve.
 - **`author` del blog es la Organización**, no una `Person` real. Los tres `.mdx`
   declaran `author: "Su Finca Raíz"`. Decisión consciente del titular; se aparta
   de §5.
@@ -2379,6 +2379,55 @@ dígito de verificación DIAN es 4».
 Es otro instrumento que engaña (sección anterior), y el más peligroso: aquí no
 mentía la salida de un comando, mentía nuestra propia documentación, que
 afirmaba un efecto que nadie había visto.
+
+### El entorno de prueba que costó más que el cambio
+
+2026-10-02. Para validar un cambio en las subidas a Cloudinary —firma de
+servidor en lugar de un preset sin firma— se montó un entorno de Preview
+completo: rama propia, despliegue aparte, URL de Preview, y el nombre de la
+rama acortado porque pasaba del límite de 63 caracteres del dominio. Luego el
+login de Preview falló («Error interno»), que era `DATABASE_URL` y `JWT_SECRET`
+sin ámbito Preview en Vercel. Para seguir había que configurar variables y
+redesplegar.
+
+Coste de la vía de prueba: varias horas y aún sin probar nada.
+
+El titular cortó: fusionar a producción con la reversa preparada. Coste real:
+**un push, un deploy y la prueba hecha en minutos**, con el comando de reversa
+escrito antes de empezar y autorización para ejecutarlo sin consultar. No hubo
+que revertir.
+
+> **Regla: lo que decide no es si el cambio es pequeño, es si el daño es
+> REVERSIBLE.**
+>
+> Un cambio de CÓDIGO con la reversa lista se prueba en producción: el peor caso
+> es un rato con el sitio raro y un `git revert`. Un cambio que deja daño
+> IRREVERSIBLE no, por pequeño que sea: un script que borra filas, un correo o
+> un WhatsApp a clientes, un pago, un archivo borrado en Cloudinary, una
+> migración que tira una columna. Ahí el entorno de prueba —o una copia de los
+> datos— no es ceremonia: es lo único que separa el error del desastre.
+>
+> El tamaño engaña en las dos direcciones. Un `DELETE` de una línea es pequeño e
+> irreversible; una reescritura de doscientas líneas de una pantalla es grande y
+> se revierte con un comando.
+
+Lo que hace que probar en producción no sea imprudencia, y que conviene exigir
+junto:
+1. **La reversa escrita y probada mentalmente ANTES de desplegar**, no buscada
+   cuando ya falló (`git revert -m 1 --no-edit <merge>` para una fusión).
+2. **Autorización previa para revertir sin preguntar.** Volver atrás rápido
+   vale más que dejarlo roto mientras se consulta.
+3. **Que el daño sea reversible**: aquí, el camino de subida; si falla, se
+   revierte el código y no quedó rastro. Si el cambio borra datos, envía
+   mensajes o altera el esquema, la reversa de código NO deshace el daño y el
+   cálculo cambia por completo.
+4. **Verificación inmediata de lo que sí se puede ver sin sesión** (el endpoint
+   de firma en 401, el sitio en pie, cero referencias al preset) y la prueba
+   real del titular acto seguido.
+
+El entorno de prueba se justifica cuando lo que puede romperse no se puede
+revertir: datos borrados, correos enviados, pagos. Para un cambio de código en
+un solo camino, era desproporcionado.
 
 ### 25 comandos en Redis: un dato de uso, no un fallo
 
