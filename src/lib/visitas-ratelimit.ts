@@ -1,5 +1,6 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
+import { avisarRespaldoEnMemoria } from '@/lib/redis-salud'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Rate limit para /api/visitas (registro público de visitas a inmuebles).
@@ -70,6 +71,7 @@ export async function checkVisitaRateLimit(ip: string): Promise<{ ok: boolean }>
       console.warn('[visitas] Faltan UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN: usando el respaldo en memoria.')
       avisado = true
     }
+    void avisarRespaldoEnMemoria('el registro de visitas', 'faltan las credenciales de Upstash')
     return { ok: limiteEnMemoria(`ip:${ip}`, MAX_POR_IP) }
   }
 
@@ -78,6 +80,7 @@ export async function checkVisitaRateLimit(ip: string): Promise<{ ok: boolean }>
     return { ok: res.success }
   } catch (err) {
     console.error('[visitas] Upstash falló; usando el respaldo en memoria:', err)
+    void avisarRespaldoEnMemoria('el registro de visitas', err instanceof Error ? err.message : 'Upstash no responde')
     return { ok: limiteEnMemoria(`ip:${ip}`, MAX_POR_IP) }
   }
 }

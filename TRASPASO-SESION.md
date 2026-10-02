@@ -2380,6 +2380,54 @@ Es otro instrumento que engaña (sección anterior), y el más peligroso: aquí 
 mentía la salida de un comando, mentía nuestra propia documentación, que
 afirmaba un efecto que nadie había visto.
 
+### 25 comandos en Redis: un dato de uso, no un fallo
+
+2026-10-02. Upstash avisó de que iba a archivar la base `sufincaraiz-mac` por
+inactividad. La base funciona: 25 comandos y 70 B almacenados, de un plan de
+500.000 comandos al mes.
+
+Lo que ese número dice del negocio, no del código: **los únicos tres caminos
+que tocan Redis son de visitante** —el chat de Mac (`mac:ip`, `mac:sess`), el
+PIN del enlace del propietario (`visitpin`) y el registro de visitas a
+inmuebles (`visita:ip`)—. 25 comandos en semanas significa que esos tres
+**apenas se usan**. Siete de esos comandos fueron de una prueba hecha ese
+mismo día desde aquí.
+
+No es un problema técnico y no hay nada que arreglar en ellos, pero es
+información real sobre el uso del sitio: el chat, el enlace del dueño y el
+registro de visitas no están moviendo tráfico. Si en algún momento se decide
+invertir en uno de los tres, conviene saber de qué base se parte.
+
+Lo que sí se construyó a partir del aviso:
+
+| Qué | Dónde |
+|---|---|
+| Latido diario a Redis para que no se archive (clave `vigilancia:ultimo`, caduca a los 7 días) | `/api/cron/vigilancia`, al terminar |
+| Aviso por WhatsApp la primera vez al día que un limitador cae al respaldo en memoria | `lib/redis-salud.ts`, llamado por los tres limitadores |
+
+El candado del aviso vive en **Postgres**, no en Redis. Tampoco puede vivir en
+memoria del proceso: en Vercel cada lambda tendría su propio «ya avisé» y el
+titular recibiría un mensaje por instancia. Probado con diez llamadas
+simultáneas: avisa una. Probar la CONCURRENCIA y no solo la secuencia es parte
+de la prueba: un candado que funciona llamándolo dos veces seguidas puede
+fallar con dos lambdas a la vez, que es el caso real.
+
+> **Regla: un mecanismo que avisa de la caída de un sistema no puede guardar su
+> estado en ese sistema.**
+>
+> El «ya avisé» de una alarma sobre Redis no va en Redis; el registro de un
+> fallo de la base no va en la base; una alerta de que el disco está lleno no se
+> escribe en ese disco. Si el sistema vigilado cae, se lleva consigo la memoria
+> de que había que avisar, y la alarma queda muda justo cuando hacía falta — el
+> mismo patrón que la guarda muerta y el silencio del recibo: nada falla a la
+> vista.
+>
+> Al diseñar una alarma, la pregunta es: *si lo que vigilo deja de funcionar,
+> ¿sigue existiendo lo que necesito para avisar?* En este proyecto el estado de
+> esas alarmas va a Postgres, que es independiente de Redis, de Cloudinary y de
+> la API de WhatsApp. Si algún día la alarma vigila Postgres, su estado tendrá
+> que salir de Postgres.
+
 ### La prueba que no probaba: la llave «rota» que no rompía nada
 
 2026-09-22, verificando los recibos privados. Para comprobar que una subida

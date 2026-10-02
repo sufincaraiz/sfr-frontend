@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { vigilarContenido } from '@/lib/vigilancia'
 import { reconciliarHallazgos } from '@/lib/vigilancia-registro'
 import { enviarAlertaLeadWhatsApp } from '@/lib/whatsapp'
+import { latidoRedis, avisarRespaldoEnMemoria } from '@/lib/redis-salud'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VIGILANCIA DIARIA DEL CONTENIDO PUBLICADO
@@ -69,10 +70,24 @@ export async function GET(req: NextRequest) {
       )
     }
 
+    // LATIDO DE REDIS. Los únicos caminos que tocan Upstash son de visitante
+    // (chat de Mac, PIN del dueño, registro de visitas) y con tan poco uso la
+    // base entra en «inactiva» y Upstash la archiva. Un comando al día la
+    // mantiene viva. Si falla, NO se cae el cron: se registra y, como Redis no
+    // responder significa que los tres limitadores están en respaldo de
+    // memoria, se avisa una vez al día.
+    const latido = await latidoRedis()
+    if (latido.escrito) {
+      console.log('[cron/vigilancia] latido de Redis escrito (vigilancia:ultimo, caduca en 7 días).')
+    } else {
+      console.warn(`[cron/vigilancia] Redis no respondió al latido: ${latido.motivo}`)
+      await avisarRespaldoEnMemoria('el cron de vigilancia', latido.motivo)
+    }
+
     // Que falten comprobaciones no es un fallo: es Railway. Pero se reporta,
     // porque un «0 hallazgos» que en realidad no comprobó nada es peor que un
     // hallazgo.
-    return NextResponse.json({ ok: true, ...r, dedup: rec })
+    return NextResponse.json({ ok: true, ...r, dedup: rec, redis: latido })
   } catch (err) {
     console.error('[cron/vigilancia] error:', err)
     return NextResponse.json({ error: 'Error al vigilar.' }, { status: 500 })

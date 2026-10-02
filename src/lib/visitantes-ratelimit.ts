@@ -1,5 +1,6 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
+import { avisarRespaldoEnMemoria } from '@/lib/redis-salud'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Rate limit para el intento de PIN en /visitantes/<token>.
@@ -77,6 +78,7 @@ export async function checkPinRateLimit(token: string, ip: string): Promise<{ ok
       console.warn('[visitantes] Faltan credenciales de Upstash: usando el respaldo en memoria para el PIN.')
       avisado = true
     }
+    void avisarRespaldoEnMemoria('el PIN del enlace del dueño', 'faltan las credenciales de Upstash')
     return { ok: limiteEnMemoria(clave) }
   }
 
@@ -85,6 +87,7 @@ export async function checkPinRateLimit(token: string, ip: string): Promise<{ ok
     return { ok: res.success }
   } catch (err) {
     console.error('[visitantes] Upstash falló; usando el respaldo en memoria:', err)
+    void avisarRespaldoEnMemoria('el PIN del enlace del dueño', err instanceof Error ? err.message : 'Upstash no responde')
     return { ok: limiteEnMemoria(clave) }
   }
 }

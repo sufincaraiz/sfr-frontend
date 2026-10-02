@@ -1,5 +1,6 @@
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
+import { avisarRespaldoEnMemoria } from '@/lib/redis-salud'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Rate limiting DISTRIBUIDO para /api/agent (Upstash Redis).
@@ -91,6 +92,9 @@ export async function checkRateLimit(
       console.warn('[Mac] Faltan UPSTASH_REDIS_REST_URL / UPSTASH_REDIS_REST_TOKEN: usando el respaldo en memoria (límite por instancia).')
       avisado = true
     }
+    // El aviso se manda SIN esperar: el visitante no paga la latencia de
+    // WhatsApp, y el candado de 24 h vive en Postgres (ver redis-salud).
+    void avisarRespaldoEnMemoria('el chat de Mac', 'faltan las credenciales de Upstash')
     return { ok: limiteEnMemoria(`ip:${ip}`, 30) && limiteEnMemoria(`sess:${sessionId}`, 20) }
   }
 
@@ -103,6 +107,7 @@ export async function checkRateLimit(
   } catch (err) {
     // Redis caído o token inválido: mismo criterio, no tumbar el chat por esto.
     console.error('[Mac] Upstash falló; usando el respaldo en memoria:', err)
+    void avisarRespaldoEnMemoria('el chat de Mac', err instanceof Error ? err.message : 'Upstash no responde')
     return { ok: limiteEnMemoria(`ip:${ip}`, 30) && limiteEnMemoria(`sess:${sessionId}`, 20) }
   }
 }
