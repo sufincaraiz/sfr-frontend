@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Loader2, Plus, Save, X, Pencil, Eye, EyeOff, Upload, MapPin, ExternalLink, Trash2 } from 'lucide-react';
 import { RichTextarea } from '@/components/ui/RichTextarea';
+import { subirArchivo } from '@/lib/subir-imagen';
 
 interface Faq { question: string; answer: string }
 interface Muni {
@@ -29,8 +30,6 @@ const EMPTY: Form = {
   og_image: '', tour360_url: '', wikipedia_url: '', faqs: [], oculto: false,
 };
 
-const CLOUD  = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
-const PRESET = 'sufincaraiz_properties';
 
 const inputS: React.CSSProperties = { padding: '9px 12px', border: '1.5px solid #E2E8F0', borderRadius: 9, fontSize: '0.875rem', outline: 'none', color: '#0D2D5E', background: '#fff', width: '100%', boxSizing: 'border-box', fontFamily: 'inherit' };
 const labelS: React.CSSProperties = { fontSize: '0.76rem', fontWeight: 700, color: '#475569', display: 'block', marginBottom: 5 };
@@ -88,12 +87,12 @@ export default function AdminMunicipiosPage() {
 
   const subirImagen = async (file: File) => {
     setUpImg(true);
-    const fd = new FormData(); fd.append('file', file); fd.append('upload_preset', PRESET); fd.append('folder', 'municipios');
     try {
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
-      const d = await res.json();
-      if (d.secure_url) set('og_image', d.secure_url.replace('/upload/', '/upload/c_fill,ar_16:9,g_auto,f_auto,q_auto,w_1200/'));
-    } catch { /* */ }
+      const url = await subirArchivo(file, 'municipios');
+      set('og_image', url.replace('/upload/', '/upload/c_fill,ar_16:9,g_auto,f_auto,q_auto,w_1200/'));
+    } catch (err) {
+      setMsg(err instanceof Error ? `⚠️ ${err.message}` : '⚠️ No se pudo subir la imagen.');
+    }
     setUpImg(false);
   };
 

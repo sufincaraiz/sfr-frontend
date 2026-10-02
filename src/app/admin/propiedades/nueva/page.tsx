@@ -5,11 +5,10 @@ import { useRouter } from 'next/navigation';
 import { Upload, X, Save, Loader2, CheckCircle2, MapPin, ArrowRight } from 'lucide-react';
 import { PROPERTY_TYPES } from '@/lib/utils';
 import { MUNICIPIOS_PROVINCIA } from '@/lib/datos-oficiales';
+import { subirArchivo } from '@/lib/subir-imagen';
 
 const OTRO = '__otro__';
 
-const CLOUD = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
-const PRESET = 'sufincaraiz_properties';
 
 interface MediaItem { url: string; is_primary: boolean; order: number }
 
@@ -97,17 +96,14 @@ export default function NuevaPropiedadPage() {
     setUploading(true);
     const uploaded: MediaItem[] = [];
     for (const file of Array.from(files)) {
-      const fd = new FormData();
-      fd.append('file', file);
-      fd.append('upload_preset', PRESET);
-      fd.append('folder', 'properties');
       try {
-        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
-        const data = await res.json();
-        if (data.secure_url) {
-          uploaded.push({ url: data.secure_url, is_primary: media.length + uploaded.length === 0, order: media.length + uploaded.length });
-        }
-      } catch { /* skip failed */ }
+        // Subida FIRMADA por el servidor (exige sesión). La entrega sigue siendo
+        // pública: estas fotos se ven en la ficha.
+        const url = await subirArchivo(file, 'properties');
+        uploaded.push({ url, is_primary: media.length + uploaded.length === 0, order: media.length + uploaded.length });
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'No se pudo subir una foto.');
+      }
     }
     setMedia(prev => [...prev, ...uploaded]);
     setUploading(false);

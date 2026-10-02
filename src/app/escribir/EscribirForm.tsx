@@ -6,9 +6,8 @@ import Link from 'next/link';
 import { Upload, X, Loader2, Send, CheckCircle2, AlertCircle, LogOut } from 'lucide-react';
 import { cloudinaryOptimize, cloudinarySquare } from '@/lib/utils';
 import { RichTextarea } from '@/components/ui/RichTextarea';
+import { subirArchivo } from '@/lib/subir-imagen';
 
-const CLOUD  = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME ?? 'dge1ls2a7';
-const PRESET = 'sufincaraiz_properties';
 
 const inputStyle: React.CSSProperties = {
   border: '1.5px solid #E2E8F0', borderRadius: 10, padding: '11px 14px',
@@ -20,15 +19,9 @@ const labelStyle: React.CSSProperties = {
 };
 
 async function uploadToCloudinary(file: File): Promise<string | null> {
-  const fd = new FormData();
-  fd.append('file', file);
-  fd.append('upload_preset', PRESET);
-  fd.append('folder', 'blog');
-  try {
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD}/image/upload`, { method: 'POST', body: fd });
-    const d = await res.json();
-    return d.secure_url ?? null;
-  } catch { return null; }
+  // La firma la da el servidor contra la credencial del escritor, y solo para
+  // la carpeta `blog`. Sin credencial no hay subida.
+  try { return await subirArchivo(file, 'blog'); } catch { return null; }
 }
 
 export function EscribirForm() {
