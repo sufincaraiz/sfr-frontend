@@ -2429,6 +2429,84 @@ El entorno de prueba se justifica cuando lo que puede romperse no se puede
 revertir: datos borrados, correos enviados, pagos. Para un cambio de código en
 un solo camino, era desproporcionado.
 
+### Criterio de color del módulo financiero: de quién es la pelota
+
+2026-10-04. Nació de una pregunta del titular sobre el CIIU —«¿la pantalla
+distingue un pendiente esperado de una falla?»— y vale para todo el módulo.
+
+**La regla tiene tres colores y un reloj.**
+
+| Color | Significa | Ejemplos |
+|---|---|---|
+| **Rojo** | Algo no cuadra y hay que mirarlo | el cliente retuvo distinto del sugerido; el recibo no subió; una espera de más de 60 días |
+| **Ámbar** | Falta algo NUESTRO | sin factura, sin proveedor, sin revisar un parámetro copiado, cambios sin guardar |
+| **Gris** | Esperamos a un TERCERO | CIIU pendiente del contador, año fiscal sin activar, ingreso causado sin cobrar, adelanto reciente por cobrar |
+
+**El porqué: un color de alarma sobre algo que no pide acción se vuelve ruido.**
+El CIIU lo llevan hoy los cinco tipos de servicio y el año fiscal no está
+activo: en ámbar, cada captura habría salido con dos alarmas permanentes que no
+se pueden atender, y la próxima alarma real —una retención que no cuadra— se
+leería igual que el ruido de siempre.
+
+#### El escalamiento es parte de la regla: GRIS NO ES PERMANENTE
+
+Una espera ajena **se vuelve asunto propio cuando se alarga**, y el color tiene
+que reflejarlo. No es una nota al pie del criterio: es el criterio.
+
+    0–30 días   gris    esperar es razonable, no hay nada que hacer
+    31–60 días  ámbar   ya hay que insistir: la espera es nuestra
+    +60 días    rojo    dejó de ser espera y es un problema
+
+· **Cuenta por cobrar:** nace gris; a los 31 días hay que llamar al cliente; a
+  los 60, cobrar o asumirlo como gasto de operación. El hub usa el adelanto más
+  viejo, con el mismo criterio que la pantalla de por cobrar.
+· **CIIU pendiente del contador:** nace gris, porque es razonable esperar unos
+  días. Pasado un mes desde que se causó el ingreso, insistirle al contador es
+  nuestra tarea y la etiqueta pasa a ámbar («hace más de un mes»); a los dos
+  meses, a rojo.
+
+**Y escala SOLO.** `colorDeEspera(fecha)` en `lib/finanzas/captura.ts` deriva el
+color del tiempo transcurrido, con los mismos tramos que la antigüedad de
+cartera. Si dependiera de que alguien se acuerde de revisarlo, el gris sería
+permanente de hecho — y un pendiente eterno pintado de «tranquilo» es la misma
+clase de silencio que el recibo que no subía.
+
+#### Pregunta obligatoria al crear un contador nuevo
+
+**¿Esta cifra suma causas que piden acciones distintas? Si sí, se desglosa
+ANTES de publicarla, no después.**
+
+Lo que obliga a escribirlo: el indicador agregado **volvió a aparecer en código
+nuevo**, dos semanas después de que la regla quedara escrita en este mismo
+traspaso. La tarjeta de ingresos del hub contaba «N ingresos sin factura, sin
+recaudo o sin CIIU» — tres esperas con tres dueños distintos (nosotros, el
+cliente, el contador) en una sola cifra ámbar. Es exactamente el defecto de
+«1 gasto sin proveedor, factura o recibo», cometido otra vez por quien acababa
+de documentarlo.
+
+**No basta con tener la regla escrita: hay que aplicarla al construir.** Una
+regla en el traspaso que no se consulta al escribir el contador siguiente es
+documentación, no defensa — lo mismo que ya pasó con las guardas. De ahí la
+pregunta, formulada para hacerse en el momento de teclear la consulta, no en la
+revisión.
+
+**Auditoría del módulo** al fijar la regla — cinco sitios estaban en ámbar
+esperando a un tercero:
+
+1. El aviso de «parámetros del año sin activar» en cada captura de ingreso.
+2. El CIIU dentro de la lista ámbar de «falta completar» de la confirmación.
+3. La nota del sugerido: ahora distingue «no hay año activo» (gris) de «el
+   cliente retuvo distinto» (ámbar).
+4. El estado CAUSADO del listado de ingresos: que el cliente no haya pagado
+   todavía no es un descuido nuestro.
+5. La tarjeta «por cobrar» del hub, en ámbar sin mirar la antigüedad.
+
+Y lo que se dejó en ámbar a propósito: los datos pendientes de la empresa (NIT
+y razón social los consigue el titular, es su pelota) y la etiqueta «Por
+cobrar» de la lista de gastos, que **no es un pendiente sino una
+clasificación** —dice que ese egreso no es gasto— y por eso conserva el color
+que la hace notar.
+
 ### 25 comandos en Redis: un dato de uso, no un fallo
 
 2026-10-02. Upstash avisó de que iba a archivar la base `sufincaraiz-mac` por

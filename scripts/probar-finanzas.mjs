@@ -16,7 +16,7 @@ import {
 import { roleCanAccessAdminPath, roleHome } from '../src/lib/permissions.ts'
 import { CODIFICADOR_JS, PREFIJO_RESPUESTA, decodificarRespuesta } from '../src/lib/finanzas/formulario-contador.ts'
 import { leerNumero } from '../src/lib/finanzas/numeros.ts'
-import { erroresDeCaptura, faltantesDeCaptura, estaPorCompletar, ordenarPorUso, tramoAntiguedad, repetirEgreso } from '../src/lib/finanzas/captura.ts'
+import { erroresDeCaptura, faltantesDeCaptura, estaPorCompletar, ordenarPorUso, tramoAntiguedad, repetirEgreso, colorDeEspera } from '../src/lib/finanzas/captura.ts'
 import { leerCola, encolar, vaciarCola, avisoDeCola, leerRecibos, encolarRecibo, vaciarRecibos, avisoDeRecibos } from '../src/lib/finanzas/cola-egresos.ts'
 import {
   erroresDeIngreso, erroresDeReparto, consecuenciaDelReparto, faltantesDeIngreso, ingresoPorCompletar,
@@ -435,6 +435,18 @@ check('cada uno factura lo suyo: la base es SOLO nuestra parte', sinTotal.valorB
 check('…y NO genera gasto', sinTotal.generanEgreso === false)
 check('…y lo explica distinto', /solo nuestra parte/.test(sinTotal.explicacion) && /sin gasto/.test(sinTotal.explicacion))
 check('la diferencia entre los dos casos es real, no cosmética', conTotal.valorBase !== sinTotal.valorBase)
+
+console.log('\n══ 12. EL COLOR DE UNA ESPERA ESCALA SOLO ══')
+// Gris no es permanente: lo que esperamos de un tercero pasa a ser asunto
+// nuestro si se alarga, y el color sale del TIEMPO, no de que alguien se acuerde.
+const HOY = new Date('2026-10-04T12:00:00Z')
+check('recién causado → gris (no pide acción nuestra)', colorDeEspera('2026-10-01T12:00:00Z', HOY) === 'gris')
+check('a los 30 días todavía gris', colorDeEspera('2026-09-04T12:00:00Z', HOY) === 'gris')
+check('a los 31 días → ámbar (ya hay que insistir)', colorDeEspera('2026-09-02T12:00:00Z', HOY) === 'ambar')
+check('a los 61 días → rojo', colorDeEspera('2026-08-03T12:00:00Z', HOY) === 'rojo')
+check('sin fecha → gris, y nunca lanza', colorDeEspera(null, HOY) === 'gris' && colorDeEspera('no es fecha', HOY) === 'gris')
+check('usa los MISMOS tramos que las cuentas por cobrar',
+  colorDeEspera('2026-09-02T12:00:00Z', HOY) === 'ambar' && tramoAntiguedad(new Date('2026-09-02T12:00:00Z'), HOY) === '31-60')
 
 console.log('\n══ 8. ROL «contador» ══')
 check('contador → /admin/finanzas', roleCanAccessAdminPath('contador', '/admin/finanzas'))

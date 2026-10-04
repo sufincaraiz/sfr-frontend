@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { AlertCircle, Handshake, Loader2, TriangleAlert } from 'lucide-react';
+import { colorDeEspera } from '@/lib/finanzas/captura';
 
 // Listado de ingresos. Dos cosas se ven siempre porque cambian el impuesto:
 // si facturamos el total de una comisión compartida, y si lo que nos retuvieron
@@ -30,7 +31,10 @@ const faltanPropios = (faltan: string[]) => faltan.filter(x => !/CIIU/.test(x));
 const dia = (iso: string) => new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short' });
 
 const ESTADO: Record<string, { bg: string; fg: string }> = {
-  CAUSADO: { bg: '#FFFBEB', fg: '#B45309' },
+  // CAUSADO en GRIS: que el cliente no haya pagado todavía no es un descuido
+  // nuestro. Si la espera se alarga, eso se ve en el reporte de cartera, no
+  // pintando de ámbar cada fila recién registrada.
+  CAUSADO: { bg: '#F1F5F9', fg: '#475569' },
   FACTURADO: { bg: '#EFF6FF', fg: '#1D4ED8' },
   COBRADO: { bg: '#F0FDF4', fg: '#15803D' },
   ANULADO: { bg: '#F1F5F9', fg: '#64748B' },
@@ -112,11 +116,22 @@ export default function IngresosPage() {
                           · GRIS  = esperamos a un tercero. El CIIU lo confirma
                                     el contador: es un pendiente esperado, no
                                     una falla, y no debe alarmar en cada fila. */}
-                      {!f.ciiu && (
-                        <span style={{ background: '#F1F5F9', color: C.muted, fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999 }}>
-                          CIIU pendiente del contador
-                        </span>
-                      )}
+                      {!f.ciiu && (() => {
+                        // Escala SOLO con el tiempo: a los 31 días de causado
+                        // el ingreso, esperar el CIIU ya es asunto nuestro
+                        // (insistirle al contador), y a los 60 es urgente.
+                        const c = colorDeEspera(f.fecha);
+                        const estilo = c === 'rojo' ? { bg: '#FEF2F2', fg: C.bad }
+                          : c === 'ambar' ? { bg: C.warnBg, fg: C.warn }
+                          : { bg: '#F1F5F9', fg: C.muted };
+                        return (
+                          <span style={{ background: estilo.bg, color: estilo.fg, fontSize: '0.7rem', fontWeight: 700, padding: '2px 8px', borderRadius: 999 }}>
+                            CIIU pendiente del contador
+                            {c === 'ambar' && ' · hace más de un mes'}
+                            {c === 'rojo' && ' · hace más de 60 días'}
+                          </span>
+                        );
+                      })()}
                       {faltanPropios(f.faltan).length > 0 && (
                         <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: C.warn, fontSize: '0.72rem', fontWeight: 700 }}>
                           <AlertCircle size={12} /> {faltanPropios(f.faltan).map(x => `falta ${x}`).join(' · ')}

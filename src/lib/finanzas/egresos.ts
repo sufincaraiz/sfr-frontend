@@ -3,7 +3,7 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { leerNumero } from '@/lib/finanzas/numeros'
 import {
-  erroresDeCaptura, estaPorCompletar, faltantesDeCaptura, ordenarPorUso,
+  colorDeEspera, erroresDeCaptura, estaPorCompletar, faltantesDeCaptura, ordenarPorUso, tramoAntiguedad,
   type EgresoCapturado, type Naturaleza,
 } from '@/lib/finanzas/captura'
 import { egresosDeResultado, gastoDeResultado } from '@/lib/finanzas/calculo'
@@ -268,7 +268,10 @@ export async function asumirComoGasto(id: string, motivo: string, por: string) {
 export async function resumenDelMes() {
   const ahora = new Date()
   const desde = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
-  const [egresosMes, ingresosMes, ingresosPendientes, pendientes, sinRecibo, sinProveedor, sinFactura, cobrar] = await Promise.all([
+  const [
+    egresosMes, ingresosMes, ingresosSinFactura, ingresosSinRecaudo, ingresosSinCiiu,
+    pendientes, sinRecibo, sinProveedor, sinFactura, cobrar,
+  ] = await Promise.all([
     prisma.egreso.findMany({
       where: { fecha: { gte: desde } },
       select: { valor_base: true, iva_pagado: true, naturaleza: true },
@@ -279,7 +282,18 @@ export async function resumenDelMes() {
       where: { fecha_causacion: { gte: desde }, estado: { not: 'ANULADO' } },
       _sum: { valor_base: true }, _count: { _all: true },
     }),
-    prisma.ingreso.count({ where: { OR: [{ numero_factura: null }, { fecha_recaudo: null }, { ciiu: null }] } }),
+    // Desglosado por QUIÉN tiene la pelota, porque el color de la tarjeta
+    // depende de eso: la factura es nuestra, el recaudo lo trae el cliente y
+    // el CIIU lo confirma el contador. Juntarlos en una cifra ámbar hacía que
+    // una espera ajena pareciera un descuido propio.
+    prisma.ingreso.count({ where: { numero_factura: null, estado: { not: 'ANULADO' } } }),
+    prisma.ingreso.count({ where: { fecha_recaudo: null, estado: { not: 'ANULADO' } } }),
+    prisma.ingreso.aggregate({
+      where: { ciiu: null, estado: { not: 'ANULADO' } },
+      // El más viejo manda: así el color de la espera escala solo, sin que
+      // nadie tenga que acordarse de revisarlo.
+      _count: { _all: true }, _min: { fecha_causacion: true },
+    }),
     prisma.egreso.count({ where: { por_completar: true } }),
     // Desglosado, no agregado: «sin recibo» es un problema de soporte ante la
     // DIAN; «sin proveedor» es papeleo normal que se completa en el escritorio.
@@ -289,7 +303,10 @@ export async function resumenDelMes() {
     prisma.egreso.count({ where: { numero_factura_proveedor: null } }),
     prisma.egreso.aggregate({
       where: { naturaleza: 'REEMBOLSABLE', estado_reembolso: 'PENDIENTE' },
-      _sum: { valor_base: true }, _count: { _all: true },
+      // `_min.fecha` da el adelanto MÁS VIEJO: con él el hub puede usar el
+      // mismo criterio de antigüedad que la pantalla de por cobrar, en vez de
+      // pintar de ámbar un adelanto de ayer.
+      _sum: { valor_base: true }, _count: { _all: true }, _min: { fecha: true },
     }),
   ])
   const gastos = egresosDeResultado(egresosMes)
@@ -303,11 +320,23 @@ export async function resumenDelMes() {
     // Resultado simple del mes: ingresos menos gastos. No necesita tarifas, así
     // que no depende de que el año fiscal esté activo.
     resultado: ingresos.sub(gastos).toString(),
-    ingresosPorCompletar: ingresosPendientes,
+    ingresos_falta: {
+      /** Nuestro. */
+      factura: ingresosSinFactura,
+      /** Lo trae el cliente al pagar. */
+      recaudo: ingresosSinRecaudo,
+      /** Lo confirma el contador. `desde` = el ingreso más viejo sin CIIU. */
+      ciiu: ingresosSinCiiu._count._all,
+      ciiu_espera: colorDeEspera(ingresosSinCiiu._min.fecha_causacion),
+    },
     movimientos: egresosMes.length,
     porCompletar: pendientes,
     falta: { recibo: sinRecibo, proveedor: sinProveedor, factura: sinFactura },
-    porCobrar: { total: (cobrar._sum.valor_base ?? new Prisma.Decimal(0)).toString(), cantidad: cobrar._count._all },
+    porCobrar: {
+      total: (cobrar._sum.valor_base ?? new Prisma.Decimal(0)).toString(),
+      cantidad: cobrar._count._all,
+      tramo: cobrar._min.fecha ? tramoAntiguedad(cobrar._min.fecha) : null,
+    },
   }
 }
 

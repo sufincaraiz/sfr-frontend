@@ -113,14 +113,30 @@ export default function NuevoIngresoPage() {
             {hecho.consecuencia}
           </div>
         )}
-        {hecho.nota && (
-          <div style={{ background: C.warnBg, border: '1.5px solid #FDE68A', color: '#78350F', borderRadius: 12, padding: '0.8rem 1rem', textAlign: 'left', fontSize: '0.82rem', marginBottom: '0.8rem' }}>
-            {hecho.nota}
-          </div>
+        {hecho.nota && (() => {
+          // «No hay año activo» espera al contador (gris). «El cliente retuvo
+          // distinto» sí hay que mirarlo (ámbar).
+          const esperaAlContador = /no se calcula el sugerido|No se pudo calcular el sugerido/.test(hecho.nota);
+          return (
+            <div style={{
+              background: esperaAlContador ? '#F8FAFC' : C.warnBg,
+              border: `1.5px solid ${esperaAlContador ? C.line : '#FDE68A'}`,
+              color: esperaAlContador ? C.muted : '#78350F',
+              borderRadius: 12, padding: '0.8rem 1rem', textAlign: 'left', fontSize: '0.82rem', marginBottom: '0.8rem',
+            }}>
+              {hecho.nota}
+            </div>
+          );
+        })()}
+        {/* Lo nuestro en ámbar; lo que depende del contador, en gris. */}
+        {hecho.faltan.filter(x => !/CIIU/.test(x)).length > 0 && (
+          <p style={{ color: C.warn, fontWeight: 700, fontSize: '0.85rem', margin: '0 0 0.5rem' }}>
+            Falta completar en el escritorio: {hecho.faltan.filter(x => !/CIIU/.test(x)).join(' · ')}.
+          </p>
         )}
-        {hecho.faltan.length > 0 && (
-          <p style={{ color: C.warn, fontWeight: 700, fontSize: '0.85rem', margin: '0 0 1.25rem' }}>
-            Falta completar en el escritorio: {hecho.faltan.join(' · ')}.
+        {hecho.faltan.some(x => /CIIU/.test(x)) && (
+          <p style={{ color: C.muted, fontSize: '0.82rem', margin: '0 0 1.25rem' }}>
+            El CIIU lo confirma el contador; el ICA de este ingreso se calculará cuando llegue.
           </p>
         )}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -143,9 +159,12 @@ export default function NuevoIngresoPage() {
       </div>
 
       {anio && !anio.activo && (
-        <div style={{ background: C.warnBg, border: '1.5px solid #FDE68A', color: '#78350F', borderRadius: 12, padding: '0.7rem 0.9rem', fontSize: '0.82rem', marginBottom: '1rem' }}>
-          Los parámetros de {anio.anio} no están activos. El ingreso se registra igual —y cuenta en los reportes—,
-          pero sin retención sugerida con la que contrastar lo que te retuvieron.
+        /* GRIS: esto espera al contador (UVT y tarifas), no a nosotros, y
+           aparece en CADA captura. En ámbar sería una alarma permanente que
+           no pide ninguna acción aquí. */
+        <div style={{ background: '#F8FAFC', border: `1.5px solid ${C.line}`, color: C.muted, borderRadius: 12, padding: '0.7rem 0.9rem', fontSize: '0.82rem', marginBottom: '1rem' }}>
+          Los parámetros de {anio.anio} no están activos todavía. El ingreso se registra igual —y cuenta en los
+          reportes—, pero sin retención sugerida con la que contrastar lo que te retuvieron.
         </div>
       )}
       {error && <div style={{ background: C.badBg, border: '1.5px solid #FECACA', color: C.bad, borderRadius: 12, padding: '0.7rem 0.9rem', fontSize: '0.85rem', marginBottom: '1rem' }}>{error}</div>}

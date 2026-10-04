@@ -140,3 +140,25 @@ export function repetirEgreso(u: UltimoEgreso): RepetidoEgreso {
     soporte_public_id: null,
   }
 }
+
+// ─── Color de una espera ─────────────────────────────────────────────────────
+
+/**
+ * GRIS NO ES PERMANENTE. Una espera ajena —el CIIU que debe confirmar el
+ * contador, un cliente que no ha pagado— nace en gris porque no pide acción
+ * nuestra. Pero si se alarga, la espera SÍ pasa a ser asunto nuestro: hay que
+ * insistirle al contador, o cobrar.
+ *
+ * Por eso el color se deriva del TIEMPO y no de una decisión que alguien tenga
+ * que recordar. Mismos tramos que la antigüedad de las cuentas por cobrar, para
+ * que el módulo entero escale igual.
+ */
+export type ColorEspera = 'gris' | 'ambar' | 'rojo'
+
+export function colorDeEspera(desde: Date | string | null | undefined, hoy: Date = new Date()): ColorEspera {
+  if (!desde) return 'gris'
+  const fecha = desde instanceof Date ? desde : new Date(desde)
+  if (Number.isNaN(fecha.getTime())) return 'gris'
+  const tramo = tramoAntiguedad(fecha, hoy)
+  return tramo === '0-30' ? 'gris' : tramo === '31-60' ? 'ambar' : 'rojo'
+}

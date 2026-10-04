@@ -102,9 +102,20 @@ export default async function FinanzasPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.navy, fontWeight: 800 }}>
             <HandCoins size={18} style={{ color: C.blue }} /> Por cobrar
           </div>
-          <div style={{ color: r.porCobrar.cantidad ? C.warn : C.muted, fontSize: '0.84rem', marginTop: 4 }}>
+          {/* Mismo criterio que la pantalla de por cobrar: esperar a un
+              cliente es gris hasta los 30 días; a partir de ahí la espera pasa
+              a ser asunto nuestro y escala a ámbar y a rojo. */}
+          <div style={{
+            color: !r.porCobrar.cantidad ? C.muted
+              : r.porCobrar.tramo === '+60' ? C.bad
+              : r.porCobrar.tramo === '31-60' ? C.warn : C.muted,
+            fontWeight: r.porCobrar.tramo === '+60' ? 700 : 400,
+            fontSize: '0.84rem', marginTop: 4,
+          }}>
             {r.porCobrar.cantidad
-              ? `${plural(r.porCobrar.cantidad, 'adelanto que el cliente debe devolver', 'adelantos que el cliente debe devolver')}.`
+              ? `${plural(r.porCobrar.cantidad, 'adelanto que el cliente debe devolver', 'adelantos que el cliente debe devolver')}` +
+                (r.porCobrar.tramo === '+60' ? ', el más viejo hace más de 60 días.'
+                  : r.porCobrar.tramo === '31-60' ? ', el más viejo hace más de un mes.' : '.')
               : 'Nada por cobrar.'}
           </div>
         </Link>
@@ -113,11 +124,33 @@ export default async function FinanzasPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.navy, fontWeight: 800 }}>
             <TrendingUp size={18} style={{ color: C.blue }} /> Ingresos
           </div>
-          <div style={{ color: r.ingresosPorCompletar ? C.warn : C.muted, fontSize: '0.84rem', marginTop: 4 }}>
-            {r.ingresosPorCompletar
-              ? `${plural(r.ingresosPorCompletar, 'ingreso', 'ingresos')} sin factura, sin recaudo o sin CIIU.`
-              : 'Comisiones y servicios, con su reparto.'}
-          </div>
+          {/* Cada espera con su color: la factura es nuestra (ámbar); el
+              recaudo lo trae el cliente y el CIIU el contador (gris). */}
+          {r.ingresos_falta.factura + r.ingresos_falta.recaudo + r.ingresos_falta.ciiu === 0 ? (
+            <div style={{ color: C.muted, fontSize: '0.84rem', marginTop: 4 }}>Comisiones y servicios, con su reparto.</div>
+          ) : (
+            <div style={{ fontSize: '0.84rem', marginTop: 4 }}>
+              {r.ingresos_falta.factura > 0 && (
+                <div style={{ color: C.warn, fontWeight: 700 }}>{plural(r.ingresos_falta.factura, 'sin factura', 'sin factura')}</div>
+              )}
+              {r.ingresos_falta.recaudo > 0 && (
+                <div style={{ color: C.muted }}>{r.ingresos_falta.recaudo} sin cobrar</div>
+              )}
+              {r.ingresos_falta.ciiu > 0 && (
+                /* La espera del contador escala sola: gris, ámbar al mes,
+                   rojo a los dos. */
+                <div style={{
+                  color: r.ingresos_falta.ciiu_espera === 'rojo' ? C.bad
+                    : r.ingresos_falta.ciiu_espera === 'ambar' ? C.warn : C.muted,
+                  fontWeight: r.ingresos_falta.ciiu_espera === 'gris' ? 400 : 700,
+                }}>
+                  {r.ingresos_falta.ciiu} esperan el CIIU del contador
+                  {r.ingresos_falta.ciiu_espera === 'ambar' && ' (hace más de un mes)'}
+                  {r.ingresos_falta.ciiu_espera === 'rojo' && ' (hace más de 60 días)'}
+                </div>
+              )}
+            </div>
+          )}
         </Link>
 
         <Link href="/admin/finanzas/egresos" style={tarjeta}>
