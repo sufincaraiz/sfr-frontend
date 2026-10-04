@@ -268,11 +268,18 @@ export async function asumirComoGasto(id: string, motivo: string, por: string) {
 export async function resumenDelMes() {
   const ahora = new Date()
   const desde = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
-  const [egresosMes, pendientes, sinRecibo, sinProveedor, sinFactura, cobrar] = await Promise.all([
+  const [egresosMes, ingresosMes, ingresosPendientes, pendientes, sinRecibo, sinProveedor, sinFactura, cobrar] = await Promise.all([
     prisma.egreso.findMany({
       where: { fecha: { gte: desde } },
       select: { valor_base: true, iva_pagado: true, naturaleza: true },
     }),
+    // Ingresos del mes: la base gravable ya la decidió `facturamos_total` al
+    // registrar, así que aquí se suma `valor_base` sin recalcular nada.
+    prisma.ingreso.aggregate({
+      where: { fecha_causacion: { gte: desde }, estado: { not: 'ANULADO' } },
+      _sum: { valor_base: true }, _count: { _all: true },
+    }),
+    prisma.ingreso.count({ where: { OR: [{ numero_factura: null }, { fecha_recaudo: null }, { ciiu: null }] } }),
     prisma.egreso.count({ where: { por_completar: true } }),
     // Desglosado, no agregado: «sin recibo» es un problema de soporte ante la
     // DIAN; «sin proveedor» es papeleo normal que se completa en el escritorio.
@@ -287,9 +294,16 @@ export async function resumenDelMes() {
   ])
   const gastos = egresosDeResultado(egresosMes)
     .reduce((s, e) => s.plus(gastoDeResultado({ ...e, naturaleza: e.naturaleza }, false)), new Prisma.Decimal(0))
+  const ingresos = ingresosMes._sum.valor_base ?? new Prisma.Decimal(0)
   return {
     mes: desde.toLocaleDateString('es-CO', { month: 'long', year: 'numeric' }),
     gastos: gastos.toString(),
+    ingresos: ingresos.toString(),
+    ingresosCantidad: ingresosMes._count._all,
+    // Resultado simple del mes: ingresos menos gastos. No necesita tarifas, así
+    // que no depende de que el año fiscal esté activo.
+    resultado: ingresos.sub(gastos).toString(),
+    ingresosPorCompletar: ingresosPendientes,
     movimientos: egresosMes.length,
     porCompletar: pendientes,
     falta: { recibo: sinRecibo, proveedor: sinProveedor, factura: sinFactura },

@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { AlertTriangle, Clock, HandCoins, ListChecks, Receipt, SlidersHorizontal } from 'lucide-react';
+import { AlertTriangle, Clock, HandCoins, ListChecks, Receipt, SlidersHorizontal, TrendingUp } from 'lucide-react';
 import { requireSession } from '@/lib/auth';
 import { roleCanAccessAdminPath } from '@/lib/permissions';
 import { faltantesEmpresa } from '@/lib/finanzas/empresa';
@@ -15,7 +15,7 @@ import { resumenDelMes } from '@/lib/finanzas/egresos';
 // esta pantalla fuera de cliente, `faltantesEmpresa()` vería siempre todo
 // vacío y el aviso de «datos pendientes» no desaparecería nunca.
 
-const PROXIMOS = ['Ingresos y distribución de comisión', 'Custodia de dineros de terceros', 'Reportes'];
+const PROXIMOS = ['Custodia de dineros de terceros', 'Reportes de retenciones, IVA e ICA (esperan los parámetros del año)'];
 const C = { navy: '#0D2D5E', blue: '#1B56A1', line: '#E2E8F0', muted: '#64748B', warn: '#B45309', bad: '#B91C1C' };
 const dinero = (v: string) => `$ ${Number(v).toLocaleString('es-CO')}`;
 // Aquí había un `text-transform: capitalize` que ponía mayúscula a CADA
@@ -53,9 +53,21 @@ export default async function FinanzasPage() {
 
       <div style={{ ...tarjeta, display: 'flex', gap: '2rem', flexWrap: 'wrap' }}>
         <div>
+          <div style={{ color: C.muted, fontSize: '0.8rem' }}>Ingresos de {r.mes}</div>
+          <div style={{ color: C.navy, fontWeight: 800, fontSize: '1.7rem' }}>{dinero(r.ingresos)}</div>
+          <div style={{ color: C.muted, fontSize: '0.78rem' }}>{plural(r.ingresosCantidad, 'ingreso registrado', 'ingresos registrados')}</div>
+        </div>
+        <div style={{ borderLeft: `1px solid ${C.line}`, paddingLeft: '2rem' }}>
           <div style={{ color: C.muted, fontSize: '0.8rem' }}>Gastos de {r.mes}</div>
           <div style={{ color: C.navy, fontWeight: 800, fontSize: '1.7rem' }}>{dinero(r.gastos)}</div>
           <div style={{ color: C.muted, fontSize: '0.78rem' }}>{plural(r.movimientos, 'movimiento registrado', 'movimientos registrados')}</div>
+        </div>
+        <div style={{ borderLeft: `1px solid ${C.line}`, paddingLeft: '2rem' }}>
+          <div style={{ color: C.muted, fontSize: '0.8rem' }}>Resultado del mes</div>
+          {/* Ingresos menos gastos. No necesita tarifas, así que se puede
+              mostrar aunque el año fiscal siga en borrador. */}
+          <div style={{ color: Number(r.resultado) < 0 ? C.bad : C.navy, fontWeight: 800, fontSize: '1.7rem' }}>{dinero(r.resultado)}</div>
+          <div style={{ color: C.muted, fontSize: '0.78rem' }}>antes de impuestos</div>
         </div>
         <div style={{ borderLeft: `1px solid ${C.line}`, paddingLeft: '2rem' }}>
           <div style={{ color: C.muted, fontSize: '0.8rem' }}>Por cobrar a clientes</div>
@@ -94,6 +106,17 @@ export default async function FinanzasPage() {
             {r.porCobrar.cantidad
               ? `${plural(r.porCobrar.cantidad, 'adelanto que el cliente debe devolver', 'adelantos que el cliente debe devolver')}.`
               : 'Nada por cobrar.'}
+          </div>
+        </Link>
+
+        <Link href="/admin/finanzas/ingresos" style={tarjeta}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.navy, fontWeight: 800 }}>
+            <TrendingUp size={18} style={{ color: C.blue }} /> Ingresos
+          </div>
+          <div style={{ color: r.ingresosPorCompletar ? C.warn : C.muted, fontSize: '0.84rem', marginTop: 4 }}>
+            {r.ingresosPorCompletar
+              ? `${plural(r.ingresosPorCompletar, 'ingreso', 'ingresos')} sin factura, sin recaudo o sin CIIU.`
+              : 'Comisiones y servicios, con su reparto.'}
           </div>
         </Link>
 

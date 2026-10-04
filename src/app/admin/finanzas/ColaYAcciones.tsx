@@ -123,7 +123,7 @@ export default function ColaYAcciones() {
 
   const aviso = avisoDeCola(cola);
   const avisoRecibo = avisoDeRecibos(recibos);
-  const enCaptura = ruta?.endsWith('/egresos/nuevo');
+  const enCaptura = ruta?.endsWith('/egresos/nuevo') || ruta?.endsWith('/ingresos/nuevo');
 
   return (
     <>
@@ -157,10 +157,18 @@ export default function ColaYAcciones() {
       )}
 
       {!enCaptura && (
-        <Link href="/admin/finanzas/egresos/nuevo" aria-label="Registrar un gasto"
-          style={{ position: 'fixed', right: 20, bottom: 24, zIndex: 50, display: 'flex', alignItems: 'center', gap: 8, background: '#0D2D5E', color: '#fff', borderRadius: 999, padding: '14px 20px', fontWeight: 800, textDecoration: 'none', boxShadow: '0 10px 24px rgba(13,45,94,.28)' }}>
-          <Plus size={20} /> Gasto
-        </Link>
+        <div style={{ position: 'fixed', right: 20, bottom: 24, zIndex: 50, display: 'flex', flexDirection: 'column', gap: 10, alignItems: 'flex-end' }}>
+          {/* El ingreso va arriba y en dorado: es lo que entra. El gasto
+              abajo, que es lo que se registra más veces y queda al pulgar. */}
+          <Link href="/admin/finanzas/ingresos/nuevo" aria-label="Registrar un ingreso"
+            style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#fff', color: '#0D2D5E', border: '2px solid #0D2D5E', borderRadius: 999, padding: '11px 18px', fontWeight: 800, textDecoration: 'none', boxShadow: '0 6px 18px rgba(13,45,94,.18)' }}>
+            <Plus size={18} /> Ingreso
+          </Link>
+          <Link href="/admin/finanzas/egresos/nuevo" aria-label="Registrar un gasto"
+            style={{ display: 'flex', alignItems: 'center', gap: 8, background: '#0D2D5E', color: '#fff', borderRadius: 999, padding: '14px 20px', fontWeight: 800, textDecoration: 'none', boxShadow: '0 10px 24px rgba(13,45,94,.28)' }}>
+            <Plus size={20} /> Gasto
+          </Link>
+        </div>
       )}
       <style>{'.girar{animation:girar 1s linear infinite}@keyframes girar{to{transform:rotate(360deg)}}'}</style>
     </>

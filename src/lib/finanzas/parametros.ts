@@ -19,8 +19,14 @@ import { claveConcepto, type Origen, type Procedencia, type ProcedenciaEscalares
 import { leerNumero } from '@/lib/finanzas/numeros'
 
 export class ErrorParametros extends Error {
-  constructor(mensaje: string, readonly status = 400) {
+  // Campo explícito, no propiedad de parámetro: Node ejecuta estos módulos
+  // directamente en las pruebas (modo «strip-only», sin transformar) y una
+  // propiedad de parámetro no se puede ejecutar así. Mismo estilo que
+  // ErrorEgreso y ErrorIngreso.
+  status: number
+  constructor(mensaje: string, status = 400) {
     super(mensaje)
+    this.status = status
     this.name = 'ErrorParametros'
   }
 }

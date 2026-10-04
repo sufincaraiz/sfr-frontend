@@ -18,6 +18,9 @@ import { CODIFICADOR_JS, PREFIJO_RESPUESTA, decodificarRespuesta } from '../src/
 import { leerNumero } from '../src/lib/finanzas/numeros.ts'
 import { erroresDeCaptura, faltantesDeCaptura, estaPorCompletar, ordenarPorUso, tramoAntiguedad, repetirEgreso } from '../src/lib/finanzas/captura.ts'
 import { leerCola, encolar, vaciarCola, avisoDeCola, leerRecibos, encolarRecibo, vaciarRecibos, avisoDeRecibos } from '../src/lib/finanzas/cola-egresos.ts'
+import {
+  erroresDeIngreso, erroresDeReparto, consecuenciaDelReparto, faltantesDeIngreso, ingresoPorCompletar,
+} from '../src/lib/finanzas/captura-ingreso.ts'
 import { EMPRESA_BASE, empresa, MARCA_PENDIENTE, digitoVerificacion, encabezadoReporte, exigirNitValido, faltantesEmpresa } from '../src/lib/finanzas/empresa.ts'
 
 let ok = 0, fail = 0
@@ -372,6 +375,66 @@ encolarRecibo(alm2, 'e3', 'data:image/jpeg;base64,CCCC', '$7.000 · Peajes')
 check('con dos, el aviso habla en plural', /2 gastos se guardaron sin su foto/.test(avisoDeRecibos(leerRecibos(alm2))))
 check('las dos colas son independientes (gastos sin señal vs recibos)',
   leerCola(alm2).length === 0 && leerRecibos(alm2).length === 2)
+
+console.log('\n══ 11. CAPTURA DE INGRESOS ══')
+const BASE_ING = { valor: '5.000.000', tipo_servicio_id: 't1', tercero_id: 'cli1' }
+const opc = { esComision: false, responsableIva: false }
+check('valor + tipo + cliente basta para guardar', erroresDeIngreso(BASE_ING, opc).length === 0)
+check('…pero queda por completar', ingresoPorCompletar(BASE_ING) === true)
+check('y dice qué falta', faltantesDeIngreso(BASE_ING).join(' · ') === 'número de factura · retenciones del comprobante · fecha de recaudo · CIIU (sin él no se calcula ICA)')
+check('sin cliente no guarda (no hay a quién facturar)', erroresDeIngreso({ ...BASE_ING, tercero_id: null }, opc).some(x => /cliente/i.test(x)))
+check('valor cero no guarda', erroresDeIngreso({ ...BASE_ING, valor: '0' }, opc).some(x => /mayor que cero/.test(x)))
+check('comisión sin propiedad no guarda', erroresDeIngreso(BASE_ING, { ...opc, esComision: true }).some(x => /propiedad/i.test(x)))
+check('comisión con propiedad sí guarda', erroresDeIngreso({ ...BASE_ING, property_id: 'p1' }, { ...opc, esComision: true }).length === 0)
+// Las dos fechas son distintas y el orden importa.
+check('recaudo antes de causación se rechaza',
+  erroresDeIngreso({ ...BASE_ING, fecha_causacion: '2026-10-02', fecha_recaudo: '2026-09-01' }, opc).some(x => /antes de causarse/.test(x)))
+check('recaudo después sí pasa',
+  erroresDeIngreso({ ...BASE_ING, fecha_causacion: '2026-09-01', fecha_recaudo: '2026-10-02' }, opc).length === 0)
+check('con fecha de recaudo deja de faltar', !faltantesDeIngreso({ ...BASE_ING, fecha_recaudo: '2026-10-02' }).includes('fecha de recaudo'))
+check('el CIIU figura entre lo que falta hasta que llega', faltantesDeIngreso(BASE_ING).some(x => /CIIU/.test(x)))
+
+console.log('\n══ 11b. IVA: la bandera del año BLOQUEA el campo ══')
+check('NO responsable + IVA cargado → se rechaza',
+  erroresDeIngreso({ ...BASE_ING, iva_generado: '950000' }, { esComision: false, responsableIva: false }).some(x => /no es responsable de IVA/.test(x)))
+check('SIN DECIDIR + IVA cargado → también se rechaza (no se asume)',
+  erroresDeIngreso({ ...BASE_ING, iva_generado: '950000' }, { esComision: false, responsableIva: null }).some(x => /Sin decidir/.test(x)))
+check('responsable + IVA cargado → se acepta',
+  erroresDeIngreso({ ...BASE_ING, iva_generado: '950000' }, { esComision: false, responsableIva: true }).length === 0)
+check('NO responsable + IVA en cero → pasa (cero no es cargar IVA)',
+  erroresDeIngreso({ ...BASE_ING, iva_generado: '0' }, { esComision: false, responsableIva: false }).length === 0)
+
+console.log('\n══ 11c. REPARTO DE COMISIÓN: suma el TOTAL, incluida la propia ══')
+const PARTES_OK = [
+  { rol: 'PROPIA', valor: '3.000.000' },
+  { rol: 'CORREDOR_EXTERNO', tercero_id: 'c1', etiqueta: 'Corredor Pérez', valor: '2.000.000' },
+]
+check('partes que suman el total → válido', erroresDeReparto('5.000.000', PARTES_OK).length === 0)
+check('si suman menos, se rechaza y dice cuánto',
+  erroresDeReparto('5.000.000', [{ rol: 'PROPIA', valor: '1.000.000' }, { rol: 'CORREDOR_EXTERNO', tercero_id: 'c1', valor: '2.000.000' }])
+    .some(x => /suman \$3\.000\.000 y la comisión total es \$5\.000\.000/.test(x)))
+check('si suman más, también', erroresDeReparto('5.000.000', [{ rol: 'PROPIA', valor: '4.000.000' }, { rol: 'CORREDOR_EXTERNO', tercero_id: 'c1', valor: '2.000.000' }]).length === 1)
+check('un peso de diferencia se tolera (redondeo de porcentajes)',
+  erroresDeReparto('5000000', [{ rol: 'PROPIA', valor: '3000000' }, { rol: 'CORREDOR_EXTERNO', tercero_id: 'c1', valor: '1999999' }]).length === 0)
+check('sin nuestra parte se rechaza',
+  erroresDeReparto('5.000.000', [{ rol: 'CORREDOR_EXTERNO', tercero_id: 'c1', valor: '5.000.000' }]).some(x => /nuestra parte/.test(x)))
+check('dos filas propias se rechazan',
+  erroresDeReparto('5.000.000', [{ rol: 'PROPIA', valor: '2.500.000' }, { rol: 'PROPIA', valor: '2.500.000' }]).some(x => /exactamente una/.test(x)))
+check('parte ajena sin tercero se rechaza',
+  erroresDeReparto('5.000.000', [{ rol: 'PROPIA', valor: '3.000.000' }, { rol: 'CORREDOR_EXTERNO', valor: '2.000.000' }]).some(x => /a quién corresponde/.test(x)))
+check('el reparto inválido impide guardar el ingreso entero',
+  erroresDeIngreso({ ...BASE_ING, property_id: 'p1', partes: [{ rol: 'PROPIA', valor: '1.000.000' }] }, { ...opc, esComision: true }).length > 0)
+
+console.log('\n══ 11d. facturamos_total decide la BASE GRAVABLE ══')
+const conTotal = consecuenciaDelReparto('5.000.000', PARTES_OK, true)
+check('facturando el total: la base es el total', conTotal.valorBase === '5000000')
+check('…y la parte ajena genera gasto', conTotal.generanEgreso === true && conTotal.valorAjeno === '2000000')
+check('…y la pantalla lo explica', /base gravable es \$5\.000\.000/.test(conTotal.explicacion) && /gasto nuestro/.test(conTotal.explicacion))
+const sinTotal = consecuenciaDelReparto('5.000.000', PARTES_OK, false)
+check('cada uno factura lo suyo: la base es SOLO nuestra parte', sinTotal.valorBase === '3000000')
+check('…y NO genera gasto', sinTotal.generanEgreso === false)
+check('…y lo explica distinto', /solo nuestra parte/.test(sinTotal.explicacion) && /sin gasto/.test(sinTotal.explicacion))
+check('la diferencia entre los dos casos es real, no cosmética', conTotal.valorBase !== sinTotal.valorBase)
 
 console.log('\n══ 8. ROL «contador» ══')
 check('contador → /admin/finanzas', roleCanAccessAdminPath('contador', '/admin/finanzas'))
