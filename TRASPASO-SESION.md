@@ -2490,6 +2490,19 @@ documentación, no defensa — lo mismo que ya pasó con las guardas. De ahí la
 pregunta, formulada para hacerse en el momento de teclear la consulta, no en la
 revisión.
 
+**PRIMERA VEZ QUE PREVINO EN VEZ DE CORREGIR** (2026-10-04, pantalla de
+custodia). El contador evidente era «saldo en custodia: $X». La pregunta se
+hizo ANTES de escribir la consulta y la respuesta fue sí: ese total suma arras
+del vendedor —que se ENTREGAN— con anticipos propios —que se CAUSAN como
+ingreso—, dos acciones opuestas. Un solo número podría esconder tres millones
+de ingreso nuestro sin declarar detrás de veinte de plata ajena. Nació
+desglosado por naturaleza, con el total solo como suma secundaria etiquetada
+«en la cuenta, sin ser utilidad».
+
+Las dos veces anteriores la regla sirvió para explicar un defecto ya
+publicado; esta lo atajó en el teclado. La diferencia práctica: no hubo
+diagnóstico equivocado, ni corrección, ni despliegue de arreglo.
+
 **Auditoría del módulo** al fijar la regla — cinco sitios estaban en ámbar
 esperando a un tercero:
 

@@ -21,6 +21,9 @@ import { leerCola, encolar, vaciarCola, avisoDeCola, leerRecibos, encolarRecibo,
 import {
   erroresDeIngreso, erroresDeReparto, consecuenciaDelReparto, faltantesDeIngreso, ingresoPorCompletar,
 } from '../src/lib/finanzas/captura-ingreso.ts'
+import {
+  erroresDeCustodia, faltantesDeCustodia, colorDeCustodia, motivoDeEspera, diasEnCustodia,
+} from '../src/lib/finanzas/captura-custodia.ts'
 import { EMPRESA_BASE, empresa, MARCA_PENDIENTE, digitoVerificacion, encabezadoReporte, exigirNitValido, faltantesEmpresa } from '../src/lib/finanzas/empresa.ts'
 
 let ok = 0, fail = 0
@@ -435,6 +438,47 @@ check('cada uno factura lo suyo: la base es SOLO nuestra parte', sinTotal.valorB
 check('…y NO genera gasto', sinTotal.generanEgreso === false)
 check('…y lo explica distinto', /solo nuestra parte/.test(sinTotal.explicacion) && /sin gasto/.test(sinTotal.explicacion))
 check('la diferencia entre los dos casos es real, no cosmética', conTotal.valorBase !== sinTotal.valorBase)
+
+console.log('\n══ 13. CUSTODIA: dinero que NO es ingreso ══')
+const CUST_OK = { valor: '20.000.000', naturaleza: 'DINERO_DE_TERCEROS', concepto: 'Arras de la promesa', tercero_id: 't1' }
+check('lo mínimo basta: valor, naturaleza, de quién y concepto', erroresDeCustodia(CUST_OK).length === 0)
+check('sin saber de quién NO guarda (hay que poder devolverlo)',
+  erroresDeCustodia({ ...CUST_OK, tercero_id: null }).some(x => /de quién/i.test(x)))
+check('sin concepto no guarda', erroresDeCustodia({ ...CUST_OK, concepto: 'ar' }).some(x => /concepto/i.test(x)))
+check('valor cero no guarda', erroresDeCustodia({ ...CUST_OK, valor: '0' }).some(x => /mayor que cero/.test(x)))
+check('naturaleza inventada no guarda', erroresDeCustodia({ ...CUST_OK, naturaleza: 'OTRA' }).some(x => /clase de dinero/i.test(x)))
+check('la propiedad y el soporte son opcionales, pero se nombran',
+  faltantesDeCustodia(CUST_OK).join(' · ') === 'propiedad de la operación · soporte o nota de la consignación')
+
+console.log('\n══ 13b. LOS DOS RELOJES: arras y anticipo no esperan igual ══')
+const HOY_C = new Date('2026-10-04T12:00:00Z')
+// Arras: una promesa fija la escritura a 30, 60 o 90 días. Tres meses es normal.
+check('arras de 90 días → gris (plazo normal de una promesa)',
+  colorDeCustodia('DINERO_DE_TERCEROS', '2026-07-06T12:00:00Z', HOY_C) === 'gris')
+check('arras de 7 meses → ámbar', colorDeCustodia('DINERO_DE_TERCEROS', '2026-03-04T12:00:00Z', HOY_C) === 'ambar')
+check('arras de 13 meses → rojo', colorDeCustodia('DINERO_DE_TERCEROS', '2025-09-04T12:00:00Z', HOY_C) === 'rojo')
+// Anticipo propio: el plazo lo marca la DIAN, no el negocio.
+check('anticipo de 20 días → gris', colorDeCustodia('ANTICIPO_PROPIO', '2026-09-14T12:00:00Z', HOY_C) === 'gris')
+check('anticipo de 45 días → ámbar (ingreso nuestro sin declarar)',
+  colorDeCustodia('ANTICIPO_PROPIO', '2026-08-20T12:00:00Z', HOY_C) === 'ambar')
+check('anticipo de 4 meses → rojo (cruzó cierres)',
+  colorDeCustodia('ANTICIPO_PROPIO', '2026-06-04T12:00:00Z', HOY_C) === 'rojo')
+// El mismo día, dos colores distintos: 90 días son normales para unas arras y
+// ya son ámbar para un anticipo (el rojo del anticipo es a MÁS de 90).
+check('los dos relojes son DISTINTOS a la misma fecha',
+  colorDeCustodia('DINERO_DE_TERCEROS', '2026-07-06T12:00:00Z', HOY_C) === 'gris' &&
+  colorDeCustodia('ANTICIPO_PROPIO', '2026-07-06T12:00:00Z', HOY_C) === 'ambar')
+check('a los 91 días el anticipo sí es rojo, y las arras siguen grises',
+  colorDeCustodia('ANTICIPO_PROPIO', '2026-07-05T12:00:00Z', HOY_C) === 'rojo' &&
+  colorDeCustodia('DINERO_DE_TERCEROS', '2026-07-05T12:00:00Z', HOY_C) === 'gris')
+check('el color viene con su motivo escrito',
+  /entregarla, devolverla o documentar/.test(motivoDeEspera('DINERO_DE_TERCEROS', '2025-09-04T12:00:00Z', HOY_C) ?? ''))
+check('…y el del anticipo habla de declarar',
+  /sin declarar/.test(motivoDeEspera('ANTICIPO_PROPIO', '2026-06-04T12:00:00Z', HOY_C) ?? ''))
+check('en gris no hay motivo (nada que hacer)', motivoDeEspera('DINERO_DE_TERCEROS', '2026-10-01T12:00:00Z', HOY_C) === null)
+check('sin fecha → gris y sin motivo, nunca lanza',
+  colorDeCustodia('ANTICIPO_PROPIO', null, HOY_C) === 'gris' && motivoDeEspera('ANTICIPO_PROPIO', null, HOY_C) === null)
+check('los días se cuentan enteros', diasEnCustodia('2026-09-04T12:00:00Z', HOY_C) === 30)
 
 console.log('\n══ 12. EL COLOR DE UNA ESPERA ESCALA SOLO ══')
 // Gris no es permanente: lo que esperamos de un tercero pasa a ser asunto

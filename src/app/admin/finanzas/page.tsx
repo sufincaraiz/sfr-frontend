@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { AlertTriangle, Clock, HandCoins, ListChecks, Receipt, SlidersHorizontal, TrendingUp } from 'lucide-react';
+import { AlertTriangle, Clock, HandCoins, Landmark, ListChecks, Receipt, SlidersHorizontal, TrendingUp } from 'lucide-react';
 import { requireSession } from '@/lib/auth';
+import { resumenDeCustodia } from '@/lib/finanzas/custodia';
 import { roleCanAccessAdminPath } from '@/lib/permissions';
 import { faltantesEmpresa } from '@/lib/finanzas/empresa';
 import { resumenDelMes } from '@/lib/finanzas/egresos';
@@ -15,7 +16,7 @@ import { resumenDelMes } from '@/lib/finanzas/egresos';
 // esta pantalla fuera de cliente, `faltantesEmpresa()` vería siempre todo
 // vacío y el aviso de «datos pendientes» no desaparecería nunca.
 
-const PROXIMOS = ['Custodia de dineros de terceros', 'Reportes de retenciones, IVA e ICA (esperan los parámetros del año)'];
+const PROXIMOS = ['Reportes de retenciones, IVA e ICA (esperan los parámetros del año)'];
 const C = { navy: '#0D2D5E', blue: '#1B56A1', line: '#E2E8F0', muted: '#64748B', warn: '#B45309', bad: '#B91C1C' };
 const dinero = (v: string) => `$ ${Number(v).toLocaleString('es-CO')}`;
 // Aquí había un `text-transform: capitalize` que ponía mayúscula a CADA
@@ -35,7 +36,7 @@ export default async function FinanzasPage() {
 
   const faltan = faltantesEmpresa();
   const verParametros = roleCanAccessAdminPath(sesion.role, '/admin/finanzas/parametros');
-  const r = await resumenDelMes();
+  const [r, cust] = await Promise.all([resumenDelMes(), resumenDeCustodia()]);
 
   const tarjeta: React.CSSProperties = { background: '#fff', border: `1px solid ${C.line}`, borderRadius: 14, padding: '1.1rem 1.25rem', textDecoration: 'none', display: 'block' };
 
@@ -158,6 +159,31 @@ export default async function FinanzasPage() {
             <Receipt size={18} style={{ color: C.blue }} /> Gastos
           </div>
           <div style={{ color: C.muted, fontSize: '0.84rem', marginTop: 4 }}>Listado con filtros por naturaleza y categoría.</div>
+        </Link>
+
+        <Link href="/admin/finanzas/custodia" style={tarjeta}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.navy, fontWeight: 800 }}>
+            <Landmark size={18} style={{ color: C.blue }} /> Custodia
+          </div>
+          {/* Desglosado por naturaleza: las arras se entregan y el anticipo se
+              causa. Un solo total esconderia ingreso sin declarar detrás de
+              plata ajena. El color lo decide el más viejo, y escala solo. */}
+          {cust.ajeno.cantidad + cust.propio.cantidad === 0 ? (
+            <div style={{ color: C.muted, fontSize: '0.84rem', marginTop: 4 }}>Arras y anticipos que no son ingreso.</div>
+          ) : (
+            <div style={{ fontSize: '0.84rem', marginTop: 4 }}>
+              {cust.ajeno.cantidad > 0 && (
+                <div style={{ color: cust.ajeno.color === 'rojo' ? C.bad : cust.ajeno.color === 'ambar' ? C.warn : C.muted, fontWeight: cust.ajeno.color === 'gris' ? 400 : 700 }}>
+                  {dinero(cust.ajeno.total)} del vendedor
+                </div>
+              )}
+              {cust.propio.cantidad > 0 && (
+                <div style={{ color: cust.propio.color === 'rojo' ? C.bad : cust.propio.color === 'ambar' ? C.warn : C.muted, fontWeight: cust.propio.color === 'gris' ? 400 : 700 }}>
+                  {dinero(cust.propio.total)} en anticipos sin causar
+                </div>
+              )}
+            </div>
+          )}
         </Link>
 
         {verParametros && (
