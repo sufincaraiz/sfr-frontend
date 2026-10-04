@@ -1,89 +1,41 @@
-# Datos que necesitamos del contador — parámetros fiscales del año
+# Datos que necesitamos del contador — lista definitiva
 
 **Su Finca Raíz** · Matrícula mercantil **199483** · La Vega, Cundinamarca
+Inmobiliaria de corretaje · hoy **NO** responsable de IVA
 
-> Versión rellenable en pantalla (se envía por WhatsApp y se importa sin reteclear):
-> **https://www.sufincaraiz.com/interno/datos-contador** — documento interno, fuera de buscadores.
+> **Para imprimir y llevar a la reunión (una sola hoja):**
+> **https://www.sufincaraiz.com/interno/datos-contador/hoja**
+>
+> **Para diligenciar en pantalla y enviar por WhatsApp** (con las explicaciones
+> completas; el sistema lo importa sin reteclear):
+> **https://www.sufincaraiz.com/interno/datos-contador**
+>
+> Los dos son documentos internos, fuera de buscadores.
 
-Año fiscal: **__________**   ·   Diligenciado por: ______________________   ·   Fecha: ____________
-
----
-
-## Contexto del negocio (para que las tarifas sean las correctas)
-
-Su Finca Raíz es una **inmobiliaria de corretaje**. **No** administra arriendos
-ni maneja dinero de terceros de forma recurrente, así que **no hay cánones**.
-
-Los ingresos son:
-
-- Comisiones por venta de inmuebles
-- Acompañamiento en estudio de títulos
-- Análisis comercial de valor
-- Fotografía con dron y fotogrametría
-- Gestión de proyectos y consorcio de construcción
-
-Ocasionalmente se reciben **arras o anticipos**, que el sistema trata como
-**pasivo** (dinero de terceros), no como ingreso, hasta que se causan.
+Año fiscal: **__________**  ·  Diligenciado por: ______________________  ·  Fecha: ____________
 
 ---
 
-## 1. Valor del UVT del año
+## ⚠ Qué bloquea qué
 
-> Sin este dato el sistema **no calcula nada**: de él dependen todas las bases
-> mínimas de retención.
+| Dato | Qué pasa mientras falte |
+|---|---|
+| **1. CIIU por servicio** | **No se calcula el ICA de NINGÚN ingreso ya registrado.** El sistema se detiene en vez de usar la tarifa de otra actividad |
+| 2. UVT · 3. IVA · 4. Retenciones | No se puede ACTIVAR el año: no hay retención sugerida con la que contrastar lo que nos retienen. Los movimientos sí se registran |
+| 5. ICA por municipio | Se pide cuando aparezca un ingreso en ese municipio |
+| 6. Datos del tercero | Se piden una vez por cliente o proveedor, no son del año |
 
-**UVT __________ = $ ______________ COP**
-
-*Fuente: resolución anual de la DIAN.*
-
----
-
-## 2. ¿Su Finca Raíz es responsable de IVA este año?
-
-> Hoy entendemos que **NO**. Necesitamos su confirmación **año por año**, porque
-> depende de los ingresos y puede cambiar si se superan los topes del art. 437
-> del Estatuto Tributario. El sistema **no asume** la respuesta: si no está
-> marcada, se detiene.
-
-☐ **NO** es responsable de IVA
-☐ **SÍ** es responsable de IVA → entonces complete:
-
-- Tarifa general de IVA: **________ %**
-- ¿Es agente de retención de IVA? ☐ No ☐ Sí → tarifa de reteIVA: **________ %**
-
-> Si la respuesta es NO: no se factura IVA, el IVA que pagamos a proveedores es
-> **costo** (no descontable) y no hay reteIVA en ninguna dirección.
+Nada de esto impide registrar ingresos ni gastos: el módulo funciona y los
+reportes tributarios esperan.
 
 ---
 
-## 3. Retención en la fuente — tarifas y bases mínimas
-
-> Una fila por cada concepto que apliquemos. La tarifa cambia según el tercero
-> **declare o no declare renta**, y por eso pedimos las dos.
-> **La base mínima en UVT es clave**: si la base no la supera, no se retiene.
-> Escriba **0** si el concepto no tiene base mínima.
-
-| Concepto | Tarifa si **declara** renta | Tarifa si **NO declara** | Base mínima (UVT) |
-|---|---|---|---|
-| Comisiones | ______ % | ______ % | ______ |
-| Honorarios | ______ % | ______ % | ______ |
-| Servicios | ______ % | ______ % | ______ |
-| Arrendamiento | ______ % | ______ % | ______ |
-| Compras | ______ % | ______ % | ______ |
-| ____________________ | ______ % | ______ % | ______ |
-| ____________________ | ______ % | ______ % | ______ |
-
-*Añada las filas que hagan falta. Si un concepto no lo usamos, déjelo vacío.*
-
----
-
-## 4. CIIU de cada línea de servicio
+## 1. CIIU de cada línea de servicio — lo más urgente
 
 > El RUT registra cuatro actividades: **6820** (principal), **5911**, **7010** y
-> **6201**. La tarifa de ICA se fija por actividad, así que necesitamos saber
-> bajo cuál se factura cada servicio. Lo de la derecha es **nuestra suposición,
-> sin confirmar**: corríjala si no es la correcta. Un servicio sin CIIU no
-> calcula ICA: el sistema se detiene en lugar de usar la tarifa general.
+> **6201**. La tarifa de ICA se fija por actividad, así que cada ingreso tiene
+> que saber bajo cuál se factura. La última columna es **nuestra suposición, sin
+> confirmar**.
 
 | Línea de servicio | CIIU que aplica | (suponemos) |
 |---|---|---|
@@ -95,13 +47,47 @@ Ocasionalmente se reciben **arras o anticipos**, que el sistema trata como
 
 ---
 
+## 2. Valor del UVT del año
+
+**1 UVT = $ ______________ COP**  ·  *Fuente: resolución anual de la DIAN.*
+
+---
+
+## 3. ¿Responsable de IVA este año?
+
+> Se confirma **año por año**: depende de los topes del art. 437 del Estatuto
+> Tributario. El sistema no asume la respuesta; si no está marcada, se detiene.
+
+☐ **NO** es responsable de IVA
+☐ **SÍ** → tarifa de IVA **______ %** · ¿agente de reteIVA? ☐ No ☐ Sí → **______ %**
+
+> Si es NO: no se factura IVA, el IVA pagado a proveedores es **costo** (no
+> descontable) y no hay reteIVA en ninguna dirección.
+
+---
+
+## 4. Retención en la fuente — tarifas y bases mínimas
+
+> Dos tarifas por concepto, según el tercero **declare o no declare renta**.
+> **La base mínima en UVT es clave**: si la base no la supera, no se retiene.
+> Escriba **0** si el concepto no tiene base mínima.
+
+| Concepto | Declara renta | NO declara | Base mínima (UVT) |
+|---|---|---|---|
+| Comisiones | ______ % | ______ % | ______ |
+| Honorarios | ______ % | ______ % | ______ |
+| Servicios | ______ % | ______ % | ______ |
+| Arrendamiento | ______ % | ______ % | ______ |
+| Compras | ______ % | ______ % | ______ |
+| ____________________ | ______ % | ______ % | ______ |
+
+---
+
 ## 5. ICA — tarifa por municipio y actividad
 
-> Se declara donde se **genera** el ingreso. La Vega es el habitual, pero
-> pedimos los demás por si hay operaciones fuera.
-
-> Si en un municipio la tarifa es la misma para todas las actividades, deje el
-> CIIU **en blanco**: eso significa «tarifa general del municipio».
+> Se declara donde se **genera** el ingreso. Si en un municipio la tarifa es la
+> misma para todas las actividades, deje el CIIU **en blanco**: eso significa
+> «tarifa general del municipio».
 
 | Municipio | CIIU | Tarifa (por mil) |
 |---|---|---|
@@ -109,25 +95,18 @@ Ocasionalmente se reciben **arras o anticipos**, que el sistema trata como
 | ____________________ | ________ | ______ ‰ |
 | ____________________ | ________ | ______ ‰ |
 
-*Estas no bloquean el arranque del año: el sistema las pide cuando aparece un
-ingreso en ese municipio.*
-
 ---
 
-## 6. Datos del tercero (se piden UNA vez por cliente o proveedor)
+## 6. Datos del tercero (una vez por cliente o proveedor)
 
-> No son del año: son de cada persona o empresa con la que facturamos. Los
-> tomamos de **su RUT**, porque determinan qué retención aplica. **No los
-> deducimos nosotros.**
-
-Por cada tercero necesitamos:
+> Salen de **su RUT** y determinan qué retención aplica. **No los deducimos
+> nosotros.**
 
 - Tipo y número de documento (+ dígito de verificación si es NIT)
 - Nombre o razón social · persona natural o jurídica
-- ☐ Responsable de IVA
-- ☐ Autorretenedor *(si lo es, no se le practica retención)*
+- ☐ Responsable de IVA ☐ Autorretenedor *(si lo es, no se le practica retención)*
 - ☐ Gran contribuyente
-- ☐ **Declarante de renta** *(define cuál de las dos tarifas del punto 3 aplica)*
+- ☐ **Declarante de renta** *(define cuál de las dos tarifas del punto 4 aplica)*
 
 ---
 
@@ -135,15 +114,15 @@ Por cada tercero necesitamos:
 
 - **Facturación electrónica con CUFE:** el sistema solo **registra** el número y
   el CUFE que emita el proveedor tecnológico autorizado. No emite facturas.
-- **Nómina electrónica, información exógena y conciliación bancaria:** quedan
-  fuera de esta fase.
+- **Nómina electrónica, información exógena y conciliación bancaria:** fuera de
+  esta fase.
 
----
+## Cómo entregará los datos, y cómo los consultará después
 
-## Nota sobre el acceso
+Puede diligenciar el formulario en pantalla y enviarlo por WhatsApp: el sistema
+lo importa sin reteclear, y **todo lo importado entra marcado «sin revisar»**
+hasta que el titular lo confirme valor por valor.
 
-Cuando los reportes estén listos le enviaremos un **enlace de solo lectura con
-PIN**, limitado a un periodo concreto y con fecha de vencimiento. No necesita
-usuario ni contraseña, y podrá descargar **Excel** (una hoja por reporte) y un
-PDF de resumen. Todo lleva razón social, NIT, matrícula 199483, periodo cubierto
-y fecha de generación.
+Cuando los reportes estén listos recibirá un **enlace de solo lectura con PIN**,
+limitado a un periodo concreto y con fecha de vencimiento, con descarga en Excel
+y PDF. No necesita usuario ni contraseña.
