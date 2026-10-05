@@ -138,7 +138,9 @@ export default function EgresosPage() {
             return (
               <div key={f.id} style={{ background: '#fff', border: `1px solid ${C.line}`, borderRadius: 12, padding: '0.85rem 1rem', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                 <div style={{ minWidth: 46, color: C.muted, fontSize: '0.78rem', fontWeight: 700, paddingTop: 2 }}>{dia(f.fecha)}</div>
-                <div style={{ flex: 1, minWidth: 0 }}>
+                {/* La fila entera abre el detalle, donde se completa y se
+                    corrige lo capturado con prisa. */}
+                <Link href={`/admin/finanzas/egresos/${f.id}`} style={{ flex: 1, minWidth: 0, textDecoration: 'none' }}>
                   <div style={{ color: C.navy, fontWeight: 700 }}>{f.descripcion}</div>
                   {/* Sin descripción propia, la primera línea YA es la
                       categoría: repetirla debajo no añade nada. */}
@@ -175,7 +177,7 @@ export default function EgresosPage() {
                         </button>
                       )}
                   </div>
-                </div>
+                </Link>
                 <div style={{ color: C.navy, fontWeight: 800, whiteSpace: 'nowrap' }}>{dinero(f.valor)}</div>
               </div>
             );

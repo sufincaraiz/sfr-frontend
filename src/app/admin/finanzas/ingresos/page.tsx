@@ -83,7 +83,7 @@ export default function IngresosPage() {
               return (
                 <div key={f.id} style={{ background: '#fff', border: `1px solid ${C.line}`, borderRadius: 12, padding: '0.85rem 1rem', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
                   <div style={{ minWidth: 46, color: C.muted, fontSize: '0.78rem', fontWeight: 700, paddingTop: 2 }}>{dia(f.fecha)}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
+                  <Link href={`/admin/finanzas/ingresos/${f.id}`} style={{ flex: 1, minWidth: 0, textDecoration: 'none' }}>
                     <div style={{ color: C.navy, fontWeight: 700 }}>{f.tipo}</div>
                     <div style={{ color: C.muted, fontSize: '0.8rem' }}>
                       {[f.cliente, f.propiedad, f.municipio_ica ? `ICA en ${f.municipio_ica}` : null, f.factura ? `factura ${f.factura}` : null]
@@ -140,7 +140,7 @@ export default function IngresosPage() {
                     </div>
 
                     {f.nota && <div style={{ marginTop: 6, fontSize: '0.75rem', color: C.muted, fontStyle: 'italic' }}>{f.nota}</div>}
-                  </div>
+                  </Link>
                   <div style={{ textAlign: 'right' }}>
                     <div style={{ color: C.navy, fontWeight: 800, whiteSpace: 'nowrap' }}>{dinero(f.valor)}</div>
                     {Number(f.iva) > 0 && <div style={{ color: C.muted, fontSize: '0.72rem' }}>+ IVA {dinero(f.iva)}</div>}

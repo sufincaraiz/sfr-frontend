@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { AlertTriangle, Clock, HandCoins, Landmark, ListChecks, Receipt, SlidersHorizontal, TrendingUp } from 'lucide-react';
+import { AlertTriangle, BarChart3, Clock, HandCoins, Landmark, ListChecks, Receipt, SlidersHorizontal, TrendingUp } from 'lucide-react';
 import { requireSession } from '@/lib/auth';
 import { resumenDeCustodia } from '@/lib/finanzas/custodia';
 import { roleCanAccessAdminPath } from '@/lib/permissions';
@@ -159,6 +159,15 @@ export default async function FinanzasPage() {
             <Receipt size={18} style={{ color: C.blue }} /> Gastos
           </div>
           <div style={{ color: C.muted, fontSize: '0.84rem', marginTop: 4 }}>Listado con filtros por naturaleza y categoría.</div>
+        </Link>
+
+        <Link href="/admin/finanzas/reportes" style={tarjeta}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: C.navy, fontWeight: 800 }}>
+            <BarChart3 size={18} style={{ color: C.blue }} /> Reportes
+          </div>
+          <div style={{ color: C.muted, fontSize: '0.84rem', marginTop: 4 }}>
+            Resultado del periodo, ingresos por línea de servicio y gastos por categoría.
+          </div>
         </Link>
 
         <Link href="/admin/finanzas/custodia" style={tarjeta}>
