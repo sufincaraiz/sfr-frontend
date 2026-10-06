@@ -27,7 +27,7 @@ import { Prisma } from '@prisma/client'
 import { evaluarTramos, pesos, redondear, repartir, tasa } from './tramos.ts'
 import { calcularBase, type Base } from './bases.ts'
 import { calcularRetencion } from './retencion.ts'
-import { exigirAnioPublicable } from './guardas.ts'
+import { exigirAnioPublicable, exigirFechaIso, exigirVigencia } from './guardas.ts'
 import { liquidarIva, type AporteIva } from './iva.ts'
 import { codigoTrazabilidad } from './trazabilidad.ts'
 
@@ -158,6 +158,17 @@ export function liquidar(
   exigirAnioPublicable(anio, opciones.fuentes)
   exigirClavesConocidas(anio, entrada)
 
+  // ── La fecha del acto decide QUÉ NORMAS aplican ──────────────────────────
+  // El año es una etiqueta: ninguna de sus resoluciones empieza el 1 de enero.
+  // Por defecto hoy, y la liquidación la devuelve para que el PDF la imprima.
+  const hoy = opciones.fecha ?? new Date()
+  const fechaActo = entrada.fecha_acto === null || entrada.fecha_acto === undefined || entrada.fecha_acto === ''
+    ? `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+    : exigirFechaIso(entrada.fecha_acto, 'la fecha del acto')
+  // Los respaldos del AÑO (UVT, UVB, tarifa de IVA, su redondeo y las cinco
+  // bases) entran siempre: no hay liquidación que no los use.
+  exigirVigencia(anio.respaldos ?? [], fechaActo)
+
   const tarifaIva = tasa(anio.tarifa_iva, 'la tarifa de IVA')
   const uvt = anio.uvt === null || anio.uvt === undefined ? null : Number(anio.uvt)
   const lineas: Linea[] = []
@@ -166,6 +177,9 @@ export function liquidar(
   let tarifaRegistral: number | null = null
 
   for (const c of participantes(anio, entrada, modo)) {
+    // Solo los conceptos que PARTICIPAN: una tarifa opcional y apagada cuya
+    // norma empieza más tarde no tiene por qué detener esta liquidación.
+    exigirVigencia(c.respaldos ?? [], fechaActo)
     // ── Base ────────────────────────────────────────────────────────────────
     let base: Linea['base'] = null
     if (c.base === 'TARIFA_REGISTRAL') {
@@ -230,6 +244,10 @@ export function liquidar(
         break
       }
       case 'REGLAS': {
+        // Las reglas activas se evalúan todas, así que todas tienen que regir.
+        for (const regla of anio.reglas_retencion) {
+          if (regla.activa) exigirVigencia(regla.respaldos ?? [], fechaActo)
+        }
         const r = calcularRetencion(
           anio.reglas_retencion,
           base!.valor,
@@ -389,6 +407,7 @@ export function liquidar(
   }
 
   return {
+    fecha_acto: fechaActo,
     lineas,
     grupos,
     iva,

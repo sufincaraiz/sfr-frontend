@@ -21,6 +21,7 @@ import { calcularRetencion, verificarReglas, exigirValorDeCondicion, CAMPOS_COND
 import {
   esFuenteOficial, exigirRespaldoOficial, verificarEsquema, verificarConcepto,
   pendientesParaActivar, resumenDePendientes, exigirAnioPublicable, divergenciaUvt, copiarAnio,
+  esFechaIso, cubreLaFecha, exigirVigencia,
 } from '../src/lib/notariales/guardas.ts'
 import { CONCEPTOS_V1, FUENTES_OFICIALES, camposExigidos } from '../src/lib/notariales/catalogo.ts'
 import { liquidar } from '../src/lib/notariales/calculo.ts'
@@ -50,8 +51,11 @@ const PESO = { unidad: 1, modo: 'CERCANO' }
 const cerca = (a, b) => Math.abs(a - b) < 0.005
 
 const RESP = (campo, url = 'https://www.supernotariado.gov.co/resolucion.pdf') => ({
-  campo, norma: 'Resolución INVENTADA para la prueba', articulo: 'art. 1',
-  url, fecha_norma: '2026-01-30', verificado_en: '2026-10-06', verificado_por: 'prueba',
+  campo, norma: 'Resolución RES-2026-000964-6 (cifras INVENTADAS para la prueba)',
+  articulo: 'art. 50', url, fecha_norma: '2026-01-20',
+  // Art. 56: rige desde el 1 de febrero de 2026. No desde el 1 de enero.
+  vigencia_desde: '2026-02-01', vigencia_hasta: null, articulo_vigencia: 'art. 56',
+  verificado_en: '2026-10-06', verificado_por: 'prueba',
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -71,6 +75,15 @@ check('RECHAZA un dominio que solo CONTIENE el oficial',
 lanza('un respaldo sin quién verificó',
   () => exigirRespaldoOficial({ ...RESP('valor'), verificado_por: '' }, FUENTES_OFICIALES),
   'RespaldoNoOficial')
+lanza('un respaldo que no dice desde cuándo rige la norma',
+  () => exigirRespaldoOficial({ ...RESP('valor'), vigencia_desde: undefined }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'desde cuándo rige')
+lanza('un respaldo con fecha de vigencia ilegible',
+  () => exigirRespaldoOficial({ ...RESP('valor'), vigencia_desde: '1 de febrero' }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'desde cuándo rige')
+lanza('un respaldo derogado antes de empezar a regir',
+  () => exigirRespaldoOficial({ ...RESP('valor'), vigencia_hasta: '2026-01-01' }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'antes de empezar a regir')
 lanza('un respaldo con URL comercial',
   () => exigirRespaldoOficial(RESP('valor', 'https://gastosnotariales.co/t'), FUENTES_OFICIALES),
   'RespaldoNoOficial')
@@ -1013,6 +1026,135 @@ lanza('y si la simulación manda «juridica», tampoco falla en silencio',
     GENERAL,
   ], 100_000_000, { tipo_persona_vendedor: 'juridica' }),
   'ErrorEsquemaNotarial', 'solo admite')
+
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\n══ VIGENCIA: EL AÑO ES UNA ETIQUETA, NO UN RANGO ══')
+// ─────────────────────────────────────────────────────────────────────────────
+// RES-2026-000964-6, art. 56: rige desde el 1 de febrero de 2026.
+// RES-2026-001726-6, art. 29: rige desde el 29 de enero de 2026.
+// Las dos son «de 2026» y ni empiezan el mismo día ni empiezan en enero.
+
+check('las fechas se leen como texto ISO', esFechaIso('2026-02-01'))
+check('…y el 31 de febrero no existe aunque cumpla el formato', !esFechaIso('2026-02-31'))
+check('…ni «1 de febrero»', !esFechaIso('1 de febrero'))
+check('…ni un mes 13', !esFechaIso('2026-13-01'))
+check('el orden alfabético ES el cronológico: 2026-01-15 < 2026-02-01',
+  '2026-01-15' < '2026-02-01')
+
+const NOTARIAL = RESP('uvt')
+check('la norma cubre el día en que empieza a regir', cubreLaFecha(NOTARIAL, '2026-02-01'))
+check('…y no el día anterior', !cubreLaFecha(NOTARIAL, '2026-01-31'))
+check('…ni un acto de mediados de enero', !cubreLaFecha(NOTARIAL, '2026-01-15'))
+// La anterior: Resolución 585 de 2025, derogada por el art. 56 desde el 1 de
+// febrero de 2026. Es la que SÍ cubre un acto del 15 de enero de 2026.
+const ANTERIOR = {
+  ...NOTARIAL, norma: 'Resolución 585 de 2025',
+  vigencia_desde: '2025-02-01', vigencia_hasta: '2026-01-31',
+}
+check('la resolución de 2025 SÍ cubre un acto del 15 de enero de 2026',
+  cubreLaFecha(ANTERIOR, '2026-01-15'))
+check('…y el día de su derogatoria todavía', cubreLaFecha(ANTERIOR, '2026-01-31'))
+check('…y ya no el 1 de febrero, cuando entra la nueva',
+  !cubreLaFecha(ANTERIOR, '2026-02-01'))
+check('las dos normas no se solapan ni dejan hueco en la frontera',
+  cubreLaFecha(ANTERIOR, '2026-01-31') && !cubreLaFecha(NOTARIAL, '2026-01-31') &&
+  !cubreLaFecha(ANTERIOR, '2026-02-01') && cubreLaFecha(NOTARIAL, '2026-02-01'))
+
+// EL CASO QUE PEDISTE: una escritura del 15 de enero de 2026 contra el año 2026.
+let fuera = null
+try {
+  liquidar(ANIO, { ...ENTRADA, fecha_acto: '2026-01-15' }, { fuentes: FUENTES_OFICIALES })
+} catch (e) { fuera = e }
+check('un acto del 15 de enero de 2026 NO se liquida con las tarifas de 2026',
+  fuera?.name === 'FueraDeVigencia', `(lanzó ${fuera?.name})`)
+check('…y el aviso nombra el artículo de la vigencia (art. 56)',
+  /art\. 56/.test(fuera?.message ?? ''))
+check('…y dice desde cuándo rige',
+  /rige desde el 2026-02-01/.test(fuera?.message ?? ''))
+check('…y dice qué hacer: cargar el año que SÍ regía',
+  /Carga el año tarifario que estaba vigente/.test(fuera?.message ?? ''))
+check('…y trae las normas en el error, no solo en el texto',
+  Array.isArray(fuera?.normas) && fuera.normas.length > 0 &&
+  fuera.normas.every(n => n.vigencia_desde === '2026-02-01'))
+check('…nombrándolas TODAS, no solo la primera', fuera.normas.length > 1,
+  `(${fuera?.normas?.length} normas)`)
+
+check('el 1 de febrero de 2026 sí liquida',
+  liquidar(ANIO, { ...ENTRADA, fecha_acto: '2026-02-01' }, { fuentes: FUENTES_OFICIALES })
+    .totales.total === 3_528_822)
+check('el 31 de enero de 2026 no',
+  (() => { try {
+    liquidar(ANIO, { ...ENTRADA, fecha_acto: '2026-01-31' }, { fuentes: FUENTES_OFICIALES })
+    return false
+  } catch (e) { return e.name === 'FueraDeVigencia' } })())
+
+// LAS DOS RESOLUCIONES NO EMPIEZAN EL MISMO DÍA: un acto del 30 de enero está
+// cubierto por la registral (29 de enero) y no por la notarial (1 de febrero).
+const ANIO_DOS_NORMAS = {
+  ...ANIO,
+  respaldos: ANIO.respaldos.map(r => r.campo === 'base_orip' || r.campo === 'base_registro'
+    ? { ...r, norma: 'Resolución RES-2026-001726-6', vigencia_desde: '2026-01-29', articulo_vigencia: 'art. 29' }
+    : r),
+}
+let mixto = null
+try {
+  liquidar(ANIO_DOS_NORMAS, { ...ENTRADA, fecha_acto: '2026-01-30' }, { fuentes: FUENTES_OFICIALES })
+} catch (e) { mixto = e }
+check('un acto del 30 de enero se detiene por la notarial, no por la registral',
+  mixto?.name === 'FueraDeVigencia' &&
+  mixto.normas.every(n => n.vigencia_desde === '2026-02-01'))
+check('…y la registral NO aparece entre las que no cubren esa fecha',
+  !mixto.normas.some(n => /001726/.test(n.norma)))
+
+// La fecha del acto sale en la liquidación, para que el PDF la imprima.
+check('sin fecha del acto se usa hoy, y se devuelve',
+  liquidar(ANIO, ENTRADA, { fuentes: FUENTES_OFICIALES, fecha: new Date(2026, 9, 6) }).fecha_acto === '2026-10-06')
+check('con fecha del acto, se devuelve esa',
+  liquidar(ANIO, { ...ENTRADA, fecha_acto: '2026-03-15' }, { fuentes: FUENTES_OFICIALES }).fecha_acto === '2026-03-15')
+lanza('una fecha del acto ilegible',
+  () => liquidar(ANIO, { ...ENTRADA, fecha_acto: '15/01/2026' }, { fuentes: FUENTES_OFICIALES }),
+  'ErrorEsquemaNotarial', 'la fecha del acto')
+lanza('una fecha del acto que no existe',
+  () => liquidar(ANIO, { ...ENTRADA, fecha_acto: '2026-02-30' }, { fuentes: FUENTES_OFICIALES }),
+  'ErrorEsquemaNotarial', 'la fecha del acto')
+
+// Un concepto OPCIONAL y apagado cuya norma empieza más tarde no estorba.
+const ANIO_OPCIONAL_FUTURO = {
+  ...ANIO,
+  conceptos: ANIO.conceptos.map(c => c.clave !== 'firma_digital' ? c : {
+    ...c, respaldos: (c.respaldos ?? []).map(r => ({ ...r, vigencia_desde: '2027-01-01' })),
+  }),
+}
+check('una tarifa apagada cuya norma rige el año que viene no detiene la liquidación',
+  liquidar(ANIO_OPCIONAL_FUTURO, ENTRADA, { fuentes: FUENTES_OFICIALES }).totales.total === 3_528_822)
+check('…pero encendida, sí la detiene',
+  (() => { try {
+    liquidar(ANIO_OPCIONAL_FUTURO, { ...ENTRADA, opcionales: [...ENTRADA.opcionales, 'firma_digital'],
+      cantidades: { ...ENTRADA.cantidades, firma_digital: 1 } }, { fuentes: FUENTES_OFICIALES })
+    return false
+  } catch (e) { return e.name === 'FueraDeVigencia' } })())
+
+// AISLAR LA COMPROBACIÓN DEL AÑO: si solo el UVT queda fuera de vigencia y
+// todas las tarifas están en regla, lo único que puede detener la liquidación
+// es la comprobación de los respaldos DEL AÑO.
+const ANIO_UVT_FUTURO = {
+  ...ANIO,
+  respaldos: ANIO.respaldos.map(r => r.campo === 'uvt' ? { ...r, vigencia_desde: '2026-03-01' } : r),
+}
+check('el año de referencia sí liquida un acto del 15 de febrero',
+  liquidar(ANIO, { ...ENTRADA, fecha_acto: '2026-02-15' }, { fuentes: FUENTES_OFICIALES })
+    .totales.total === 3_528_822)
+let soloAnio = null
+try {
+  liquidar(ANIO_UVT_FUTURO, { ...ENTRADA, fecha_acto: '2026-02-15' }, { fuentes: FUENTES_OFICIALES })
+} catch (e) { soloAnio = e }
+check('…y con el UVT rigiendo desde marzo, se detiene',
+  soloAnio?.name === 'FueraDeVigencia', `(lanzó ${soloAnio?.name})`)
+check('…nombrando el UVT y solo el UVT',
+  soloAnio?.normas?.length === 1 && soloAnio.normas[0].campo === 'uvt')
+
+check('exigirVigencia con todo en regla no lanza',
+  (() => { exigirVigencia([NOTARIAL], '2026-05-05'); return true })())
 
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\n══ COPIAR UN AÑO NO COPIA LOS RESPALDOS ══')

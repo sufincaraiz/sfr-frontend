@@ -16,13 +16,64 @@
  */
 
 import {
-  AnioNoPublicable, ErrorEsquemaNotarial, RespaldoNoOficial,
+  AnioNoPublicable, ErrorEsquemaNotarial, FueraDeVigencia, RespaldoNoOficial,
   type AnioNotarial, type Concepto, type Fuente, type Respaldo,
 } from './tipos.ts'
 import { camposExigidos, DUENO_DEL_CONCEPTO, DUENOS, type Dueno } from './catalogo.ts'
 import { verificarTramos } from './tramos.ts'
 import { verificarReglas } from './retencion.ts'
 import { BASES } from './bases.ts'
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Fechas
+//
+// Van como texto «AAAA-MM-DD» y se comparan como texto. Con `new Date()` de por
+// medio, «2026-01-15» se interpreta como medianoche UTC y en nuestro huso puede
+// retroceder un día: un acto del 1 de febrero pasaría a ser del 31 de enero, y
+// justo esa diferencia de un día es la que decide qué resolución aplica. En
+// formato ISO el orden alfabético ES el orden cronológico, así que no hace falta
+// convertir nada.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export function esFechaIso(v: unknown): boolean {
+  const s = String(v ?? '')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false
+  const [a, m, d] = s.split('-').map(Number)
+  if (m! < 1 || m! > 12 || d! < 1 || d! > 31) return false
+  // Que el día exista de verdad: el 31 de febrero cumple el formato.
+  const f = new Date(Date.UTC(a!, m! - 1, d!))
+  return f.getUTCFullYear() === a && f.getUTCMonth() === m! - 1 && f.getUTCDate() === d
+}
+
+export function exigirFechaIso(v: unknown, campo: string): string {
+  if (!esFechaIso(v)) {
+    throw new ErrorEsquemaNotarial(`${campo} tiene que ser una fecha AAAA-MM-DD válida, y llegó «${String(v)}».`, campo)
+  }
+  return String(v)
+}
+
+/** ¿Esta norma regía el día del acto? */
+export function cubreLaFecha(r: Respaldo, fecha: string): boolean {
+  if (fecha < r.vigencia_desde) return false
+  if (r.vigencia_hasta && fecha > r.vigencia_hasta) return false
+  return true
+}
+
+/**
+ * Detiene la liquidación si alguna norma en juego no regía el día del acto, y
+ * las nombra TODAS: ver solo la primera haría creer que falta una sola cosa.
+ */
+export function exigirVigencia(respaldos: Respaldo[], fecha: string): void {
+  const fuera = respaldos.filter(r => !cubreLaFecha(r, fecha))
+  if (!fuera.length) return
+  throw new FueraDeVigencia(fecha, fuera.map(r => ({
+    campo: r.campo,
+    norma: r.norma,
+    articulo_vigencia: r.articulo_vigencia ?? null,
+    vigencia_desde: r.vigencia_desde,
+    vigencia_hasta: r.vigencia_hasta ?? null,
+  })))
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fuentes
@@ -53,6 +104,23 @@ export function exigirRespaldoOficial(r: Respaldo, fuentes: Fuente[]): void {
   for (const campo of ['norma', 'url', 'verificado_en', 'verificado_por'] as const) {
     if (!String(r[campo] ?? '').trim()) {
       throw new RespaldoNoOficial(`El respaldo de «${r.campo}» no tiene ${campo}.`)
+    }
+  }
+  // Una norma sin fecha de vigencia no sirve para decidir si aplica a un acto.
+  if (!esFechaIso(r.vigencia_desde)) {
+    throw new RespaldoNoOficial(
+      `El respaldo de «${r.campo}» no dice desde cuándo rige la norma. ` +
+      'Sin eso no se puede saber si aplica al acto que se está liquidando.',
+    )
+  }
+  if (r.vigencia_hasta !== null && r.vigencia_hasta !== undefined && r.vigencia_hasta !== '') {
+    if (!esFechaIso(r.vigencia_hasta)) {
+      throw new RespaldoNoOficial(`El respaldo de «${r.campo}» tiene una fecha de derogatoria ilegible.`)
+    }
+    if (r.vigencia_hasta < r.vigencia_desde) {
+      throw new RespaldoNoOficial(
+        `El respaldo de «${r.campo}» dice haber sido derogado (${r.vigencia_hasta}) antes de empezar a regir (${r.vigencia_desde}).`,
+      )
     }
   }
   if (!esFuenteOficial(r.url, fuentes)) {

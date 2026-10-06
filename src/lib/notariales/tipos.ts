@@ -153,9 +153,28 @@ export interface Fuente {
 export interface Respaldo {
   campo: string
   norma: string
+  /** El artículo donde está la CIFRA. */
   articulo?: string | null
   url: string
   fecha_norma?: string | null
+  /**
+   * DESDE CUÁNDO RIGE esta norma (AAAA-MM-DD). Obligatorio.
+   *
+   * No es un adorno: la RES-2026-000964-6 rige desde el 1 de febrero de 2026 y
+   * la RES-2026-001726-6 desde el 29 de enero. Una escritura del 15 de enero de
+   * 2026 se liquida con las tarifas de 2025, y las dos resoluciones del «mismo
+   * año» ni siquiera empiezan el mismo día. Sin esta fecha, el motor liquidaría
+   * enero con tarifas que no regían y nadie lo notaría.
+   */
+  vigencia_desde: string
+  /** Hasta cuándo rigió. null = sigue vigente. */
+  vigencia_hasta?: string | null
+  /**
+   * El artículo que establece la VIGENCIA, que no es el de la cifra: la tarifa
+   * está en el art. 50 y la vigencia en el art. 56. Se cita aparte para que el
+   * aviso pueda nombrar el que de verdad explica por qué no se puede liquidar.
+   */
+  articulo_vigencia?: string | null
   verificado_en: string
   verificado_por: string
 }
@@ -256,6 +275,16 @@ export interface Concepto {
 }
 
 export interface AnioNotarial {
+  /**
+   * ⚠ ES UNA ETIQUETA, NO UN RANGO DE FECHAS.
+   *
+   * «2026» agrupa las resoluciones que llamamos «las de 2026», pero ninguna
+   * empieza el 1 de enero: la notarial rige desde el 1 de febrero y la registral
+   * desde el 29 de enero. Qué norma aplica a un acto NO se decide por este
+   * número, se decide por la fecha del acto contra la `vigencia_desde` de cada
+   * respaldo. Tratar este campo como un rango es el error que esta nota existe
+   * para impedir.
+   */
   anio: number
   estado: EstadoAnio
   uvt?: string | number | null
@@ -279,6 +308,12 @@ export interface AnioNotarial {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export interface Entrada {
+  /**
+   * FECHA DEL ACTO (AAAA-MM-DD). Decide qué normas aplican. Si se omite se usa
+   * hoy, y la liquidación la devuelve para que el PDF la imprima: una
+   * liquidación sin fecha del acto no se puede auditar después.
+   */
+  fecha_acto?: string | null
   valor_venta: string | number
   avaluo_catastral?: string | number | null
   /** Autoavalúo declarado por el propietario. Entra en la base del art. 51 a). */
@@ -333,6 +368,8 @@ export interface Linea {
 }
 
 export interface Liquidacion {
+  /** La fecha con la que se escogieron las normas. */
+  fecha_acto: string
   lineas: Linea[]
   grupos: { clave: Grupo; titulo: string; nota: string; total: number; comprador: number; vendedor: number }[]
   /**
@@ -397,6 +434,36 @@ export class ErrorDeEntrada extends Error {
     super(mensaje)
     this.name = 'ErrorDeEntrada'
     this.campo = campo
+  }
+}
+
+/**
+ * La fecha del acto cae fuera de la vigencia de alguna de las normas cargadas.
+ * Es ÁMBAR: no está mal el esquema ni falta un dato del año: falta el año
+ * tarifario que SÍ regía ese día. La acción es cargar esa resolución, no
+ * corregir esta.
+ */
+export class FueraDeVigencia extends Error {
+  fecha: string
+  normas: {
+    campo: string
+    norma: string
+    articulo_vigencia: string | null
+    vigencia_desde: string
+    vigencia_hasta: string | null
+  }[]
+  constructor(fecha: string, normas: FueraDeVigencia['normas']) {
+    const detalle = normas
+      .map(n => `${n.norma}${n.articulo_vigencia ? ` (${n.articulo_vigencia})` : ''} rige desde el ` +
+        `${n.vigencia_desde}${n.vigencia_hasta ? ` hasta el ${n.vigencia_hasta}` : ''}`)
+      .join('; ')
+    super(
+      `No se liquida un acto del ${fecha} con normas que no regían ese día: ${detalle}. ` +
+      'Carga el año tarifario que estaba vigente en esa fecha.',
+    )
+    this.name = 'FueraDeVigencia'
+    this.fecha = fecha
+    this.normas = normas
   }
 }
 
