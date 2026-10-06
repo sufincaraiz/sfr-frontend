@@ -2595,6 +2595,44 @@ comportamiento que nadie había visto ocurrir. La regla de la sección anterior
 —verificar el efecto, no la salida— vale igual para las pruebas: **el nombre
 de una prueba no es prueba de nada; lo es el efecto que deja.**
 
+### La exención muerta: una comparación de cadenas que no avisa
+
+2026-10-06, motor de gastos notariales. El cálculo de la retención recorre una
+lista de reglas y la primera que encaja gana. Las condiciones se comparaban
+así:
+
+    case 'IGUAL': return String(actual) === cond.valor
+
+Si la regla dice `JURIDICA` y la simulación manda `juridica`, **no coincide**.
+Y no coincidir no es un error: el motor pasa a la regla siguiente, encuentra la
+general, aplica el 1 % y devuelve un número perfectamente plausible. La
+exención queda muerta y **nadie se entera nunca**, porque el resultado tiene
+exactamente la forma de un resultado correcto.
+
+Es la misma familia que la guarda del NIT: una afirmación sobre el
+comportamiento —«las excepciones se aplican»— que nadie había visto ocurrir, y
+que además era imposible ver fallar.
+
+La diferencia con un error de cálculo es la que importa: un cálculo mal da una
+cifra que alguien puede cuadrar a mano. Esto da la cifra que daría si la
+excepción no existiera, que es indistinguible de la verdad desde fuera.
+
+**La regla.** Una comparación entre un valor configurado y un dato de entrada
+no puede limitarse a no coincidir. Cualquiera de los dos lados que salga del
+conjunto de valores admitidos tiene que **detener el cálculo**, no desviarlo:
+
+- cada campo declara sus valores (`['NATURAL', 'JURIDICA']`), su tipo y si el
+  formulario lo pregunta;
+- se valida al CARGAR la regla —una regla con `juridica` no se guarda— y
+  también al EJECUTAR, porque el dato de entrada viene de otro sitio;
+- un campo sobre el que el formulario no pregunta no puede sostener una regla
+  activa: añadir la pregunta es código, no una fila.
+
+Corolario, por si vuelve a aparecer en otra forma: **el silencio no es un
+resultado.** Donde una condición no se pueda evaluar, se lanza; donde una regla
+no aplique, se dice cuál aplicó. Un camino que «simplemente no entra» es un
+camino que no se puede auditar.
+
 ### La prueba que hace eco: verde para siempre, sin probar nada
 
 2026-10-06, motor de gastos notariales. 152 verificaciones en verde, y en el

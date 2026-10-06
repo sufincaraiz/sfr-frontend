@@ -36,10 +36,20 @@ export const CAMPOS_CONDICION: {
   campo: string
   label: string
   tipo: 'texto' | 'numero' | 'booleano'
+  /**
+   * Para los de texto: los únicos valores admitidos. Sin esta lista, un
+   * `JURIDICA` y un `juridica` serían condiciones distintas y la comparación
+   * fallaría EN SILENCIO: la regla no aplicaría, el motor seguiría a la
+   * siguiente y nadie vería que la excepción quedó muerta.
+   */
+  valores?: string[]
   pregunta_en_formulario: boolean
 }[] = [
   { campo: 'valor_en_uvt', label: 'Valor de la enajenación en UVT', tipo: 'numero', pregunta_en_formulario: true },
-  { campo: 'tipo_persona_vendedor', label: 'El vendedor es persona natural o jurídica', tipo: 'texto', pregunta_en_formulario: true },
+  {
+    campo: 'tipo_persona_vendedor', label: 'El vendedor es persona natural o jurídica',
+    tipo: 'texto', valores: ['NATURAL', 'JURIDICA'], pregunta_en_formulario: true,
+  },
   // Los cuatro de abajo NO se preguntan todavía. Una regla que los use no se
   // puede activar: primero hay que añadir la pregunta, y eso es código.
   { campo: 'es_activo_fijo', label: 'El inmueble era activo fijo del vendedor', tipo: 'booleano', pregunta_en_formulario: false },
@@ -74,10 +84,17 @@ function cumple(cond: Condicion, ctx: Contexto): boolean {
   if (!CAMPOS.has(cond.campo)) {
     throw new ErrorEsquemaNotarial(`La condición usa un campo desconocido: ${cond.campo}.`, 'campo')
   }
+  const campo = CAMPOS.get(cond.campo)!
   const actual = ctx[cond.campo]
   if (actual === undefined || actual === null || actual === '') {
-    throw new SinReglaAplicable(
-      `La regla depende de «${CAMPOS.get(cond.campo)!.label}» y la simulación no lo trae.`,
+    throw new SinReglaAplicable(`La regla depende de «${campo.label}» y la simulación no lo trae.`)
+  }
+  // El dato que llega de la simulación se mide con la misma vara que el de la
+  // regla: un «juridica» en minúscula no puede limitarse a no coincidir.
+  if (campo.valores && !campo.valores.includes(String(actual))) {
+    throw new ErrorEsquemaNotarial(
+      `La simulación manda «${String(actual)}» en «${campo.label}», que solo admite ${campo.valores.join(', ')}.`,
+      cond.campo,
     )
   }
   return comparar(cond, actual)
@@ -100,6 +117,49 @@ export function reglaGeneral(reglas: ReglaRetencion[]): ReglaRetencion {
     )
   }
   return generales[0]!
+}
+
+/**
+ * Valida el valor escrito en una condición contra el TIPO del campo. El campo
+ * ya estaba en lista blanca; lo que faltaba era el valor, que es donde se cuela
+ * el error silencioso.
+ */
+export function exigirValorDeCondicion(c: Condicion): void {
+  const campo = CAMPOS.get(c.campo)
+  if (!campo) throw new ErrorEsquemaNotarial(`Campo de condición desconocido: ${c.campo}.`, 'campo')
+  const v = String(c.valor ?? '').trim()
+  if (v === '') throw new ErrorEsquemaNotarial(`La condición sobre «${campo.label}» no tiene valor.`, 'valor')
+
+  if (campo.tipo === 'booleano') {
+    if (v !== 'true' && v !== 'false') {
+      throw new ErrorEsquemaNotarial(
+        `«${campo.label}» es de sí o no: el valor tiene que ser true o false, y llegó «${v}».`,
+        'valor',
+      )
+    }
+    return
+  }
+  if (campo.tipo === 'numero') {
+    const partes = c.operador === 'EN' ? v.split('|') : [v]
+    for (const p of partes) {
+      if (!Number.isFinite(Number(p.trim()))) {
+        throw new ErrorEsquemaNotarial(`«${campo.label}» es numérico y llegó «${p}».`, 'valor')
+      }
+    }
+    return
+  }
+  if (campo.valores) {
+    const partes = c.operador === 'EN' ? v.split('|').map(x => x.trim()) : [v]
+    for (const p of partes) {
+      if (!campo.valores.includes(p)) {
+        throw new ErrorEsquemaNotarial(
+          `«${campo.label}» solo admite ${campo.valores.join(', ')}, y llegó «${p}». ` +
+          'Mayúsculas incluidas: la comparación es exacta, y si no coincide la regla queda muerta sin avisar.',
+          'valor',
+        )
+      }
+    }
+  }
 }
 
 export function verificarReglas(reglas: ReglaRetencion[]): void {
@@ -131,6 +191,7 @@ export function verificarReglas(reglas: ReglaRetencion[]): void {
       if (!campo) {
         throw new ErrorEsquemaNotarial(`La regla ${r.clave} usa un campo desconocido: ${c.campo}.`, 'campo')
       }
+      exigirValorDeCondicion(c)
       if (!campo.pregunta_en_formulario && r.activa) {
         throw new ErrorEsquemaNotarial(
           `La regla ${r.clave} está activa y depende de «${campo.label}», que el formulario no pregunta. ` +

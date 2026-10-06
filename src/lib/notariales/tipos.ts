@@ -101,7 +101,19 @@ export type UnidadValor = 'PESOS' | 'PORCENTAJE' | 'POR_MIL'
  * concepto no tiene redondeo y no se puede liquidar. Asumir «al peso más
  * cercano» sería inventar una regla de la norma.
  */
-export type ModoRedondeo = 'CERCANO' | 'ARRIBA' | 'ABAJO'
+export type ModoRedondeo =
+  | 'CERCANO'
+  | 'ARRIBA'
+  | 'ABAJO'
+  /**
+   * La cifra se toma TAL CUAL la publica la resolución y el motor no vuelve a
+   * calcularla. Es el caso del recaudo del art. 50: la columna dice «ajustado a
+   * la centena más próxima», pero ese ajuste YA está hecho en el documento.
+   * Rehacerlo en ejecución sería sustituir el documento por nuestra aritmética.
+   * Para que la declaración sea verificable, `redondear` exige que la cifra
+   * publicada sea entera: si saliera con decimales, no venía publicada.
+   */
+  | 'PUBLICADO'
 
 export interface Redondeo {
   /** 1 = al peso · 100 = a la centena · 1000 = al millar. */
@@ -150,6 +162,13 @@ export interface Respaldo {
 
 export interface Tramo {
   orden: number
+  /**
+   * LÍMITES CONTIGUOS, no «hasta 100.000.000 / desde 100.000.001». El intervalo
+   * es `desde < base ≤ hasta`, así que `hasta` de un tramo es `desde` del
+   * siguiente y la recta queda cubierta SIN huecos. Importa porque la base
+   * puede traer decimales: si viene de un avalúo catastral, un hueco entre
+   * 100.000.000 y 100.000.001 se come a 100.000.000,50.
+   */
   desde: string | number
   /** null = tramo abierto. Exactamente uno por concepto. */
   hasta?: string | number | null
@@ -158,6 +177,21 @@ export interface Tramo {
   modo_calculo: ModoTramo
   valor: string | number
   unidad: UnidadValor
+  /**
+   * DISTRIBUCIÓN INSTITUCIONAL del recaudo: cuánto del valor va a la
+   * Superintendencia y cuánto al Fondo Nacional de Notariado. No tiene nada que
+   * ver con la distribución económica (comprador/vendedor): el usuario paga UN
+   * solo recaudo y el desglose solo aparece en el PDF. Se guardan como los
+   * publica la resolución, y una guarda comprueba que sumen `valor`.
+   */
+  aporte_snr?: string | number | null
+  aporte_fondo?: string | number | null
+  /**
+   * Solo TRAZABILIDAD: la equivalencia en UVB que publica la resolución. El
+   * motor NO recalcula el valor a partir de ella —manda el documento, no la
+   * aritmética—, así que cambiar este campo no puede mover ninguna cifra.
+   */
+  valor_en_uvb?: string | number | null
 }
 
 export interface Condicion {
@@ -192,6 +226,11 @@ export interface Concepto {
   tramos?: Tramo[]
   /** Dato de la resolución. null = pendiente: el concepto no liquida. */
   redondeo?: Redondeo | null
+  /**
+   * El precio publicado YA LLEVA el IVA dentro (copia simple, art. 5). El
+   * componente se EXTRAE para poder enseñarlo; nunca se suma un 19 % encima.
+   */
+  precio_incluye_iva?: boolean
   /** Solo se comprueba cuando es NO_DECRECIENTE. */
   monotonicidad: Monotonicidad
   grava_iva: boolean
@@ -242,6 +281,10 @@ export interface AnioNotarial {
 export interface Entrada {
   valor_venta: string | number
   avaluo_catastral?: string | number | null
+  /** Autoavalúo declarado por el propietario. Entra en la base del art. 51 a). */
+  autoavaluo?: string | number | null
+  /** Valor del remate o de la adjudicación, cuando el acto viene de uno. */
+  valor_remate?: string | number | null
   /** Por clave de concepto: cuántas hojas, copias, personas… */
   cantidades?: Record<string, number>
   /** Por clave: % del comprador, solo si el concepto lo permite. */
@@ -260,7 +303,15 @@ export interface Linea {
   grupo: Grupo
   /** Base usada y por qué, para que el PDF lo pueda imprimir. */
   base: { clave: BaseCalculo; valor: number; motivo: string } | null
+  /**
+   * Lo que paga el usuario por este concepto. En un precio con IVA incluido es
+   * el precio publicado completo: la copia cuesta $700 la cara y no $588 + IVA.
+   */
   valor: number
+  /** El componente de IVA que ya venía DENTRO de `valor`, exacto. */
+  iva_incluido_exacto?: string
+  /** Desglose institucional del recaudo, solo para el PDF. */
+  desglose_institucional?: { snr: number; fondo: number } | null
   /**
    * Lo que ESTA línea aporta al IVA, exacto y sin redondear. El IVA se liquida
    * una sola vez sobre el total: redondear aquí haría que dos líneas de
@@ -289,6 +340,12 @@ export interface Liquidacion {
    * valores van completos para que el PDF pueda enseñar de dónde sale cada uno.
    */
   iva: LiquidacionIva
+  /**
+   * IVA que ya venía dentro de precios publicados (la copia simple). No se
+   * liquida otra vez: se informa, porque el PDF tiene que poder decir cuánto
+   * IVA se pagó en total.
+   */
+  iva_incluido_en_precios: string
   /**
    * Costo del TRÁMITE. Excluye las obligaciones del inmueble a propósito: un
    * predial atrasado de dos años no es lo que cuesta escriturar, y sumarlo haría

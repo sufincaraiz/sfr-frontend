@@ -103,6 +103,51 @@ function pctDe(c: Concepto, entrada: Entrada): number {
   return override
 }
 
+/**
+ * La única fila de una tabla sin base. Lanza si no es exactamente una, porque
+ * «sin base» y «varias filas por cuantía» juntas no significan nada.
+ */
+function tablaSinBase(c: Concepto) {
+  const tramos = c.tramos ?? []
+  const unico = tramos[0]
+  if (tramos.length !== 1 || !unico || unico.hasta !== null && unico.hasta !== undefined) {
+    throw new ErrorEsquemaNotarial(
+      `${c.label}: es una tabla por tramos sin base, así que solo puede tener una fila abierta ` +
+      `(tiene ${tramos.length}).`,
+      'tramos',
+    )
+  }
+  return unico
+}
+
+/**
+ * Desglose institucional del tramo que aplicó: cuánto del recaudo va a la
+ * Superintendencia y cuánto al Fondo. Es distribución INSTITUCIONAL, no
+ * económica: no cambia lo que paga el usuario ni cómo se reparte entre las
+ * partes. Solo se imprime en el PDF.
+ */
+function desgloseDe(c: Concepto, base: number | null, uvt: number | null): { snr: number; fondo: number } | null {
+  if (c.tipo !== 'TRAMOS') return null
+  const tramos = [...(c.tramos ?? [])].sort((a, b) => a.orden - b.orden)
+  if (base === null) {
+    // Tabla de una sola fila: no hay nada que escoger.
+    const unico = tramos[0]
+    if (!unico || unico.aporte_snr === null || unico.aporte_snr === undefined) return null
+    return { snr: Number(unico.aporte_snr), fondo: Number(unico.aporte_fondo ?? 0) }
+  }
+  for (const t of tramos) {
+    if (t.aporte_snr === null || t.aporte_snr === undefined) continue
+    const desde = Number(t.desde) * (t.en_uvt && uvt ? uvt : 1)
+    const hasta = t.hasta === null || t.hasta === undefined
+      ? null
+      : Number(t.hasta) * (t.en_uvt && uvt ? uvt : 1)
+    if (base > desde && (hasta === null || base <= hasta)) {
+      return { snr: Number(t.aporte_snr), fondo: Number(t.aporte_fondo ?? 0) }
+    }
+  }
+  return null
+}
+
 export function liquidar(
   anio: AnioNotarial,
   entrada: Entrada,
@@ -148,11 +193,24 @@ export function liquidar(
         break
       case 'PORCENTAJE':
       case 'POR_MIL':
+        if (base === null) {
+          throw new ErrorEsquemaNotarial(
+            `${c.label}: se liquida como tasa y no tiene base sobre la que aplicarse.`,
+            'base',
+          )
+        }
         // Redondea como diga SU resolución, no al peso por costumbre.
-        valor = redondear(multiplicador(c) * base!.valor, c.redondeo, c.label)
+        valor = redondear(multiplicador(c) * base.valor, c.redondeo, c.label)
         break
       case 'TRAMOS':
-        valor = evaluarTramos(c.tramos!, base!.valor, uvt, c.label, c.redondeo)
+        // Una tabla SIN base es legítima cuando tiene una sola fila abierta: es
+        // el recaudo de los actos sin cuantía, que no depende de ninguna
+        // cuantía precisamente por eso. Sigue siendo una tabla y no un valor
+        // fijo del concepto para que el desglose institucional viva donde viven
+        // todos —en el tramo— y lo alcance la guarda que comprueba que sume.
+        valor = base === null
+          ? redondear(pesos(tablaSinBase(c).valor, `el valor de ${c.label}`), c.redondeo, c.label)
+          : evaluarTramos(c.tramos!, base.valor, uvt, c.label, c.redondeo)
         break
       case 'POR_UNIDAD': {
         const cantidad = cantidadDe(c, entrada)
@@ -190,12 +248,40 @@ export function liquidar(
     if (c.clave === 'derechos_orip') tarifaRegistral = valor
 
     // ── IVA y reparto ───────────────────────────────────────────────────────
+    // ── Precio con el IVA DENTRO (art. 5, copia simple) ─────────────────────
+    // El componente se EXTRAE del precio publicado; jamás se suma un 19 %
+    // encima. Y no entra en BASE_IVA: un precio publicado con IVA incluido ya
+    // viene liquidado por la resolución, así que la copia cuesta $700 la cara y
+    // sigue costando $700 después de liquidar el IVA del resto de la escritura.
+    let ivaIncluido = new Prisma.Decimal(0)
+    if (c.precio_incluye_iva) {
+      if (!c.grava_iva) {
+        throw new ErrorEsquemaNotarial(
+          `${c.label}: dice llevar el IVA incluido en el precio y a la vez no gravar IVA.`,
+          'precio_incluye_iva',
+        )
+      }
+      if (c.es_recaudo_terceros) {
+        throw new ErrorEsquemaNotarial(
+          `${c.label}: un recaudo para terceros no puede llevar IVA incluido.`,
+          'precio_incluye_iva',
+        )
+      }
+      const bruto = new Prisma.Decimal(valor)
+      const neto = bruto.div(new Prisma.Decimal(1).add(new Prisma.Decimal(tarifaIva).div(100)))
+      ivaIncluido = bruto.sub(neto)
+    }
+
     const pct = pctDe(c, entrada)
     // El IVA de la línea NO se redondea ni se reparte aquí: se acumula exacto y
     // se liquida UNA vez sobre el total. Redondear por línea haría que dos
     // conceptos de 20.004 sumaran 40.000 en vez de 40.010.
-    const ivaExacto = c.grava_iva ? new Prisma.Decimal(valor).mul(tarifaIva).div(100) : new Prisma.Decimal(0)
-    if (c.grava_iva) aportes.push({ clave: c.clave, base: valor, pct_comprador: pct })
+    const ivaExacto = c.grava_iva && !c.precio_incluye_iva
+      ? new Prisma.Decimal(valor).mul(tarifaIva).div(100)
+      : new Prisma.Decimal(0)
+    if (c.grava_iva && !c.precio_incluye_iva) {
+      aportes.push({ clave: c.clave, base: valor, pct_comprador: pct })
+    }
     const rv = repartir(valor, pct)
 
     for (const r of c.respaldos ?? []) normas.push(`${r.norma}${r.articulo ? `, ${r.articulo}` : ''}`)
@@ -215,6 +301,8 @@ export function liquidar(
       base,
       valor,
       iva_exacto: ivaExacto.toString(),
+      ...(c.precio_incluye_iva ? { iva_incluido_exacto: ivaIncluido.toString() } : {}),
+      ...(desgloseDe(c, base?.valor ?? null, uvt) ? { desglose_institucional: desgloseDe(c, base?.valor ?? null, uvt) } : {}),
       total: valor,
       comprador: rv.comprador,
       vendedor: rv.vendedor,
@@ -233,6 +321,12 @@ export function liquidar(
   // ella por construcción: un concepto que grave IVA y sea recaudo a la vez lo
   // rechaza la guarda del esquema, no este cálculo.
   const iva = liquidarIva(aportes, tarifaIva, anio.redondeo_iva)
+  // El IVA que ya venía DENTRO de precios publicados no se vuelve a liquidar:
+  // se informa, para que el PDF pueda decir cuánto IVA pagó en total.
+  const ivaIncluidoEnPrecios = lineas.reduce(
+    (acc, l) => acc.add(new Prisma.Decimal(l.iva_incluido_exacto ?? 0)),
+    new Prisma.Decimal(0),
+  ).toString()
 
   // ── Grupos, totales y la invariante ───────────────────────────────────────
   // El IVA se muestra dentro de COSTOS NOTARIALES, que es donde se genera.
@@ -286,7 +380,9 @@ export function liquidar(
     )
   }
   for (const b of basesUsadas.values()) {
-    if (b.motivo.startsWith('Se tomó el avalúo')) { avisos.push(b.motivo); break }
+    // Vale para cualquiera de los cuatro candidatos del art. 51 a), no solo
+    // para el avalúo: lo que sorprende es que la base NO sea el precio pactado.
+    if (!b.motivo.startsWith('Se tomó el valor pactado')) { avisos.push(b.motivo); break }
   }
   if (deudas.length) {
     avisos.push('Las obligaciones del inmueble van aparte: no son costo del trámite, son deuda del predio.')
@@ -296,6 +392,7 @@ export function liquidar(
     lineas,
     grupos,
     iva,
+    iva_incluido_en_precios: ivaIncluidoEnPrecios,
     totales,
     obligaciones,
     bases: [...basesUsadas.values()].map(b => ({ clave: b.clave, valor: b.valor, motivo: b.motivo })),

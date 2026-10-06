@@ -114,6 +114,22 @@ export function verificarConcepto(c: Concepto, uvt: number | null): void {
 
   if (c.tipo === 'TRAMOS' && (c.tramos ?? []).length) {
     verificarTramos(c.tramos!, uvt, c.label, { monotonicidad: c.monotonicidad, redondeo: c.redondeo })
+    // Una tabla sin base solo puede tener una fila: no hay cuantía que
+    // escoger. Antes esto reventaba en ejecución con un TypeError, que es la
+    // peor forma de fallar: ni dice qué pasa ni dónde.
+    if (c.base === 'NINGUNA' && c.tramos!.length !== 1) {
+      throw new ErrorEsquemaNotarial(
+        `${c.label}: es una tabla por tramos sin base y tiene ${c.tramos!.length} filas. ` +
+        'Sin cuantía no hay tramo que escoger.',
+        'tramos',
+      )
+    }
+  }
+  if ((c.tipo === 'PORCENTAJE' || c.tipo === 'POR_MIL') && c.base === 'NINGUNA') {
+    throw new ErrorEsquemaNotarial(
+      `${c.label}: se liquida como tasa y no declara base sobre la que aplicarse.`,
+      'base',
+    )
   }
 
   if ((c.tipo === 'PORCENTAJE' || c.tipo === 'POR_MIL') && c.valor !== null && c.valor !== undefined) {

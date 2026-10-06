@@ -2,12 +2,22 @@
  * CATÁLOGO DE LA SIMULACIÓN — módulo HOJA
  * =======================================
  *
- * Los dieciséis conceptos de la v1, con su forma de cálculo, su base, su sujeto
- * legal y su reparto por defecto. **Todos nacen SIN valor y SIN tramos**: las
- * cifras entran por el panel, una por una, cada una con su resolución oficial.
+ * Los conceptos de la v1, con su forma de cálculo, su base, su sujeto legal y su
+ * reparto por defecto.
  *
- * Esto es el molde para sembrar un año nuevo, no una tabla de tarifas. Si
- * alguien añade aquí un número, se salta la guarda entera.
+ * **CASI TODOS NACEN SIN VALOR Y SIN TRAMOS**: las cifras entran por el panel,
+ * una por una, cada una con su resolución oficial.
+ *
+ * La excepción son los tres conceptos ya verificados contra el PDF de la
+ * RES-2026-000964-6 —el recaudo del art. 50, el recaudo de los actos sin
+ * cuantía y la tarifa del acto sin cuantía del art. 2 lit. a)—. Vienen con sus
+ * cifras y **sin respaldo**: la guarda sigue cerrada, porque el respaldo exige
+ * la URL oficial del documento y esa todavía no está. El año NO se puede
+ * activar con ellos cargados.
+ *
+ * Un número aquí sin su fila en `RespaldoNormativo` no habilita nada: solo
+ * ahorra teclear. Si alguien añade una cifra creyendo que con eso ya calcula,
+ * se encontrará con que el año sigue sin activarse, que es lo correcto.
  *
  * El IVA NO está en la lista. No tiene tarifa propia ni base propia: su base es
  * la suma de los conceptos gravados menos los recaudos para terceros, y su
@@ -60,6 +70,8 @@ export const DUENO_DEL_CONCEPTO: Record<string, Dueno> = {
   paz_salvo_predial: 'entidad',
   no_valorizacion: 'entidad',
   predial_pendiente: 'entidad',
+  acto_sin_cuantia: 'titular',
+  recaudo_sin_cuantia: 'titular',
 }
 
 const comun = {
@@ -106,6 +118,21 @@ const delVendedor = {
   norma_reparto: null,
 }
 
+/**
+ * ⚠ LA TABLA QUE NO VA AQUÍ.
+ *
+ * La resolución trae DOS tablas que se parecen y no son lo mismo:
+ *
+ *  · Art. 50 — recaudo por cuantía del acto. SÍ entra: es lo que paga el
+ *    usuario, y es el concepto `recaudo_snr`.
+ *  · Arts. 48 y 49 (la tabla de la página 24, por número de escrituras
+ *    anuales) — es el APORTE DEL NOTARIO según su volumen de trabajo. No es un
+ *    cobro al usuario y NO ENTRA EN LA CALCULADORA.
+ *
+ * Están escritas aquí juntas a propósito: la segunda parece «la parte que
+ * falta» de la primera, y cargarla sumaría al usuario un aporte que no le
+ * corresponde. Si alguien la trae, el sitio correcto es ninguno.
+ */
 export const CONCEPTOS_V1: Concepto[] = [
   // ── COSTOS NOTARIALES ─────────────────────────────────────────────────────
   {
@@ -165,8 +192,13 @@ export const CONCEPTOS_V1: Concepto[] = [
     tipo: 'POR_UNIDAD',
     base: 'UNIDADES',
     grava_iva: true,
+    // Art. 5: la copia simple se cobra POR CARA y el precio publicado ya lleva
+    // el IVA dentro. Es el único concepto así, y por eso el componente se
+    // extrae del precio en vez de sumarse encima.
+    precio_incluye_iva: true,
     es_recaudo_terceros: false,
-    unidad_label: 'copia',
+    // Por CARA, no por copia: una escritura de diez hojas son veinte caras.
+    unidad_label: 'cara',
     cantidad_sugerida: null,
     cantidad_variable_por_operacion: true,
     solo_avanzada: true,
@@ -237,6 +269,26 @@ export const CONCEPTOS_V1: Concepto[] = [
     terminos_coloquiales: [],
     grupo: 'COSTOS_NOTARIALES',
     orden: 70,
+    // Art. 50: valor FIJO por cuantía. La columna dice «ajustado a la centena
+    // más próxima», pero ese ajuste YA viene hecho en el documento: el redondeo
+    // se declara PUBLICADO para que el motor tome la cifra tal cual.
+    //
+    // Cada valor sale de UVB × $12.110 ajustado a la centena, y el parágrafo
+    // reparte el recaudo mitad para la Superintendencia y mitad para el Fondo
+    // Cuenta Especial del Notariado. Eso es distribución INSTITUCIONAL: no
+    // cambia lo que paga el usuario, que ve un único recaudo.
+    //
+    // ⚠ Los `desde` guardados son el `hasta` del tramo anterior, no el «+1»
+    // impreso en la resolución. Ver el convenio de frontera en tramos.ts.
+    redondeo: { unidad: 1, modo: 'PUBLICADO' },
+    tramos: [
+      { orden: 1, desde: 0, hasta: 100_000_000, modo_calculo: 'FIJO', valor: 28_900, unidad: 'PESOS', aporte_snr: 14_450, aporte_fondo: 14_450, valor_en_uvb: 2.39 },
+      { orden: 2, desde: 100_000_000, hasta: 300_000_000, modo_calculo: 'FIJO', valor: 43_700, unidad: 'PESOS', aporte_snr: 21_850, aporte_fondo: 21_850, valor_en_uvb: 3.61 },
+      { orden: 3, desde: 300_000_000, hasta: 500_000_000, modo_calculo: 'FIJO', valor: 52_700, unidad: 'PESOS', aporte_snr: 26_350, aporte_fondo: 26_350, valor_en_uvb: 4.35 },
+      { orden: 4, desde: 500_000_000, hasta: 1_000_000_000, modo_calculo: 'FIJO', valor: 71_900, unidad: 'PESOS', aporte_snr: 35_950, aporte_fondo: 35_950, valor_en_uvb: 5.94 },
+      { orden: 5, desde: 1_000_000_000, hasta: 1_500_000_000, modo_calculo: 'FIJO', valor: 84_800, unidad: 'PESOS', aporte_snr: 42_400, aporte_fondo: 42_400, valor_en_uvb: 7.00 },
+      { orden: 6, desde: 1_500_000_000, hasta: null, modo_calculo: 'FIJO', valor: 96_400, unidad: 'PESOS', aporte_snr: 48_200, aporte_fondo: 48_200, valor_en_uvb: 7.96 },
+    ],
     // Valores fijos por rango de cuantía: TRAMOS en modo FIJO, no un porcentaje.
     tipo: 'TRAMOS',
     base: 'NOTARIAL',
@@ -377,6 +429,55 @@ export const CONCEPTOS_V1: Concepto[] = [
     es_recaudo_terceros: false,
     solo_avanzada: true,
     opcional: true,
+  },
+
+  // ── ACTOS SIN CUANTÍA ─────────────────────────────────────────────────────
+  // No se muestran en la calculadora sencilla, pero quedan catalogados,
+  // parametrizables y calculables: una cancelación de hipoteca o una
+  // afectación a vivienda familiar se otorgan en la misma notaría y el día que
+  // haya que cotizarlas, el concepto ya existe.
+  {
+    ...comun,
+    ...mitades,
+    clave: 'acto_sin_cuantia',
+    label: 'Acto sin cuantía',
+    terminos_coloquiales: ['escritura sin cuantía'],
+    grupo: 'COSTOS_NOTARIALES',
+    orden: 155,
+    tipo: 'FIJO',
+    base: 'NINGUNA',
+    grava_iva: true,
+    es_recaudo_terceros: false,
+    // Art. 2 literal a). Verificado contra el PDF; respaldo pendiente del enlace.
+    valor: 90_600,
+    solo_avanzada: true,
+    opcional: true,
+    activo_por_defecto: false,
+  },
+  {
+    ...comun,
+    ...mitades,
+    clave: 'recaudo_sin_cuantia',
+    label: 'Recaudo Superintendencia / Fondo — acto sin cuantía',
+    terminos_coloquiales: [],
+    grupo: 'COSTOS_NOTARIALES',
+    orden: 156,
+    // Un solo tramo, no un valor fijo del concepto: así el desglose
+    // institucional vive donde viven todos —en el tramo— y lo alcanza la guarda
+    // que comprueba que los aportes sumen el recaudo. Un `aporte_snr` en el
+    // concepto sería el mismo dato en dos sitios.
+    tipo: 'TRAMOS',
+    base: 'NINGUNA',
+    grava_iva: false,
+    es_recaudo_terceros: true,
+    // Primera fila del art. 50: «actos sin cuantía y escrituras exentas».
+    redondeo: { unidad: 1, modo: 'PUBLICADO' },
+    tramos: [
+      { orden: 1, desde: 0, hasta: null, modo_calculo: 'FIJO', valor: 19_300, unidad: 'PESOS', aporte_snr: 9_650, aporte_fondo: 9_650, valor_en_uvb: 1.59 },
+    ],
+    solo_avanzada: true,
+    opcional: true,
+    activo_por_defecto: false,
   },
 
   // ── OBLIGACIONES DEL INMUEBLE ─────────────────────────────────────────────

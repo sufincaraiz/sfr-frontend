@@ -36,7 +36,8 @@ export const BASES: { clave: BaseCalculo; label: string; regla: string; campo_re
   {
     clave: 'NOTARIAL',
     label: 'Base de los derechos notariales',
-    regla: 'El mayor entre el precio de venta y el avalúo catastral.',
+    // Art. 51 literal a): son CUATRO valores, no dos.
+    regla: 'El mayor entre el valor pactado, el avalúo catastral, el autoavalúo y el valor del remate.',
     campo_respaldo: 'base_notarial',
   },
   {
@@ -65,38 +66,50 @@ export const BASES: { clave: BaseCalculo; label: string; regla: string; campo_re
   },
 ]
 
-function entrada(e: Entrada): { venta: number; avaluo: number | null } {
+/** Los cuatro candidatos del art. 51 a), con el nombre que lleva cada uno. */
+const CANDIDATOS = [
+  ['valor_venta', 'el valor pactado'],
+  ['avaluo_catastral', 'el avalúo catastral'],
+  ['autoavaluo', 'el autoavalúo'],
+  ['valor_remate', 'el valor del remate'],
+] as const
+
+function entrada(e: Entrada): { venta: number; candidatos: { campo: string; label: string; valor: number }[] } {
   const venta = pesos(e.valor_venta, 'el valor de venta')
   if (venta <= 0) throw new ErrorEsquemaNotarial('El valor de venta tiene que ser mayor que cero.', 'valor_venta')
-  const avaluo = e.avaluo_catastral === null || e.avaluo_catastral === undefined || e.avaluo_catastral === ''
-    ? null
-    : pesos(e.avaluo_catastral, 'el avalúo catastral')
-  if (avaluo !== null && avaluo < 0) {
-    throw new ErrorEsquemaNotarial('El avalúo catastral no puede ser negativo.', 'avaluo_catastral')
+  const candidatos: { campo: string; label: string; valor: number }[] = []
+  for (const [campo, label] of CANDIDATOS) {
+    const v = e[campo]
+    if (v === null || v === undefined || v === '') continue
+    // No se comprueba el signo: `leerNumero` ya rechaza un negativo antes de
+    // llegar aquí. Una guarda que no puede dispararse no es una guarda.
+    candidatos.push({ campo, label, valor: pesos(v, label) })
   }
-  return { venta, avaluo }
+  return { venta, candidatos }
 }
 
-/** El mayor de los dos, diciendo cuál ganó. Compartido por tres normas. */
+/**
+ * El MAYOR de los candidatos que haya, diciendo cuál ganó y cuáles no se
+ * pudieron comparar. Compartido por tres normas distintas que hoy coinciden.
+ */
 function mayor(e: Entrada, queEs: string): Base & { clave: BaseCalculo } {
-  const { venta, avaluo } = entrada(e)
-  if (avaluo !== null && avaluo > venta) {
-    return {
-      clave: 'NOTARIAL',
-      valor: avaluo,
-      // Sin esta frase, una cifra más alta que el precio parece un error de la
-      // calculadora. Es el mismo criterio del módulo financiero: un número que
-      // sorprende sin explicación se lee como fallo.
-      motivo: `Se tomó el avalúo catastral porque supera el precio de venta (${queEs}).`,
-    }
-  }
-  return {
-    clave: 'NOTARIAL',
-    valor: venta,
-    motivo: avaluo === null
-      ? `Se tomó el precio de venta. Sin avalúo catastral no se puede comprobar si lo supera (${queEs}).`
-      : `Se tomó el precio de venta porque supera el avalúo catastral (${queEs}).`,
-  }
+  const { venta, candidatos } = entrada(e)
+  const ganador = candidatos.reduce((a, b) => (b.valor > a.valor ? b : a))
+  const faltan = CANDIDATOS
+    .filter(([campo]) => !candidatos.some(c => c.campo === campo))
+    .map(([, label]) => label)
+
+  // Sin esta frase, una cifra más alta que el precio parece un error de la
+  // calculadora. Es el mismo criterio del módulo financiero: un número que
+  // sorprende sin explicación se lee como fallo.
+  const motivo = ganador.campo === 'valor_venta'
+    ? `Se tomó el valor pactado porque es el mayor de los informados (${queEs}).`
+    : `Se tomó ${ganador.label} porque supera el valor pactado (${queEs}).`
+  const aviso = faltan.length
+    ? ` No se informó ${faltan.join(' ni ')}: si alguno fuera superior, la base sería mayor.`
+    : ''
+
+  return { clave: 'NOTARIAL', valor: ganador.valor, motivo: motivo + aviso }
 }
 
 export function calcularBaseNotarial(e: Entrada): Base {

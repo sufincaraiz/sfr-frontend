@@ -12,11 +12,12 @@
  */
 import {
   evaluarTramos, evaluarTramosCrudo, verificarTramos, repartir, alPeso, redondear,
+  exigirCamposConocidosDelTramo,
 } from '../src/lib/notariales/tramos.ts'
 import {
   calcularBaseNotarial, calcularBaseRetencion, calcularBaseTimbre, BASES,
 } from '../src/lib/notariales/bases.ts'
-import { calcularRetencion, verificarReglas, CAMPOS_CONDICION } from '../src/lib/notariales/retencion.ts'
+import { calcularRetencion, verificarReglas, exigirValorDeCondicion, CAMPOS_CONDICION } from '../src/lib/notariales/retencion.ts'
 import {
   esFuenteOficial, exigirRespaldoOficial, verificarEsquema, verificarConcepto,
   pendientesParaActivar, resumenDePendientes, exigirAnioPublicable, divergenciaUvt, copiarAnio,
@@ -80,9 +81,22 @@ check('una fuente oficial DESACTIVADA deja de servir',
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\n══ LA SIEMBRA REAL NACE VACÍA ══')
 // ─────────────────────────────────────────────────────────────────────────────
-check('son 16 conceptos', CONCEPTOS_V1.length === 16, `(hay ${CONCEPTOS_V1.length})`)
-check('NINGUNO trae valor', CONCEPTOS_V1.every(c => c.valor === null))
-check('NINGUNO trae tramos', CONCEPTOS_V1.every(c => (c.tramos ?? []).length === 0))
+check('son 18 conceptos', CONCEPTOS_V1.length === 18, `(hay ${CONCEPTOS_V1.length})`)
+// Tres vienen verificados contra el PDF; los quince restantes, vacíos.
+const VERIFICADOS = ['recaudo_snr', 'recaudo_sin_cuantia', 'acto_sin_cuantia']
+check('los quince que faltan por verificar NO traen valor ni tramos',
+  CONCEPTOS_V1.filter(c => !VERIFICADOS.includes(c.clave))
+    .every(c => c.valor === null && (c.tramos ?? []).length === 0))
+check('solo el acto sin cuantía trae un valor cargado (art. 2 lit. a)',
+  CONCEPTOS_V1.filter(c => c.valor !== null).map(c => c.clave).join() === 'acto_sin_cuantia' &&
+  CONCEPTOS_V1.find(c => c.clave === 'acto_sin_cuantia').valor === 90_600)
+check('solo los dos recaudos traen tramos',
+  CONCEPTOS_V1.filter(c => (c.tramos ?? []).length).map(c => c.clave).sort().join() ===
+  'recaudo_sin_cuantia,recaudo_snr')
+// LO QUE IMPORTA: traer la cifra NO habilita nada. Sin respaldo oficial el año
+// sigue sin poder activarse, que es el punto de toda la guarda.
+check('ninguno de los tres verificados trae respaldo',
+  VERIFICADOS.every(k => (CONCEPTOS_V1.find(c => c.clave === k).respaldos ?? []).length === 0))
 check('el IVA no es un concepto (es derivado)', !CONCEPTOS_V1.some(c => c.clave === 'iva'))
 check('«beneficencia» existe como término coloquial del impuesto de registro',
   CONCEPTOS_V1.find(c => c.clave === 'impuesto_registro').terminos_coloquiales.includes('beneficencia'))
@@ -274,8 +288,9 @@ check('los tres modos dan tres resultados distintos sobre la misma cifra',
   ]).size === 3)
 lanza('una unidad de redondeo inválida', () => redondear(100, { unidad: 0, modo: 'CERCANO' }, 'x'),
   'ErrorEsquemaNotarial', 'unidad de redondeo inválida')
-check('el catálogo real nace SIN redondeo en todos los conceptos',
-  CONCEPTOS_V1.every(c => !c.redondeo))
+check('solo los dos recaudos traen redondeo, y es PUBLICADO',
+  CONCEPTOS_V1.filter(c => c.redondeo).every(c => c.redondeo.modo === 'PUBLICADO') &&
+  CONCEPTOS_V1.filter(c => c.redondeo).length === 2)
 check('…y el redondeo es campo exigido en las tarifas que se calculan',
   camposExigidos(CONCEPTOS_V1.find(c => c.clave === 'derechos_escritura')).includes('redondeo') &&
   camposExigidos(CONCEPTOS_V1.find(c => c.clave === 'impuesto_registro')).includes('redondeo'))
@@ -338,6 +353,14 @@ lanza('mezcla marginal con sobre el total',
 lanza('una tasa expresada en PESOS',
   () => verificarTramos([T(1, 0, null, 'TASA_SOBRE_TOTAL', 3, 'PESOS')], null),
   'ErrorEsquemaNotarial', 'tasa expresada en PESOS')
+lanza('una tabla por tramos SIN base con más de una fila',
+  () => verificarConcepto({ ...base, tipo: 'TRAMOS', base: 'NINGUNA', redondeo: PESO, tramos: [
+    T(1, 0, 100, 'FIJO', 10, 'PESOS'), T(2, 100, null, 'FIJO', 20, 'PESOS'),
+  ] }, null),
+  'ErrorEsquemaNotarial', 'Sin cuantía no hay tramo que escoger')
+lanza('una tasa que no declara base',
+  () => verificarConcepto({ ...base, tipo: 'PORCENTAJE', base: 'NINGUNA', valor: 1, unidad: 'PORCENTAJE', redondeo: PESO }, null),
+  'ErrorEsquemaNotarial', 'no declara base')
 lanza('un valor fijo expresado en por mil',
   () => verificarTramos([T(1, 0, null, 'FIJO', 3, 'POR_MIL')], null),
   'ErrorEsquemaNotarial', 'su unidad no es PESOS')
@@ -349,12 +372,33 @@ const conAvaluoAlto = { valor_venta: 80_000_000, avaluo_catastral: 100_000_000 }
 check('la base notarial toma el avalúo cuando supera el precio',
   calcularBaseNotarial(conAvaluoAlto).valor === 100_000_000)
 check('…y lo DICE, para que la cifra alta no parezca un error',
-  /avalúo catastral porque supera el precio/.test(calcularBaseNotarial(conAvaluoAlto).motivo))
+  /avalúo catastral porque supera el valor pactado/.test(calcularBaseNotarial(conAvaluoAlto).motivo))
 check('la base de retención NO toma el avalúo: es el valor de la enajenación',
   calcularBaseRetencion(conAvaluoAlto).valor === 80_000_000)
 check('la del timbre tampoco', calcularBaseTimbre(conAvaluoAlto).valor === 80_000_000)
-check('sin avalúo se avisa de que no se pudo comparar',
-  /Sin avalúo catastral/.test(calcularBaseNotarial({ valor_venta: 80_000_000 }).motivo))
+check('sin los otros tres se avisa de que no se pudieron comparar',
+  /No se informó el avalúo catastral ni el autoavalúo ni el valor del remate/
+    .test(calcularBaseNotarial({ valor_venta: 80_000_000 }).motivo))
+
+// ── Art. 51 literal a): CUATRO valores, no dos ─────────────────────────────
+check('gana el autoavalúo si es el mayor de los cuatro',
+  calcularBaseNotarial({ valor_venta: 80_000_000, avaluo_catastral: 90_000_000, autoavaluo: 120_000_000 }).valor === 120_000_000)
+check('…y lo dice por su nombre',
+  /autoavalúo porque supera el valor pactado/
+    .test(calcularBaseNotarial({ valor_venta: 80_000_000, autoavaluo: 120_000_000 }).motivo))
+check('gana el valor del remate si es el mayor',
+  calcularBaseNotarial({ valor_venta: 80_000_000, avaluo_catastral: 90_000_000, autoavaluo: 95_000_000, valor_remate: 99_000_000 }).valor === 99_000_000)
+check('con los cuatro informados y el pactado mayor, gana el pactado',
+  calcularBaseNotarial({ valor_venta: 200_000_000, avaluo_catastral: 90_000_000, autoavaluo: 95_000_000, valor_remate: 99_000_000 }).valor === 200_000_000)
+check('…y entonces NO hay aviso de que falte comparar nada',
+  !/No se informó/.test(calcularBaseNotarial({ valor_venta: 200_000_000, avaluo_catastral: 1, autoavaluo: 1, valor_remate: 1 }).motivo))
+check('la base de RETENCIÓN sigue siendo el valor de la enajenación, no el mayor de cuatro',
+  calcularBaseRetencion({ valor_venta: 80_000_000, autoavaluo: 120_000_000 }).valor === 80_000_000)
+check('la del TIMBRE tampoco toma el autoavalúo',
+  calcularBaseTimbre({ valor_venta: 80_000_000, autoavaluo: 120_000_000 }).valor === 80_000_000)
+lanza('un autoavalúo negativo lo rechaza la lectura del número',
+  () => calcularBaseNotarial({ valor_venta: 100, autoavaluo: -5 }),
+  'ErrorNumero', 'no es un número válido')
 check('son cinco bases con su propio campo de respaldo',
   BASES.length === 5 && new Set(BASES.map(b => b.campo_respaldo)).size === 5)
 lanza('un valor de venta en cero', () => calcularBaseNotarial({ valor_venta: 0 }),
@@ -456,7 +500,9 @@ const VALORES = {
   biometria: { valor: 8000 },
   firma_digital: { valor: 12000 },
   autenticaciones: { valor: 5000 },
-  recaudo_snr: { redondeo: PESO, tramos: [T(1, 0, 50_000_000, 'FIJO', 15000, 'PESOS'), T(2, 50_000_000, null, 'FIJO', 25000, 'PESOS')] },
+  // recaudo_snr y recaudo_sin_cuantia NO se inventan: el catálogo ya trae los
+  // tramos reales del art. 50, verificados contra el PDF. El arnés solo les
+  // pone el respaldo que les falta, para poder activar el año de prueba.
   impuesto_registro: { valor: 1, unidad: 'PORCENTAJE', redondeo: PESO },
   timbre: { redondeo: PESO, tramos: TIMBRE },
   derechos_orip: { redondeo: PESO, tramos: ORIP },
@@ -486,8 +532,9 @@ check('el año completo YA es publicable',
 const ENTRADA = {
   valor_venta: 100_000_000,
   cantidades: { hojas_papel_notarial: 10, copias: 2, biometria: 3 },
-  // El comprador asume el 100 % de las copias: el IVA de esas copias es suyo.
-  repartos: { copias: 100 },
+  // El comprador asume el 100 % de las copias y de la biometría. La biometría
+  // es la que mueve el reparto del IVA: las copias ya lo traen dentro.
+  repartos: { copias: 100, biometria: 100 },
   opcionales: ['biometria', 'certificado_tradicion', 'paz_salvo_predial', 'no_valorizacion', 'predial_pendiente'],
   valores_libres: { predial_pendiente: '450.000' },
 }
@@ -506,37 +553,54 @@ check('el impuesto de registro lo paga el comprador por costumbre',
   linea('impuesto_registro').comprador === 1_000_000 && linea('impuesto_registro').motivo_reparto === 'COSTUMBRE')
 check('el recaudo SNR no lleva IVA', linea('recaudo_snr').iva_exacto === '0')
 check('…y su valor NO está dentro de BASE_IVA',
-  Number(L.iva.base) === 430_122 && 430_122 + 25_000 !== Number(L.iva.base))
-check('BASE_IVA es la remuneración gravada: 430.122', L.iva.base === '430122', `(dio ${L.iva.base})`)
-check('IVA_BRUTO conserva los decimales: 81.723,18 (19 % de 430.122, a mano)',
-  L.iva.bruto === '81723.18', `(dio ${L.iva.bruto})`)
-check('IVA_LIQUIDADO aproxima al múltiplo de 10: 81.720', L.iva.liquidado === 81_720, `(dio ${L.iva.liquidado})`)
+  Number(L.iva.base) === 424_122 && 424_122 + 25_000 !== Number(L.iva.base))
+// A mano: 330.122 derechos + 70.000 hojas + 24.000 biometría = 424.122. Las
+// copias NO están: su precio ya trae el IVA dentro.
+check('BASE_IVA es la remuneración gravada SIN las copias: 424.122',
+  L.iva.base === '424122', `(dio ${L.iva.base})`)
+check('IVA_BRUTO conserva los decimales: 80.583,18 (19 % de 424.122, a mano)',
+  L.iva.bruto === '80583.18', `(dio ${L.iva.bruto})`)
+check('IVA_LIQUIDADO aproxima al múltiplo de 10: 80.580', L.iva.liquidado === 80_580, `(dio ${L.iva.liquidado})`)
 check('ninguna línea lleva el IVA redondeado: lo aporta exacto',
   L.lineas.find(l => l.clave === 'derechos_escritura').iva_exacto === '62723.18')
 
 // La decisión aprobada: el IVA SIGUE el reparto de cada concepto.
-check('las copias son del comprador, y su IVA pesa en el reparto del IVA total',
+check('las copias son del comprador por el precio completo, IVA incluido',
   linea('copias').comprador === 6_000 && linea('copias').vendedor === 0)
 check('…así que el IVA total NO queda 50/50', L.iva.comprador !== L.iva.vendedor)
-check('el IVA reparte 41.430 / 40.290 (se redondea la MENOR, la mayor es residual)',
-  L.iva.comprador === 41_430 && L.iva.vendedor === 40_290,
+// A mano: ponderado = 165.061 + 35.000 + 24.000 = 224.061 de 424.122.
+// 80.580 × 224.061/424.122 = 42.569,91 → la MENOR es la del vendedor
+// (38.010,09 → 38.010) y el comprador se queda con el residual, 42.570.
+check('el IVA reparte 42.570 / 38.010 (se redondea la MENOR, la mayor es residual)',
+  L.iva.comprador === 42_570 && L.iva.vendedor === 38_010,
   `(dio ${L.iva.comprador} / ${L.iva.vendedor})`)
 check('…y suman exactamente el liquidado',
   L.iva.comprador + L.iva.vendedor === L.iva.liquidado)
-check('un 50/50 plano habría dado 40.860 / 40.860, y no es lo que salió',
-  L.iva.comprador !== 40_860)
+check('un 50/50 plano habría dado 40.290 / 40.290, y no es lo que salió',
+  L.iva.comprador !== 40_290)
 
 check('las partes suman el total, al peso',
   L.totales.comprador + L.totales.vendedor === L.totales.total)
-// A mano: 3.444.342 de conceptos del trámite + 81.720 de IVA liquidado.
-check('total del trámite: 3.526.062', L.totales.total === 3_526_062, `(dio ${L.totales.total})`)
-check('…del que 2.201.211 son del comprador y 1.324.851 del vendedor',
-  L.totales.comprador === 2_201_211 && L.totales.vendedor === 1_324_851,
+// ── EL CENTINELA DEL TOTAL ─────────────────────────────────────────────────
+// A mano: 3.448.242 de conceptos del trámite + 80.580 de IVA liquidado.
+//
+// Este número ha cambiado dos veces, y las dos por un motivo escrito:
+//   · 3.526.065 → 3.524.922 al pasar a UN SOLO redondeo del IVA sobre el total
+//     en vez de uno por línea (y al salir las copias de BASE_IVA, porque su
+//     precio ya trae el IVA dentro).
+//   · 3.524.922 → 3.528.822 al sembrar el recaudo REAL del art. 50: para una
+//     cuantía de 100 M son $28.900, no los $25.000 inventados que tenía antes
+//     el arnés.
+// El centinela vale por el motivo, no por el número: si vuelve a moverse sin
+// una razón escrita aquí, es un fallo.
+check('total del trámite: 3.528.822', L.totales.total === 3_528_822, `(dio ${L.totales.total})`)
+check('…del que 2.216.301 son del comprador y 1.312.521 del vendedor',
+  L.totales.comprador === 2_216_301 && L.totales.vendedor === 1_312_521,
   `(dio ${L.totales.comprador} / ${L.totales.vendedor})`)
 check('el predial pendiente va APARTE del trámite',
   L.obligaciones.total === 450_000 && !L.lineas.filter(l => l.grupo !== 'OBLIGACIONES').some(l => l.clave === 'predial_pendiente'))
 check('…y el total del trámite es exactamente lo demás más el IVA',
-  L.lineas.reduce((s, l) => s + l.total, 0) + L.iva.liquidado === 3_526_062 + 450_000)
+  L.lineas.reduce((s, l) => s + l.total, 0) + L.iva.liquidado === 3_528_822 + 450_000)
 check('los grupos visuales son los cinco acordados',
   L.grupos.map(g => g.clave).join() === 'COSTOS_NOTARIALES,IMPUESTOS,REGISTRO,DOCUMENTOS_PREVIOS,OBLIGACIONES')
 check('la firma digital y las autenticaciones no entraron (no se activaron)',
@@ -558,7 +622,7 @@ check('con avalúo alto, los derechos se liquidan sobre el avalúo',
 check('…pero la retención sigue sobre el precio pactado',
   L2.lineas.find(l => l.clave === 'retefuente').base.valor === 80_000_000 &&
   L2.lineas.find(l => l.clave === 'retefuente').valor === 800_000)
-check('…y la liquidación lo explica', L2.avisos.some(a => /avalúo catastral porque supera el precio/.test(a)))
+check('…y la liquidación lo explica', L2.avisos.some(a => /avalúo catastral porque supera el valor pactado/.test(a)))
 
 // ── Timbre en la operación grande ──────────────────────────────────────────
 const L3 = liquidar(ANIO, { ...ENTRADA, valor_venta: 1_200_000_000 }, { fuentes: FUENTES_OFICIALES })
@@ -718,10 +782,243 @@ check('el redondeo del IVA es un pendiente del año, a nombre del titular',
     .some(x => x.campo === 'redondeo_iva' && x.quien === 'titular'))
 
 // ─────────────────────────────────────────────────────────────────────────────
+console.log('\n══ LÍMITES CONTIGUOS: la base puede traer decimales ══')
+// ─────────────────────────────────────────────────────────────────────────────
+// Si la base viene de un avalúo, puede tener centavos. Con límites del tipo
+// «hasta 100.000.000 / desde 100.000.001», una base de 100.000.000,50 no cae
+// en ningún tramo. El convenio es `desde < base ≤ hasta`, contiguo.
+check('una base con decimales cae en su tramo (100.000.000,50 → 9,11 por mil)',
+  evaluarTramos(ORIP, 100_000_000.5, null, 'ORIP', PESO) === 911_000,
+  `(dio ${evaluarTramos(ORIP, 100_000_000.5, null, 'ORIP', PESO)})`)
+// A mano: 12.852.101,50 × 9,11 / 1.000 = 117.082,644665 → 117.083.
+check('medio peso por encima de una frontera ya está en el tramo siguiente',
+  evaluarTramos(ORIP, 12_852_101.5, null, 'ORIP', PESO) === 117_083,
+  `(dio ${evaluarTramos(ORIP, 12_852_101.5, null, 'ORIP', PESO)})`)
+check('…y justo EN la frontera sigue en el tramo fijo',
+  evaluarTramos(ORIP, 12_852_101, null, 'ORIP', PESO) === 53_100)
+check('un avalúo escrito a la colombiana con centavos se lee bien',
+  calcularBaseNotarial({ valor_venta: 1, avaluo_catastral: '100.000.000,50' }).valor === 100_000_000.5)
+lanza('la tabla NO contigua del documento: hasta 100.000.000 / desde 100.000.001',
+  () => verificarTramos([
+    T(1, 0, 100_000_000, 'FIJO', 10, 'PESOS'),
+    T(2, 100_000_001, null, 'FIJO', 20, 'PESOS'),
+  ], null, 'x'),
+  'ErrorEsquemaNotarial', 'un hueco')
+check('…y el mensaje dice los dos números para poder arreglarlo',
+  (() => { try {
+    verificarTramos([T(1, 0, 100_000_000, 'FIJO', 10, 'PESOS'), T(2, 100_000_001, null, 'FIJO', 20, 'PESOS')], null, 'x')
+    return false
+  } catch (e) { return /100000000 → 100000001/.test(e.message) } })())
+
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\n══ UN SOLO SITIO PARA CADA DATO DEL TRAMO ══')
+// ─────────────────────────────────────────────────────────────────────────────
+lanza('un tramo que trae su propio IVA',
+  () => exigirCamposConocidosDelTramo({ ...T(1, 0, null, 'FIJO', 10, 'PESOS'), iva: 19 }, 'x'),
+  'ErrorEsquemaNotarial', 'El IVA se declara en el concepto')
+lanza('un tramo con una condición en texto libre',
+  () => exigirCamposConocidosDelTramo({ ...T(1, 0, null, 'FIJO', 10, 'PESOS'), condicion: 'SIN_CUANTIA' }, 'x'),
+  'ErrorEsquemaNotarial', 'no va como texto libre')
+lanza('cualquier otro campo desconocido, para que migrar no pierda datos en silencio',
+  () => exigirCamposConocidosDelTramo({ ...T(1, 0, null, 'FIJO', 10, 'PESOS'), observacion: 'algo' }, 'x'),
+  'ErrorEsquemaNotarial', 'no conoce')
+check('la verificación de la tabla también los caza',
+  (() => { try {
+    verificarTramos([{ ...T(1, 0, null, 'FIJO', 10, 'PESOS'), iva: 19 }], null, 'x')
+    return false
+  } catch (e) { return /grava_iva/.test(e.message) } })())
+
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\n══ RECAUDO: valor publicado, aportes y UVB de trazabilidad ══')
+// ─────────────────────────────────────────────────────────────────────────────
+check('PUBLICADO devuelve la cifra tal cual, sin recalcular',
+  redondear(15000, { unidad: 1, modo: 'PUBLICADO' }, 'x') === 15000)
+check('…y no la mueve aunque la unidad diga centena',
+  redondear(15050, { unidad: 100, modo: 'PUBLICADO' }, 'x') === 15050)
+lanza('una cifra «publicada» que sale con decimales delata que se recalculó',
+  () => redondear(15000.5, { unidad: 1, modo: 'PUBLICADO' }, 'x'),
+  'ErrorEsquemaNotarial', 'se declaró PUBLICADA y sale con decimales')
+
+const RECAUDO = CONCEPTOS_V1.find(c => c.clave === 'recaudo_snr').tramos
+check('los aportes que suman el valor publicado pasan',
+  (() => { verificarTramos(RECAUDO, null, 'recaudo'); return true })())
+lanza('aportes que NO suman el recaudo publicado',
+  () => verificarTramos([
+    { ...T(1, 0, null, 'FIJO', 25000, 'PESOS'), aporte_snr: 17000, aporte_fondo: 7000 },
+  ], null, 'recaudo'),
+  'ErrorEsquemaNotarial', 'no suman el recaudo')
+lanza('aportes institucionales sobre un tramo que no es un valor fijo',
+  () => verificarTramos([
+    { ...T(1, 0, null, 'TASA_SOBRE_TOTAL', 3, 'POR_MIL'), aporte_snr: 1, aporte_fondo: 2 },
+  ], null, 'recaudo'),
+  'ErrorEsquemaNotarial', 'no es un valor fijo')
+check('el usuario ve UN solo recaudo: 28.900 para una cuantía de 100 M',
+  linea('recaudo_snr').valor === 28_900, `(dio ${linea('recaudo_snr').valor})`)
+check('…y el desglose institucional queda aparte, para el PDF (mitad y mitad)',
+  linea('recaudo_snr').desglose_institucional?.snr === 14_450 &&
+  linea('recaudo_snr').desglose_institucional?.fondo === 14_450)
+check('…que suma el recaudo que paga',
+  linea('recaudo_snr').desglose_institucional.snr + linea('recaudo_snr').desglose_institucional.fondo === 28_900)
+check('el desglose NO altera el reparto entre comprador y vendedor',
+  linea('recaudo_snr').comprador === 14_450 && linea('recaudo_snr').vendedor === 14_450)
+// La UVB es solo trazabilidad: si moviera una cifra, no sería trazabilidad.
+const ANIO_UVB_TOCADA = {
+  ...ANIO,
+  conceptos: ANIO.conceptos.map(c => c.clave !== 'recaudo_snr' ? c : {
+    ...c, tramos: c.tramos.map(t => ({ ...t, valor_en_uvb: 999 })),
+  }),
+}
+check('cambiar la UVB del tramo no mueve ninguna cifra',
+  liquidar(ANIO_UVB_TOCADA, ENTRADA, { fuentes: FUENTES_OFICIALES }).totales.total === L.totales.total)
+
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\n══ ART. 50 TRANSCRITO: cada cifra contra su UVB ══')
+// ─────────────────────────────────────────────────────────────────────────────
+// La comprobación del titular, replicada: cada valor publicado sale de
+// UVB × $12.110 ajustado a la centena más próxima, y cada mitad es exacta. Si
+// alguna no cuadra, el error está en la transcripción, no en la tabla.
+//
+// Esto NO es un eco: el esperado se deriva de la UVB, que es otro dato de la
+// misma fila, no del valor que estamos comprobando.
+const UVB_2026 = 12_110
+const aLaCentena = n => Math.round(n / 100) * 100
+const TRAMOS_50 = [
+  ...CONCEPTOS_V1.find(c => c.clave === 'recaudo_sin_cuantia').tramos,
+  ...CONCEPTOS_V1.find(c => c.clave === 'recaudo_snr').tramos,
+]
+check('son las siete filas del artículo 50', TRAMOS_50.length === 7)
+let malTranscritos = 0
+for (const t of TRAMOS_50) {
+  if (aLaCentena(Number(t.valor_en_uvb) * UVB_2026) !== Number(t.valor)) malTranscritos++
+  if (Number(t.aporte_snr) !== Number(t.valor) / 2) malTranscritos++
+  if (Number(t.aporte_fondo) !== Number(t.valor) / 2) malTranscritos++
+}
+check('las siete cuadran con UVB × 12.110 a la centena, y las mitades son exactas',
+  malTranscritos === 0, `(${malTranscritos} descuadres)`)
+check('los valores publicados, en orden: 19.300 · 28.900 · 43.700 · 52.700 · 71.900 · 84.800 · 96.400',
+  TRAMOS_50.map(t => Number(t.valor)).join() === '19300,28900,43700,52700,71900,84800,96400')
+check('la tabla por cuantía cubre la recta y pasa sus guardas',
+  (() => { verificarTramos(CONCEPTOS_V1.find(c => c.clave === 'recaudo_snr').tramos, null, 'art. 50'); return true })())
+
+// LA FRONTERA QUE DICE EL DOCUMENTO: «De $0 hasta $100.000.000».
+const recaudoDe = base => evaluarTramos(
+  CONCEPTOS_V1.find(c => c.clave === 'recaudo_snr').tramos, base, null, 'art. 50',
+  { unidad: 1, modo: 'PUBLICADO' })
+check('$100.000.000 EXACTOS van al PRIMER tramo: 28.900', recaudoDe(100_000_000) === 28_900)
+check('…y un peso más, al segundo: 43.700', recaudoDe(100_000_001) === 43_700)
+check('…y medio peso más también, que es lo que el «+1» dejaba fuera',
+  recaudoDe(100_000_000.5) === 43_700)
+check('una cuantía de 1.500 M exactos todavía es del quinto tramo: 84.800',
+  recaudoDe(1_500_000_000) === 84_800)
+check('…y por encima, del abierto: 96.400', recaudoDe(1_500_000_001) === 96_400)
+check('la cuantía más pequeña posible paga el primer tramo', recaudoDe(1) === 28_900)
+
+// ── Actos sin cuantía: catalogados y calculables, fuera de la sencilla ──────
+check('el acto sin cuantía NO está en la calculadora sencilla',
+  CONCEPTOS_V1.find(c => c.clave === 'acto_sin_cuantia').aplica_en_sencilla === false)
+check('…y no viene activado por defecto',
+  CONCEPTOS_V1.find(c => c.clave === 'acto_sin_cuantia').activo_por_defecto === false)
+const CON_SIN_CUANTIA = liquidar(ANIO, {
+  ...ENTRADA,
+  opcionales: [...ENTRADA.opcionales, 'acto_sin_cuantia', 'recaudo_sin_cuantia'],
+}, { fuentes: FUENTES_OFICIALES })
+const lsc = k => CON_SIN_CUANTIA.lineas.find(l => l.clave === k)
+check('…pero activado, calcula: 90.600 del art. 2 lit. a)', lsc('acto_sin_cuantia').valor === 90_600)
+check('…grava IVA: 17.214 exactos (19 % de 90.600, a mano)',
+  lsc('acto_sin_cuantia').iva_exacto === '17214')
+check('…y su recaudo es el de la primera fila: 19.300', lsc('recaudo_sin_cuantia').valor === 19_300)
+check('…con su desglose mitad y mitad: 9.650 / 9.650',
+  lsc('recaudo_sin_cuantia').desglose_institucional.snr === 9_650 &&
+  lsc('recaudo_sin_cuantia').desglose_institucional.fondo === 9_650)
+check('…y el recaudo del acto sin cuantía tampoco entra en BASE_IVA',
+  lsc('recaudo_sin_cuantia').iva_exacto === '0')
+
+// ── Y lo que de verdad importa: la cifra cargada NO habilita el cálculo ────
+lanza('el catálogo REAL, con los tres verificados, sigue sin poder activarse',
+  () => liquidar({ ...ANIO_VACIO, estado: 'ACTIVO' }, { valor_venta: 100_000_000 }, { fuentes: FUENTES_OFICIALES }),
+  'AnioNoPublicable')
+check('…y los pendientes nombran los tres, por falta de RESPALDO y no de cifra',
+  (() => { const p = pendientesParaActivar(ANIO_VACIO, FUENTES_OFICIALES)
+    return ['recaudo_snr', 'recaudo_sin_cuantia', 'acto_sin_cuantia'].every(k => {
+      const label = CONCEPTOS_V1.find(c => c.clave === k).label
+      return p.some(x => x.que.startsWith(label) && /sin respaldo oficial/.test(x.que))
+    }) })())
+check('…y NINGUNO de los tres aparece como «falta la tarifa»',
+  !pendientesParaActivar(ANIO_VACIO, FUENTES_OFICIALES)
+    .some(x => /falta la tarifa/.test(x.que) && /Recaudo|Acto sin cuantía/.test(x.que)))
+
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\n══ COPIA SIMPLE: EL IVA VA DENTRO DEL PRECIO ══')
+// ─────────────────────────────────────────────────────────────────────────────
+// Art. 5: $700 por cara, IVA incluido. Es el único concepto así.
+check('la unidad de la copia es la CARA, no la copia',
+  CONCEPTOS_V1.find(c => c.clave === 'copias').unidad_label === 'cara')
+check('…y está marcada como precio con IVA incluido',
+  CONCEPTOS_V1.find(c => c.clave === 'copias').precio_incluye_iva === true)
+check('…y es la única del catálogo',
+  CONCEPTOS_V1.filter(c => c.precio_incluye_iva).length === 1)
+check('el precio no se toca: 2 caras × 3.000 = 6.000', linea('copias').valor === 6_000)
+// A mano: 6.000 / 1,19 = 5.042,0168… de base y 957,9831… de IVA incluido.
+check('el componente de IVA se EXTRAE: 957,98',
+  Number(linea('copias').iva_incluido_exacto).toFixed(2) === '957.98',
+  `(dio ${linea('copias').iva_incluido_exacto})`)
+check('…y nunca se suma un 19 % encima (serían 1.140, y 7.140 de total)',
+  Number(linea('copias').iva_incluido_exacto) !== 1_140 && linea('copias').valor !== 7_140)
+check('el neto más el IVA incluido devuelven el precio publicado',
+  Math.abs((6_000 - Number(linea('copias').iva_incluido_exacto)) +
+    Number(linea('copias').iva_incluido_exacto) - 6_000) < 0.0001)
+check('no aporta a BASE_IVA: su IVA ya venía liquidado en el precio',
+  Number(L.iva.base) === 424_122)
+check('la liquidación informa el IVA que ya venía dentro de precios',
+  Number(L.iva_incluido_en_precios).toFixed(2) === '957.98',
+  `(dio ${L.iva_incluido_en_precios})`)
+check('…aparte del liquidado, para que el PDF pueda sumar el IVA total pagado',
+  L.iva.liquidado === 80_580 && Number(L.iva_incluido_en_precios) > 0)
+// Art. 5: 700 × 19/119 = 111,76 por cara. Dos caras → 223,53.
+check('la extracción es precio × 19/119, no precio × 19 %',
+  Math.abs(Number(linea('copias').iva_incluido_exacto) - (6_000 * 19) / 119) < 0.0001)
+
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\n══ CONDICIONES: ni texto libre ni comparación muda ══')
+// ─────────────────────────────────────────────────────────────────────────────
+check('el campo de texto declara sus valores admitidos',
+  CAMPOS_CONDICION.find(c => c.campo === 'tipo_persona_vendedor').valores.join() === 'NATURAL,JURIDICA')
+lanza('«juridica» en minúscula se rechaza al cargar la regla',
+  () => exigirValorDeCondicion({ campo: 'tipo_persona_vendedor', operador: 'IGUAL', valor: 'juridica' }),
+  'ErrorEsquemaNotarial', 'Mayúsculas incluidas')
+check('«JURIDICA» se acepta',
+  (() => { exigirValorDeCondicion({ campo: 'tipo_persona_vendedor', operador: 'IGUAL', valor: 'JURIDICA' }); return true })())
+lanza('un valor que no está en la lista',
+  () => exigirValorDeCondicion({ campo: 'tipo_persona_vendedor', operador: 'IGUAL', valor: 'SOCIEDAD' }),
+  'ErrorEsquemaNotarial', 'solo admite')
+lanza('un «sí» en un campo de sí o no',
+  () => exigirValorDeCondicion({ campo: 'es_casa_habitacion', operador: 'IGUAL', valor: 'si' }),
+  'ErrorEsquemaNotarial', 'true o false')
+lanza('una palabra en un campo numérico',
+  () => exigirValorDeCondicion({ campo: 'valor_en_uvt', operador: 'MAYOR', valor: 'mucho' }),
+  'ErrorEsquemaNotarial', 'es numérico')
+lanza('una condición sin valor',
+  () => exigirValorDeCondicion({ campo: 'valor_en_uvt', operador: 'MAYOR', valor: '' }),
+  'ErrorEsquemaNotarial', 'no tiene valor')
+lanza('una regla cargada con el valor en minúscula no se guarda',
+  () => verificarReglas([
+    { ...GENERAL, clave: 'exc', orden: 10, condiciones: [{ campo: 'tipo_persona_vendedor', operador: 'IGUAL', valor: 'juridica' }] },
+    GENERAL,
+  ]),
+  'ErrorEsquemaNotarial', 'Mayúsculas incluidas')
+lanza('y si la simulación manda «juridica», tampoco falla en silencio',
+  () => calcularRetencion([
+    { ...GENERAL, clave: 'exenta', orden: 10, tipo_efecto: 'EXENCION', valor_efecto: null,
+      condiciones: [{ campo: 'tipo_persona_vendedor', operador: 'IGUAL', valor: 'JURIDICA' }] },
+    GENERAL,
+  ], 100_000_000, { tipo_persona_vendedor: 'juridica' }),
+  'ErrorEsquemaNotarial', 'solo admite')
+
+// ─────────────────────────────────────────────────────────────────────────────
 console.log('\n══ COPIAR UN AÑO NO COPIA LOS RESPALDOS ══')
 // ─────────────────────────────────────────────────────────────────────────────
 const C2027 = copiarAnio(ANIO, 2027)
-check('el año copiado conserva la estructura', C2027.conceptos.length === 16)
+check('el año copiado conserva la estructura', C2027.conceptos.length === 18)
 check('…y NINGUNA tarifa', C2027.conceptos.every(c => c.valor === null && (c.tramos ?? []).length === 0))
 check('…ni un solo respaldo', C2027.conceptos.every(c => (c.respaldos ?? []).length === 0) && C2027.respaldos.length === 0)
 check('…ni el UVT', C2027.uvt === null)

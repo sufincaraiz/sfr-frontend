@@ -64,6 +64,19 @@ export const alPeso = (n: number): number => Math.round(n)
  * encima invisible —daría cifras plausibles y nadie iría a mirar—.
  */
 export function redondear(n: number, r: Redondeo | null | undefined, etiqueta: string): number {
+  if (r && r.modo === 'PUBLICADO') {
+    // La cifra viene publicada: no se recalcula. Pero se comprueba que de
+    // verdad lo esté, porque una cifra «publicada» con decimales delata que
+    // alguien la derivó en vez de copiarla del documento.
+    if (!Number.isInteger(n)) {
+      throw new ErrorEsquemaNotarial(
+        `${etiqueta}: la cifra se declaró PUBLICADA y sale con decimales (${n}). ` +
+        'O no venía publicada, o se está recalculando.',
+        'redondeo',
+      )
+    }
+    return n
+  }
   if (!r) {
     throw new ErrorEsquemaNotarial(
       `${etiqueta}: no se sabe a qué unidad redondea esta tarifa ni en qué sentido. ` +
@@ -184,6 +197,62 @@ export interface OpcionesTramos {
  * Coherencia de la tabla. Lanza, no filtra: una tabla de tarifas a medias da
  * una cifra plausible y equivocada, que es la peor de las dos.
  */
+/**
+ * ─────────────────────────────────────────────────────────────────────────────
+ * EL CONVENIO DE FRONTERA — NO LO «CORRIJAS».
+ *
+ * El intervalo de un tramo es  `desde < base ≤ hasta`.  Es decir: el límite
+ * superior ENTRA en el tramo, y el inferior no.
+ *
+ * Esto no es una preferencia de estilo: es lo que dice el documento. La
+ * resolución escribe las filas así —RES-2026-000964-6, art. 50—:
+ *
+ *     «De $0 hasta $100.000.000»
+ *     «De $100.000.001 hasta $300.000.000»
+ *
+ * «Hasta» incluye. Con este convenio, una cuantía de $100.000.000 EXACTOS cae
+ * en el primer tramo, que es lo que la tabla ordena. Con el convenio contrario
+ * —`[desde, hasta)`, el habitual en programación— caería en el SEGUNDO, y el
+ * motor contradiría la resolución justo en la frontera, en el único punto donde
+ * nadie lo notaría al revisar un ejemplo cualquiera.
+ *
+ * Y por eso el `desde` que se GUARDA es el `hasta` del tramo anterior, no el
+ * «+1» impreso: guardar 100.000.001 dejaría fuera a $100.000.000,50, que es una
+ * cuantía posible en cuanto la base sale de un avalúo catastral. Preservar el
+ * «hasta» inclusivo y además cubrir la recta completa exige las dos cosas a la
+ * vez, y este convenio es el único que las cumple.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
+/**
+ * Campos que un tramo PUEDE traer. La lista existe por un motivo concreto: al
+ * migrar una tabla desde otro documento, un campo que este motor no conoce
+ * —un `iva` por tramo, una `condicion` en texto libre— se ignoraría en
+ * silencio, y quien lo cargó creería que está surtiendo efecto.
+ *
+ * Y en particular: el IVA NO se declara por tramo. Es `grava_iva` del concepto
+ * y solo de ahí. Dos fuentes para el mismo dato dejan sin definir quién gana.
+ */
+const CAMPOS_TRAMO = new Set([
+  'orden', 'desde', 'hasta', 'en_uvt', 'modo_calculo', 'valor', 'unidad',
+  'aporte_snr', 'aporte_fondo', 'valor_en_uvb',
+])
+
+export function exigirCamposConocidosDelTramo(t: Tramo, etiqueta: string): void {
+  for (const campo of Object.keys(t)) {
+    if (CAMPOS_TRAMO.has(campo)) continue
+    const extra = campo === 'iva'
+      ? ' El IVA se declara en el concepto (`grava_iva`), nunca en el tramo.'
+      : campo === 'condicion'
+        ? ' Una condición no va como texto libre en el tramo.'
+        : ''
+    throw new ErrorEsquemaNotarial(
+      `${etiqueta}: el tramo ${t.orden} trae un campo que este motor no conoce: «${campo}».${extra}`,
+      campo,
+    )
+  }
+}
+
 export function verificarTramos(
   tramos: Tramo[],
   uvt: number | null,
@@ -198,6 +267,28 @@ export function verificarTramos(
 
   const enUvt = !!primero.en_uvt
   for (const t of orden) {
+    exigirCamposConocidosDelTramo(t, etiqueta)
+    // Distribución institucional: si viene, tiene que sumar el valor publicado.
+    const tieneAportes = t.aporte_snr !== null && t.aporte_snr !== undefined
+      || t.aporte_fondo !== null && t.aporte_fondo !== undefined
+    if (tieneAportes) {
+      if (t.modo_calculo !== 'FIJO') {
+        throw new ErrorEsquemaNotarial(
+          `${etiqueta}: el tramo ${t.orden} reparte el recaudo entre instituciones y no es un valor fijo.`,
+          'aporte_snr',
+        )
+      }
+      const snr = pesos(t.aporte_snr ?? 0, `${etiqueta}: aporte SNR del tramo ${t.orden}`)
+      const fondo = pesos(t.aporte_fondo ?? 0, `${etiqueta}: aporte al Fondo del tramo ${t.orden}`)
+      const total = pesos(t.valor, `${etiqueta}: valor del tramo ${t.orden}`)
+      if (snr + fondo !== total) {
+        throw new ErrorEsquemaNotarial(
+          `${etiqueta}: en el tramo ${t.orden} los aportes no suman el recaudo ` +
+          `(${snr} + ${fondo} = ${snr + fondo}, y el valor publicado es ${total}).`,
+          'aporte_snr',
+        )
+      }
+    }
     if (!!t.en_uvt !== enUvt) {
       throw new ErrorEsquemaNotarial(
         `${etiqueta} mezcla tramos en UVT con tramos en pesos.`,
