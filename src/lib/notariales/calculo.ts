@@ -23,10 +23,12 @@ import {
   type AnioNotarial, type Concepto, type Entrada, type Fuente,
   type Grupo, type Linea, type Liquidacion, type Modo,
 } from './tipos.ts'
-import { alPeso, evaluarTramos, pesos, redondear, repartir, tasa } from './tramos.ts'
+import { Prisma } from '@prisma/client'
+import { evaluarTramos, pesos, redondear, repartir, tasa } from './tramos.ts'
 import { calcularBase, type Base } from './bases.ts'
 import { calcularRetencion } from './retencion.ts'
 import { exigirAnioPublicable } from './guardas.ts'
+import { liquidarIva, type AporteIva } from './iva.ts'
 import { codigoTrazabilidad } from './trazabilidad.ts'
 
 /** Multiplicador de una tarifa suelta (no de un tramo). */
@@ -114,6 +116,7 @@ export function liquidar(
   const tarifaIva = tasa(anio.tarifa_iva, 'la tarifa de IVA')
   const uvt = anio.uvt === null || anio.uvt === undefined ? null : Number(anio.uvt)
   const lineas: Linea[] = []
+  const aportes: AporteIva[] = []
   const basesUsadas = new Map<string, Base>()
   let tarifaRegistral: number | null = null
 
@@ -153,7 +156,8 @@ export function liquidar(
         break
       case 'POR_UNIDAD': {
         const cantidad = cantidadDe(c, entrada)
-        valor = alPeso(pesos(c.valor, `el valor de ${c.label}`) * cantidad)
+        // Pesos por una cantidad entera: exacto, no hay nada que redondear.
+        valor = pesos(c.valor, `el valor de ${c.label}`) * cantidad
         avisos.push(`${cantidad} ${c.unidad_label}${cantidad === 1 ? '' : 's'}.`)
         break
       }
@@ -186,12 +190,13 @@ export function liquidar(
     if (c.clave === 'derechos_orip') tarifaRegistral = valor
 
     // ── IVA y reparto ───────────────────────────────────────────────────────
-    const iva = c.grava_iva ? alPeso((valor * tarifaIva) / 100) : 0
     const pct = pctDe(c, entrada)
-    // Se reparten por separado para que el bloque derivado de IVA cuadre al
-    // peso con la suma de las líneas, sin arrastres de redondeo.
+    // El IVA de la línea NO se redondea ni se reparte aquí: se acumula exacto y
+    // se liquida UNA vez sobre el total. Redondear por línea haría que dos
+    // conceptos de 20.004 sumaran 40.000 en vez de 40.010.
+    const ivaExacto = c.grava_iva ? new Prisma.Decimal(valor).mul(tarifaIva).div(100) : new Prisma.Decimal(0)
+    if (c.grava_iva) aportes.push({ clave: c.clave, base: valor, pct_comprador: pct })
     const rv = repartir(valor, pct)
-    const ri = repartir(iva, pct)
 
     for (const r of c.respaldos ?? []) normas.push(`${r.norma}${r.articulo ? `, ${r.articulo}` : ''}`)
     if (c.motivo_reparto === 'NORMA_SUPLETIVA' && c.norma_reparto) {
@@ -209,10 +214,10 @@ export function liquidar(
       grupo: c.grupo,
       base,
       valor,
-      iva,
-      total: valor + iva,
-      comprador: rv.comprador + ri.comprador,
-      vendedor: rv.vendedor + ri.vendedor,
+      iva_exacto: ivaExacto.toString(),
+      total: valor,
+      comprador: rv.comprador,
+      vendedor: rv.vendedor,
       pct_comprador: pct,
       sujeto_legal: c.sujeto_legal,
       motivo_reparto: c.motivo_reparto,
@@ -223,32 +228,22 @@ export function liquidar(
     })
   }
 
-  // ── IVA derivado ──────────────────────────────────────────────────────────
+  // ── IVA derivado: los siete valores, con un solo redondeo ─────────────────
   // La base es la remuneración gravada. Los recaudos para terceros NO están en
   // ella por construcción: un concepto que grave IVA y sea recaudo a la vez lo
   // rechaza la guarda del esquema, no este cálculo.
-  const gravadas = lineas.filter(l => l.iva > 0)
-  const iva = {
-    base: gravadas.reduce((s, l) => s + l.valor, 0),
-    tarifa: tarifaIva,
-    total: gravadas.reduce((s, l) => s + l.iva, 0),
-    comprador: 0,
-    vendedor: 0,
-  }
-  for (const l of gravadas) {
-    const r = repartir(l.iva, l.pct_comprador)
-    iva.comprador += r.comprador
-    iva.vendedor += r.vendedor
-  }
+  const iva = liquidarIva(aportes, tarifaIva, anio.redondeo_iva)
 
   // ── Grupos, totales y la invariante ───────────────────────────────────────
+  // El IVA se muestra dentro de COSTOS NOTARIALES, que es donde se genera.
   const grupos = GRUPOS.map(g => {
     const suyas = lineas.filter(l => l.grupo === g.clave)
+    const suIva = g.clave === 'COSTOS_NOTARIALES'
     return {
       ...g,
-      total: suyas.reduce((s, l) => s + l.total, 0),
-      comprador: suyas.reduce((s, l) => s + l.comprador, 0),
-      vendedor: suyas.reduce((s, l) => s + l.vendedor, 0),
+      total: suyas.reduce((s, l) => s + l.total, 0) + (suIva ? iva.liquidado : 0),
+      comprador: suyas.reduce((s, l) => s + l.comprador, 0) + (suIva ? iva.comprador : 0),
+      vendedor: suyas.reduce((s, l) => s + l.vendedor, 0) + (suIva ? iva.vendedor : 0),
     }
   }).filter(g => lineas.some(l => l.grupo === g.clave))
 
@@ -256,9 +251,9 @@ export function liquidar(
   const tramite = lineas.filter(l => !esObligacion(l.grupo))
   const deudas = lineas.filter(l => esObligacion(l.grupo))
   const totales = {
-    total: tramite.reduce((s, l) => s + l.total, 0),
-    comprador: tramite.reduce((s, l) => s + l.comprador, 0),
-    vendedor: tramite.reduce((s, l) => s + l.vendedor, 0),
+    total: tramite.reduce((s, l) => s + l.total, 0) + iva.liquidado,
+    comprador: tramite.reduce((s, l) => s + l.comprador, 0) + iva.comprador,
+    vendedor: tramite.reduce((s, l) => s + l.vendedor, 0) + iva.vendedor,
   }
   const obligaciones = {
     total: deudas.reduce((s, l) => s + l.total, 0),

@@ -23,6 +23,7 @@ import {
 } from '../src/lib/notariales/guardas.ts'
 import { CONCEPTOS_V1, FUENTES_OFICIALES, camposExigidos } from '../src/lib/notariales/catalogo.ts'
 import { liquidar } from '../src/lib/notariales/calculo.ts'
+import { liquidarIva } from '../src/lib/notariales/iva.ts'
 import { codigoTrazabilidad, AVISO_NO_ALMACENADO } from '../src/lib/notariales/trazabilidad.ts'
 import { VERSION_MOTOR } from '../src/lib/notariales/tipos.ts'
 
@@ -466,8 +467,12 @@ const VALORES = {
 }
 const ANIO = {
   anio: 2026, estado: 'ACTIVO', uvt: 50000, uvb: 10000, tarifa_iva: 19,
+  // INVENTADA, como todo lo demás de este arnés: aproximación al múltiplo de
+  // $10, medio hacia arriba. La real entra con el PDF.
+  redondeo_iva: { unidad: 10, modo: 'CERCANO' },
   version: 7, cerrado: false,
   respaldos: [RESP('uvt', 'https://www.dian.gov.co/uvt.pdf'), RESP('uvb'), RESP('tarifa_iva'),
+    RESP('redondeo_iva', 'https://www.dian.gov.co/concepto.pdf'),
     ...BASES.map(b => RESP(b.campo_respaldo, 'https://www.suin-juriscol.gov.co/norma.pdf'))],
   conceptos: CONCEPTOS_V1.map(c => ({
     ...c, ...(VALORES[c.clave] ?? {}),
@@ -499,31 +504,39 @@ check('…y la soporta el vendedor entero',
   linea('retefuente').vendedor === 1_000_000 && linea('retefuente').comprador === 0)
 check('el impuesto de registro lo paga el comprador por costumbre',
   linea('impuesto_registro').comprador === 1_000_000 && linea('impuesto_registro').motivo_reparto === 'COSTUMBRE')
-check('el recaudo SNR no lleva IVA', linea('recaudo_snr').iva === 0)
-check('…y NO está en la base del IVA', !L.lineas.filter(l => l.iva > 0).some(l => l.clave === 'recaudo_snr'))
-check('la base del IVA es la remuneración gravada',
-  L.iva.base === 330_122 + 70_000 + 6_000 + 24_000, `(dio ${L.iva.base})`)
-check('el IVA total es 81.723 (19 % de 430.122, a mano)', L.iva.total === 81_723, `(dio ${L.iva.total})`)
-check('…y cuadra con la suma de las líneas',
-  L.iva.total === L.lineas.reduce((s, l) => s + l.iva, 0))
+check('el recaudo SNR no lleva IVA', linea('recaudo_snr').iva_exacto === '0')
+check('…y su valor NO está dentro de BASE_IVA',
+  Number(L.iva.base) === 430_122 && 430_122 + 25_000 !== Number(L.iva.base))
+check('BASE_IVA es la remuneración gravada: 430.122', L.iva.base === '430122', `(dio ${L.iva.base})`)
+check('IVA_BRUTO conserva los decimales: 81.723,18 (19 % de 430.122, a mano)',
+  L.iva.bruto === '81723.18', `(dio ${L.iva.bruto})`)
+check('IVA_LIQUIDADO aproxima al múltiplo de 10: 81.720', L.iva.liquidado === 81_720, `(dio ${L.iva.liquidado})`)
+check('ninguna línea lleva el IVA redondeado: lo aporta exacto',
+  L.lineas.find(l => l.clave === 'derechos_escritura').iva_exacto === '62723.18')
 
 // La decisión aprobada: el IVA SIGUE el reparto de cada concepto.
-check('el IVA de las copias es del comprador, porque las copias son suyas',
-  linea('copias').comprador === 6_000 + 1_140 && linea('copias').vendedor === 0)
+check('las copias son del comprador, y su IVA pesa en el reparto del IVA total',
+  linea('copias').comprador === 6_000 && linea('copias').vendedor === 0)
 check('…así que el IVA total NO queda 50/50', L.iva.comprador !== L.iva.vendedor)
-check('el IVA reparte al peso: 41.432 / 40.291',
-  L.iva.comprador === 41_432 && L.iva.vendedor === 40_291,
+check('el IVA reparte 41.430 / 40.290 (se redondea la MENOR, la mayor es residual)',
+  L.iva.comprador === 41_430 && L.iva.vendedor === 40_290,
   `(dio ${L.iva.comprador} / ${L.iva.vendedor})`)
-check('un 50/50 plano habría dado 40.862 / 40.861, y no es lo que salió',
-  L.iva.comprador !== 40_862 && L.iva.vendedor !== 40_861)
+check('…y suman exactamente el liquidado',
+  L.iva.comprador + L.iva.vendedor === L.iva.liquidado)
+check('un 50/50 plano habría dado 40.860 / 40.860, y no es lo que salió',
+  L.iva.comprador !== 40_860)
 
 check('las partes suman el total, al peso',
   L.totales.comprador + L.totales.vendedor === L.totales.total)
-check('total del trámite: 3.526.065', L.totales.total === 3_526_065, `(dio ${L.totales.total})`)
+// A mano: 3.444.342 de conceptos del trámite + 81.720 de IVA liquidado.
+check('total del trámite: 3.526.062', L.totales.total === 3_526_062, `(dio ${L.totales.total})`)
+check('…del que 2.201.211 son del comprador y 1.324.851 del vendedor',
+  L.totales.comprador === 2_201_211 && L.totales.vendedor === 1_324_851,
+  `(dio ${L.totales.comprador} / ${L.totales.vendedor})`)
 check('el predial pendiente va APARTE del trámite',
   L.obligaciones.total === 450_000 && !L.lineas.filter(l => l.grupo !== 'OBLIGACIONES').some(l => l.clave === 'predial_pendiente'))
-check('…y el total del trámite es exactamente lo demás',
-  L.lineas.reduce((s, l) => s + l.total, 0) === 3_526_065 + 450_000)
+check('…y el total del trámite es exactamente lo demás más el IVA',
+  L.lineas.reduce((s, l) => s + l.total, 0) + L.iva.liquidado === 3_526_062 + 450_000)
 check('los grupos visuales son los cinco acordados',
   L.grupos.map(g => g.clave).join() === 'COSTOS_NOTARIALES,IMPUESTOS,REGISTRO,DOCUMENTOS_PREVIOS,OBLIGACIONES')
 check('la firma digital y las autenticaciones no entraron (no se activaron)',
@@ -588,6 +601,121 @@ lanza('un predial pendiente activado y sin valor',
 lanza('una liquidación con una fuente de respaldo retirada',
   () => liquidar(ANIO, ENTRADA, { fuentes: FUENTES_OFICIALES.map(f => ({ ...f, activo: false })) }),
   'AnioNoPublicable')
+
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\n══ IVA: LOS SIETE VALORES Y UN SOLO REDONDEO ══')
+// ─────────────────────────────────────────────────────────────────────────────
+// Los esperados están calculados aparte, a mano. La regla de aproximación que
+// se usa aquí (múltiplo de $10, medio hacia arriba) es INVENTADA para probar la
+// mecánica: la real es normativa y entra con su PDF.
+const DIEZ = { unidad: 10, modo: 'CERCANO' }
+const unIva = (base, pct = 50, tarifa = 19, regla = DIEZ) =>
+  liquidarIva([{ clave: 'x', base, pct_comprador: pct }], tarifa, regla)
+
+lanza('sin la regla de aproximación, el IVA NO liquida',
+  () => unIva('216965.35', 50, 19, null),
+  'ErrorEsquemaNotarial', 'regla normativa')
+
+check('216.965,35 → IVA_BRUTO 41.223,4165', unIva('216965.35').bruto === '41223.4165',
+  `(dio ${unIva('216965.35').bruto})`)
+// Las dos fronteras: prueban el corte sin depender de decimales infinitos.
+check('216.973,68 → IVA_BRUTO 41.224,9992', unIva('216973.68').bruto === '41224.9992',
+  `(dio ${unIva('216973.68').bruto})`)
+check('…y liquida 41.220 (queda por debajo del medio)', unIva('216973.68').liquidado === 41_220)
+check('216.973,69 → IVA_BRUTO 41.225,0011', unIva('216973.69').bruto === '41225.0011',
+  `(dio ${unIva('216973.69').bruto})`)
+check('…y liquida 41.230 (pasa el medio: medio hacia arriba)', unIva('216973.69').liquidado === 41_230)
+check('un céntimo de base mueve la liquidación 10 pesos',
+  unIva('216973.69').liquidado - unIva('216973.68').liquidado === 10)
+
+const NOVENTA = unIva('999999.00', 37)
+check('999.999,00 → IVA_BRUTO 189.999,81', NOVENTA.bruto === '189999.81', `(dio ${NOVENTA.bruto})`)
+check('…liquida 190.000', NOVENTA.liquidado === 190_000)
+check('…y al 37/63 reparte 70.300 / 119.700',
+  NOVENTA.comprador === 70_300 && NOVENTA.vendedor === 119_700,
+  `(dio ${NOVENTA.comprador} / ${NOVENTA.vendedor})`)
+check('…que suman el liquidado', NOVENTA.comprador + NOVENTA.vendedor === 190_000)
+
+// EL ERROR QUE SE BUSCA: redondear por línea en vez de sobre el total.
+// Con tarifa del 20 %, dos bases de 100.020 dan 20.004 de IVA cada una, exacto.
+const DOS = liquidarIva(
+  [{ clave: 'a', base: 100020, pct_comprador: 50 }, { clave: 'b', base: 100020, pct_comprador: 50 }],
+  20, DIEZ,
+)
+check('dos conceptos de 20.004 de IVA → IVA_BRUTO 40.008', DOS.bruto === '40008', `(dio ${DOS.bruto})`)
+check('…liquidan 40.010, nunca 40.000', DOS.liquidado === 40_010 && DOS.liquidado !== 40_000)
+check('…que es lo que habría dado redondear cada línea por su cuenta',
+  unIva('100020', 50, 20).liquidado * 2 === 40_000)
+check('…diez pesos que no aparecen en ninguna línea y sí en el total',
+  DOS.liquidado - unIva('100020', 50, 20).liquidado * 2 === 10)
+
+// EL MEDIO EXACTO. Las dos fronteras de arriba (…,9992 y …,0011) prueban de qué
+// lado cae el corte, pero NO distinguen medio-arriba de medio-abajo: ninguna
+// está en el medio. Hace falta un cociente que termine en ,5 exacto, y con el
+// 19 % no existe. Con el 20 %: 206.125 × 20 % = 41.225 → /10 = 4.122,5 clavado.
+check('en el medio EXACTO, medio hacia arriba: 41.225 → 41.230',
+  unIva('206125', 50, 20).liquidado === 41_230, `(dio ${unIva('206125', 50, 20).liquidado})`)
+check('…y medio hacia abajo habría dado 41.220',
+  unIva('206125', 50, 20, { unidad: 10, modo: 'ABAJO' }).liquidado === 41_220)
+
+// CUÁL DE LAS DOS PARTES SE REDONDEA. Con la mayoría de repartos da igual: las
+// dos ramas coinciden. Solo se separan cuando la parte cae en ,5 exacto.
+// 41.230 × 25 % = 10.307,5 → se redondea la MENOR (10.308) y la mayor es el
+// residual (30.922). Redondeando la mayor saldría 10.307 / 30.923.
+check('al 25 %, redondear la MENOR da 10.308 / 30.922',
+  (() => { const r = unIva('216973.69', 25)
+    return r.comprador === 10_308 && r.vendedor === 30_922 })(),
+  `(dio ${unIva('216973.69', 25).comprador} / ${unIva('216973.69', 25).vendedor})`)
+check('…y nunca 10.307 / 30.923, que es redondear la mayor',
+  unIva('216973.69', 25).comprador !== 10_307)
+
+// EL EMPATE. Con múltiplos de 10 el 50/50 siempre parte exacto, así que la rama
+// del empate solo se ve con aproximación al peso: 41.225 / 2 = 20.612,5.
+const AL_PESO_REGLA = { unidad: 1, modo: 'CERCANO' }
+check('en el empate, el residual es del COMPRADOR: 20.612 / 20.613',
+  (() => { const r = unIva('216973.69', 50, 19, AL_PESO_REGLA)
+    return r.liquidado === 41_225 && r.comprador === 20_612 && r.vendedor === 20_613 })(),
+  `(dio ${JSON.stringify(unIva('216973.69', 50, 19, AL_PESO_REGLA))})`)
+check('…y es determinista: dos llamadas idénticas dan lo mismo',
+  unIva('216973.69', 50, 19, AL_PESO_REGLA).comprador ===
+  unIva('216973.69', 50, 19, AL_PESO_REGLA).comprador)
+
+// CONCILIACIÓN: una docena de repartos, incluidos los extremos y el empate.
+const REPARTOS = [0, 5, 17, 33, 37, 50, 63, 66.6, 75, 88, 99, 100]
+let descuadres = 0
+for (const pct of REPARTOS) {
+  const r = unIva('216973.69', pct)
+  if (r.comprador + r.vendedor !== r.liquidado) descuadres++
+  if (r.comprador < 0 || r.vendedor < 0) descuadres++
+}
+check(`conciliación en ${REPARTOS.length} repartos: comprador + vendedor = liquidado siempre`,
+  descuadres === 0, `(${descuadres} descuadres)`)
+check('el 0 % deja todo el IVA al vendedor', unIva('216973.69', 0).vendedor === 41_230)
+check('el 100 % deja todo el IVA al comprador', unIva('216973.69', 100).comprador === 41_230)
+check('en el empate 50/50 el residual es del comprador (determinismo)',
+  (() => { const r = unIva('216973.69', 50)
+    // 41.230 / 2 = 20.615 exactos: no hay residuo que repartir, pero la rama
+    // del empate es la que decide, y tiene que dar siempre lo mismo.
+    return r.comprador === 20_615 && r.vendedor === 20_615 })())
+check('con reparto impar, el residual lo absorbe la parte MAYOR',
+  (() => { const r = unIva('216973.69', 33)
+    // menor = comprador = 41.230 × 0,33 = 13.605,9 → 13.606; mayor = 27.624.
+    return r.comprador === 13_606 && r.vendedor === 27_624 })())
+check('los valores EXACTOS se conservan para el PDF',
+  unIva('216973.69', 33).comprador_exacto === '13605.9')
+check('una base de cero no revienta ni inventa IVA',
+  (() => { const r = liquidarIva([], 19, DIEZ)
+    return r.base === '0' && r.liquidado === 0 && r.comprador === 0 && r.vendedor === 0 })())
+check('la aproximación hacia ABAJO da otra cosa que la cercana',
+  unIva('216973.69', 50, 19, { unidad: 10, modo: 'ABAJO' }).liquidado === 41_220)
+check('…y hacia ARRIBA también',
+  unIva('216973.68', 50, 19, { unidad: 10, modo: 'ARRIBA' }).liquidado === 41_230)
+lanza('un reparto fuera de rango en un aporte',
+  () => liquidarIva([{ clave: 'x', base: 100, pct_comprador: 140 }], 19, DIEZ),
+  'ErrorEsquemaNotarial', 'fuera de 0–100')
+check('el redondeo del IVA es un pendiente del año, a nombre del contador',
+  pendientesParaActivar({ ...ANIO_VACIO }, FUENTES_OFICIALES)
+    .some(x => x.campo === 'redondeo_iva' && x.quien === 'contador'))
 
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\n══ COPIAR UN AÑO NO COPIA LOS RESPALDOS ══')

@@ -11,6 +11,8 @@
  * sería exactamente lo que el titular bloqueó: una cifra sin PDF.
  */
 
+import type { LiquidacionIva } from './iva.ts'
+
 /** Versión del motor. Sube cuando cambia una REGLA de cálculo, no el formato. */
 export const VERSION_MOTOR = 1
 
@@ -220,6 +222,11 @@ export interface AnioNotarial {
   uvt?: string | number | null
   uvb?: string | number | null
   tarifa_iva?: string | number | null
+  /**
+   * A qué múltiplo aproxima el IVA y en qué sentido. Es REGLA NORMATIVA, no
+   * decisión del motor: sin respaldo oficial el IVA no liquida.
+   */
+  redondeo_iva?: Redondeo | null
   /** Sube con CUALQUIER escritura del año. Alimenta el código del PDF. */
   version: number
   cerrado: boolean
@@ -254,7 +261,13 @@ export interface Linea {
   /** Base usada y por qué, para que el PDF lo pueda imprimir. */
   base: { clave: BaseCalculo; valor: number; motivo: string } | null
   valor: number
-  iva: number
+  /**
+   * Lo que ESTA línea aporta al IVA, exacto y sin redondear. El IVA se liquida
+   * una sola vez sobre el total: redondear aquí haría que dos líneas de
+   * 20.004 sumaran 40.000 en vez de 40.010.
+   */
+  iva_exacto: string
+  /** Solo el valor del concepto. El IVA se reparte en su propio bloque. */
   total: number
   comprador: number
   vendedor: number
@@ -271,8 +284,11 @@ export interface Linea {
 export interface Liquidacion {
   lineas: Linea[]
   grupos: { clave: Grupo; titulo: string; nota: string; total: number; comprador: number; vendedor: number }[]
-  /** El IVA es DERIVADO: no tiene fila propia ni reparto propio. */
-  iva: { base: number; tarifa: number; total: number; comprador: number; vendedor: number }
+  /**
+   * El IVA es DERIVADO: no tiene tarifa propia ni reparto propio. Los siete
+   * valores van completos para que el PDF pueda enseñar de dónde sale cada uno.
+   */
+  iva: LiquidacionIva
   /**
    * Costo del TRÁMITE. Excluye las obligaciones del inmueble a propósito: un
    * predial atrasado de dos años no es lo que cuesta escriturar, y sumarlo haría

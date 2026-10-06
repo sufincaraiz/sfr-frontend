@@ -2595,6 +2595,53 @@ comportamiento que nadie había visto ocurrir. La regla de la sección anterior
 —verificar el efecto, no la salida— vale igual para las pruebas: **el nombre
 de una prueba no es prueba de nada; lo es el efecto que deja.**
 
+### La prueba que hace eco: verde para siempre, sin probar nada
+
+2026-10-06, motor de gastos notariales. 152 verificaciones en verde, y en el
+informe una afirmación numérica falsa. El titular hizo la pregunta correcta
+**antes** de pedir una corrección:
+
+> ¿la prueba calcula con la misma fórmula que el motor —y entonces pasó
+> comparándose consigo misma—, o la prueba tenía el número escrito y pasó, y
+> entonces el motor está mal?
+
+Son dos arreglos distintos, y responder primero evita arreglar lo que no está
+roto. (Esa vez no era ninguna de las dos: el arnés y el código estaban bien, y
+el número equivocado estaba en mi prosa. Lo cual no es inocuo: quien lee el
+informe no lee el arnés.)
+
+Pero la auditoría que disparó la pregunta encontró **seis** verificaciones que
+no verificaban:
+
+| Clase | Ejemplo real | Por qué no sirve |
+|---|---|---|
+| **Eco** | `evaluarTramos(T, x) === alPeso(0.015*1.5e9 + 0.03*5e8)` | El lado esperado recalcula la fórmula que se está probando, con sus mismos ayudantes de redondeo |
+| **Autoconsistencia** | `iva.total === lineas.reduce(sumar ivas)` | Compara dos salidas del mismo cálculo. Vale como invariante, **no** como comprobación de valor |
+| **Tautología** | `total < total + obligaciones` | Con `obligaciones > 0` es cierta siempre. Verde para siempre, pase lo que pase |
+
+**La regla.** Una prueba cuyo lado esperado se calcula con la lógica que
+prueba no es una prueba. El valor esperado de una frontera se calcula **aparte
+y se escribe como literal**: si la fórmula del código cambiara, el literal no
+cambia con ella, que es justamente lo que lo convierte en testigo.
+
+**Y cómo se verifica que el arnés sirve: rompiendo el motor a propósito.** Se
+muta una expresión del código y se cuenta cuántas verificaciones caen. Si no
+cae ninguna, eran eco. Dos ejemplos del mismo día:
+
+- Cambiar el acumulado marginal por «tasa sobre el total» → **26 caen**,
+  incluidas las siete fronteras. Son prueba, no eco.
+- En el IVA, cuatro mutaciones (redondear por línea, medio hacia abajo,
+  repartir el bruto en vez del liquidado, redondear la parte mayor). Las dos
+  primeras rondas dejaron **dos mutaciones vivas**: faltaban el caso del medio
+  exacto —`,50011` prueba de qué lado cae el corte, pero no distingue
+  medio-arriba de medio-abajo, porque no está en el medio— y un reparto que
+  cayera en `,5` clavado, que es el único donde se separa redondear la parte
+  menor de redondear la mayor. Con esos dos casos añadidos, las cuatro caen.
+
+Es la hermana de la regla anterior —el nombre de una prueba no prueba nada— y
+de la del detector: **a un arnés se le prueba rompiendo lo que vigila**, igual
+que a un detector se le prueba con las frases que tiene que cazar.
+
 ### El indicador agregado que inventó un fallo
 
 2026-09-22. El hub de finanzas decía «1 gasto sin proveedor, factura o recibo».

@@ -169,6 +169,7 @@ export function pendientesParaActivar(anio: AnioNotarial, fuentes: Fuente[]): Pe
     ['uvt', 'el UVT del año', 'titular'],
     ['uvb', 'la UVB del año', 'titular'],
     ['tarifa_iva', 'la tarifa de IVA', 'titular'],
+    ['redondeo_iva', 'a qué múltiplo aproxima el IVA', 'contador'],
   ] as const) {
     const v = anio[campo]
     if (v === null || v === undefined || v === '') p.push({ que: `Falta ${label}`, quien, campo })
@@ -302,6 +303,7 @@ export function copiarAnio(anio: AnioNotarial, nuevoAnio: number): AnioNotarial 
     uvt: null,
     uvb: null,
     tarifa_iva: null,
+    redondeo_iva: null,
     version: 1,
     cerrado: false,
     respaldos: [],
