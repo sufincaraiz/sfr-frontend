@@ -169,7 +169,7 @@ export function pendientesParaActivar(anio: AnioNotarial, fuentes: Fuente[]): Pe
     ['uvt', 'el UVT del año', 'titular'],
     ['uvb', 'la UVB del año', 'titular'],
     ['tarifa_iva', 'la tarifa de IVA', 'titular'],
-    ['redondeo_iva', 'a qué múltiplo aproxima el IVA', 'contador'],
+    ['redondeo_iva', 'a qué múltiplo aproxima el IVA', 'titular'],
   ] as const) {
     const v = anio[campo]
     if (v === null || v === undefined || v === '') p.push({ que: `Falta ${label}`, quien, campo })

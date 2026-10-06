@@ -713,9 +713,9 @@ check('…y hacia ARRIBA también',
 lanza('un reparto fuera de rango en un aporte',
   () => liquidarIva([{ clave: 'x', base: 100, pct_comprador: 140 }], 19, DIEZ),
   'ErrorEsquemaNotarial', 'fuera de 0–100')
-check('el redondeo del IVA es un pendiente del año, a nombre del contador',
+check('el redondeo del IVA es un pendiente del año, a nombre del titular',
   pendientesParaActivar({ ...ANIO_VACIO }, FUENTES_OFICIALES)
-    .some(x => x.campo === 'redondeo_iva' && x.quien === 'contador'))
+    .some(x => x.campo === 'redondeo_iva' && x.quien === 'titular'))
 
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\n══ COPIAR UN AÑO NO COPIA LOS RESPALDOS ══')
