@@ -144,11 +144,31 @@ export function exigirRespaldoOficial(r: Respaldo, fuentes: Fuente[]): void {
   }
 }
 
-const tieneRespaldo = (respaldos: Respaldo[] | undefined, campo: string, fuentes: Fuente[]): boolean => {
+/**
+ * Por qué un respaldo no sirve, con el motivo textual.
+ *
+ * Que el motivo viaje importa: un respaldo cuya fuente se DESACTIVÓ deja de
+ * valer, y si el aviso dijera solo «sin respaldo» nadie entendería por qué un
+ * año que ayer se activaba hoy no. Desactivar una fuente no puede ser una
+ * puerta trasera, pero tampoco un misterio.
+ */
+const estadoDelRespaldo = (
+  respaldos: Respaldo[] | undefined,
+  campo: string,
+  fuentes: Fuente[],
+): { vale: boolean; motivo: string | null } => {
   const r = (respaldos ?? []).find(x => x.campo === campo)
-  if (!r) return false
-  try { exigirRespaldoOficial(r, fuentes); return true } catch { return false }
+  if (!r) return { vale: false, motivo: null }
+  try {
+    exigirRespaldoOficial(r, fuentes)
+    return { vale: true, motivo: null }
+  } catch (e) {
+    return { vale: false, motivo: e instanceof Error ? e.message : String(e) }
+  }
 }
+
+const tieneRespaldo = (respaldos: Respaldo[] | undefined, campo: string, fuentes: Fuente[]): boolean =>
+  estadoDelRespaldo(respaldos, campo, fuentes).vale
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Coherencia del esquema — ROJO
@@ -224,6 +244,18 @@ export function verificarConcepto(c: Concepto, uvt: number | null): void {
       )
     }
   }
+  // Un supuesto declarado tiene que decir HACIA DÓNDE desvía. «Se asumió 1
+  // copia» no dice si el número real será mayor o menor; aquí siempre es mayor,
+  // y el que lee la cifra necesita saberlo. Mismo criterio que el aviso de
+  // muestra pequeña: no se dice «la muestra es corta», se dice qué no se puede
+  // concluir de ella.
+  if (c.es_estimacion_en_sencilla && !String(c.sesgo_en_sencilla ?? '').trim()) {
+    throw new ErrorEsquemaNotarial(
+      `${c.label}: es una estimación en la calculadora sencilla y no dice hacia dónde desvía. ` +
+      'La dirección del sesgo es parte del supuesto.',
+      'sesgo_en_sencilla',
+    )
+  }
   if (c.cantidad_en_sencilla !== null && c.cantidad_en_sencilla !== undefined) {
     if (!Number.isInteger(c.cantidad_en_sencilla) || c.cantidad_en_sencilla < 1) {
       throw new ErrorEsquemaNotarial(
@@ -289,6 +321,7 @@ export function verificarEsquema(anio: AnioNotarial): void {
       )
     }
   }
+  exigirOrdenDeDerivados(anio.conceptos)
   // La sistematización se liquida sobre la tarifa registral: sin ORIP no tiene
   // sobre qué calcularse, y un cero ahí pasaría por dato.
   if (claves.has('sistematizacion') && !claves.has('derechos_orip')) {
@@ -298,6 +331,31 @@ export function verificarEsquema(anio: AnioNotarial): void {
     )
   }
   if (anio.conceptos.some(c => c.tipo === 'REGLAS')) verificarReglas(anio.reglas_retencion)
+}
+
+/**
+ * El origen de una cantidad derivada tiene que ir ANTES que el derivado.
+ *
+ * No es una preferencia: la clave ajena compuesta de `conceptos_notariales` se
+ * comprueba fila a fila al insertar, así que sembrar el derivado primero falla.
+ * Esta guarda traslada ese fallo al arnés: si alguien reordena el catálogo, se
+ * entera corriendo las pruebas y no la primera vez que se siembra un año.
+ */
+export function exigirOrdenDeDerivados(conceptos: Concepto[]): void {
+  const orden = [...conceptos].sort((a, b) => a.orden - b.orden)
+  const vistos = new Set<string>()
+  for (const c of orden) {
+    if (c.multiplica_cantidad_de && !vistos.has(c.multiplica_cantidad_de)) {
+      const origen = conceptos.find(x => x.clave === c.multiplica_cantidad_de)
+      throw new ErrorEsquemaNotarial(
+        `${c.label} (orden ${c.orden}) multiplica la cantidad de ` +
+        `${origen ? `${origen.label} (orden ${origen.orden})` : `«${c.multiplica_cantidad_de}»`}, ` +
+        'que va después. El origen tiene que insertarse primero o la clave ajena lo rechaza.',
+        'orden',
+      )
+    }
+    vistos.add(c.clave)
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -325,8 +383,16 @@ export function pendientesParaActivar(anio: AnioNotarial, fuentes: Fuente[]): Pe
   ] as const) {
     const v = anio[campo]
     if (v === null || v === undefined || v === '') p.push({ que: `Falta ${label}`, quien, campo })
-    else if (!tieneRespaldo(anio.respaldos, campo, fuentes)) {
-      p.push({ que: `${label} está cargada sin su resolución oficial`, quien, campo })
+    else {
+      const estado = estadoDelRespaldo(anio.respaldos, campo, fuentes)
+      if (!estado.vale) {
+        p.push({
+          que: estado.motivo
+            ? `${label}: ${estado.motivo}`
+            : `${label} está cargada sin su resolución oficial`,
+          quien, campo,
+        })
+      }
     }
   }
 
@@ -349,7 +415,12 @@ export function pendientesParaActivar(anio: AnioNotarial, fuentes: Fuente[]): Pe
         })
         continue
       }
-      if (!tieneRespaldo(c.respaldos, campo, fuentes)) {
+      const estado = estadoDelRespaldo(c.respaldos, campo, fuentes)
+      if (!estado.vale) {
+        if (estado.motivo) {
+          p.push({ que: `${c.label}: ${estado.motivo}`, quien, campo })
+          continue
+        }
         const que = campo === 'tramos' ? 'los tramos están'
           : campo === 'redondeo' ? 'el redondeo está'
           : campo === 'reparto' ? 'el reparto está'

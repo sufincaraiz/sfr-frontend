@@ -195,6 +195,7 @@ export const CONCEPTOS_V1: Concepto[] = [
     cantidad_variable_por_notaria: true,
     aplica_en_sencilla: true,
     es_estimacion_en_sencilla: true,
+    sesgo_en_sencilla: 'El valor de la hoja cambia de una notaría a otra, así que puede subir o bajar.',
   },
   {
     ...comun,
@@ -249,6 +250,7 @@ export const CONCEPTOS_V1: Concepto[] = [
     aplica_en_sencilla: true,
     es_estimacion_en_sencilla: true,
     cantidad_en_sencilla: 1,
+    sesgo_en_sencilla: 'Si la notaría expide más, el costo sube.',
     // El reparto NO cuelga del C.C. 1862: las hojas del art. 2 son parte del
     // instrumento y se defienden como costa de la escritura; una copia
     // expedida aparte por el art. 5 no. Es configuración de la simulación.

@@ -2380,6 +2380,30 @@ Es otro instrumento que engaña (sección anterior), y el más peligroso: aquí 
 mentía la salida de un comando, mentía nuestra propia documentación, que
 afirmaba un efecto que nadie había visto.
 
+### Un supuesto declarado tiene que decir HACIA DÓNDE desvía
+
+2026-10-13. La calculadora sencilla no pregunta cuántas copias auténticas se
+expiden, así que asume una y lo dice: «Se asumió 1 copia auténtica». Correcto
+y **incompleto**: quien lo lee no sabe si el número real será mayor o menor.
+Y aquí siempre es mayor —si se expiden más copias, sube—.
+
+    Se asumió 1 copia auténtica. Si la notaría expide más, el costo sube.
+
+**La regla, y aplica a todo supuesto, no solo a este: la dirección del sesgo es
+parte del supuesto.** Un aviso que dice que un supuesto existe informa de que
+hay incertidumbre; uno que dice hacia dónde desvía permite decidir con ella.
+
+Es el mismo criterio que ya gobierna el aviso de muestra pequeña en
+`DatosVerificables`, que no dice «la muestra es corta» sino **qué no se puede
+concluir de ella**. Y el mismo que el criterio de colores: lo útil no es
+señalar que algo está pendiente, es decir de quién es la pelota.
+
+Puesto en el esquema como `sesgo_en_sencilla`, obligatorio en todo concepto
+marcado como estimación: una guarda lo exige, así que no se puede añadir una
+estimación nueva sin declarar su dirección. Cuando de verdad va en los dos
+sentidos, se dice —«el valor de la hoja cambia de una notaría a otra, así que
+puede subir o bajar»—, que también es información.
+
 ### El entorno de prueba que costó más que el cambio
 
 2026-10-02. Para validar un cambio en las subidas a Cloudinary —firma de
@@ -2759,6 +2783,35 @@ subida de la foto fallaba, el gasto se guardaba igual y la pantalla decía
 ahora es rojo, dice el motivo, y la foto queda en una cola local atada al
 gasto hasta que suba. En un módulo contable el silencio es peor que el fallo:
 el fallo se corrige, el silencio se descubre en una revisión de la DIAN.
+
+### Tercera reaparición: el plural derivado con una «s»
+
+2026-10-13, en el desglose de las copias auténticas:
+
+    3 copia auténticas × 10 hojas = 30 hojas
+
+Es **el mismo defecto que «1 movimiento registrados»**, en código nuevo, dos
+semanas después, y esta vez al lado de una cifra en pesos que lee un comprador.
+
+Y es el mismo patrón que la reaparición del indicador agregado. Son dos
+defectos distintos con **una sola causa**: una regla escrita en este documento
+que no se consulta al teclear el siguiente texto. Documentar no basta —ya lo
+sabíamos para las decisiones (§ «Documentar no es defender»)—; tampoco basta
+para la redacción.
+
+**La pregunta operativa**, que es lo único que sobrevive al olvido:
+
+> ¿este texto compone una frase con una cantidad variable?
+> Si sí, el plural se **declara**, no se deriva añadiendo una «s».
+
+Puesto en el esquema como `unidad_plural` y `unidad_captura_plural`, con una
+guarda que los **exige** cuando la etiqueta tiene más de una palabra —porque
+«copia auténtica» y «firma o diligencia» no pluralizan mecánicamente—. Ahí la
+regla deja de depender de que alguien se acuerde.
+
+Nótese el orden en que se encontró: no lo vio una revisión, lo vio **el arnés**,
+porque había una verificación que comparaba el texto del desglose carácter por
+carácter. Una regla de redacción solo se defiende sola si algo compara el texto.
 
 ### La variable de entorno que el código inventó
 

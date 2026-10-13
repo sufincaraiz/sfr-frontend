@@ -325,6 +325,13 @@ export interface Concepto {
    * sencillo y la liquidación dice que se asumió.
    */
   cantidad_en_sencilla?: number | null
+  /**
+   * HACIA DÓNDE desvía el supuesto, escrito. Obligatorio en todo concepto
+   * marcado como estimación en la sencilla: «Si la notaría expide más, el costo
+   * sube». Sin la dirección, el supuesto informa de que existe y no de qué
+   * hacer con él.
+   */
+  sesgo_en_sencilla?: string | null
   /** Texto de la pregunta: cuándo aplica este concepto y cuándo no. */
   ayuda?: string | null
   cantidad_sugerida?: number | null

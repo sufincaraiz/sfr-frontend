@@ -1268,6 +1268,19 @@ model ConceptoNotarial {
   /// notarial y las copias auténticas; preguntarlas dos veces las desincronizaría
   /// sin un solo error.
   multiplica_cantidad_de String?
+  /// CLAVE AJENA COMPUESTA sobre (anio_id, clave): hace imposible —no
+  /// improbable— que apunte a un concepto que no existe, incluso si alguien
+  /// escribe directo en la base. Comprobado contra Postgres antes de aplicarla:
+  /// con la columna en NULL no exige nada (MATCH SIMPLE); una clave inexistente
+  /// o de OTRO año se rechaza; borrar el origen mientras algo lo deriva se
+  /// rechaza; y borrar el año entero funciona, porque NO ACTION se comprueba al
+  /// final de la sentencia.
+  ///
+  /// ⚠ EXIGE ORDEN DE INSERCIÓN: el origen antes que el derivado. Lo garantiza
+  /// `exigirOrdenDeDerivados`, que corre en las pruebas: si alguien reordena el
+  /// catálogo, falla el arnés y no la siembra.
+  origen_cantidad ConceptoNotarial?  @relation("CantidadDerivada", fields: [anio_id, multiplica_cantidad_de], references: [anio_id, clave], onDelete: NoAction, onUpdate: NoAction)
+  derivados       ConceptoNotarial[] @relation("CantidadDerivada")
   /// Qué cuenta el usuario cuando la cantidad es derivada: «3 copias», no «24
   /// hojas». Obligatorio si `multiplica_cantidad_de`.
   unidad_captura_label   String?

@@ -21,6 +21,7 @@ import { calcularRetencion, verificarReglas, exigirValorDeCondicion, CAMPOS_COND
 import {
   esFuenteOficial, exigirRespaldoOficial, verificarEsquema, verificarConcepto,
   pendientesParaActivar, resumenDePendientes, exigirAnioPublicable, divergenciaUvt, copiarAnio,
+  exigirOrdenDeDerivados,
   esFechaIso, cubreLaFecha, exigirVigencia,
 } from '../src/lib/notariales/guardas.ts'
 import { CONCEPTOS_V1, FUENTES_OFICIALES, camposExigidos } from '../src/lib/notariales/catalogo.ts'
@@ -593,6 +594,40 @@ const ANIO = {
 check('el año completo YA es publicable',
   (() => { try { exigirAnioPublicable(ANIO, FUENTES_OFICIALES); return true } catch (e) { return `(${e.message})` } })() === true)
 
+// ── DESACTIVAR UNA FUENTE NO PUEDE SER LA PUERTA TRASERA ───────────────────
+// Un respaldo cuya fuente ya no está activa, o ya no existe, NO es «fuente
+// desconocida, sigo»: es SIN FUENTE VÁLIDA, y bloquea la activación.
+const SIN_SUPERNOTARIADO = FUENTES_OFICIALES.map(
+  f => f.dominio === 'supernotariado.gov.co' ? { ...f, activo: false } : f)
+const SIN_LISTA = []
+lanza('con la Superintendencia desactivada, el año deja de activarse',
+  () => exigirAnioPublicable(ANIO, SIN_SUPERNOTARIADO), 'AnioNoPublicable')
+check('…y el aviso dice QUÉ fuente y por qué',
+  (() => { const p = pendientesParaActivar(ANIO, SIN_SUPERNOTARIADO)
+    return p.some(x => /no pertenece a una autoridad oficial activa/.test(x.que)) &&
+      p.some(x => /supernotariado\.gov\.co/.test(x.que)) })(),
+  `(${JSON.stringify(pendientesParaActivar(ANIO, SIN_SUPERNOTARIADO).slice(0, 2))})`)
+check('…y no dice «falta la tarifa», que sería mentira: la tarifa está',
+  !pendientesParaActivar(ANIO, SIN_SUPERNOTARIADO).some(x => /falta la tarifa/.test(x.que)))
+lanza('sin NINGUNA fuente en la tabla, tampoco se activa',
+  () => exigirAnioPublicable(ANIO, SIN_LISTA), 'AnioNoPublicable')
+lanza('ni con la fuente borrada de la tabla en vez de desactivada',
+  () => exigirAnioPublicable(ANIO,
+    FUENTES_OFICIALES.filter(f => f.dominio !== 'supernotariado.gov.co')),
+  'AnioNoPublicable')
+// Aísla la rama del AÑO: solo la DIAN desactivada, que es de donde salen el
+// UVT y el redondeo del IVA. Si el motivo no viajara, el aviso diría «está
+// cargada sin su resolución oficial» y sería falso: la resolución está.
+const SIN_DIAN = FUENTES_OFICIALES.map(f => f.dominio === 'dian.gov.co' ? { ...f, activo: false } : f)
+check('con la DIAN desactivada, el pendiente del UVT dice el motivo',
+  pendientesParaActivar(ANIO, SIN_DIAN)
+    .some(x => x.campo === 'uvt' && /no pertenece a una autoridad oficial activa/.test(x.que)),
+  `(${JSON.stringify(pendientesParaActivar(ANIO, SIN_DIAN).filter(x => x.campo === 'uvt'))})`)
+check('…y nombra el dominio, no un «sin respaldo» genérico',
+  pendientesParaActivar(ANIO, SIN_DIAN).some(x => x.campo === 'uvt' && /dian\.gov\.co/.test(x.que)))
+check('el año vuelve a activarse al reactivar la fuente',
+  (() => { exigirAnioPublicable(ANIO, FUENTES_OFICIALES); return true })())
+
 const ENTRADA = {
   valor_venta: 100_000_000,
   // 3 copias auténticas × 10 hojas = 30 hojas. Las hojas NO se repiten aquí:
@@ -1120,6 +1155,12 @@ const ls2 = S2.lineas.find(l => l.clave === 'copia_autentica')
 check('la sencilla incluye la copia auténtica: sin ella la ORIP no inscribe', !!ls2)
 check('…asumiendo 1 copia: 1 × 10 × 5.600 = 56.000', ls2.valor === 56_000)
 check('…y DICIENDO que la asumió', ls2.avisos.some(a => /Se asumió 1 copia auténtica/.test(a)))
+check('…y HACIA DÓNDE desvía: si expiden más, sube',
+  ls2.avisos.some(a => a === 'Se asumió 1 copia auténtica. Si la notaría expide más, el costo sube.'),
+  `(${JSON.stringify(ls2.avisos)})`)
+check('la estimación de las hojas también dice su dirección',
+  S2.lineas.find(l => l.clave === 'hojas_papel_notarial').avisos
+    .some(a => /puede subir o bajar/.test(a)))
 check('…marcada como estimación', ls2.avisos.some(a => /Es una estimación/.test(a)))
 lanza('en la avanzada no se asume: si falta la cantidad, se detiene',
   () => liquidar(ANIO, { ...ENTRADA, cantidades: { hojas_papel_notarial: 10, copias: 2, biometria: 3 } },
@@ -1133,6 +1174,15 @@ check('un supuesto de la sencilla no puede existir sin declararse como estimaci�
   } catch (e) { return /supuesto que no se declara/.test(e.message) } })())
 
 // ── Las guardas de la derivación ───────────────────────────────────────────
+lanza('una estimación de la sencilla que no dice hacia dónde desvía',
+  () => verificarConcepto({ ...CONCEPTOS_V1.find(c => c.clave === 'copia_autentica'),
+    sesgo_en_sencilla: null }, null),
+  'ErrorEsquemaNotarial', 'dirección del sesgo es parte del supuesto')
+check('las dos estimaciones de la sencilla declaran su dirección',
+  CONCEPTOS_V1.filter(c => c.es_estimacion_en_sencilla)
+    .every(c => String(c.sesgo_en_sencilla ?? '').trim().length > 0))
+check('…y la de las hojas admite que puede ir en los dos sentidos',
+  /puede subir o bajar/.test(CONCEPTOS_V1.find(c => c.clave === 'hojas_papel_notarial').sesgo_en_sencilla))
 lanza('una etiqueta de varias palabras sin su plural escrito',
   () => verificarConcepto({ ...CONCEPTOS_V1.find(c => c.clave === 'copia_autentica'),
     unidad_captura_plural: null }, null),
@@ -1163,14 +1213,33 @@ lanza('multiplicar la cantidad de un concepto que no está en el año',
       multiplica_cantidad_de: 'inventado' }],
   }),
   'ErrorEsquemaNotarial', 'no está en el año')
-lanza('una cadena de derivaciones',
+lanza('una cadena de derivaciones, aunque respete el orden',
   () => liquidar({
     ...ANIO,
-    conceptos: ANIO.conceptos.map(c => c.clave !== 'hojas_papel_notarial' ? c : {
-      ...c, multiplica_cantidad_de: 'biometria', unidad_captura_label: 'x',
+    conceptos: ANIO.conceptos.map(c => {
+      if (c.clave === 'copias') {
+        return { ...c, multiplica_cantidad_de: 'hojas_papel_notarial',
+          unidad_captura_label: 'juego', unidad_captura_plural: 'juegos' }
+      }
+      if (c.clave === 'copia_autentica') return { ...c, multiplica_cantidad_de: 'copias' }
+      return c
     }),
   }, ENTRADA, { fuentes: FUENTES_OFICIALES }),
   'ErrorEsquemaNotarial', 'Sin cadenas')
+lanza('un derivado cuyo origen va DESPUÉS en el orden de inserción',
+  () => verificarEsquema({
+    ...ANIO,
+    conceptos: ANIO.conceptos.map(c => c.clave !== 'hojas_papel_notarial' ? c : {
+      ...c, multiplica_cantidad_de: 'biometria',
+      unidad_captura_label: 'juego', unidad_captura_plural: 'juegos',
+    }),
+  }),
+  'ErrorEsquemaNotarial', 'que va después')
+check('el catálogo real cumple el orden: las hojas van antes que las copias auténticas',
+  (() => { exigirOrdenDeDerivados(CONCEPTOS_V1); return true })())
+check('…y el origen tiene un orden menor, que es lo que exige la clave ajena',
+  CONCEPTOS_V1.find(c => c.clave === 'hojas_papel_notarial').orden <
+  CONCEPTOS_V1.find(c => c.clave === 'copia_autentica').orden)
 
 // ── Autenticaciones: la unidad y cuándo aplica ─────────────────────────────
 check('la unidad es «firma o diligencia», no «autenticación»',

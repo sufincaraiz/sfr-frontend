@@ -290,7 +290,8 @@ export function liquidar(
         }
         if (asumida) {
           avisos.push(
-            `Se asumió ${cantidad} ${unidadCapturada(c, cantidad)}: la calculadora sencilla no lo pregunta.`,
+            `Se asumió ${cantidad} ${unidadCapturada(c, cantidad)}.` +
+            (c.sesgo_en_sencilla ? ` ${c.sesgo_en_sencilla}` : ''),
           )
         }
         break
@@ -369,7 +370,7 @@ export function liquidar(
       normas.push(`Reparto: ${c.norma_reparto} (salvo pacto entre las partes).`)
     }
     if (modo === 'SENCILLA' && c.es_estimacion_en_sencilla) {
-      avisos.push('Es una estimación: el valor exacto depende de la notaría.')
+      avisos.push(`Es una estimación. ${c.sesgo_en_sencilla ?? ''}`.trim())
     }
     if (c.cantidad_variable_por_notaria) avisos.push('Este valor cambia de una notaría a otra.')
     // Genérico a propósito: «cuántas personas firmen» vale para la biometría y
