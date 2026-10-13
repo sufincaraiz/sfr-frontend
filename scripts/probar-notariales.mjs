@@ -121,10 +121,10 @@ check('una fuente oficial DESACTIVADA deja de servir',
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\n══ LA SIEMBRA REAL NACE VACÍA ══')
 // ─────────────────────────────────────────────────────────────────────────────
-check('son 18 conceptos', CONCEPTOS_V1.length === 18, `(hay ${CONCEPTOS_V1.length})`)
+check('son 19 conceptos', CONCEPTOS_V1.length === 19, `(hay ${CONCEPTOS_V1.length})`)
 // Tres vienen verificados contra el PDF; los quince restantes, vacíos.
 const VERIFICADOS = ['recaudo_snr', 'recaudo_sin_cuantia', 'acto_sin_cuantia']
-check('los quince que faltan por verificar NO traen valor ni tramos',
+check('los que faltan por verificar NO traen valor ni tramos',
   CONCEPTOS_V1.filter(c => !VERIFICADOS.includes(c.clave))
     .every(c => c.valor === null && (c.tramos ?? []).length === 0))
 check('solo el acto sin cuantía trae un valor cargado (art. 2 lit. a)',
@@ -556,6 +556,7 @@ const VALORES = {
   derechos_escritura: { redondeo: PESO, tramos: DERECHOS },
   hojas_papel_notarial: { valor: 7000 },
   copias: { valor: 3000 },
+  copia_autentica: { valor: 5600 },
   biometria: { valor: 8000 },
   firma_digital: { valor: 12000 },
   autenticaciones: { valor: 5000 },
@@ -594,7 +595,9 @@ check('el año completo YA es publicable',
 
 const ENTRADA = {
   valor_venta: 100_000_000,
-  cantidades: { hojas_papel_notarial: 10, copias: 2, biometria: 3 },
+  // 3 copias auténticas × 10 hojas = 30 hojas. Las hojas NO se repiten aquí:
+  // se leen de hojas_papel_notarial, que es donde se preguntan.
+  cantidades: { hojas_papel_notarial: 10, copias: 2, biometria: 3, copia_autentica: 3 },
   // El comprador asume el 100 % de las copias y de la biometría. La biometría
   // es la que mueve el reparto del IVA: las copias ya lo traen dentro.
   repartos: { copias: 100, biometria: 100 },
@@ -616,14 +619,16 @@ check('el impuesto de registro lo paga el comprador por costumbre',
   linea('impuesto_registro').comprador === 1_000_000 && linea('impuesto_registro').motivo_reparto === 'COSTUMBRE')
 check('el recaudo SNR no lleva IVA', linea('recaudo_snr').iva_exacto === '0')
 check('…y su valor NO está dentro de BASE_IVA',
-  Number(L.iva.base) === 424_122 && 424_122 + 25_000 !== Number(L.iva.base))
-// A mano: 330.122 derechos + 70.000 hojas + 24.000 biometría = 424.122. Las
-// copias NO están: su precio ya trae el IVA dentro.
-check('BASE_IVA es la remuneración gravada SIN las copias: 424.122',
-  L.iva.base === '424122', `(dio ${L.iva.base})`)
-check('IVA_BRUTO conserva los decimales: 80.583,18 (19 % de 424.122, a mano)',
-  L.iva.bruto === '80583.18', `(dio ${L.iva.bruto})`)
-check('IVA_LIQUIDADO aproxima al múltiplo de 10: 80.580', L.iva.liquidado === 80_580, `(dio ${L.iva.liquidado})`)
+  Number(L.iva.base) === 592_122 && 592_122 + 28_900 !== Number(L.iva.base))
+// A mano: 330.122 derechos + 70.000 hojas + 24.000 biometría + 168.000 de
+// copias auténticas = 592.122. Las copias SIMPLES no están: su precio ya trae
+// el IVA dentro. Las AUTÉNTICAS sí, porque el art. 5 no dice «IVA incluido» de
+// ellas.
+check('BASE_IVA es la remuneración gravada: 592.122',
+  L.iva.base === '592122', `(dio ${L.iva.base})`)
+check('IVA_BRUTO conserva los decimales: 112.503,18 (19 % de 592.122, a mano)',
+  L.iva.bruto === '112503.18', `(dio ${L.iva.bruto})`)
+check('IVA_LIQUIDADO aproxima al múltiplo de 10: 112.500', L.iva.liquidado === 112_500, `(dio ${L.iva.liquidado})`)
 check('ninguna línea lleva el IVA redondeado: lo aporta exacto',
   L.lineas.find(l => l.clave === 'derechos_escritura').iva_exacto === '62723.18')
 
@@ -631,16 +636,16 @@ check('ninguna línea lleva el IVA redondeado: lo aporta exacto',
 check('las copias son del comprador por el precio completo, IVA incluido',
   linea('copias').comprador === 6_000 && linea('copias').vendedor === 0)
 check('…así que el IVA total NO queda 50/50', L.iva.comprador !== L.iva.vendedor)
-// A mano: ponderado = 165.061 + 35.000 + 24.000 = 224.061 de 424.122.
-// 80.580 × 224.061/424.122 = 42.569,91 → la MENOR es la del vendedor
-// (38.010,09 → 38.010) y el comprador se queda con el residual, 42.570.
-check('el IVA reparte 42.570 / 38.010 (se redondea la MENOR, la mayor es residual)',
-  L.iva.comprador === 42_570 && L.iva.vendedor === 38_010,
+// A mano: ponderado = 165.061 + 35.000 + 24.000 + 84.000 = 308.061 de 592.122.
+// 112.500 × 308.061/592.122 = 58.529,94 → la MENOR es la del vendedor
+// (53.970,06 → 53.970) y el comprador se queda con el residual, 58.530.
+check('el IVA reparte 58.530 / 53.970 (se redondea la MENOR, la mayor es residual)',
+  L.iva.comprador === 58_530 && L.iva.vendedor === 53_970,
   `(dio ${L.iva.comprador} / ${L.iva.vendedor})`)
 check('…y suman exactamente el liquidado',
   L.iva.comprador + L.iva.vendedor === L.iva.liquidado)
-check('un 50/50 plano habría dado 40.290 / 40.290, y no es lo que salió',
-  L.iva.comprador !== 40_290)
+check('un 50/50 plano habría dado 56.250 / 56.250, y no es lo que salió',
+  L.iva.comprador !== 56_250)
 
 check('las partes suman el total, al peso',
   L.totales.comprador + L.totales.vendedor === L.totales.total)
@@ -654,16 +659,19 @@ check('las partes suman el total, al peso',
 //   · 3.524.922 → 3.528.822 al sembrar el recaudo REAL del art. 50: para una
 //     cuantía de 100 M son $28.900, no los $25.000 inventados que tenía antes
 //     el arnés.
+//   · 3.528.822 → 3.728.742 al entrar las COPIAS AUTÉNTICAS, que son gasto de
+//     todo cierre: 3 copias × 10 hojas × $5.600 = 168.000, más su IVA. Sin
+//     copia auténtica la ORIP no inscribe, así que faltaba un gasto real.
 // El centinela vale por el motivo, no por el número: si vuelve a moverse sin
 // una razón escrita aquí, es un fallo.
-check('total del trámite: 3.528.822', L.totales.total === 3_528_822, `(dio ${L.totales.total})`)
-check('…del que 2.216.301 son del comprador y 1.312.521 del vendedor',
-  L.totales.comprador === 2_216_301 && L.totales.vendedor === 1_312_521,
+check('total del trámite: 3.728.742', L.totales.total === 3_728_742, `(dio ${L.totales.total})`)
+check('…del que 2.316.261 son del comprador y 1.412.481 del vendedor',
+  L.totales.comprador === 2_316_261 && L.totales.vendedor === 1_412_481,
   `(dio ${L.totales.comprador} / ${L.totales.vendedor})`)
 check('el predial pendiente va APARTE del trámite',
   L.obligaciones.total === 450_000 && !L.lineas.filter(l => l.grupo !== 'OBLIGACIONES').some(l => l.clave === 'predial_pendiente'))
 check('…y el total del trámite es exactamente lo demás más el IVA',
-  L.lineas.reduce((s, l) => s + l.total, 0) + L.iva.liquidado === 3_528_822 + 450_000)
+  L.lineas.reduce((s, l) => s + l.total, 0) + L.iva.liquidado === 3_728_742 + 450_000)
 check('los grupos visuales son los cinco acordados',
   L.grupos.map(g => g.clave).join() === 'COSTOS_NOTARIALES,IMPUESTOS,REGISTRO,DOCUMENTOS_PREVIOS,OBLIGACIONES')
 check('la firma digital y las autenticaciones no entraron (no se activaron)',
@@ -850,7 +858,7 @@ check('…y el del reparto al peso, diciendo por qué no es norma',
   CRITERIOS_ADOPTADOS.some(c => c.clave === 'reparto_del_iva_al_peso' && /pacto entre particulares/.test(c.porque)))
 // El bruto viaja en la liquidación porque es el SOPORTE que pide el párrafo 8.
 check('IVA_BRUTO viaja junto al liquidado, como soporte de la aproximación',
-  L.iva.bruto === '80583.18' && L.iva.liquidado === 80_580)
+  L.iva.bruto === '112503.18' && L.iva.liquidado === 112_500)
 check('…y la diferencia entre los dos es comprobable',
   Math.abs(Number(L.iva.bruto) - L.iva.liquidado) < 10)
 
@@ -1048,15 +1056,137 @@ check('el neto más el IVA incluido devuelven el precio publicado',
   Math.abs((6_000 - Number(linea('copias').iva_incluido_exacto)) +
     Number(linea('copias').iva_incluido_exacto) - 6_000) < 0.0001)
 check('no aporta a BASE_IVA: su IVA ya venía liquidado en el precio',
-  Number(L.iva.base) === 424_122)
+  Number(L.iva.base) === 592_122)
 check('la liquidación informa el IVA que ya venía dentro de precios',
   Number(L.iva_incluido_en_precios).toFixed(2) === '957.98',
   `(dio ${L.iva_incluido_en_precios})`)
 check('…aparte del liquidado, para que el PDF pueda sumar el IVA total pagado',
-  L.iva.liquidado === 80_580 && Number(L.iva_incluido_en_precios) > 0)
+  L.iva.liquidado === 112_500 && Number(L.iva_incluido_en_precios) > 0)
 // Art. 5: 700 × 19/119 = 111,76 por cara. Dos caras → 223,53.
 check('la extracción es precio × 19/119, no precio × 19 %',
   Math.abs(Number(linea('copias').iva_incluido_exacto) - (6_000 * 19) / 119) < 0.0001)
+
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\n══ UNA ENTRADA, DOS CONCEPTOS: la cantidad derivada ══')
+// ─────────────────────────────────────────────────────────────────────────────
+// Las hojas de la escritura alimentan dos conceptos: el papel notarial y las
+// copias auténticas. Se preguntan UNA vez. Si se preguntaran dos veces se
+// desincronizarían —8 arriba, 3 abajo— y el total saldría mal sin un solo error.
+check('la copia auténtica declara de dónde saca las hojas',
+  CONCEPTOS_V1.find(c => c.clave === 'copia_autentica').multiplica_cantidad_de === 'hojas_papel_notarial')
+check('…y qué cuenta el usuario: copias, no hojas',
+  CONCEPTOS_V1.find(c => c.clave === 'copia_autentica').unidad_captura_label === 'copia auténtica' &&
+  CONCEPTOS_V1.find(c => c.clave === 'copia_autentica').unidad_label === 'hoja')
+// A mano: 3 copias × 10 hojas = 30 hojas × $5.600 = $168.000.
+check('3 copias × 10 hojas × 5.600 = 168.000', linea('copia_autentica').valor === 168_000,
+  `(dio ${linea('copia_autentica').valor})`)
+check('…y el desglose se imprime, no se deja adivinar',
+  linea('copia_autentica').avisos.some(a => a === '3 copias auténticas × 10 hojas = 30 hojas.'),
+  `(${JSON.stringify(linea('copia_autentica').avisos)})`)
+check('las hojas del papel notarial siguen siendo 10, no 30',
+  linea('hojas_papel_notarial').valor === 70_000)
+// Cambiar las hojas mueve LOS DOS conceptos, que es el punto.
+const MAS_HOJAS = liquidar(ANIO, {
+  ...ENTRADA, cantidades: { ...ENTRADA.cantidades, hojas_papel_notarial: 12 },
+}, { fuentes: FUENTES_OFICIALES })
+check('subir las hojas a 12 mueve el papel notarial',
+  MAS_HOJAS.lineas.find(l => l.clave === 'hojas_papel_notarial').valor === 84_000)
+check('…y arrastra las copias auténticas: 3 × 12 × 5.600 = 201.600',
+  MAS_HOJAS.lineas.find(l => l.clave === 'copia_autentica').valor === 201_600)
+check('…sin que exista ninguna segunda entrada de hojas que pudiera discrepar',
+  !Object.keys(ENTRADA.cantidades).some(k => /hoja/i.test(k) && k !== 'hojas_papel_notarial'))
+
+// ── La copia AUTÉNTICA no es la simple ─────────────────────────────────────
+check('la auténtica NO lleva el IVA dentro del precio',
+  !CONCEPTOS_V1.find(c => c.clave === 'copia_autentica').precio_incluye_iva)
+check('…así que sí entra en BASE_IVA, con sus 168.000',
+  Number(L.iva.base) === 330_122 + 70_000 + 24_000 + 168_000)
+check('…y la simple sigue fuera, con su IVA dentro del precio',
+  linea('copias').iva_exacto === '0' && Number(linea('copias').iva_incluido_exacto) > 0)
+check('la auténtica aporta IVA exacto: 31.920 (19 % de 168.000, a mano)',
+  linea('copia_autentica').iva_exacto === '31920')
+check('el reparto de la auténtica NO cuelga del Código Civil',
+  (() => { const c = CONCEPTOS_V1.find(x => x.clave === 'copia_autentica')
+    return c.motivo_reparto === 'CONFIGURACION' && c.norma_reparto === null })())
+check('…mientras las hojas del art. 2 tampoco lo afirman',
+  CONCEPTOS_V1.find(c => c.clave === 'hojas_papel_notarial').motivo_reparto === 'CONFIGURACION')
+check('…y los derechos de escritura siguen siendo el único con norma supletiva',
+  CONCEPTOS_V1.filter(c => c.motivo_reparto === 'NORMA_SUPLETIVA').length === 1)
+
+// ── El supuesto de la sencilla, declarado ──────────────────────────────────
+const S2 = liquidar(ANIO, { valor_venta: 100_000_000, cantidades: { hojas_papel_notarial: 10 } },
+  { modo: 'SENCILLA', fuentes: FUENTES_OFICIALES })
+const ls2 = S2.lineas.find(l => l.clave === 'copia_autentica')
+check('la sencilla incluye la copia auténtica: sin ella la ORIP no inscribe', !!ls2)
+check('…asumiendo 1 copia: 1 × 10 × 5.600 = 56.000', ls2.valor === 56_000)
+check('…y DICIENDO que la asumió', ls2.avisos.some(a => /Se asumió 1 copia auténtica/.test(a)))
+check('…marcada como estimación', ls2.avisos.some(a => /Es una estimación/.test(a)))
+lanza('en la avanzada no se asume: si falta la cantidad, se detiene',
+  () => liquidar(ANIO, { ...ENTRADA, cantidades: { hojas_papel_notarial: 10, copias: 2, biometria: 3 } },
+    { fuentes: FUENTES_OFICIALES }),
+  'ErrorDeEntrada', 'copias auténticas')
+check('un supuesto de la sencilla no puede existir sin declararse como estimación',
+  (() => { try {
+    verificarConcepto({ ...CONCEPTOS_V1.find(c => c.clave === 'copia_autentica'),
+      es_estimacion_en_sencilla: false }, null)
+    return false
+  } catch (e) { return /supuesto que no se declara/.test(e.message) } })())
+
+// ── Las guardas de la derivación ───────────────────────────────────────────
+lanza('una etiqueta de varias palabras sin su plural escrito',
+  () => verificarConcepto({ ...CONCEPTOS_V1.find(c => c.clave === 'copia_autentica'),
+    unidad_captura_plural: null }, null),
+  'ErrorEsquemaNotarial', 'no pluraliza añadiendo')
+lanza('…y lo mismo en la unidad de la tarifa',
+  () => verificarConcepto({ ...CONCEPTOS_V1.find(c => c.clave === 'autenticaciones'),
+    unidad_plural: null }, null),
+  'ErrorEsquemaNotarial', 'no pluraliza añadiendo')
+check('una etiqueta de una sola palabra no necesita plural escrito',
+  (() => { verificarConcepto({ ...CONCEPTOS_V1.find(c => c.clave === 'hojas_papel_notarial'),
+    unidad_plural: null }, null); return true })())
+lanza('un concepto que multiplica su propia cantidad',
+  () => verificarConcepto({ ...CONCEPTOS_V1.find(c => c.clave === 'copia_autentica'),
+    multiplica_cantidad_de: 'copia_autentica' }, null),
+  'ErrorEsquemaNotarial', 'su propia cantidad')
+lanza('una cantidad derivada sin decir qué cuenta el usuario',
+  () => verificarConcepto({ ...CONCEPTOS_V1.find(c => c.clave === 'copia_autentica'),
+    unidad_captura_label: null }, null),
+  'ErrorEsquemaNotarial', 'no dice qué cuenta el usuario')
+lanza('una cantidad derivada en un concepto que no se cobra por unidad',
+  () => verificarConcepto({ ...CONCEPTOS_V1.find(c => c.clave === 'copia_autentica'),
+    tipo: 'FIJO' }, null),
+  'ErrorEsquemaNotarial', 'no se cobra por unidad')
+lanza('multiplicar la cantidad de un concepto que no está en el año',
+  () => verificarEsquema({
+    anio: 2026, estado: 'BORRADOR', version: 1, cerrado: false, reglas_retencion: [GENERAL],
+    conceptos: [{ ...CONCEPTOS_V1.find(c => c.clave === 'copia_autentica'),
+      multiplica_cantidad_de: 'inventado' }],
+  }),
+  'ErrorEsquemaNotarial', 'no está en el año')
+lanza('una cadena de derivaciones',
+  () => liquidar({
+    ...ANIO,
+    conceptos: ANIO.conceptos.map(c => c.clave !== 'hojas_papel_notarial' ? c : {
+      ...c, multiplica_cantidad_de: 'biometria', unidad_captura_label: 'x',
+    }),
+  }, ENTRADA, { fuentes: FUENTES_OFICIALES }),
+  'ErrorEsquemaNotarial', 'Sin cadenas')
+
+// ── Autenticaciones: la unidad y cuándo aplica ─────────────────────────────
+check('la unidad es «firma o diligencia», no «autenticación»',
+  CONCEPTOS_V1.find(c => c.clave === 'autenticaciones').unidad_label === 'firma o diligencia')
+check('…y la ayuda dice cuándo aplica: solo si alguna parte actúa por poder',
+  /por poder/.test(CONCEPTOS_V1.find(c => c.clave === 'autenticaciones').ayuda ?? ''))
+check('…y que en una compraventa firmada ante el notario no hay',
+  /no hay autenticaciones/.test(CONCEPTOS_V1.find(c => c.clave === 'autenticaciones').ayuda ?? ''))
+check('sigue opcional y apagada por defecto',
+  (() => { const c = CONCEPTOS_V1.find(x => x.clave === 'autenticaciones')
+    return c.opcional === true && c.activo_por_defecto === false })())
+check('la copia auténtica, en cambio, NO es opcional: es gasto de todo cierre',
+  CONCEPTOS_V1.find(c => c.clave === 'copia_autentica').opcional === false)
+// El $280 del art. 6 par. 1 sigue SIN modelar, a propósito.
+check('la hoja adicional de reconocimiento no está en el catálogo',
+  !CONCEPTOS_V1.some(c => /hoja adicional|reconocimiento/i.test(c.label)))
 
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\n══ CONDICIONES: ni texto libre ni comparación muda ══')
@@ -1151,7 +1281,7 @@ check('…nombrándolas TODAS, no solo la primera', fuera.normas.length > 1,
 
 check('el 1 de febrero de 2026 sí liquida',
   liquidar(ANIO, { ...ENTRADA, fecha_acto: '2026-02-01' }, { fuentes: FUENTES_OFICIALES })
-    .totales.total === 3_528_822)
+    .totales.total === 3_728_742)
 check('el 31 de enero de 2026 no',
   (() => { try {
     liquidar(ANIO, { ...ENTRADA, fecha_acto: '2026-01-31' }, { fuentes: FUENTES_OFICIALES })
@@ -1195,7 +1325,7 @@ check('el 30 de enero se detiene por LAS DOS',
   `(${elTreinta?.normas?.map(n => n.vigencia_desde).join()})`)
 check('…y el 2 de febrero ya liquida con las dos',
   liquidar(ANIO_DOS_NORMAS, { ...ENTRADA, fecha_acto: '2026-02-02' }, { fuentes: FUENTES_OFICIALES })
-    .totales.total === 3_528_822)
+    .totales.total === 3_728_742)
 check('el único día con una norma vigente y la otra no es el 1 de febrero',
   (() => {
     const liquida = f => { try {
@@ -1224,7 +1354,7 @@ const ANIO_OPCIONAL_FUTURO = {
   }),
 }
 check('una tarifa apagada cuya norma rige el año que viene no detiene la liquidación',
-  liquidar(ANIO_OPCIONAL_FUTURO, ENTRADA, { fuentes: FUENTES_OFICIALES }).totales.total === 3_528_822)
+  liquidar(ANIO_OPCIONAL_FUTURO, ENTRADA, { fuentes: FUENTES_OFICIALES }).totales.total === 3_728_742)
 check('…pero encendida, sí la detiene',
   (() => { try {
     liquidar(ANIO_OPCIONAL_FUTURO, { ...ENTRADA, opcionales: [...ENTRADA.opcionales, 'firma_digital'],
@@ -1241,7 +1371,7 @@ const ANIO_UVT_FUTURO = {
 }
 check('el año de referencia sí liquida un acto del 15 de febrero',
   liquidar(ANIO, { ...ENTRADA, fecha_acto: '2026-02-15' }, { fuentes: FUENTES_OFICIALES })
-    .totales.total === 3_528_822)
+    .totales.total === 3_728_742)
 let soloAnio = null
 try {
   liquidar(ANIO_UVT_FUTURO, { ...ENTRADA, fecha_acto: '2026-02-15' }, { fuentes: FUENTES_OFICIALES })
@@ -1258,7 +1388,7 @@ check('exigirVigencia con todo en regla no lanza',
 console.log('\n══ COPIAR UN AÑO NO COPIA LOS RESPALDOS ══')
 // ─────────────────────────────────────────────────────────────────────────────
 const C2027 = copiarAnio(ANIO, 2027)
-check('el año copiado conserva la estructura', C2027.conceptos.length === 18)
+check('el año copiado conserva la estructura', C2027.conceptos.length === 19)
 check('…y NINGUNA tarifa', C2027.conceptos.every(c => c.valor === null && (c.tramos ?? []).length === 0))
 check('…ni un solo respaldo', C2027.conceptos.every(c => (c.respaldos ?? []).length === 0) && C2027.respaldos.length === 0)
 check('…ni el UVT', C2027.uvt === null)

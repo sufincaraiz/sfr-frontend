@@ -112,14 +112,21 @@ erratas de digitación visibles. Añadida por el titular el 2026-10-13.
 
 ## 5 · Lo que esta transcripción deja a la vista y no está resuelto
 
-- **La copia auténtica no está modelada.** El catálogo tiene `copias` = copia
-  **simple** ($700 por cara, IVA incluido). Una compraventa necesita además la
-  copia **auténtica** ($5.600 por hoja, art. 5) para el registro. Son dos
-  conceptos distintos, con unidad distinta —cara contra hoja— y tratamiento de
-  IVA distinto. Falta decidir si entra en la v1.
-- **La unidad de las autenticaciones.** El art. 6 dice «por firma o diligencia»;
-  el catálogo dice «autenticación». Si una diligencia con tres firmas se cobra
-  tres veces, la etiqueta que se pregunta está mal.
+- ~~La copia auténtica no está modelada.~~ **Resuelto (2026-10-13):** entra en
+  v1 y no como opcional —sin copia auténtica la ORIP no inscribe—. Concepto
+  `copia_autentica`, $5.600 por hoja, `precio_incluye_iva: false`, porque el
+  art. 5 dice «IVA incluido» únicamente de la copia **simple**. Reparto 50/50
+  por configuración, **sin** colgarle el C.C. 1862: las hojas del art. 2 son
+  parte del instrumento, una copia expedida aparte por el art. 5 no.
+- ~~La unidad de las autenticaciones.~~ **Resuelto (2026-10-13):** unidad «firma
+  o diligencia», y la ayuda dice cuándo aplica —solo si una parte actúa por
+  poder—. En una compraventa firmada ante el notario no hay autenticaciones.
+- **Pendiente de decidir: el $280 del art. 6 parágrafo 1.** Hoy **no está
+  modelado** en ninguna parte, y eso es correcto: el parágrafo lo ata a la
+  diligencia de reconocimiento de firma y contenido, y es el 10 % de la
+  autenticación por cada folio adicional de *ese* documento. No es una línea
+  suelta. O se condiciona a que haya autenticación con reconocimiento, o se
+  queda fuera de la v1.
 - **Tarifas transcritas que no son conceptos del catálogo:** certificaciones,
   notas de referencia, impresión de certificados web, hoja adicional en
   reconocimiento, declaración extraproceso. No son de una compraventa; quedan

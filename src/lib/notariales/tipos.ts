@@ -293,7 +293,40 @@ export interface Concepto {
   activo_por_defecto: boolean
   aplica_en_sencilla: boolean
   es_estimacion_en_sencilla: boolean
+  /** La unidad de la TARIFA: «hoja», «cara», «persona identificada». */
   unidad_label?: string | null
+  /**
+   * El plural, escrito. No se deriva añadiendo una «s»: «copia auténtica» daría
+   * «copia auténticas», y «firma o diligencia» no tiene plural mecánico. Ya nos
+   * pasó con «1 movimiento registrados»; la diferencia es que esto lo lee un
+   * comprador al lado de una cifra en pesos.
+   */
+  unidad_plural?: string | null
+  /**
+   * CANTIDAD DERIVADA. La clave de otro concepto cuya cantidad capturada se
+   * multiplica por la de este.
+   *
+   * El caso que lo motiva: las copias auténticas se cobran por hoja, y las
+   * hojas son las de la escritura, que ya se preguntan para el papel notarial.
+   * Si el formulario las preguntara dos veces se desincronizarían —8 arriba, 3
+   * abajo, total mal, cero errores— y nadie lo notaría. Se pregunta UNA vez y
+   * aquí se declara de dónde sale.
+   */
+  multiplica_cantidad_de?: string | null
+  /**
+   * Qué cuenta el usuario cuando la cantidad es derivada: él escribe «3 copias
+   * auténticas», no «24 hojas». Obligatorio si `multiplica_cantidad_de`.
+   */
+  unidad_captura_label?: string | null
+  unidad_captura_plural?: string | null
+  /**
+   * La cantidad que la calculadora SENCILLA asume cuando no la pregunta. Es un
+   * supuesto declarado, no un valor por defecto escondido: solo se usa en modo
+   * sencillo y la liquidación dice que se asumió.
+   */
+  cantidad_en_sencilla?: number | null
+  /** Texto de la pregunta: cuándo aplica este concepto y cuándo no. */
+  ayuda?: string | null
   cantidad_sugerida?: number | null
   /** El VALOR depende de la notaría (hoja de papel, copia). */
   cantidad_variable_por_notaria: boolean

@@ -72,19 +72,65 @@ function exigirClavesConocidas(anio: AnioNotarial, entrada: Entrada): void {
   }
 }
 
-function cantidadDe(c: Concepto, entrada: Entrada): number {
+/** Lo que el usuario cuenta de este concepto, en singular o en plural. */
+function unidadCapturada(c: Concepto, n = 1): string {
+  if (n === 1) return c.unidad_captura_label ?? c.unidad_label ?? 'unidad'
+  return c.unidad_captura_plural ?? c.unidad_plural ?? `${c.unidad_captura_label ?? c.unidad_label ?? 'unidad'}s`
+}
+
+/** La unidad de la TARIFA, en singular o en plural. */
+function unidadTarifa(c: Concepto, n = 1): string {
+  if (n === 1) return c.unidad_label ?? 'unidad'
+  return c.unidad_plural ?? `${c.unidad_label ?? 'unidad'}s`
+}
+
+function cantidadDe(c: Concepto, entrada: Entrada, modo: Modo): { cantidad: number; asumida: boolean } {
   const n = entrada.cantidades?.[c.clave]
   if (n === undefined || n === null) {
-    throw new ErrorDeEntrada(`Falta cuántas ${c.unidad_label ?? 'unidades'}(s) lleva la escritura.`, c.clave)
+    // La sencilla puede asumir una cantidad, pero solo si está DECLARADA, y lo
+    // dice en la liquidación. Un valor por defecto escondido sería la clase de
+    // supuesto que nadie ve.
+    if (modo === 'SENCILLA' && c.cantidad_en_sencilla) {
+      return { cantidad: c.cantidad_en_sencilla, asumida: true }
+    }
+    throw new ErrorDeEntrada(`Falta cuántas ${unidadCapturada(c, 2)} lleva la escritura.`, c.clave)
   }
   if (!Number.isInteger(n) || n < 1) {
     throw new ErrorDeEntrada(
-      `La cantidad de ${c.unidad_label ?? 'unidades'} tiene que ser un entero de 1 o más. ` +
+      `La cantidad de ${unidadCapturada(c, 2)} tiene que ser un entero de 1 o más. ` +
       (c.opcional ? 'Si no aplica, desactiva el concepto.' : ''),
       c.clave,
     )
   }
-  return n
+  return { cantidad: n, asumida: false }
+}
+
+/**
+ * El factor que viene de OTRO concepto. No se vuelve a preguntar: se lee de
+ * donde ya está, que es el único modo de que no puedan discrepar.
+ */
+function factorDerivado(c: Concepto, anio: AnioNotarial, entrada: Entrada, modo: Modo): number {
+  if (!c.multiplica_cantidad_de) return 1
+  const origen = anio.conceptos.find(x => x.clave === c.multiplica_cantidad_de)
+  if (!origen) {
+    throw new ErrorEsquemaNotarial(
+      `${c.label}: multiplica la cantidad de «${c.multiplica_cantidad_de}», que no es un concepto del año.`,
+      'multiplica_cantidad_de',
+    )
+  }
+  if (origen.tipo !== 'POR_UNIDAD') {
+    throw new ErrorEsquemaNotarial(
+      `${c.label}: multiplica la cantidad de ${origen.label}, que no se cobra por unidad.`,
+      'multiplica_cantidad_de',
+    )
+  }
+  if (origen.multiplica_cantidad_de) {
+    throw new ErrorEsquemaNotarial(
+      `${c.label}: multiplica una cantidad que ya es derivada (${origen.label}). Sin cadenas.`,
+      'multiplica_cantidad_de',
+    )
+  }
+  return cantidadDe(origen, entrada, modo).cantidad
 }
 
 function pctDe(c: Concepto, entrada: Entrada): number {
@@ -227,10 +273,26 @@ export function liquidar(
           : evaluarTramos(c.tramos!, base.valor, uvt, c.label, c.redondeo)
         break
       case 'POR_UNIDAD': {
-        const cantidad = cantidadDe(c, entrada)
-        // Pesos por una cantidad entera: exacto, no hay nada que redondear.
-        valor = pesos(c.valor, `el valor de ${c.label}`) * cantidad
-        avisos.push(`${cantidad} ${c.unidad_label}${cantidad === 1 ? '' : 's'}.`)
+        const { cantidad, asumida } = cantidadDe(c, entrada, modo)
+        const factor = factorDerivado(c, anio, entrada, modo)
+        const unitario = pesos(c.valor, `el valor de ${c.label}`)
+        // Pesos por cantidades enteras: exacto, no hay nada que redondear.
+        valor = unitario * cantidad * factor
+        if (c.multiplica_cantidad_de) {
+          const origen = anio.conceptos.find(x => x.clave === c.multiplica_cantidad_de)!
+          const total = cantidad * factor
+          avisos.push(
+            `${cantidad} ${unidadCapturada(c, cantidad)} × ${factor} ${unidadTarifa(origen, factor)} ` +
+            `= ${total} ${unidadTarifa(origen, total)}.`,
+          )
+        } else {
+          avisos.push(`${cantidad} ${unidadTarifa(c, cantidad)}.`)
+        }
+        if (asumida) {
+          avisos.push(
+            `Se asumió ${cantidad} ${unidadCapturada(c, cantidad)}: la calculadora sencilla no lo pregunta.`,
+          )
+        }
         break
       }
       case 'VALOR_LIBRE': {
@@ -310,7 +372,9 @@ export function liquidar(
       avisos.push('Es una estimación: el valor exacto depende de la notaría.')
     }
     if (c.cantidad_variable_por_notaria) avisos.push('Este valor cambia de una notaría a otra.')
-    if (c.cantidad_variable_por_operacion) avisos.push('La cantidad depende de cuántas personas firmen.')
+    // Genérico a propósito: «cuántas personas firmen» vale para la biometría y
+    // no para las copias. Lo específico va en la ayuda de cada concepto.
+    if (c.cantidad_variable_por_operacion) avisos.push('La cantidad depende de la operación.')
 
     lineas.push({
       clave: c.clave,

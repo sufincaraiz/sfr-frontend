@@ -192,6 +192,52 @@ export function verificarConcepto(c: Concepto, uvt: number | null): void {
   if (c.tipo === 'POR_UNIDAD' && !String(c.unidad_label ?? '').trim()) {
     throw new ErrorEsquemaNotarial(`${c.label}: se cobra por unidad y no dice de qué unidad.`, 'unidad_label')
   }
+  // Una etiqueta de varias palabras no pluraliza añadiendo una «s»: «copia
+  // auténtica» daría «copia auténticas». Donde el plural mecánico no sirve, se
+  // exige escrito.
+  for (const [singular, plural, campo] of [
+    [c.unidad_label, c.unidad_plural, 'unidad_plural'],
+    [c.unidad_captura_label, c.unidad_captura_plural, 'unidad_captura_plural'],
+  ] as const) {
+    if (String(singular ?? '').includes(' ') && !String(plural ?? '').trim()) {
+      throw new ErrorEsquemaNotarial(
+        `${c.label}: «${singular}» no pluraliza añadiendo una «s». Escribe su plural.`,
+        campo,
+      )
+    }
+  }
+  if (c.multiplica_cantidad_de) {
+    if (c.multiplica_cantidad_de === c.clave) {
+      throw new ErrorEsquemaNotarial(`${c.label}: multiplica su propia cantidad.`, 'multiplica_cantidad_de')
+    }
+    if (c.tipo !== 'POR_UNIDAD') {
+      throw new ErrorEsquemaNotarial(
+        `${c.label}: declara una cantidad derivada y no se cobra por unidad.`, 'multiplica_cantidad_de',
+      )
+    }
+    // Si el usuario cuenta copias y la tarifa es por hoja, la pantalla tiene
+    // que preguntar por copias. Sin esta etiqueta preguntaría por hojas y la
+    // cifra saldría al cuadrado.
+    if (!String(c.unidad_captura_label ?? '').trim()) {
+      throw new ErrorEsquemaNotarial(
+        `${c.label}: su cantidad es derivada y no dice qué cuenta el usuario.`, 'unidad_captura_label',
+      )
+    }
+  }
+  if (c.cantidad_en_sencilla !== null && c.cantidad_en_sencilla !== undefined) {
+    if (!Number.isInteger(c.cantidad_en_sencilla) || c.cantidad_en_sencilla < 1) {
+      throw new ErrorEsquemaNotarial(
+        `${c.label}: la cantidad asumida en la sencilla tiene que ser un entero de 1 o más.`, 'cantidad_en_sencilla',
+      )
+    }
+    if (!c.es_estimacion_en_sencilla) {
+      throw new ErrorEsquemaNotarial(
+        `${c.label}: asume una cantidad en la sencilla y no está marcado como estimación. ` +
+        'Un supuesto que no se declara es un supuesto que nadie ve.',
+        'es_estimacion_en_sencilla',
+      )
+    }
+  }
 
   if (c.tipo === 'TRAMOS' && (c.tramos ?? []).length) {
     verificarTramos(c.tramos!, uvt, c.label, { monotonicidad: c.monotonicidad, redondeo: c.redondeo })
@@ -233,6 +279,15 @@ export function verificarEsquema(anio: AnioNotarial): void {
     }
     claves.add(c.clave)
     verificarConcepto(c, uvt)
+  }
+  for (const c of anio.conceptos) {
+    if (!c.multiplica_cantidad_de) continue
+    if (!claves.has(c.multiplica_cantidad_de)) {
+      throw new ErrorEsquemaNotarial(
+        `${c.label}: multiplica la cantidad de «${c.multiplica_cantidad_de}», que no está en el año.`,
+        'multiplica_cantidad_de',
+      )
+    }
   }
   // La sistematización se liquida sobre la tarifa registral: sin ORIP no tiene
   // sobre qué calcularse, y un cero ahí pasaría por dato.

@@ -221,6 +221,41 @@ export const CONCEPTOS_V1: Concepto[] = [
   {
     ...comun,
     ...mitades,
+    clave: 'copia_autentica',
+    label: 'Copias auténticas de la escritura',
+    terminos_coloquiales: ['copia registrable', 'copia para el registro'],
+    grupo: 'COSTOS_NOTARIALES',
+    orden: 35,
+    tipo: 'POR_UNIDAD',
+    base: 'UNIDADES',
+    // ⚠ LA DIFERENCIA CON LA COPIA SIMPLE NO ES SOLO LA UNIDAD.
+    // El art. 5 dice «IVA incluido» ÚNICAMENTE de la copia simple. De la
+    // auténtica no lo dice, así que grava normal y SÍ entra en BASE_IVA.
+    // Modelarlas con la misma bandera dejaría una de las dos mal.
+    grava_iva: true,
+    es_recaudo_terceros: false,
+    // Art. 5: $5.600 por hoja utilizada por ambas caras, incluida la fotocopia
+    // y el papel de seguridad. El usuario cuenta COPIAS; la tarifa es por HOJA,
+    // y las hojas son las de la escritura, que ya se preguntan arriba.
+    unidad_label: 'hoja',
+    unidad_captura_label: 'copia auténtica',
+    unidad_captura_plural: 'copias auténticas',
+    multiplica_cantidad_de: 'hojas_papel_notarial',
+    cantidad_variable_por_operacion: true,
+    ayuda: 'Cuántas copias auténticas se expiden. La Oficina de Registro necesita al menos una ' +
+      'para poder inscribir: sin copia auténtica no se registra.',
+    // Gasto de todo cierre, así que entra también en la sencilla; allí no se
+    // pregunta cuántas y se asume la que exige el registro, declarándolo.
+    aplica_en_sencilla: true,
+    es_estimacion_en_sencilla: true,
+    cantidad_en_sencilla: 1,
+    // El reparto NO cuelga del C.C. 1862: las hojas del art. 2 son parte del
+    // instrumento y se defienden como costa de la escritura; una copia
+    // expedida aparte por el art. 5 no. Es configuración de la simulación.
+  },
+  {
+    ...comun,
+    ...mitades,
     clave: 'biometria',
     label: 'Biometría',
     terminos_coloquiales: ['huellero', 'identificación biométrica'],
@@ -233,6 +268,9 @@ export const CONCEPTOS_V1: Concepto[] = [
     // Por persona identificada, y la cantidad NO se asume: una compraventa
     // puede tener dos compradores y un vendedor, o seis herederos.
     unidad_label: 'persona identificada',
+    unidad_plural: 'personas identificadas',
+    ayuda: 'Una por cada persona que se identifique ante el notario: puede haber dos compradores ' +
+      'y un vendedor, o seis herederos.',
     cantidad_sugerida: null,
     cantidad_variable_por_operacion: true,
     solo_avanzada: true,
@@ -269,7 +307,15 @@ export const CONCEPTOS_V1: Concepto[] = [
     base: 'UNIDADES',
     grava_iva: true,
     es_recaudo_terceros: false,
-    unidad_label: 'autenticación',
+    // Art. 6: «por cada firma o diligencia según el caso». Tres firmas en una
+    // diligencia se cobran tres veces, así que la unidad no es «autenticación».
+    unidad_label: 'firma o diligencia',
+    unidad_plural: 'firmas o diligencias',
+    // En una compraventa normal NO hay autenticaciones: la escritura se firma
+    // ante el notario. Aparecen cuando una parte actúa por poder, y la pregunta
+    // tiene que decirlo o se cobrará de más por no saber cuándo aplica.
+    ayuda: 'Solo si alguna parte actúa por poder u otro documento que deba autenticarse. ' +
+      'En una compraventa firmada ante el notario no hay autenticaciones.',
     cantidad_sugerida: null,
     cantidad_variable_por_operacion: true,
     solo_avanzada: true,
