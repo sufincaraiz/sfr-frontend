@@ -43,6 +43,9 @@ export const BASES: { clave: BaseCalculo; label: string; regla: string; campo_re
   {
     clave: 'REGISTRO',
     label: 'Base del impuesto de registro',
+    // DOS valores, no cuatro: el autoavalúo y el remate son del art. 51 a) de
+    // la notarial. Aquí la regla es «si la cuantía es inferior al avalúo
+    // catastral, se liquida sobre el avalúo».
     regla: 'El mayor entre el valor del acto y el avalúo catastral.',
     campo_respaldo: 'base_registro',
   },
@@ -66,7 +69,7 @@ export const BASES: { clave: BaseCalculo; label: string; regla: string; campo_re
   },
 ]
 
-/** Los cuatro candidatos del art. 51 a), con el nombre que lleva cada uno. */
+/** Todos los candidatos posibles, con el nombre que lleva cada uno. */
 const CANDIDATOS = [
   ['valor_venta', 'el valor pactado'],
   ['avaluo_catastral', 'el avalúo catastral'],
@@ -74,11 +77,28 @@ const CANDIDATOS = [
   ['valor_remate', 'el valor del remate'],
 ] as const
 
-function entrada(e: Entrada): { venta: number; candidatos: { campo: string; label: string; valor: number }[] } {
+type CampoCandidato = (typeof CANDIDATOS)[number][0]
+
+/**
+ * CUÁLES entran en cada base, que no es lo mismo en todas. Por esto estaban
+ * separadas desde el principio: hoy dejan de coincidir.
+ *
+ *  · Los derechos notariales toman CUATRO valores — art. 51 lit. a).
+ *  · El registro y los derechos ORIP toman DOS: la cuantía y el avalúo
+ *    catastral. Meter ahí el autoavalúo subiría una base por una regla que no
+ *    es suya, y daría una cifra más alta que la que cobra la oficina.
+ */
+const CUATRO: readonly CampoCandidato[] = ['valor_venta', 'avaluo_catastral', 'autoavaluo', 'valor_remate']
+const DOS: readonly CampoCandidato[] = ['valor_venta', 'avaluo_catastral']
+
+function entrada(
+  e: Entrada,
+  cuales: readonly CampoCandidato[] = CUATRO,
+): { venta: number; candidatos: { campo: string; label: string; valor: number }[] } {
   const venta = pesos(e.valor_venta, 'el valor de venta')
   if (venta <= 0) throw new ErrorEsquemaNotarial('El valor de venta tiene que ser mayor que cero.', 'valor_venta')
   const candidatos: { campo: string; label: string; valor: number }[] = []
-  for (const [campo, label] of CANDIDATOS) {
+  for (const [campo, label] of CANDIDATOS.filter(([c]) => cuales.includes(c))) {
     const v = e[campo]
     if (v === null || v === undefined || v === '') continue
     // No se comprueba el signo: `leerNumero` ya rechaza un negativo antes de
@@ -92,11 +112,12 @@ function entrada(e: Entrada): { venta: number; candidatos: { campo: string; labe
  * El MAYOR de los candidatos que haya, diciendo cuál ganó y cuáles no se
  * pudieron comparar. Compartido por tres normas distintas que hoy coinciden.
  */
-function mayor(e: Entrada, queEs: string): Base & { clave: BaseCalculo } {
-  const { venta, candidatos } = entrada(e)
+function mayor(e: Entrada, queEs: string, cuales: readonly CampoCandidato[]): Base & { clave: BaseCalculo } {
+  const { venta, candidatos } = entrada(e, cuales)
+  void venta
   const ganador = candidatos.reduce((a, b) => (b.valor > a.valor ? b : a))
   const faltan = CANDIDATOS
-    .filter(([campo]) => !candidatos.some(c => c.campo === campo))
+    .filter(([campo]) => cuales.includes(campo) && !candidatos.some(c => c.campo === campo))
     .map(([, label]) => label)
 
   // Sin esta frase, una cifra más alta que el precio parece un error de la
@@ -113,15 +134,15 @@ function mayor(e: Entrada, queEs: string): Base & { clave: BaseCalculo } {
 }
 
 export function calcularBaseNotarial(e: Entrada): Base {
-  return { ...mayor(e, 'derechos notariales'), clave: 'NOTARIAL' }
+  return { ...mayor(e, 'derechos notariales', CUATRO), clave: 'NOTARIAL' }
 }
 
 export function calcularBaseRegistro(e: Entrada): Base {
-  return { ...mayor(e, 'impuesto de registro'), clave: 'REGISTRO' }
+  return { ...mayor(e, 'impuesto de registro', DOS), clave: 'REGISTRO' }
 }
 
 export function calcularBaseOrip(e: Entrada): Base {
-  return { ...mayor(e, 'derechos de registro'), clave: 'ORIP' }
+  return { ...mayor(e, 'derechos de registro', DOS), clave: 'ORIP' }
 }
 
 export function calcularBaseTimbre(e: Entrada): Base {

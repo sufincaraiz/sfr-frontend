@@ -148,11 +148,39 @@ export interface Fuente {
   entidad: string
   tipo: TipoFuente
   activo: boolean
+  /**
+   * Es una COMPILACIÓN, no la entidad que emitió la norma. Un normograma
+   * reproduce el texto; no lo autentica. Cuando lo es, el respaldo está
+   * obligado a llevar `nota` y la `advertencia` se imprime al lado de la cifra.
+   */
+  es_compilacion?: boolean
+  /** Lo que hay que decir siempre que se cite esta fuente. */
+  advertencia?: string | null
+  /**
+   * Quién añadió la autoridad y cuándo. Añadir una fuente es un acto
+   * deliberado: sin esto, mañana nadie sabe quién abrió esa puerta.
+   */
+  agregada_por: string
+  agregada_en: string
 }
 
 export interface Respaldo {
   campo: string
   norma: string
+  /**
+   * ¿La norma EXIGE esto, o lo PERMITE y lo adoptamos nosotros?
+   *
+   * El Concepto DIAN 003550 dice «podrá aproximarse»: aproximar el IVA es una
+   * decisión de Su Finca Raíz amparada en la norma, no una obligación que la
+   * norma imponga. Un respaldo que dijera «la norma exige» estaría afirmando
+   * algo que el documento no dice.
+   */
+  caracter?: 'EXIGIDO' | 'ADOPTADO'
+  /**
+   * Obligatoria cuando la fuente es una compilación: qué edición se consultó,
+   * dónde está el texto auténtico y qué erratas tiene.
+   */
+  nota?: string | null
   /** El artículo donde está la CIFRA. */
   articulo?: string | null
   url: string

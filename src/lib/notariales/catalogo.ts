@@ -33,14 +33,29 @@ import type { Concepto, Fuente, SujetoLegal } from './tipos.ts'
  * añadió. Un sitio comercial puede existir en la tabla como SECUNDARIA —para
  * dejar constancia de que se consultó—, pero no respalda una cifra.
  */
+const PRECARGA = { agregada_por: 'precarga', agregada_en: '2026-10-06' }
+
 export const FUENTES_OFICIALES: Fuente[] = [
-  { dominio: 'supernotariado.gov.co', entidad: 'Superintendencia de Notariado y Registro', tipo: 'OFICIAL', activo: true },
-  { dominio: 'dian.gov.co', entidad: 'Dirección de Impuestos y Aduanas Nacionales', tipo: 'OFICIAL', activo: true },
-  { dominio: 'cundinamarca.gov.co', entidad: 'Gobernación de Cundinamarca', tipo: 'OFICIAL', activo: true },
-  { dominio: 'funcionpublica.gov.co', entidad: 'Función Pública — gestor normativo', tipo: 'OFICIAL', activo: true },
-  { dominio: 'secretariasenado.gov.co', entidad: 'Senado de la República', tipo: 'OFICIAL', activo: true },
-  { dominio: 'corteconstitucional.gov.co', entidad: 'Corte Constitucional', tipo: 'OFICIAL', activo: true },
-  { dominio: 'suin-juriscol.gov.co', entidad: 'SUIN-Juriscol — Ministerio de Justicia', tipo: 'OFICIAL', activo: true },
+  { ...PRECARGA, dominio: 'supernotariado.gov.co', entidad: 'Superintendencia de Notariado y Registro', tipo: 'OFICIAL', activo: true },
+  { ...PRECARGA, dominio: 'dian.gov.co', entidad: 'Dirección de Impuestos y Aduanas Nacionales', tipo: 'OFICIAL', activo: true },
+  { ...PRECARGA, dominio: 'cundinamarca.gov.co', entidad: 'Gobernación de Cundinamarca', tipo: 'OFICIAL', activo: true },
+  { ...PRECARGA, dominio: 'funcionpublica.gov.co', entidad: 'Función Pública — gestor normativo', tipo: 'OFICIAL', activo: true },
+  { ...PRECARGA, dominio: 'secretariasenado.gov.co', entidad: 'Senado de la República', tipo: 'OFICIAL', activo: true },
+  { ...PRECARGA, dominio: 'corteconstitucional.gov.co', entidad: 'Corte Constitucional', tipo: 'OFICIAL', activo: true },
+  { ...PRECARGA, dominio: 'suin-juriscol.gov.co', entidad: 'SUIN-Juriscol — Ministerio de Justicia', tipo: 'OFICIAL', activo: true },
+  {
+    dominio: 'cancilleria.gov.co',
+    entidad: 'Ministerio de Relaciones Exteriores — Normograma',
+    tipo: 'OFICIAL',
+    activo: true,
+    // Reproduce el texto, no lo autentica. Y tiene erratas de digitación
+    // visibles, así que una cifra tomada de aquí se contrasta siempre.
+    es_compilacion: true,
+    advertencia: 'Compilación oficial, no la entidad emisora. El texto auténtico está en el ' +
+      'Diario Oficial 53.444 del 30 de marzo de 2026. La compilación tiene erratas de digitación.',
+    agregada_por: 'titular',
+    agregada_en: '2026-10-13',
+  },
 ]
 
 /** Quién tiene que traer lo que falta. El contador de pendientes se parte así. */

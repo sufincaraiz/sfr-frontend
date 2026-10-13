@@ -27,6 +27,8 @@ import { CONCEPTOS_V1, FUENTES_OFICIALES, camposExigidos } from '../src/lib/nota
 import { liquidar } from '../src/lib/notariales/calculo.ts'
 import { liquidarIva } from '../src/lib/notariales/iva.ts'
 import { codigoTrazabilidad, AVISO_NO_ALMACENADO } from '../src/lib/notariales/trazabilidad.ts'
+import { CRITERIOS_ADOPTADOS } from '../src/lib/notariales/iva.ts'
+import { calcularBaseRegistro, calcularBaseOrip } from '../src/lib/notariales/bases.ts'
 import { VERSION_MOTOR } from '../src/lib/notariales/tipos.ts'
 
 let ok = 0, fail = 0
@@ -87,6 +89,31 @@ lanza('un respaldo derogado antes de empezar a regir',
 lanza('un respaldo con URL comercial',
   () => exigirRespaldoOficial(RESP('valor', 'https://gastosnotariales.co/t'), FUENTES_OFICIALES),
   'RespaldoNoOficial')
+// ── Una COMPILACIÓN no es la entidad emisora ───────────────────────────────
+const CANCILLERIA = FUENTES_OFICIALES.find(f => f.dominio === 'cancilleria.gov.co')
+check('cancilleria.gov.co está en la lista blanca', !!CANCILLERIA)
+check('…marcada como compilación', CANCILLERIA.es_compilacion === true)
+check('…con su advertencia y el Diario Oficial donde está el texto auténtico',
+  /Diario Oficial 53\.444/.test(CANCILLERIA.advertencia ?? ''))
+check('…y con constancia de quién la añadió y cuándo',
+  CANCILLERIA.agregada_por === 'titular' && CANCILLERIA.agregada_en === '2026-10-13')
+const URL_COMP = 'https://cancilleria.gov.co/normograma/compilacion/docs/resolucion_superregistro_17266_2026.htm'
+lanza('un respaldo que cita la compilación SIN nota',
+  () => exigirRespaldoOficial({ ...RESP('tramos', URL_COMP), nota: null }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'es una COMPILACIÓN')
+check('…y con la nota, pasa',
+  (() => { exigirRespaldoOficial({ ...RESP('tramos', URL_COMP),
+    nota: 'Compilación consultada el 2026-10-13. Texto auténtico en el Diario Oficial 53.444.' },
+    FUENTES_OFICIALES); return true })())
+check('a supernotariado, que SÍ es la emisora, no se le exige nota',
+  (() => { exigirRespaldoOficial(RESP('tramos'), FUENTES_OFICIALES); return true })())
+check('una autoridad sin constancia de quién la añadió NO sirve',
+  esFuenteOficial('https://www.dian.gov.co/x.pdf',
+    FUENTES_OFICIALES.map(f => f.dominio === 'dian.gov.co' ? { ...f, agregada_por: '' } : f)) === null)
+check('…ni con una fecha de alta ilegible',
+  esFuenteOficial('https://www.dian.gov.co/x.pdf',
+    FUENTES_OFICIALES.map(f => f.dominio === 'dian.gov.co' ? { ...f, agregada_en: 'ayer' } : f)) === null)
+
 check('una fuente oficial DESACTIVADA deja de servir',
   esFuenteOficial('https://www.dian.gov.co/x.pdf',
     FUENTES_OFICIALES.map(f => f.dominio === 'dian.gov.co' ? { ...f, activo: false } : f)) === null)
@@ -405,6 +432,25 @@ check('con los cuatro informados y el pactado mayor, gana el pactado',
   calcularBaseNotarial({ valor_venta: 200_000_000, avaluo_catastral: 90_000_000, autoavaluo: 95_000_000, valor_remate: 99_000_000 }).valor === 200_000_000)
 check('…y entonces NO hay aviso de que falte comparar nada',
   !/No se informó/.test(calcularBaseNotarial({ valor_venta: 200_000_000, avaluo_catastral: 1, autoavaluo: 1, valor_remate: 1 }).motivo))
+// Y la registral toma DOS, no cuatro: el autoavalúo y el remate son del
+// art. 51 a) de la notarial. Esta es la primera vez que las bases dejan de
+// coincidir, que es justo para lo que estaban separadas.
+check('la base del IMPUESTO DE REGISTRO no toma el autoavalúo',
+  calcularBaseRegistro({ valor_venta: 80_000_000, autoavaluo: 120_000_000 }).valor === 80_000_000)
+check('…ni el valor del remate',
+  calcularBaseRegistro({ valor_venta: 80_000_000, valor_remate: 150_000_000 }).valor === 80_000_000)
+check('…pero sí el avalúo catastral',
+  calcularBaseRegistro({ valor_venta: 80_000_000, avaluo_catastral: 100_000_000 }).valor === 100_000_000)
+check('la de los DERECHOS ORIP, igual',
+  calcularBaseOrip({ valor_venta: 80_000_000, autoavaluo: 120_000_000 }).valor === 80_000_000 &&
+  calcularBaseOrip({ valor_venta: 80_000_000, avaluo_catastral: 100_000_000 }).valor === 100_000_000)
+check('…y la notarial sí lo toma: mismas entradas, bases distintas',
+  calcularBaseNotarial({ valor_venta: 80_000_000, autoavaluo: 120_000_000 }).valor === 120_000_000 &&
+  calcularBaseRegistro({ valor_venta: 80_000_000, autoavaluo: 120_000_000 }).valor === 80_000_000)
+check('la registral no avisa de que falte el autoavalúo: no es de su regla',
+  !/autoavalúo/.test(calcularBaseRegistro({ valor_venta: 80_000_000 }).motivo))
+check('…y la notarial sí avisa',
+  /autoavalúo/.test(calcularBaseNotarial({ valor_venta: 80_000_000 }).motivo))
 check('la base de RETENCIÓN sigue siendo el valor de la enajenación, no el mayor de cuatro',
   calcularBaseRetencion({ valor_venta: 80_000_000, autoavaluo: 120_000_000 }).valor === 80_000_000)
 check('la del TIMBRE tampoco toma el autoavalúo',
@@ -531,7 +577,11 @@ const ANIO = {
   redondeo_iva: { unidad: 10, modo: 'CERCANO' },
   version: 7, cerrado: false,
   respaldos: [RESP('uvt', 'https://www.dian.gov.co/uvt.pdf'), RESP('uvb'), RESP('tarifa_iva'),
-    RESP('redondeo_iva', 'https://www.dian.gov.co/concepto.pdf'),
+    { ...RESP('redondeo_iva', 'https://www.dian.gov.co/concepto.pdf'),
+      norma: 'Concepto DIAN 003550 int 306 del 4 de marzo de 2026',
+      articulo: 'art. 1.3.1.1.1 del Decreto 1625 de 2016',
+      // «Podrá aproximarse»: lo permite, no lo exige.
+      caracter: 'ADOPTADO' },
     ...BASES.map(b => RESP(b.campo_respaldo, 'https://www.suin-juriscol.gov.co/norma.pdf'))],
   conceptos: CONCEPTOS_V1.map(c => ({
     ...c, ...(VALORES[c.clave] ?? {}),
@@ -787,6 +837,23 @@ check('la aproximación hacia ABAJO da otra cosa que la cercana',
   unIva('216973.69', 50, 19, { unidad: 10, modo: 'ABAJO' }).liquidado === 41_220)
 check('…y hacia ARRIBA también',
   unIva('216973.68', 50, 19, { unidad: 10, modo: 'ARRIBA' }).liquidado === 41_230)
+// La aproximación del IVA es PERMISIVA: el concepto dice «podrá aproximarse».
+check('el respaldo del redondeo del IVA se carga como ADOPTADO, no como exigido',
+  (() => { const r = ANIO.respaldos.find(x => x.campo === 'redondeo_iva')
+    return r.caracter === 'ADOPTADO' })())
+check('los criterios que la norma NO define están declarados aparte',
+  CRITERIOS_ADOPTADOS.length === 2 &&
+  CRITERIOS_ADOPTADOS.every(c => c.adoptado_por === 'Su Finca Raíz'))
+check('…incluido el del empate, con su analogía al art. 577',
+  CRITERIOS_ADOPTADOS.some(c => c.clave === 'empate_aproximacion_iva' && /art\. 577/.test(c.porque)))
+check('…y el del reparto al peso, diciendo por qué no es norma',
+  CRITERIOS_ADOPTADOS.some(c => c.clave === 'reparto_del_iva_al_peso' && /pacto entre particulares/.test(c.porque)))
+// El bruto viaja en la liquidación porque es el SOPORTE que pide el párrafo 8.
+check('IVA_BRUTO viaja junto al liquidado, como soporte de la aproximación',
+  L.iva.bruto === '80583.18' && L.iva.liquidado === 80_580)
+check('…y la diferencia entre los dos es comprobable',
+  Math.abs(Number(L.iva.bruto) - L.iva.liquidado) < 10)
+
 lanza('un reparto fuera de rango en un aporte',
   () => liquidarIva([{ clave: 'x', base: 100, pct_comprador: 140 }], 19, DIEZ),
   'ErrorEsquemaNotarial', 'fuera de 0–100')
@@ -1031,8 +1098,11 @@ lanza('y si la simulación manda «juridica», tampoco falla en silencio',
 console.log('\n══ VIGENCIA: EL AÑO ES UNA ETIQUETA, NO UN RANGO ══')
 // ─────────────────────────────────────────────────────────────────────────────
 // RES-2026-000964-6, art. 56: rige desde el 1 de febrero de 2026.
-// RES-2026-001726-6, art. 29: rige desde el 29 de enero de 2026.
-// Las dos son «de 2026» y ni empiezan el mismo día ni empiezan en enero.
+// RES-2026-001726-6, art. 29: rige desde el 2 de febrero de 2026 — NO desde el
+// 29 de enero, que es lo que dice el texto original de ese artículo. Lo modificó
+// la RES-2026-001896-6 del 30 de enero, un documento que el art. 29 no menciona
+// y que solo aparece si se busca si esa norma fue modificada.
+// Las dos son «de 2026», ninguna empieza en enero y no empiezan el mismo día.
 
 check('las fechas se leen como texto ISO', esFechaIso('2026-02-01'))
 check('…y el 31 de febrero no existe aunque cumpla el formato', !esFechaIso('2026-02-31'))
@@ -1088,23 +1158,51 @@ check('el 31 de enero de 2026 no',
     return false
   } catch (e) { return e.name === 'FueraDeVigencia' } })())
 
-// LAS DOS RESOLUCIONES NO EMPIEZAN EL MISMO DÍA: un acto del 30 de enero está
-// cubierto por la registral (29 de enero) y no por la notarial (1 de febrero).
+// LAS DOS RESOLUCIONES NO EMPIEZAN EL MISMO DÍA: la notarial el 1 de febrero,
+// la registral el 2. Hay un día —el 1 de febrero— en que ya rige una y no la
+// otra, y en ese día no se puede liquidar una escritura completa.
+const ES_REGISTRAL = r => r.campo === 'base_orip' || r.campo === 'base_registro'
 const ANIO_DOS_NORMAS = {
   ...ANIO,
-  respaldos: ANIO.respaldos.map(r => r.campo === 'base_orip' || r.campo === 'base_registro'
-    ? { ...r, norma: 'Resolución RES-2026-001726-6', vigencia_desde: '2026-01-29', articulo_vigencia: 'art. 29' }
+  respaldos: ANIO.respaldos.map(r => ES_REGISTRAL(r)
+    ? {
+      ...r, norma: 'Resolución RES-2026-001726-6', vigencia_desde: '2026-02-02',
+      articulo_vigencia: 'art. 29, modificado por la RES-2026-001896-6',
+    }
     : r),
 }
-let mixto = null
+let elUno = null
+try {
+  liquidar(ANIO_DOS_NORMAS, { ...ENTRADA, fecha_acto: '2026-02-01' }, { fuentes: FUENTES_OFICIALES })
+} catch (e) { elUno = e }
+check('el 1 de febrero se detiene SOLO por la registral, que empieza el 2',
+  elUno?.name === 'FueraDeVigencia' &&
+  elUno.normas.length > 0 && elUno.normas.every(n => n.vigencia_desde === '2026-02-02'),
+  `(${elUno?.name}: ${elUno?.normas?.map(n => n.vigencia_desde).join()})`)
+check('…y la notarial NO aparece: el 1 de febrero ya regía',
+  !elUno.normas.some(n => /000964/.test(n.norma)))
+check('…y el aviso nombra la modificatoria, no solo el art. 29',
+  /RES-2026-001896-6/.test(elUno.message))
+
+let elTreinta = null
 try {
   liquidar(ANIO_DOS_NORMAS, { ...ENTRADA, fecha_acto: '2026-01-30' }, { fuentes: FUENTES_OFICIALES })
-} catch (e) { mixto = e }
-check('un acto del 30 de enero se detiene por la notarial, no por la registral',
-  mixto?.name === 'FueraDeVigencia' &&
-  mixto.normas.every(n => n.vigencia_desde === '2026-02-01'))
-check('…y la registral NO aparece entre las que no cubren esa fecha',
-  !mixto.normas.some(n => /001726/.test(n.norma)))
+} catch (e) { elTreinta = e }
+check('el 30 de enero se detiene por LAS DOS',
+  elTreinta?.name === 'FueraDeVigencia' &&
+  elTreinta.normas.some(n => n.vigencia_desde === '2026-02-01') &&
+  elTreinta.normas.some(n => n.vigencia_desde === '2026-02-02'),
+  `(${elTreinta?.normas?.map(n => n.vigencia_desde).join()})`)
+check('…y el 2 de febrero ya liquida con las dos',
+  liquidar(ANIO_DOS_NORMAS, { ...ENTRADA, fecha_acto: '2026-02-02' }, { fuentes: FUENTES_OFICIALES })
+    .totales.total === 3_528_822)
+check('el único día con una norma vigente y la otra no es el 1 de febrero',
+  (() => {
+    const liquida = f => { try {
+      liquidar(ANIO_DOS_NORMAS, { ...ENTRADA, fecha_acto: f }, { fuentes: FUENTES_OFICIALES }); return true
+    } catch { return false } }
+    return !liquida('2026-01-31') && !liquida('2026-02-01') && liquida('2026-02-02')
+  })())
 
 // La fecha del acto sale en la liquidación, para que el PDF la imprima.
 check('sin fecha del acto se usa hoy, y se devuelve',

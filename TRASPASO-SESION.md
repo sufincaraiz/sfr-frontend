@@ -2595,6 +2595,56 @@ comportamiento que nadie había visto ocurrir. La regla de la sección anterior
 —verificar el efecto, no la salida— vale igual para las pruebas: **el nombre
 de una prueba no es prueba de nada; lo es el efecto que deja.**
 
+### El artículo de vigencia que ya estaba derogado
+
+2026-10-13, calculadora de gastos notariales. Dos hallazgos encadenados del
+titular, y el segundo es más duro que el primero.
+
+**Primero:** la vigencia no es el año calendario. La RES-2026-000964-6
+(notarial) rige desde el 1 de febrero de 2026 por su art. 56; la
+RES-2026-001726-6 (registral) por su art. 29 decía regir desde su expedición,
+el 29 de enero. Las dos son «las de 2026» y ninguna empieza el 1 de enero. Una
+escritura del 15 de enero de 2026 se liquida con las tarifas de 2025. El motor
+las habría aplicado a enero sin decir nada, porque trataba el año como un rango
+de fechas cuando es solo una **etiqueta**.
+
+**Segundo, y es la regla que importa:** ese art. 29 **ya estaba modificado**.
+La RES-2026-001896-6 del 30 de enero cambió la fecha al 2 de febrero. El PDF
+que teníamos era el texto original —correcto como documento, falso como dato
+vigente— y la modificatoria **no aparece mencionada en el artículo que
+modifica**. Solo se encuentra si se busca expresamente si esa norma fue
+modificada.
+
+> **Leer el PDF correcto no basta. Hay que comprobar si esa norma fue
+> modificada.**
+
+Un artículo de vigencia es el último sitio donde uno esperaría un dato caduco,
+y es justo donde más daño hace: gobierna si todas las demás cifras del
+documento aplican o no.
+
+Y nótese el efecto combinado, que no se ve mirando una norma sola: con la
+notarial desde el 1 de febrero y la registral desde el 2, **hay un día —el 1 de
+febrero— en el que ya rige una y no la otra**, y en ese día no se puede
+liquidar una escritura completa. Eso no está escrito en ninguno de los dos
+documentos: aparece solo al cruzarlos.
+
+Es la misma familia que [la exención muerta] y [la prueba que hace eco]: un
+resultado plausible y equivocado que nadie nota. Por eso la vigencia vive en
+cada **respaldo** y no en el año, cada norma declara `vigencia_desde` y
+`vigencia_hasta`, y el artículo que fija la vigencia se cita aparte del que
+trae la cifra —la tarifa está en el art. 50 y la vigencia en el art. 56—.
+
+**Dos corolarios de implementación**, por si se pierden:
+
+- Las fechas van como texto ISO y se comparan como texto. Con `new Date()` de
+  por medio, «2026-02-01» es medianoche UTC y en nuestro huso retrocede al 31
+  de enero: justo el día que decide qué resolución aplica.
+- Una **compilación** no es la entidad emisora. El normograma reproduce el
+  texto, no lo autentica, y el de Cancillería tiene erratas de digitación
+  visibles. Citarla obliga a decir que lo es y dónde está el texto auténtico
+  —Diario Oficial—. La guarda no deja guardar un respaldo de una compilación
+  sin esa nota.
+
 ### La exención muerta: una comparación de cadenas que no avisa
 
 2026-10-06, motor de gastos notariales. El cálculo de la retención recorre una

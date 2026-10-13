@@ -29,6 +29,25 @@
  *  5. Decimal en todo el camino, nunca `number`. Con `number`, 216.973,68 × 19 %
  *     no cae del lado correcto de la frontera.
  *
+ * ⚠ POR QUÉ SE GUARDA EL BRUTO Y NO SOLO EL LIQUIDADO.
+ *
+ * No es redundancia. El Concepto DIAN 003550 int 306 del 4 de marzo de 2026,
+ * párrafo 8, exige que toda aproximación cuente con «los soportes contables
+ * respectivos que permitan la comprobación de los valores asentados». El bruto
+ * ES ese soporte: sin él, la diferencia entre lo calculado y lo liquidado no se
+ * puede comprobar, y la aproximación deja de estar amparada. Por eso
+ * `IVA_BRUTO` viaja en la liquidación y se imprime en el PDF.
+ *
+ * ⚠ LO QUE EL CONCEPTO NO DICE, y por tanto no se puede presentar como norma:
+ * qué hacer en el EMPATE exacto. El medio-hacia-arriba sale por analogía con la
+ * doctrina del art. 577, que sí lo define para el múltiplo de mil. Es un
+ * criterio ADOPTADO por Su Finca Raíz, no contenido de la norma, y así tiene
+ * que citarse. Ver `CRITERIOS_ADOPTADOS`.
+ *
+ * ⚠ Y la aproximación es PERMISIVA: el concepto dice «podrá aproximarse».
+ * Adoptarla es una decisión nuestra amparada en la norma. El respaldo se carga
+ * con `caracter: 'ADOPTADO'`, no como una obligación que la norma imponga.
+ *
  * ⚠ A QUÉ MÚLTIPLO SE APROXIMA ES NORMA, NO INGENIERÍA. Vive en el año como
  * parámetro con su RespaldoNormativo, igual que el redondeo de cada concepto.
  * Sin respaldo cargado, el IVA no liquida: ver `liquidarIva`.
@@ -40,6 +59,28 @@
 
 import { Prisma } from '@prisma/client'
 import { ErrorEsquemaNotarial, type Redondeo } from './tipos.ts'
+
+/**
+ * Criterios que el motor aplica y que la norma NO define. Se citan como lo que
+ * son —decisiones de Su Finca Raíz— cada vez que se publican, en el PDF y en el
+ * panel. Mezclarlos con el texto de la norma sería atribuirle algo que no dice.
+ */
+export const CRITERIOS_ADOPTADOS = [
+  {
+    clave: 'empate_aproximacion_iva',
+    criterio: 'En el empate exacto, la aproximación del IVA va hacia arriba.',
+    porque: 'Por analogía con la doctrina del art. 577, que lo define para el múltiplo de mil. ' +
+      'El Concepto DIAN 003550 int 306 de 2026 no resuelve el empate.',
+    adoptado_por: 'Su Finca Raíz',
+  },
+  {
+    clave: 'reparto_del_iva_al_peso',
+    criterio: 'El reparto del IVA entre las partes se redondea al peso, no al múltiplo normativo.',
+    porque: 'El múltiplo manda sobre la liquidación del impuesto, que es norma. El reparto entre ' +
+      'comprador y vendedor es un pacto entre particulares, así que su unidad es nuestra.',
+    adoptado_por: 'Su Finca Raíz',
+  },
+] as const
 
 const D = Prisma.Decimal
 type Dec = InstanceType<typeof Prisma.Decimal>

@@ -91,6 +91,9 @@ export function esFuenteOficial(url: string, fuentes: Fuente[]): Fuente | null {
   }
   return fuentes.find(f =>
     f.activo && f.tipo === 'OFICIAL' &&
+    // Una autoridad sin constancia de quién la añadió y cuándo no sirve para
+    // respaldar nada: añadir una fuente es el acto más delicado de todo esto.
+    !!String(f.agregada_por ?? '').trim() && esFechaIso(f.agregada_en) &&
     (host === f.dominio.toLowerCase() || host.endsWith(`.${f.dominio.toLowerCase()}`)),
   ) ?? null
 }
@@ -123,10 +126,20 @@ export function exigirRespaldoOficial(r: Respaldo, fuentes: Fuente[]): void {
       )
     }
   }
-  if (!esFuenteOficial(r.url, fuentes)) {
+  const fuente = esFuenteOficial(r.url, fuentes)
+  if (!fuente) {
     throw new RespaldoNoOficial(
       `La URL del respaldo de «${r.campo}» no pertenece a una autoridad oficial activa: ${r.url}. ` +
       'Una tabla publicada por un particular no respalda una tarifa.',
+    )
+  }
+  // Citar una compilación sin decir que lo es convierte un normograma en la
+  // entidad emisora. La nota es obligatoria, y la advertencia de la fuente se
+  // imprime al lado de la cifra.
+  if (fuente.es_compilacion && !String(r.nota ?? '').trim()) {
+    throw new RespaldoNoOficial(
+      `El respaldo de «${r.campo}» cita ${fuente.dominio}, que es una COMPILACIÓN y no la entidad ` +
+      'emisora. Falta la nota que diga qué edición se consultó y dónde está el texto auténtico.',
     )
   }
 }
