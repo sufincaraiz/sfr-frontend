@@ -1090,3 +1090,281 @@ model AccesoEnlaceContador {
   @@index([anonimizado_en, fecha])
   @@map("accesos_enlace_contador")
 }
+
+// ─── CALCULADORA DE GASTOS NOTARIALES ────────────────────────────────────────
+//
+// Siete tablas. El motor vive en src/lib/notariales y no importa nada de aquí:
+// recibe el año como parámetro, así que se prueba entero en memoria. Estos
+// modelos son el espejo de esos tipos.
+//
+// ⚠ NINGUNA TARIFA HABILITA NADA SIN SU RESPALDO. Un año puede tener todas las
+// cifras cargadas y seguir sin poder liquidar: lo que habilita el cálculo es la
+// fila de RespaldoNormativo, con su URL oficial y su fecha de vigencia.
+
+/// Dominio autorizado para respaldar una cifra. Tabla, no lista en código:
+/// añadir una autoridad es una fila, pero es un acto deliberado y queda firmado.
+model FuenteNormativa {
+  id      String  @id @default(uuid())
+  dominio String  @unique
+  entidad String
+  /// OFICIAL | SECUNDARIA. Solo OFICIAL respalda; SECUNDARIA deja constancia de
+  /// que se consultó algo que NO sirve de respaldo.
+  tipo    String  @default("OFICIAL")
+  activo  Boolean @default(true)
+  /// Es una compilación (un normograma), no la entidad emisora. Cuando lo es, el
+  /// respaldo que la cite está obligado a llevar `nota`.
+  es_compilacion Boolean  @default(false)
+  /// Lo que hay que decir siempre que se cite esta fuente.
+  advertencia    String?  @db.Text
+  agregada_por   String
+  agregada_en    DateTime @default(now())
+
+  respaldos RespaldoNormativo[]
+
+  @@map("fuentes_normativas")
+}
+
+/// El respaldo de UN campo. Sin él, ese campo no habilita nada.
+model RespaldoNormativo {
+  id String @id @default(uuid())
+  /// ANIO | CONCEPTO | REGLA_RETENCION
+  ambito String
+  /// id de la fila respaldada, según el ámbito.
+  referencia_id String
+  /// uvt | uvb | tarifa_iva | redondeo_iva | base_notarial | base_registro |
+  /// base_orip | base_timbre | base_retencion | tramos | valor | redondeo |
+  /// reparto | sujeto_legal | tarifa
+  campo    String
+  norma    String
+  /// El artículo donde está la CIFRA.
+  articulo String?
+  url      String
+
+  fuente_id String?
+  fuente    FuenteNormativa? @relation(fields: [fuente_id], references: [id])
+
+  fecha_norma DateTime? @db.Date
+  /// ¿La norma lo EXIGE, o lo PERMITE y lo adoptamos nosotros? El Concepto DIAN
+  /// 003550 dice «podrá aproximarse»: el redondeo del IVA es ADOPTADO, no
+  /// exigido, y el respaldo no puede afirmar lo contrario.
+  caracter    String    @default("EXIGIDO")
+  /// DESDE CUÁNDO RIGE. Obligatoria: el año es una etiqueta, no un rango. La
+  /// notarial de 2026 rige desde el 1 de febrero y la registral desde el 2.
+  vigencia_desde DateTime  @db.Date
+  /// Hasta cuándo rigió. NULL = sigue vigente.
+  vigencia_hasta DateTime? @db.Date
+  /// El artículo que fija la VIGENCIA, que no es el de la cifra: la tarifa está
+  /// en el art. 50 y la vigencia en el art. 56. Y puede estar modificado por otra
+  /// resolución que ese artículo no menciona.
+  articulo_vigencia String?
+  /// Obligatoria cuando la fuente es una compilación.
+  nota              String?  @db.Text
+  verificado_por    String
+  verificado_en     DateTime @default(now())
+
+  @@unique([ambito, referencia_id, campo])
+  @@index([vigencia_desde])
+  @@map("respaldos_normativos")
+}
+
+/// Un año tarifario. `anio` es una ETIQUETA, no un rango de fechas.
+model AnioNotarial {
+  id   String @id @default(uuid())
+  anio Int    @unique
+  /// BORRADOR | ACTIVO. Misma semántica que parametros_fiscales.
+  estado     String   @default("BORRADOR")
+  uvt        Decimal? @db.Decimal(14, 2)
+  uvb        Decimal? @db.Decimal(14, 2)
+  tarifa_iva Decimal? @db.Decimal(5, 2)
+  /// A qué múltiplo aproxima el IVA y en qué sentido. Es regla normativa, no
+  /// decisión del motor: sin respaldo cargado, el IVA no liquida.
+  redondeo_iva_unidad Int?
+  /// CERCANO | ARRIBA | ABAJO | PUBLICADO
+  redondeo_iva_modo   String?
+  /// Sube con CUALQUIER escritura sobre el año, sus conceptos, sus tramos o sus
+  /// reglas, y en la MISMA transacción: alimenta el código del PDF, y si subiera
+  /// aparte, dos PDF con tarifas distintas podrían llevar el mismo código.
+  version                Int      @default(1)
+  version_actualizada_en DateTime @default(now())
+  cerrado                Boolean  @default(false)
+  notas                  String?  @db.Text
+  activado_por           String?
+  activado_en            DateTime?
+  created_at             DateTime @default(now())
+  updated_at             DateTime @updatedAt
+
+  conceptos ConceptoNotarial[]
+  reglas    ReglaRetencionNotarial[]
+
+  @@map("anios_notariales")
+}
+
+/// Un concepto de la liquidación. Tabla y no enum: añadir un concepto no puede
+/// exigir una migración.
+model ConceptoNotarial {
+  id      String       @id @default(uuid())
+  anio_id String
+  anio    AnioNotarial @relation(fields: [anio_id], references: [id], onDelete: Cascade)
+  clave   String
+  label   String
+  /// Para el texto de la página. «beneficencia» entra aquí; NUNCA es el nombre
+  /// del concepto, que es «impuesto de registro».
+  terminos_coloquiales String[] @default([])
+  /// COSTOS_NOTARIALES | IMPUESTOS | REGISTRO | DOCUMENTOS_PREVIOS | OBLIGACIONES
+  grupo String
+  orden Int
+  /// FIJO | PORCENTAJE | POR_MIL | TRAMOS | POR_UNIDAD | VALOR_LIBRE | REGLAS
+  tipo  String
+  /// NOTARIAL | REGISTRO | ORIP | TIMBRE | RETENCION | TARIFA_REGISTRAL |
+  /// UNIDADES | NINGUNA. Cada valor nombra UNA función con su propia norma: la
+  /// notarial toma el mayor de cuatro valores (art. 51 a) y la registral de dos.
+  base  String
+
+  valor  Decimal? @db.Decimal(14, 2)
+  /// PESOS | PORCENTAJE | POR_MIL. Sin esto, un 3 que significa «3 por mil»
+  /// leído como «3 %» es un error de diez veces que da una cifra plausible.
+  unidad String?
+
+  redondeo_unidad Int?
+  /// CERCANO | ARRIBA | ABAJO | PUBLICADO. PUBLICADO = la cifra se toma tal cual
+  /// la trae la resolución y el motor no la recalcula.
+  redondeo_modo   String?
+  /// NO_DECRECIENTE | LIBRE. Propiedad del concepto, no creencia sobre el mundo:
+  /// una tabla normativa futura puede bajar.
+  monotonicidad   String  @default("LIBRE")
+
+  grava_iva Boolean @default(false)
+  /// El precio publicado YA lleva el IVA dentro (copia simple, art. 5). El
+  /// componente se extrae; jamás se suma un 19 % encima, y no vuelve a BASE_IVA.
+  precio_incluye_iva  Boolean @default(false)
+  /// Lo cobra la notaría pero no es su remuneración: sale de la base del IVA.
+  es_recaudo_terceros Boolean @default(false)
+
+  /// VENDEDOR | COMPRADOR | AMBAS_PARTES | CONTRATANTES. El obligado ante la
+  /// autoridad, que NO es quién lo paga en el negocio.
+  sujeto_legal        String
+  /// % que asume el comprador por defecto.
+  reparto_por_defecto Decimal @db.Decimal(5, 2)
+  reparto_editable    Boolean @default(true)
+  /// NORMA_SUPLETIVA | COSTUMBRE | CONTRIBUYENTE | CONFIGURACION.
+  /// NORMA_SUPLETIVA exige `norma_reparto`; CONFIGURACION lo PROHÍBE —imprimirla
+  /// afirmaría que la ley reparte así—; CONTRIBUYENTE impide editar el reparto,
+  /// porque no hay reparto que repartir: hay un obligado.
+  motivo_reparto      String
+  norma_reparto       String?
+
+  solo_avanzada             Boolean @default(false)
+  opcional                  Boolean @default(false)
+  activo_por_defecto        Boolean @default(true)
+  aplica_en_sencilla        Boolean @default(false)
+  es_estimacion_en_sencilla Boolean @default(false)
+
+  /// La unidad de la TARIFA, con su plural ESCRITO: «copia auténtica» no
+  /// pluraliza añadiendo una «s», y esto lo lee un comprador junto a una cifra.
+  unidad_label  String?
+  unidad_plural String?
+  /// CANTIDAD DERIVADA: clave de otro concepto cuya cantidad se multiplica por la
+  /// de este. Las hojas de la escritura se preguntan UNA vez y alimentan el papel
+  /// notarial y las copias auténticas; preguntarlas dos veces las desincronizaría
+  /// sin un solo error.
+  multiplica_cantidad_de String?
+  /// Qué cuenta el usuario cuando la cantidad es derivada: «3 copias», no «24
+  /// hojas». Obligatorio si `multiplica_cantidad_de`.
+  unidad_captura_label   String?
+  unidad_captura_plural  String?
+  /// Supuesto DECLARADO de la calculadora sencilla, que no pregunta la cantidad.
+  /// Exige `es_estimacion_en_sencilla`: un supuesto que no se declara no se ve.
+  cantidad_en_sencilla   Int?
+  cantidad_sugerida      Int?
+  /// El VALOR cambia según la notaría.
+  cantidad_variable_por_notaria   Boolean @default(false)
+  /// La CANTIDAD depende de la operación.
+  cantidad_variable_por_operacion Boolean @default(false)
+  /// Texto de la pregunta: cuándo aplica este concepto y cuándo no.
+  ayuda      String?  @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  tramos TramoConcepto[]
+
+  @@unique([anio_id, clave])
+  @@index([anio_id, orden])
+  @@map("conceptos_notariales")
+}
+
+/// Un tramo de una tabla por cuantía. Un solo mecanismo cubre el mínimo
+/// notarial, los tramos ORIP y los marginales del timbre.
+model TramoConcepto {
+  id          String           @id @default(uuid())
+  concepto_id String
+  concepto    ConceptoNotarial @relation(fields: [concepto_id], references: [id], onDelete: Cascade)
+  orden       Int
+  /// LÍMITES CONTIGUOS: el intervalo es `desde < base <= hasta`, porque la
+  /// resolución escribe «De $0 hasta $100.000.000» y «hasta» INCLUYE. El «+1»
+  /// impreso NO se guarda: dejaría fuera $100.000.000,50, que es una cuantía
+  /// posible en cuanto la base sale de un avalúo catastral.
+  desde Decimal  @db.Decimal(18, 2)
+  /// NULL = tramo abierto. Exactamente uno por concepto.
+  hasta Decimal? @db.Decimal(18, 2)
+  /// Los límites van en UVT, no en pesos (timbre).
+  en_uvt Boolean @default(false)
+  /// FIJO | TASA_SOBRE_TOTAL | TASA_MARGINAL
+  modo_calculo String
+  valor        Decimal @db.Decimal(14, 4)
+  /// PESOS | PORCENTAJE | POR_MIL
+  unidad       String
+  /// DISTRIBUCIÓN INSTITUCIONAL del recaudo (art. 50 parágrafo: 50 % para la
+  /// Superintendencia y 50 % para el Fondo). No tiene nada que ver con el reparto
+  /// comprador/vendedor: el usuario paga UN recaudo y esto solo sale en el PDF.
+  /// Una guarda comprueba que los dos sumen `valor`.
+  aporte_snr   Decimal? @db.Decimal(14, 2)
+  aporte_fondo Decimal? @db.Decimal(14, 2)
+  /// Solo TRAZABILIDAD: la equivalencia en UVB que publica la resolución. El
+  /// motor NO recalcula el valor a partir de ella — manda el documento.
+  valor_en_uvb Decimal? @db.Decimal(14, 4)
+
+  @@unique([concepto_id, orden])
+  @@map("tramos_concepto")
+}
+
+/// Motor de excepciones de la retención. Hoy tiene una sola fila —la general— y
+/// añadir la siguiente es una fila, SI se apoya en un dato que el formulario ya
+/// pregunta. Si necesita una pregunta nueva, eso es código.
+model ReglaRetencionNotarial {
+  id      String       @id @default(uuid())
+  anio_id String
+  anio    AnioNotarial @relation(fields: [anio_id], references: [id], onDelete: Cascade)
+  clave   String
+  label   String
+  /// La general va SIEMPRE última, o una excepción nunca se evaluaría.
+  orden   Int
+  activa  Boolean @default(true)
+  /// TARIFA | EXENCION | REDUCCION_PCT_POR_ANIO | TOPE
+  tipo_efecto  String
+  valor_efecto Decimal? @db.Decimal(14, 4)
+  /// PORCENTAJE | POR_MIL
+  unidad       String?
+  created_at   DateTime @default(now())
+
+  condiciones CondicionReglaRetencion[]
+
+  @@unique([anio_id, clave])
+  @@map("reglas_retencion_notarial")
+}
+
+/// Condición de una regla. El VALOR se valida contra el tipo del campo: un
+/// «juridica» en minúscula dejaba la exención muerta sin un solo error, porque
+/// no coincidir no es un error — el motor seguía a la regla siguiente.
+model CondicionReglaRetencion {
+  id       String                 @id @default(uuid())
+  regla_id String
+  regla    ReglaRetencionNotarial @relation(fields: [regla_id], references: [id], onDelete: Cascade)
+  /// Texto validado contra la lista blanca del módulo hoja, no enum: añadir un
+  /// campo no puede exigir una migración.
+  campo    String
+  /// IGUAL | DISTINTO | MENOR | MENOR_IGUAL | MAYOR | MAYOR_IGUAL | EN
+  operador String
+  valor    String
+
+  @@map("condiciones_regla_retencion")
+}
