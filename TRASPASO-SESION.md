@@ -2945,3 +2945,288 @@ Estado de las verificaciones de este lote, con su alcance exacto:
 | Reputación en home, nosotros y `llms.txt` tras separar `cifras-publicas` | Producción — `grep -o … \| wc -l` sobre lo servido |
 | `/interno/datos-contador` con `noindex, nofollow` y fuera de los 5 sitemaps | Producción |
 | Guarda del NIT y guarda de migraciones `.sql` | Local, provocando el fallo. En Vercel solo consta que el build pasó con NIT vacío (el camino verde), no que rompa con uno malo |
+
+# 14. CALCULADORA DE GASTOS NOTARIALES — las decisiones y su porqué
+
+> **Para qué es esta sección.** El motor, las guardas y la capa servidor están
+> en el repositorio y se leen solos. Lo que no se reconstruye leyendo el código
+> es **por qué** cada cosa es como es: qué error concreto evita, qué alternativa
+> se descartó y con qué caso real. Está escrita para arranque en frío, sin
+> contexto de la conversación que la produjo.
+>
+> **Dónde está el código.** Motor en `src/lib/notariales/` —módulos hoja, sin
+> alias `@/`, probados con `node scripts/probar-notariales.mjs` (494
+> verificaciones)—. La capa de base en `datos.ts` y `panel.ts`, probada contra
+> la base real con `node scripts/probar-panel-notarial.mjs` (35). El cotejo con
+> `node scripts/cotejar-notariales.mjs`. Siete tablas en Prisma. **Las pantallas
+> del panel NO existen todavía.**
+>
+> **Estado:** el año 2026 no se puede activar, y es correcto. Faltan la URL
+> oficial de la resolución notarial y la ordenanza de Cundinamarca.
+
+## 14.1 Las cinco bases no son una, y ya divergieron
+
+Cada concepto se liquida sobre **su** base, con **su** norma. Hay cinco
+funciones —`calcularBaseNotarial`, `...Registro`, `...Orip`, `...Timbre`,
+`...Retencion`— y durante semanas las tres primeras dieron el mismo resultado.
+Separarlas parecía ceremonia.
+
+Dejó de parecerlo al transcribir los PDF:
+
+| Base | Qué toma | Norma |
+|---|---|---|
+| Notarial | el mayor entre **cuatro** valores: pactado, avalúo catastral, autoavalúo y valor del remate | art. 51 lit. a) de la RES-2026-000964-6 |
+| Registro y ORIP | el mayor entre **dos**: cuantía y avalúo catastral | art. 1 lit. b) inciso 2 de la RES-2026-001726-6 |
+| Timbre y Retención | el valor de la enajenación, sin avalúo | E.T. |
+
+Con precio 80 M y autoavalúo 120 M, **en la misma liquidación** los derechos
+notariales van sobre 120 M y el impuesto de registro sobre 80 M. Si las bases
+hubieran estado unificadas, el registro habría cobrado sobre 120 M: una cifra
+más alta que la que cobra la oficina, plausible y equivocada.
+
+**La regla:** dos reglas que hoy coinciden no son la misma regla. Separar por
+NORMA y no por resultado cuesta una función de más y ahorra el día en que una
+de las dos normas se mueve.
+
+## 14.2 La vigencia va por respaldo. El año es una etiqueta
+
+`AnioNotarial.anio` **no es un rango de fechas**. Ninguna de las resoluciones
+de 2026 empieza el 1 de enero:
+
+- La notarial rige **desde el 1 de febrero de 2026** (art. 56), derogando la
+  Resolución 585 de 2025.
+- La registral rige **desde el 2 de febrero de 2026** (art. 29), derogando la
+  0179 de 2025.
+
+Consecuencias que el modelo tiene que soportar y soporta:
+
+1. Una escritura del **15 de enero de 2026** se liquida con las tarifas de
+   2025. El motor se detiene con `FueraDeVigencia` nombrando el art. 56, en vez
+   de aplicar tarifas que no regían.
+2. **El 1 de febrero rige una norma y no la otra.** Ese día no se puede
+   liquidar una escritura completa, y eso no está escrito en ninguno de los dos
+   documentos: aparece solo al cruzarlos.
+
+Por eso `vigencia_desde` es **obligatoria en cada respaldo**, `vigencia_hasta`
+nullable, y el artículo que fija la vigencia se cita **aparte** del que trae la
+cifra: la tarifa está en el art. 50 y la vigencia en el art. 56.
+
+### El artículo de vigencia que ya estaba derogado
+
+El art. 29 de la registral decía regir «desde la fecha de su expedición» —29 de
+enero—. **Esa fecha ya era falsa**: la modificó la RES-2026-001896-6 del 30 de
+enero, un documento que el art. 29 no menciona y que solo aparece si se busca
+expresamente si esa norma fue modificada.
+
+> **Leer el PDF correcto no basta. Hay que comprobar si esa norma fue
+> modificada.**
+
+Un artículo de vigencia es el último sitio donde uno espera un dato caduco, y
+es donde más daño hace: gobierna si todas las demás cifras del documento
+aplican.
+
+**Detalle de implementación que no es cosmético:** las fechas van como texto
+ISO y se comparan como texto. Con `new Date()` de por medio, «2026-02-01» es
+medianoche UTC y en nuestro huso retrocede al 31 de enero — justo el día que
+decide qué resolución aplica.
+
+## 14.3 La evidencia: la URL no era el requisito
+
+La guarda exigía una URL de dominio oficial. Eso bloqueaba el año 2026 entero,
+porque la resolución notarial no está publicada como página accesible. Y al
+mirarlo de cerca, **el requisito se invertía**:
+
+| | Compilación de la Cancillería | PDF de la resolución |
+|---|---|---|
+| Tiene enlace | **Sí** | No |
+| Es la entidad emisora | No, es un normograma | **Sí** |
+| Erratas de digitación | **Sí**, visibles | No |
+| Firma, radicado y sellos | No | **Sí** |
+
+La que pasaba la guarda era la **peor** evidencia de las dos.
+
+> La URL nunca fue el requisito: era un **sustituto** de la procedencia, cómodo
+> porque un dominio se valida en una línea. **Donde el sustituto y lo sustituido
+> apuntan en direcciones opuestas, manda lo sustituido.**
+
+De ahí `tipo_evidencia`: `URL_OFICIAL` o `DOCUMENTO_ARCHIVADO`. El segundo
+exige las seis cosas que un enlace daba gratis —archivo guardado, hash SHA-256,
+entidad emisora, de dónde se obtuvo, cuándo, y quién lo archivó—.
+
+**Lo que NO se amplió es la autoridad.** Un PDF de una notaría particular, un
+gremio o un sitio comercial sigue sin valer: un documento archivado nombra su
+autoridad y se resuelve contra la misma tabla `FuenteNormativa`.
+
+### Por qué el PDF se archiva autenticado y nunca se publica
+
+Publicar una copia de una norma que **no emitimos** nos convertiría en un sitio
+desde el que se puede citar esa norma. Y cuando la entidad la modifique —como
+pasó con la registral a los diez días— nuestra copia pública diría lo viejo con
+nuestra marca encima. **El PDF es evidencia interna, no contenido.**
+
+Consecuencia resuelta en `citaPublica`: con `DOCUMENTO_ARCHIVADO` el PDF de la
+simulación **no enlaza nada**. Nombra la norma, el artículo, la entidad emisora
+y la fecha de verificación, y dice dónde la consigue el lector por su cuenta
+(`donde_conseguirlo`, obligatorio). Con `URL_OFICIAL` sí va el enlace. Y una
+guarda de último recurso rechaza cualquier cita que contenga nuestro dominio o
+la ruta de la copia, porque eso se cuela al editar un texto, no al diseñar.
+
+Detalle: el archivo va con `resource_type: 'raw'`. Como imagen, Cloudinary
+podría recomprimirlo, y un documento recomprimido ya no cuadra con su hash. Y
+**el hash se calcula sobre los bytes que llegan**, antes de subir: calcularlo
+después sería comprobar nuestra copia contra sí misma.
+
+## 14.4 El IVA: siete valores y un solo redondeo
+
+`BASE_IVA` · `IVA_BRUTO` · `IVA_LIQUIDADO` · los dos exactos · los dos enteros.
+`Decimal` en todo el camino, nunca `number`.
+
+- **Nada se redondea antes de sumar.** Dos conceptos con IVA de 20.004 dan
+  40.008 y liquidan 40.010; redondeando por línea darían 20.000 + 20.000 =
+  40.000. Diez pesos que no aparecen en ninguna línea y sí en el total.
+- **El IVA sigue el reparto de cada concepto** que lo genera, ponderado por lo
+  que aporta a la base. Si el comprador asume el 100 % de las copias, el IVA de
+  esas copias es suyo. Un 50/50 plano contradiría el reparto configurado arriba
+  en la misma pantalla.
+- **Se reparte el LIQUIDADO, no el bruto**, o las partes no sumarían el
+  liquidado. Se redondea la parte **menor** y la mayor es el residual. Empate →
+  el residual es del comprador, por determinismo.
+
+### Lo que es norma y lo que decidimos nosotros
+
+El Concepto DIAN 003550 int 306 de 2026 dice «**podrá** aproximarse»: adoptar la
+aproximación es decisión de Su Finca Raíz amparada en la norma, **no una
+obligación**. El respaldo se carga con `caracter: 'ADOPTADO'` y nunca diciendo
+que la norma lo exige.
+
+Lo que el concepto **no** define —el empate exacto— sale por analogía con la
+doctrina del art. 577. Está declarado en `CRITERIOS_ADOPTADOS` como criterio
+nuestro, junto con el reparto al peso, y el panel tiene que mostrarlos en su
+propia sección, **leyéndose distinto de una tarifa**.
+
+Y `IVA_BRUTO` viaja en la liquidación porque el párrafo 8 de ese concepto exige
+«los soportes contables que permitan la comprobación de los valores asentados».
+No es redundancia: es el soporte que la norma pide.
+
+### La copia simple lleva el IVA dentro
+
+Art. 5: $700 **por cara, IVA incluido**. Es el único concepto así. El componente
+se **extrae** —precio × 19/119 = 111,76— y **no vuelve a `BASE_IVA`**: un precio
+publicado con IVA incluido ya viene liquidado, así que la copia cuesta $700 y
+sigue costando $700 después de liquidar el IVA del resto.
+
+⚠ La copia **auténtica** ($5.600 por hoja, mismo art. 5) **no** dice «IVA
+incluido», así que grava normal y sí entra en `BASE_IVA`. Modelarlas con la
+misma bandera dejaría una de las dos mal. Hay una mutación que lo prueba: ponerles
+la misma bandera tumba 21 verificaciones.
+
+## 14.5 El cotejo: dos lecturas del mismo papel
+
+`PARAMETROS-NOTARIALES-VERIFICADOS.md` tiene un bloque de columnas fijas con las
+53 cifras transcritas del PDF. `scripts/cotejar-notariales.mjs` lee la base y lo
+compara fila por fila.
+
+**Por qué no es un eco, que es lo único que lo hace valer:** el titular
+transcribió del PDF al documento, y después cargó del **mismo PDF** al panel, a
+mano y en otro momento. Ninguna ruta deriva de la otra. Si divergen, alguien leyó
+mal el papel — y ese es el único error que ningún arnés puede encontrar, porque
+el motor calcularía impecablemente sobre la cifra equivocada, con todo en verde.
+
+**Cuatro conclusiones, no dos:**
+
+| | |
+|---|---|
+| `COINCIDE` | dos lecturas que dicen lo mismo |
+| `DIFIERE` | volver al PDF antes de publicar |
+| `SIN_TRANSCRIBIR` | está en la base y no en el documento: **una sola lectura, o ninguna** |
+| `SIN_CARGAR` | falta cargarlo |
+
+La tercera es la incómoda y la que más vale. El 1 % del impuesto de registro de
+Cundinamarca va a salir así: está en el catálogo de memoria, viene de una fuente
+secundaria y **nadie ha leído la ordenanza**. Es la misma situación del «0,27 %»
+que todavía está publicado en el glosario. La Ley 223 de 1995 fija el rango
+entre 0,5 % y 1 %, así que el 1 % es el techo y es plausible — y «plausible» es
+exactamente lo que ha costado caro cada vez.
+
+`apto` exige dos cosas: que nada difiera **y que nada esté cargado sin
+transcribir**. Lo que falta por cargar no bloquea: eso ya lo hace la guarda de
+respaldos.
+
+## 14.6 Decisiones cerradas, para no reabrirlas
+
+- **El escalón de los derechos es LITERAL.** Art. 2 lit. b): $30.900 hasta una
+  cuantía de $259.300, y 3 por mil sobre el excedente. El excedente no iguala al
+  mínimo hasta $10.559.300, así que una finca de 5 M y otra de 9 M pagan casi lo
+  mismo. **Parece un error y está verificado contra el PDF.** No se «corrige»
+  por intuición aritmética. Lo único que se rechaza es una tabla **no monótona**
+  —que un inmueble más caro pague menos—, y solo en los conceptos declarados
+  `NO_DECRECIENTE`.
+- **La monotonicidad es propiedad del concepto**, no creencia sobre el mundo.
+  `NO_DECRECIENTE` solo en `derechos_escritura`; todo lo demás `LIBRE`, porque
+  una tabla normativa futura puede bajar y la guarda estaría rechazando una
+  tabla correcta.
+- **El redondeo de cada tarifa lo dice su resolución**, no el motor. `PUBLICADO`
+  significa que la cifra se toma tal cual —el art. 50 ya viene ajustado a la
+  centena— y exige que sea entera: una cifra «publicada» con decimales delata
+  que alguien la derivó.
+- **El reparto del IVA entre las partes se redondea al peso**, no al múltiplo
+  normativo: el múltiplo manda sobre la liquidación del impuesto, que es norma;
+  el reparto es un pacto entre particulares.
+- **El $280 del art. 6 parágrafo 1 queda FUERA de la v1.** Depende de que haya
+  reconocimiento de firma y contenido y de cuántos folios tenga *ese* documento,
+  y el formulario no pregunta ninguna de las dos. Mismo criterio que las
+  excepciones de retención: una regla que necesita una pregunta que el
+  formulario no hace es **código, no una fila**. Hay una verificación que
+  comprueba que no esté en el catálogo.
+- **El reparto 50/50 de los derechos tiene norma** —C.C. art. 1862, supletiva:
+  la ley reparte así *salvo pacto*—. El del IVA, las hojas y las copias **no**:
+  es configuración de la simulación, y una guarda prohíbe colgarle una norma,
+  porque imprimirla afirmaría que la ley reparte así.
+- **La tabla de los arts. 48 y 49** (página 24, por número de escrituras
+  anuales) es el aporte del NOTARIO según su volumen. **No es un cobro al
+  usuario y no entra en la calculadora.** Está anotado junto al seed porque
+  parece «la parte que falta» del art. 50.
+
+## 14.7 La regla que salió de los tres huecos
+
+Tres fallos aparecieron **solo** al probar contra la base, con 494
+verificaciones en memoria en verde:
+
+1. `sesgo_en_sencilla` estaba en los tipos y **no** en el esquema de Prisma:
+   sembrar un año reventaba.
+2. `fuentes_normativas` estaba **vacía**. La precarga vivía en código y la
+   guarda resuelve contra la tabla, así que un respaldo legítimo de la DIAN se
+   rechazaba por «no corresponde a una autoridad oficial activa» — cierto, y
+   desconcertante.
+3. Borrar un año dejaba sus respaldos **huérfanos**: la referencia es
+   polimórfica y no cascadea.
+
+> **El arnés en memoria y la base son DOS superficies. Una guarda probada en la
+> primera no está probada en la segunda.**
+
+Es la misma forma que «verificado en local ≠ verificado en producción», un piso
+más abajo. Y el detalle que la hace urgente: **los tres habrían aparecido con el
+titular delante del panel**, cargando parámetros con la resolución en la mano.
+El arnés en memoria no puede ver un campo que falta en el esquema, una tabla
+vacía ni una clave ajena que no existe.
+
+De ahí `scripts/probar-panel-notarial.mjs`: siembra un año de prueba, ejercita
+las escrituras rompiéndolas, y se limpia solo. Lo que prueba no es el cálculo
+—eso ya está— sino lo que solo se ve con la base delante.
+
+## 14.8 Lo que falta
+
+- **Las pantallas del panel.** Orden por norma y artículo con el artículo a la
+  vista como NAVEGACIÓN, la unidad pegada al campo, pendientes por dueño,
+  BORRADOR/ACTIVO con un año activo que no se edita, botón de activar con el
+  motivo visible, tramos como tabla con las guardas en vivo,
+  `CRITERIOS_ADOPTADOS` en su sección, y la subida del PDF con su procedencia.
+- **La URL oficial de la resolución notarial** o su Diario Oficial.
+- **La ordenanza de Cundinamarca** para el impuesto de registro.
+- **El saneamiento del contenido**, en el mismo lote que la publicación: el
+  glosario dice «0,27 %» y el blog dice «0.27 %» y «0,3–0,5 %» en la misma
+  página. La resolución dice 3 por mil sobre el excedente. Si la calculadora
+  sale antes, el sitio se contradice en una cifra que un comprador va a usar.
+- **La página pública**, que no muestra ni un número mientras el año no esté
+  ACTIVO: con el año a medio cargar solo podría mostrar ceros.
+

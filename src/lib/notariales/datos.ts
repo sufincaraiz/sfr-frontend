@@ -227,9 +227,17 @@ export async function leerFuentes(db: ClienteNotarial) {
  * artículo` del bloque de cotejo.
  *
  * Es una función PURA sobre el año ya leído, y está aquí para que el panel y el
- * script la compartan. Nota: NO deriva nada —no calcula el aporte al Fondo como
- * la mitad del recaudo, por ejemplo— porque el cotejo compara lo que se teclea,
- * no lo que se podría deducir.
+ * script la compartan. NO deriva nada —no calcula el aporte al Fondo como la
+ * mitad del recaudo— porque el cotejo compara lo que se teclea, no lo que se
+ * podría deducir.
+ *
+ * ⚠ DE DÓNDE SALE EL `articulo`, que es lo que hace independiente esa columna:
+ * del **respaldo** que cubre el campo, no de un campo por cifra. El panel
+ * muestra el artículo de la transcripción como NAVEGACIÓN —«ve al art. 50»— y
+ * no se teclea; el que se teclea es el del respaldo, una vez, leyéndolo del PDF
+ * al subirlo. Así las dos lecturas del artículo siguen siendo de dos personas
+ * mirando el papel en momentos distintos, y no una copiando lo que la pantalla
+ * le enseñó.
  */
 export function valoresDesdeAnio(anio: AnioNotarial): ValorCargado[] {
   const out: ValorCargado[] = []

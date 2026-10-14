@@ -1716,8 +1716,19 @@ check('…diciendo las dos cifras',
 check('UNIDAD distinta: DIFIERE, y es tan grave como el valor',
   (() => { const r = compararCotejo([FT({ valor: '3', unidad: 'POR_MIL' })], [FT({ valor: '3', unidad: 'PORCENTAJE' })])[0]
     return r.estado === 'DIFIERE' && r.diferencias.some(d => /unidad/.test(d)) })())
-check('ARTÍCULO distinto: DIFIERE, porque puede que se leyó otro artículo',
+// EL ARTÍCULO ES NAVEGACIÓN EN LA PANTALLA Y DATO EN EL RESPALDO. Solo se
+// compara cuando el respaldo ya lo trae: mientras no hay respaldo no hay
+// segunda lectura, y reportar «difiere» contra un vacío convertiría una carga
+// a medias en un falso hallazgo.
+check('ARTÍCULO distinto: DIFIERE, porque uno de los dos leyó otro artículo',
   compararCotejo([FT({})], [FT({ articulo: 'art. 2' })])[0].estado === 'DIFIERE')
+check('…y el mensaje lo dice así',
+  compararCotejo([FT({})], [FT({ articulo: 'art. 2' })])[0].diferencias
+    .some(d => /leyó otro artículo/.test(d)))
+check('sin respaldo todavía, el artículo NO se reporta como diferencia',
+  compararCotejo([FT({})], [FT({ articulo: '' })])[0].estado === 'COINCIDE')
+check('…pero una CIFRA distinta sigue difiriendo aunque falte el respaldo',
+  compararCotejo([FT({})], [FT({ articulo: '', valor: '110' })])[0].estado === 'DIFIERE')
 check('cargado y no transcrito: SIN_TRANSCRIBIR',
   compararCotejo([], [FT({})])[0].estado === 'SIN_TRANSCRIBIR')
 check('transcrito y no cargado: SIN_CARGAR',

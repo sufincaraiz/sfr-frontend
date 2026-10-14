@@ -51,7 +51,10 @@ try {
   console.log('\n── La pantalla ──')
   const p = await anioParaPantalla(prisma, ANIO, BLOQUE)
   ok('los campos salen en el orden del documento', p.campos.length === BLOQUE.length)
-  ok('…con su artículo a la vista', p.campos.every(c => c.articulo.length > 0))
+  ok('…con el artículo a la vista como NAVEGACIÓN',
+    p.campos.every(c => c.articulo_navegacion.length > 0))
+  ok('…y sin un campo de artículo por cifra que teclear',
+    p.campos.every(c => !('articulo' in c)))
   ok('…y la unidad esperada al lado', p.campos.every(c => c.unidad_esperada.length > 0))
   // 29 = el acto sin cuantía (1) + las siete filas del art. 50 con sus cuatro
   // cifras cada una (28). Son las tres verificadas contra el PDF y nada más:

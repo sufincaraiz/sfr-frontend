@@ -401,8 +401,12 @@ export interface CampoDePantalla {
   concepto: string
   label: string
   campo: string
-  /** De qué artículo sale, SEGÚN LA TRANSCRIPCIÓN. Es un localizador. */
-  articulo: string
+  /**
+   * NAVEGACIÓN, no un campo. Dice a qué artículo ir en el PDF para encontrar
+   * esta cifra. **No se teclea y no se guarda**: el artículo que se guarda es
+   * el del respaldo, una vez por respaldo.
+   */
+  articulo_navegacion: string
   /** Lo cargado. null = sin cargar. Nunca se precarga desde la transcripción. */
   valor: string | null
   unidad: string | null
@@ -416,12 +420,19 @@ export interface CampoDePantalla {
 /**
  * Los campos en el ORDEN DEL DOCUMENTO, que es el del bloque de cotejo.
  *
- * ⚠ Y una consecuencia que conviene tener presente: el artículo que se muestra
- * sale de la transcripción, así que el artículo que el titular teclee en el
- * respaldo está GUIADO por lo que ve. El valor NO: nunca se precarga. El cotejo
- * sigue siendo independiente en la cifra y en la unidad, que es donde importa,
- * y es más débil en el artículo. Mejor saberlo que creer que las tres columnas
- * pesan igual.
+ * ⚠ EL ARTÍCULO ES NAVEGACIÓN, NO UN CAMPO. Se muestra para no tener que
+ * buscar la cifra en el PDF, y no se teclea: no hay un campo de artículo por
+ * cifra. El que se guarda —y el que el cotejo compara— es el del **respaldo**,
+ * que se teclea una vez leyéndolo del documento al subirlo.
+ *
+ * La diferencia importa. Si el artículo se tecleara campo por campo viendo el
+ * de la transcripción al lado, la comparación sería un eco: el titular copiaría
+ * lo que la pantalla le enseñó. Leído del PDF al cargar el respaldo, las dos
+ * lecturas vuelven a ser dos personas mirando el papel. Y se escribe una vez
+ * en vez de cincuenta y tres.
+ *
+ * El valor tampoco se precarga nunca. Así las tres columnas del cotejo —cifra,
+ * unidad y artículo— son independientes.
  */
 export function camposEnOrdenDelDocumento(
   anio: AnioNotarial, transcritas: FilaTranscrita[],
@@ -436,7 +447,7 @@ export function camposEnOrdenDelDocumento(
       concepto: t.concepto,
       label: c?.label ?? (t.concepto === '(anio)' ? 'Parámetros del año' : t.concepto),
       campo: t.campo,
-      articulo: t.articulo,
+      articulo_navegacion: t.articulo,
       valor: cargado?.valor ?? null,
       unidad: cargado?.unidad ?? null,
       tipo: c?.tipo ?? 'FIJO',

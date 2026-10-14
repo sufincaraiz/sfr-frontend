@@ -41,7 +41,14 @@ export interface FilaTranscrita {
   articulo: string
 }
 
-/** Una cifra tal como está en la base. */
+/**
+ * Una cifra tal como está en la base.
+ *
+ * `articulo` NO sale de un campo por cifra: sale del **respaldo** que cubre ese
+ * campo, que el titular teclea una vez leyéndolo del PDF que tiene en la mano.
+ * Ver `valoresDesdeAnio`. Esa es la diferencia entre comparar dos lecturas
+ * independientes y comparar una lectura consigo misma.
+ */
 export interface ValorCargado {
   concepto: string
   campo: string
@@ -178,8 +185,14 @@ export function compararCotejo(
       // un error de diez veces que da una cifra plausible.
       diferencias.push(`unidad: el documento dice ${t.unidad || '—'} y la base tiene ${c.unidad || '—'}`)
     }
-    if (normalizarTexto(t.articulo) !== normalizarTexto(c.articulo)) {
-      diferencias.push(`artículo: el documento dice «${t.articulo}» y la base cita «${c.articulo}»`)
+    // El artículo se compara SOLO si el respaldo ya lo trae. Mientras no hay
+    // respaldo no hay segunda lectura, y reportar «difiere» contra un vacío
+    // convertiría una carga a medias en un falso hallazgo.
+    if (c.articulo && normalizarTexto(t.articulo) !== normalizarTexto(c.articulo)) {
+      diferencias.push(
+        `artículo: el documento dice «${t.articulo}» y el respaldo cita «${c.articulo}». ` +
+        'Uno de los dos leyó otro artículo',
+      )
     }
     return {
       concepto, campo,
