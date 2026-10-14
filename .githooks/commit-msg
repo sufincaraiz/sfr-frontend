@@ -1,0 +1,73 @@
+#!/bin/sh
+#
+# RECHAZA UN MENSAJE DE COMMIT MUTILADO POR EL SHELL
+# ==================================================
+#
+# El fallo, cuatro veces en este proyecto: al pasar el mensaje con `git commit
+# -m "...`palabra`..."`, el shell interpreta los acentos graves como
+# sustitución de comandos. La palabra desaparece del mensaje, bash escribe
+# «palabra: command not found» en stderr —que se pierde entre los avisos de
+# CRLF de git— y el commit se hace con un hueco.
+#
+# La regla «escribir el mensaje a un archivo y usar -F» ya estaba escrita en el
+# traspaso, y se olvidó cuatro veces. Es la misma forma que el indicador
+# agregado y el plural: una regla documentada que no se consulta en el momento
+# de usarla. Así que en vez de otra nota, esto: el commit NO SE HACE.
+#
+# Las dos huellas que deja una sustitución vacía, y que aquí se rechazan:
+#   · dos espacios seguidos dentro de una línea  →  «pasa a  en sus firmas»
+#   · un espacio justo antes de dos puntos       →  «Respaldo gana : el Concepto»
+#
+# Las dos son además erratas de verdad, así que no se pierde nada rechazándolas.
+#
+# ⚠ FALSO POSITIVO CONOCIDO, y se deja a propósito: un mensaje que CITE esas dos
+# huellas literalmente —como hacía la primera versión del commit que trajo este
+# hook— se rechaza. No se puede distinguir un texto que describe el daño de uno
+# que lo sufre. Hablar de las huellas sin reproducirlas cuesta una frase; abrir
+# una excepción reabriría el agujero.
+#
+# EL CAMINO QUE NO PUEDE FALLAR: escribir el mensaje a un archivo —sin que pase
+# por el shell— y `git commit -F ese-archivo`.
+#
+# Para activarlo en un clon nuevo:   git config core.hooksPath .githooks
+
+mensaje="$1"
+
+# Se ignoran las líneas de comentario que git añade.
+cuerpo=$(grep -v '^#' "$mensaje")
+
+malo=0
+
+# Dos espacios seguidos, pero NO la sangría del principio de línea.
+if printf '%s\n' "$cuerpo" | sed 's/^[[:space:]]*//' | grep -q '[^[:space:]]  '; then
+  echo "✗ El mensaje tiene DOS ESPACIOS seguidos dentro de una línea:" >&2
+  printf '%s\n' "$cuerpo" | sed 's/^[[:space:]]*//' | grep -n '[^[:space:]]  ' >&2
+  malo=1
+fi
+
+# Un espacio justo antes de dos puntos.
+if printf '%s\n' "$cuerpo" | grep -q '[^[:space:]] :'; then
+  echo "✗ El mensaje tiene un ESPACIO ANTES DE DOS PUNTOS:" >&2
+  printf '%s\n' "$cuerpo" | grep -n '[^[:space:]] :' >&2
+  malo=1
+fi
+
+if [ "$malo" -eq 1 ]; then
+  cat >&2 <<'AVISO'
+
+Esas son las huellas de una palabra que el shell se comió: los acentos graves
+de `-m "...`asi`..."` se interpretan como sustitución de comandos y la palabra
+desaparece sin error visible. Ha pasado cuatro veces.
+
+El camino que no puede fallar:
+
+  1. Escribe el mensaje a un archivo, sin que pase por el shell.
+  2. git commit -F ese-archivo
+
+Si los dos espacios son intencionados, quítalos: no aportan nada en un mensaje
+de commit y son indistinguibles de un mensaje mutilado.
+AVISO
+  exit 1
+fi
+
+exit 0

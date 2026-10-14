@@ -2894,6 +2894,28 @@ guarda que los **exige** cuando la etiqueta tiene más de una palabra —porque
 «copia auténtica» y «firma o diligencia» no pluralizan mecánicamente—. Ahí la
 regla deja de depender de que alguien se acuerde.
 
+#### El cierre del patrón: una regla que no se consulta hay que hacerla imposible
+
+El 2026-10-14 el mismo patrón apareció una **cuarta** vez, en otro sitio: los
+acentos graves de un `git commit -m` se comieron dos palabras del mensaje. La
+regla —escribir el mensaje a un archivo y usar `-F`— estaba escrita en este
+documento desde la primera vez.
+
+Cuatro reincidencias de tres defectos distintos con una sola causa bastan para
+cambiar de instrumento:
+
+> **Una regla escrita que se olvida en el momento de usarla no se arregla con
+> otra nota. Se arregla con un camino que la haga imposible de incumplir.**
+
+Para el plural fue una guarda en el esquema. Para el mensaje de commit es el
+hook `commit-msg` de `.githooks/`, que rechaza las dos huellas que deja una
+sustitución vacía —doble espacio y espacio antes de dos puntos— y explica el
+camino bueno. El commit no se hace: no hay nada que recordar.
+
+Y nótese el criterio para elegir la huella: no se detecta «falta una palabra»,
+que es indecidible, sino el **rastro tipográfico** que deja el fallo. Las dos
+huellas son además erratas de verdad, así que rechazarlas no cuesta nada.
+
 #### Y la regla general que sale de aquí
 
 No lo vio una revisión: lo vio **el arnés**, porque había una verificación que

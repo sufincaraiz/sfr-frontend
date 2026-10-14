@@ -47,6 +47,12 @@ semana. Es la única copia. Ver `backup-service/RESTAURAR.md`.
 - **Para saber qué está construido: `node scripts/estado-traspaso.mjs`.** Manda
   el script, no TRASPASO-SESION.md — el documento ya acumuló nueve afirmaciones
   falsas de estado, y por eso el estado se deriva.
+- **Mensajes de commit: a un archivo y `git commit -F`.** Nunca con `-m` si el
+  texto lleva acentos graves: el shell los interpreta como sustitución de
+  comandos y se come la palabra sin error visible. Ha pasado cuatro veces. El
+  hook `commit-msg` rechaza las dos huellas que deja —doble espacio y espacio
+  antes de dos puntos—; en un clon nuevo hay que activarlo una vez:
+  `git config core.hooksPath .githooks`
 - El código vive en `C:\sfr\frontend`, no en la carpeta de Google Drive.
 - Compilar requiere las variables de `.env.local`.
 - `npx prisma db push` para aplicar cambios de esquema (no `migrate dev`).
