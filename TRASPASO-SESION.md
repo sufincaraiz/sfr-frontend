@@ -2352,6 +2352,65 @@ Lo que cambió no fue el conteo, fue el criterio:
 Es la misma regla de la sección anterior —verificar el efecto, no la salida—
 aplicada al instrumento que verifica. Un medidor también es un instrumento.
 
+## Duodécima forma de esconderse: la respuesta literal verdadera
+
+2026-10-14. El titular preguntó: «¿alguno de los valores que quedan sembrados en
+la base sale de ese archivo?» —el documento de la transcripción—. La respuesta
+era **no**, y era verdad: `sembrarAnio(db, anio, por)` recibe tres parámetros,
+siembra desde `CONCEPTOS_V1` de `catalogo.ts`, y la transcripción solo se usa
+para ordenar la pantalla y cotejar.
+
+Pero la condición que la pregunta protegeía **sí se cumplía por otro camino**:
+las cifras de `catalogo.ts` las había escrito yo a partir de esa misma
+transcripción. No venían del archivo en ejecución; compartían origen con él. El
+cotejo iba a decir «coincide» 29 veces comparándose consigo mismo.
+
+> **Una respuesta literal verdadera es la mejor forma de esconderse que existe,
+> porque no hay nada que reprocharle.**
+
+Si me hubiera quedado en el «no» —con el código citado, que era lo que se pedía—
+el titular se habría ido tranquilo y las 29 cifras seguirían ahí, marcando medio
+camino andado en el avance y 29 coincidencias en el cotejo.
+
+Las otras once formas de la lista son afirmaciones falsas disfrazadas. Esta es
+una afirmación **verdadera** que deja intacta la creencia equivocada. No se caza
+revisando si lo dicho es cierto: se caza preguntando **qué iba a hacer el otro
+con la respuesta**. La pregunta no era sobre el flujo de datos de una función:
+era «¿puedo confiar en lo que me diga el cotejo de esas cifras?».
+
+**La regla operativa:** cuando una pregunta tiene una respuesta literal que
+tranquiliza, hay que decir también si la preocupación de fondo se cumple por
+algún otro camino. Contestar la pregunta y dejar en pie el error es cumplir con
+la letra y fallar en el encargo.
+
+## Lo que no existe no necesita guarda
+
+2026-10-14, el mismo día. Una ruta leía un `.md` del repositorio en runtime y
+eso dio un ENOENT en producción. El arreglo inmediato fue hacer que el archivo
+viajara con la función (`outputFileTracingIncludes`) y poner una guarda que lo
+vigilara en el build (`verificar-trazas.mjs`). Funcionaba.
+
+El arreglo bueno fue otro: **quitar la lectura**. El bloque se convierte en
+módulo en tiempo de generación, y en runtime no se toca el disco. Con eso la
+fila correspondiente salió de `verificar-trazas.mjs`, porque ya no hay nada que
+vigilar.
+
+> **Eliminar el peligro gana a verificarlo.** Una guarda es lo segundo mejor:
+> admite que el peligro sigue ahí y confiía en que alguien mantenga la guarda.
+
+La jerarquía, de mejor a peor:
+
+1. **Que no pueda ocurrir.** No hay lectura, no hay ENOENT. No hay cifra
+   sembrada, no hay coincidencia falsa.
+2. **Que rompa el build si ocurre.** Las guardas de `scripts/verificar-*`.
+3. **Que avise en ejecución.** Un mensaje clasificado.
+4. **Que esté documentado.** Lo último, y ya sabemos lo que vale solo.
+
+Vale para más cosas que un archivo: las 29 cifras sembradas se **borraron** en
+vez de marcarlas como «sembradas» en la pantalla, que era el plan anterior. Una
+cifra que no está no puede aparentar estar verificada, y eso no necesita ni
+etiqueta ni explicación en la interfaz.
+
 ## La guarda va ANTES del arreglo
 
 Hasta este lote el orden era: corregir el defecto y después añadir la guarda

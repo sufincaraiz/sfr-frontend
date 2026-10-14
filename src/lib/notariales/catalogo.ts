@@ -5,19 +5,31 @@
  * Los conceptos de la v1, con su forma de cálculo, su base, su sujeto legal y su
  * reparto por defecto.
  *
- * **CASI TODOS NACEN SIN VALOR Y SIN TRAMOS**: las cifras entran por el panel,
- * una por una, cada una con su resolución oficial.
+ * **TODOS NACEN SIN VALOR, SIN TRAMOS Y SIN REDONDEO.** Las cifras entran por
+ * el panel, una por una, cada una con su resolución oficial. Hay una
+ * verificación en el arnés que lo comprueba, para que sea una propiedad y no
+ * una costumbre.
  *
- * La excepción son los tres conceptos ya verificados contra el PDF de la
- * RES-2026-000964-6 —el recaudo del art. 50, el recaudo de los actos sin
- * cuantía y la tarifa del acto sin cuantía del art. 2 lit. a)—. Vienen con sus
- * cifras y **sin respaldo**: la guarda sigue cerrada, porque el respaldo exige
- * la URL oficial del documento y esa todavía no está. El año NO se puede
- * activar con ellos cargados.
+ * ⚠ HUBO TRES CONCEPTOS SEMBRADOS Y SE VACIARON, el 2026-10-14. Traían las 29
+ * cifras del art. 50 y del art. 2 lit. a), verificadas contra el PDF. No
+ * activaban nada —les faltaba el respaldo— y aun así había que quitarlas:
  *
- * Un número aquí sin su fila en `RespaldoNormativo` no habilita nada: solo
- * ahorra teclear. Si alguien añade una cifra creyendo que con eso ya calcula,
- * se encontrará con que el año sigue sin activarse, que es lo correcto.
+ *   · el cotejo decía «coincide» 29 veces comparando una copia de la
+ *     transcripción contra la transcripción misma, escritas por la misma mano;
+ *   · y el avance marcaba medio camino andado antes de que nadie hubiera leído
+ *     nada dos veces.
+ *
+ * Es el defecto del mensaje de esa misma mañana con el signo cambiado: aquel
+ * reportaba fracaso total sobre algo que sí ocurrió, esto reportaba acierto
+ * sobre algo que no ocurrió. **Un indicador que miente cuesta lo mismo en las
+ * dos direcciones.** Borrarlas no perdió información: la transcripción sigue
+ * en PARAMETROS-NOTARIALES-VERIFICADOS.md, que es donde debe estar.
+ *
+ * LA LÍNEA, para no volver a cruzarla: lo que sale de aquí son las CIFRAS de la
+ * resolución —valores, tramos, redondeos—. Lo que se queda son las decisiones
+ * ESTRUCTURALES: qué grava IVA, quién es el sujeto legal, si el reparto tiene
+ * norma, si la tarifa es monótona. Esas no son lecturas del PDF que haya que
+ * verificar dos veces: son el modelo.
  *
  * El IVA NO está en la lista. No tiene tarifa propia ni base propia: su base es
  * la suma de los conceptos gravados menos los recaudos para terceros, y su
@@ -343,15 +355,6 @@ export const CONCEPTOS_V1: Concepto[] = [
     //
     // ⚠ Los `desde` guardados son el `hasta` del tramo anterior, no el «+1»
     // impreso en la resolución. Ver el convenio de frontera en tramos.ts.
-    redondeo: { unidad: 1, modo: 'PUBLICADO' },
-    tramos: [
-      { orden: 1, desde: 0, hasta: 100_000_000, modo_calculo: 'FIJO', valor: 28_900, unidad: 'PESOS', aporte_snr: 14_450, aporte_fondo: 14_450, valor_en_uvb: 2.39 },
-      { orden: 2, desde: 100_000_000, hasta: 300_000_000, modo_calculo: 'FIJO', valor: 43_700, unidad: 'PESOS', aporte_snr: 21_850, aporte_fondo: 21_850, valor_en_uvb: 3.61 },
-      { orden: 3, desde: 300_000_000, hasta: 500_000_000, modo_calculo: 'FIJO', valor: 52_700, unidad: 'PESOS', aporte_snr: 26_350, aporte_fondo: 26_350, valor_en_uvb: 4.35 },
-      { orden: 4, desde: 500_000_000, hasta: 1_000_000_000, modo_calculo: 'FIJO', valor: 71_900, unidad: 'PESOS', aporte_snr: 35_950, aporte_fondo: 35_950, valor_en_uvb: 5.94 },
-      { orden: 5, desde: 1_000_000_000, hasta: 1_500_000_000, modo_calculo: 'FIJO', valor: 84_800, unidad: 'PESOS', aporte_snr: 42_400, aporte_fondo: 42_400, valor_en_uvb: 7.00 },
-      { orden: 6, desde: 1_500_000_000, hasta: null, modo_calculo: 'FIJO', valor: 96_400, unidad: 'PESOS', aporte_snr: 48_200, aporte_fondo: 48_200, valor_en_uvb: 7.96 },
-    ],
     // Valores fijos por rango de cuantía: TRAMOS en modo FIJO, no un porcentaje.
     tipo: 'TRAMOS',
     base: 'NOTARIAL',
@@ -511,8 +514,8 @@ export const CONCEPTOS_V1: Concepto[] = [
     base: 'NINGUNA',
     grava_iva: true,
     es_recaudo_terceros: false,
-    // Art. 2 literal a). Verificado contra el PDF; respaldo pendiente del enlace.
-    valor: 90_600,
+    // Art. 2 literal a). La cifra NO se siembra: se teclea en el panel. Ver la
+    // nota de arriba sobre por qué ninguna nace cargada.
     solo_avanzada: true,
     opcional: true,
     activo_por_defecto: false,
@@ -534,10 +537,6 @@ export const CONCEPTOS_V1: Concepto[] = [
     grava_iva: false,
     es_recaudo_terceros: true,
     // Primera fila del art. 50: «actos sin cuantía y escrituras exentas».
-    redondeo: { unidad: 1, modo: 'PUBLICADO' },
-    tramos: [
-      { orden: 1, desde: 0, hasta: null, modo_calculo: 'FIJO', valor: 19_300, unidad: 'PESOS', aporte_snr: 9_650, aporte_fondo: 9_650, valor_en_uvb: 1.59 },
-    ],
     solo_avanzada: true,
     opcional: true,
     activo_por_defecto: false,

@@ -4,7 +4,7 @@
   "description": "Portal Inmobiliario Su Finca Raíz — Next.js 15",
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "prisma generate && node scripts/verificar-migraciones-sql.mjs && node scripts/verificar-transcripcion.mjs && next build && node scripts/verificar-trazas.mjs && node scripts/verificar-enlaces.mjs",
+    "build": "prisma generate && node scripts/verificar-migraciones-sql.mjs && node scripts/verificar-transcripcion.mjs && node scripts/verificar-escrituras.mjs && next build && node scripts/verificar-trazas.mjs && node scripts/verificar-enlaces.mjs",
     "build:verificado": "node scripts/verificar-build.mjs",
     "start": "next start",
     "lint": "next lint",

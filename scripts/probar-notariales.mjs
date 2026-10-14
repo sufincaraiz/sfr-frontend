@@ -63,6 +63,29 @@ const PESO = { unidad: 1, modo: 'CERCANO' }
 /** Compara con tolerancia: los decimales de un 3 por mil no son exactos en binario. */
 const cerca = (a, b) => Math.abs(a - b) < 0.005
 
+// La transcripción del PDF, que es la OTRA lectura. Se usa en todo el arnés:
+// desde el 2026-10-14 el catálogo no siembra ninguna cifra, así que las tablas
+// de prueba se reconstruyen desde aquí y no desde una copia en el código.
+const BLOQUE_REAL = leerBloqueCotejo(readFileSync('PARAMETROS-NOTARIALES-VERIFICADOS.md', 'utf8'))
+
+const TRAMOS_50_DESDE_BLOQUE = (() => {
+  const filas = BLOQUE_REAL.filter(f => f.concepto === 'recaudo_snr')
+  const n = Math.max(...filas.map(f => Number(f.campo.split('.')[1])))
+  const dato = (i, qué) => filas.find(f => f.campo === `tramo.${i}.${qué}`)?.valor
+  let desde = 0
+  const out = []
+  for (let i = 1; i <= n; i++) {
+    const hasta = dato(i, 'hasta')
+    out.push({
+      orden: i, desde, hasta: hasta === 'abierto' ? null : Number(hasta),
+      modo_calculo: 'FIJO', valor: Number(dato(i, 'valor')), unidad: 'PESOS',
+      aporte_snr: Number(dato(i, 'aporte_snr')), aporte_fondo: Number(dato(i, 'aporte_fondo')),
+    })
+    desde = hasta === 'abierto' ? desde : Number(hasta)
+  }
+  return out
+})()
+
 const RESP = (campo, url = 'https://www.supernotariado.gov.co/resolucion.pdf') => ({
   campo, norma: 'Resolución RES-2026-000964-6 (cifras INVENTADAS para la prueba)',
   articulo: 'art. 50', url, fecha_norma: '2026-01-20',
@@ -251,21 +274,28 @@ lanza('…y una que exponga la ruta de la copia archivada, también',
 console.log('\n══ LA SIEMBRA REAL NACE VACÍA ══')
 // ─────────────────────────────────────────────────────────────────────────────
 check('son 19 conceptos', CONCEPTOS_V1.length === 19, `(hay ${CONCEPTOS_V1.length})`)
-// Tres vienen verificados contra el PDF; los quince restantes, vacíos.
-const VERIFICADOS = ['recaudo_snr', 'recaudo_sin_cuantia', 'acto_sin_cuantia']
-check('los que faltan por verificar NO traen valor ni tramos',
-  CONCEPTOS_V1.filter(c => !VERIFICADOS.includes(c.clave))
-    .every(c => c.valor === null && (c.tramos ?? []).length === 0))
-check('solo el acto sin cuantía trae un valor cargado (art. 2 lit. a)',
-  CONCEPTOS_V1.filter(c => c.valor !== null).map(c => c.clave).join() === 'acto_sin_cuantia' &&
-  CONCEPTOS_V1.find(c => c.clave === 'acto_sin_cuantia').valor === 90_600)
-check('solo los dos recaudos traen tramos',
-  CONCEPTOS_V1.filter(c => (c.tramos ?? []).length).map(c => c.clave).sort().join() ===
-  'recaudo_sin_cuantia,recaudo_snr')
-// LO QUE IMPORTA: traer la cifra NO habilita nada. Sin respaldo oficial el año
-// sigue sin poder activarse, que es el punto de toda la guarda.
-check('ninguno de los tres verificados trae respaldo',
-  VERIFICADOS.every(k => (CONCEPTOS_V1.find(c => c.clave === k).respaldos ?? []).length === 0))
+
+// ── LA SIEMBRA VACÍA ES UNA PROPIEDAD, NO UNA COSTUMBRE ───────────────────
+// El 2026-10-14 se vaciaron tres conceptos que traían 29 cifras del PDF. No
+// activaban nada —les faltaba el respaldo— pero el cotejo decía «coincide» 29
+// veces comparando una copia de la transcripción contra la transcripción, y el
+// avance marcaba medio camino antes de que nadie leyera nada dos veces. Un
+// indicador que miente cuesta lo mismo en las dos direcciones.
+check('NINGÚN concepto nace con valor',
+  CONCEPTOS_V1.every(c => c.valor === null || c.valor === undefined),
+  `(${CONCEPTOS_V1.filter(c => c.valor !== null && c.valor !== undefined).map(c => c.clave).join()})`)
+check('NINGUNO nace con tramos',
+  CONCEPTOS_V1.every(c => (c.tramos ?? []).length === 0),
+  `(${CONCEPTOS_V1.filter(c => (c.tramos ?? []).length).map(c => c.clave).join()})`)
+check('NINGUNO nace con redondeo: también es una cifra de la resolución',
+  CONCEPTOS_V1.every(c => !c.redondeo),
+  `(${CONCEPTOS_V1.filter(c => c.redondeo).map(c => c.clave).join()})`)
+check('NINGUNO nace con respaldo',
+  CONCEPTOS_V1.every(c => (c.respaldos ?? []).length === 0))
+// Lo que SÍ se queda: las decisiones estructurales. No son lecturas del PDF.
+check('las decisiones estructurales sí están, que son el modelo y no una lectura',
+  CONCEPTOS_V1.every(c => typeof c.grava_iva === 'boolean' && !!c.sujeto_legal && !!c.motivo_reparto) &&
+  CONCEPTOS_V1.find(c => c.clave === 'derechos_escritura').monotonicidad === 'NO_DECRECIENTE')
 check('el IVA no es un concepto (es derivado)', !CONCEPTOS_V1.some(c => c.clave === 'iva'))
 check('«beneficencia» existe como término coloquial del impuesto de registro',
   CONCEPTOS_V1.find(c => c.clave === 'impuesto_registro').terminos_coloquiales.includes('beneficencia'))
@@ -457,9 +487,8 @@ check('los tres modos dan tres resultados distintos sobre la misma cifra',
   ]).size === 3)
 lanza('una unidad de redondeo inválida', () => redondear(100, { unidad: 0, modo: 'CERCANO' }, 'x'),
   'ErrorEsquemaNotarial', 'unidad de redondeo inválida')
-check('solo los dos recaudos traen redondeo, y es PUBLICADO',
-  CONCEPTOS_V1.filter(c => c.redondeo).every(c => c.redondeo.modo === 'PUBLICADO') &&
-  CONCEPTOS_V1.filter(c => c.redondeo).length === 2)
+check('el catálogo real nace SIN redondeo en todos los conceptos',
+  CONCEPTOS_V1.every(c => !c.redondeo))
 check('…y el redondeo es campo exigido en las tarifas que se calculan',
   camposExigidos(CONCEPTOS_V1.find(c => c.clave === 'derechos_escritura')).includes('redondeo') &&
   camposExigidos(CONCEPTOS_V1.find(c => c.clave === 'impuesto_registro')).includes('redondeo'))
@@ -689,9 +718,19 @@ const VALORES = {
   biometria: { valor: 8000 },
   firma_digital: { valor: 12000 },
   autenticaciones: { valor: 5000 },
-  // recaudo_snr y recaudo_sin_cuantia NO se inventan: el catálogo ya trae los
-  // tramos reales del art. 50, verificados contra el PDF. El arnés solo les
-  // pone el respaldo que les falta, para poder activar el año de prueba.
+  // El catálogo ya NO siembra el art. 50: se teclea en el panel. Aquí se
+  // reconstruye desde el bloque de cotejo para poder liquidar en las pruebas.
+  recaudo_snr: { redondeo: { unidad: 1, modo: 'PUBLICADO' }, tramos: TRAMOS_50_DESDE_BLOQUE },
+  recaudo_sin_cuantia: {
+    redondeo: { unidad: 1, modo: 'PUBLICADO' },
+    tramos: [{
+      orden: 1, desde: 0, hasta: null, modo_calculo: 'FIJO', unidad: 'PESOS',
+      valor: Number(BLOQUE_REAL.find(f => f.concepto === 'recaudo_sin_cuantia' && f.campo === 'tramo.1.valor').valor),
+      aporte_snr: Number(BLOQUE_REAL.find(f => f.concepto === 'recaudo_sin_cuantia' && f.campo === 'tramo.1.aporte_snr').valor),
+      aporte_fondo: Number(BLOQUE_REAL.find(f => f.concepto === 'recaudo_sin_cuantia' && f.campo === 'tramo.1.aporte_fondo').valor),
+    }],
+  },
+  acto_sin_cuantia: { valor: 90_600 },
   impuesto_registro: { valor: 1, unidad: 'PORCENTAJE', redondeo: PESO },
   timbre: { redondeo: PESO, tramos: TIMBRE },
   derechos_orip: { redondeo: PESO, tramos: ORIP },
@@ -1135,7 +1174,7 @@ lanza('una cifra «publicada» que sale con decimales delata que se recalculó',
   () => redondear(15000.5, { unidad: 1, modo: 'PUBLICADO' }, 'x'),
   'ErrorEsquemaNotarial', 'se declaró PUBLICADA y sale con decimales')
 
-const RECAUDO = CONCEPTOS_V1.find(c => c.clave === 'recaudo_snr').tramos
+const RECAUDO = TRAMOS_50_DESDE_BLOQUE
 check('los aportes que suman el valor publicado pasan',
   (() => { verificarTramos(RECAUDO, null, 'recaudo'); return true })())
 lanza('aportes que NO suman el recaudo publicado',
@@ -1178,28 +1217,46 @@ console.log('\n══ ART. 50 TRANSCRITO: cada cifra contra su UVB ══')
 // misma fila, no del valor que estamos comprobando.
 const UVB_2026 = 12_110
 const aLaCentena = n => Math.round(n / 100) * 100
-const TRAMOS_50 = [
-  ...CONCEPTOS_V1.find(c => c.clave === 'recaudo_sin_cuantia').tramos,
-  ...CONCEPTOS_V1.find(c => c.clave === 'recaudo_snr').tramos,
-]
-check('son las siete filas del artículo 50', TRAMOS_50.length === 7)
+// Del BLOQUE, que es la transcripción. El catálogo ya no las siembra.
+const TRAMOS_50 = BLOQUE_REAL
+  .filter(f => /^recaudo_(snr|sin_cuantia)$/.test(f.concepto))
+  .reduce((acc, f) => {
+    const [, orden, qué] = f.campo.split('.')
+    const llave = `${f.concepto}.${orden}`
+    acc[llave] ??= {}
+    acc[llave][qué] = f.valor
+    return acc
+  }, {})
+check('son las siete filas del artículo 50', Object.keys(TRAMOS_50).length === 7,
+  `(${Object.keys(TRAMOS_50).length})`)
+// La UVB no está en el bloque —no es una tarifa, es la unidad— así que la
+// comprobación que queda es la de las mitades, que sí está transcrita entera.
 let malTranscritos = 0
-for (const t of TRAMOS_50) {
-  if (aLaCentena(Number(t.valor_en_uvb) * UVB_2026) !== Number(t.valor)) malTranscritos++
+for (const t of Object.values(TRAMOS_50)) {
   if (Number(t.aporte_snr) !== Number(t.valor) / 2) malTranscritos++
   if (Number(t.aporte_fondo) !== Number(t.valor) / 2) malTranscritos++
 }
-check('las siete cuadran con UVB × 12.110 a la centena, y las mitades son exactas',
+check('en las siete, cada aporte es la mitad exacta del recaudo',
   malTranscritos === 0, `(${malTranscritos} descuadres)`)
+check('y los siete valores salen de UVB × 12.110 a la centena, con la UVB a mano',
+  (() => {
+    const uvb = { 19300: 1.59, 28900: 2.39, 43700: 3.61, 52700: 4.35, 71900: 5.94, 84800: 7.00, 96400: 7.96 }
+    return Object.values(TRAMOS_50).every(t => aLaCentena(uvb[Number(t.valor)] * UVB_2026) === Number(t.valor))
+  })())
 check('los valores publicados, en orden: 19.300 · 28.900 · 43.700 · 52.700 · 71.900 · 84.800 · 96.400',
-  TRAMOS_50.map(t => Number(t.valor)).join() === '19300,28900,43700,52700,71900,84800,96400')
+  Object.values(TRAMOS_50).map(t => Number(t.valor)).sort((a, b) => a - b).join() ===
+  '19300,28900,43700,52700,71900,84800,96400')
+// Los tramos del art. 50 ya no están sembrados: se teclean. Para seguir
+// probando la frontera que dice el documento se reconstruyen AQUÍ, desde el
+// bloque de cotejo, que es la transcripción y no una copia en el catálogo.
+check('el art. 50 se reconstruye desde el bloque: 6 tramos por cuantía',
+  TRAMOS_50_DESDE_BLOQUE.length === 6)
 check('la tabla por cuantía cubre la recta y pasa sus guardas',
-  (() => { verificarTramos(CONCEPTOS_V1.find(c => c.clave === 'recaudo_snr').tramos, null, 'art. 50'); return true })())
+  (() => { verificarTramos(TRAMOS_50_DESDE_BLOQUE, null, 'art. 50'); return true })())
 
 // LA FRONTERA QUE DICE EL DOCUMENTO: «De $0 hasta $100.000.000».
 const recaudoDe = base => evaluarTramos(
-  CONCEPTOS_V1.find(c => c.clave === 'recaudo_snr').tramos, base, null, 'art. 50',
-  { unidad: 1, modo: 'PUBLICADO' })
+  TRAMOS_50_DESDE_BLOQUE, base, null, 'art. 50', { unidad: 1, modo: 'PUBLICADO' })
 check('$100.000.000 EXACTOS van al PRIMER tramo: 28.900', recaudoDe(100_000_000) === 28_900)
 check('…y un peso más, al segundo: 43.700', recaudoDe(100_000_001) === 43_700)
 check('…y medio peso más también, que es lo que el «+1» dejaba fuera',
@@ -1219,7 +1276,7 @@ const CON_SIN_CUANTIA = liquidar(ANIO, {
   opcionales: [...ENTRADA.opcionales, 'acto_sin_cuantia', 'recaudo_sin_cuantia'],
 }, { fuentes: FUENTES_OFICIALES })
 const lsc = k => CON_SIN_CUANTIA.lineas.find(l => l.clave === k)
-check('…pero activado, calcula: 90.600 del art. 2 lit. a)', lsc('acto_sin_cuantia').valor === 90_600)
+check('…pero activado y con su tarifa cargada, calcula: 90.600', lsc('acto_sin_cuantia').valor === 90_600)
 check('…grava IVA: 17.214 exactos (19 % de 90.600, a mano)',
   lsc('acto_sin_cuantia').iva_exacto === '17214')
 check('…y su recaudo es el de la primera fila: 19.300', lsc('recaudo_sin_cuantia').valor === 19_300)
@@ -1233,15 +1290,21 @@ check('…y el recaudo del acto sin cuantía tampoco entra en BASE_IVA',
 lanza('el catálogo REAL, con los tres verificados, sigue sin poder activarse',
   () => liquidar({ ...ANIO_VACIO, estado: 'ACTIVO' }, { valor_venta: 100_000_000 }, { fuentes: FUENTES_OFICIALES }),
   'AnioNoPublicable')
-check('…y los pendientes nombran los tres, por falta de RESPALDO y no de cifra',
+// Desde el vaciado, a los tres les falta la CIFRA, no solo el respaldo: es lo
+// que hace que el avance arranque en 0 de 53 y que el cotejo no diga «coincide»
+// sobre una copia de la transcripción.
+check('a los tres que estaban sembrados ahora les falta la tarifa',
   (() => { const p = pendientesParaActivar(ANIO_VACIO, FUENTES_OFICIALES)
     return ['recaudo_snr', 'recaudo_sin_cuantia', 'acto_sin_cuantia'].every(k => {
       const label = CONCEPTOS_V1.find(c => c.clave === k).label
-      return p.some(x => x.que.startsWith(label) && /sin respaldo oficial/.test(x.que))
+      return p.some(x => x.que.startsWith(label) && /falta/.test(x.que))
     }) })())
-check('…y NINGUNO de los tres aparece como «falta la tarifa»',
-  !pendientesParaActivar(ANIO_VACIO, FUENTES_OFICIALES)
-    .some(x => /falta la tarifa/.test(x.que) && /Recaudo|Acto sin cuantía/.test(x.que)))
+check('el avance de un año recién sembrado es 0 de 53',
+  (() => { const a = avance(BLOQUE_REAL, valoresDesdeAnio(ANIO_VACIO))
+    return a.cargadas === 0 && a.total === 53 && a.porcentaje === 0 })(),
+  `(${JSON.stringify(avance(BLOQUE_REAL, valoresDesdeAnio(ANIO_VACIO)))})`)
+check('…y el cotejo no dice «coincide» ni una vez',
+  resumirCotejo(compararCotejo(BLOQUE_REAL, valoresDesdeAnio(ANIO_VACIO))).coinciden === 0)
 
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\n══ COPIA SIMPLE: EL IVA VA DENTRO DEL PRECIO ══')
@@ -1678,10 +1741,11 @@ console.log('\n══ COTEJO: DOS LECTURAS DEL MISMO PAPEL ══')
 // Lo que esto verifica no lo puede verificar ningún otro arnés: que la cifra
 // CARGADA sea la que dice el PDF. El motor puede calcular impecablemente sobre
 // un número mal leído, con todo en verde.
-const BLOQUE_REAL = leerBloqueCotejo(readFileSync('PARAMETROS-NOTARIALES-VERIFICADOS.md', 'utf8'))
 check('el bloque del documento parsea', BLOQUE_REAL.length === 53, `(${BLOQUE_REAL.length} filas)`)
 check('…sin filas repetidas', new Set(BLOQUE_REAL.map(f => `${f.concepto}·${f.campo}`)).size === BLOQUE_REAL.length)
 check('…y cada fila dice de qué artículo sale', BLOQUE_REAL.every(f => f.articulo.length > 0))
+// El bloque de cotejo sigue teniendo las 53 cifras: la transcripción no se
+// tocó. Lo que se vació es la SIEMBRA, que era una copia suya.
 check('cubre los siete tramos del art. 50',
   BLOQUE_REAL.filter(f => /^recaudo_(snr|sin_cuantia)$/.test(f.concepto) && /\.valor$/.test(f.campo)).length === 7)
 check('…y sus catorce aportes institucionales',
