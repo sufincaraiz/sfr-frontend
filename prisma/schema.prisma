@@ -1289,6 +1289,10 @@ model ConceptoNotarial {
   activo_por_defecto        Boolean @default(true)
   aplica_en_sencilla        Boolean @default(false)
   es_estimacion_en_sencilla Boolean @default(false)
+  /// HACIA DÓNDE desvía el supuesto, escrito. Obligatorio en todo concepto
+  /// marcado como estimación: «Si la notaría expide más, el costo sube». Sin la
+  /// dirección, el aviso informa de que hay incertidumbre y no de qué hacer.
+  sesgo_en_sencilla String? @db.Text
 
   /// La unidad de la TARIFA, con su plural ESCRITO: «copia auténtica» no
   /// pluraliza añadiendo una «s», y esto lo lee un comprador junto a una cifra.

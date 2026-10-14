@@ -24,17 +24,23 @@ export interface ClienteNotarial {
     findMany: (a?: unknown) => Promise<Record<string, unknown>[]>
     update: (a: unknown) => Promise<unknown>
     create: (a: unknown) => Promise<Record<string, unknown>>
+    delete: (a: unknown) => Promise<unknown>
   }
   respaldoNormativo: {
     findMany: (a?: unknown) => Promise<Record<string, unknown>[]>
     upsert: (a: unknown) => Promise<unknown>
     deleteMany: (a: unknown) => Promise<unknown>
   }
-  fuenteNormativa: { findMany: (a?: unknown) => Promise<Record<string, unknown>[]> }
+  fuenteNormativa: {
+    findMany: (a?: unknown) => Promise<Record<string, unknown>[]>
+    upsert: (a: unknown) => Promise<unknown>
+  }
   conceptoNotarial: {
     update: (a: unknown) => Promise<unknown>
     findUnique: (a: unknown) => Promise<Record<string, unknown> | null>
+    findMany: (a?: unknown) => Promise<Record<string, unknown>[]>
   }
+  reglaRetencionNotarial: { findMany: (a?: unknown) => Promise<Record<string, unknown>[]> }
   tramoConcepto: {
     deleteMany: (a: unknown) => Promise<unknown>
     createMany: (a: unknown) => Promise<unknown>
