@@ -2311,7 +2311,7 @@ mil caracteres: las guías de territorio, las cinco FAQ y el informe de mercado.
 
 ---
 
-## Instrumentos que engañan — cuatro casos, una regla
+## Instrumentos que engañan — cinco casos, una regla
 
 **Regla: el resultado de un comando se verifica leyendo el EFECTO, no confiando
 en su salida.** La salida dice lo que el instrumento cree que hizo; el efecto
@@ -2329,6 +2329,28 @@ Lo común: ninguno **falló**. Todos devolvieron una respuesta verosímil. Un
 error ruidoso se corrige solo; uno silencioso llega a producción.
 
 ---
+
+### 5 · El contador de mutaciones que daba por viva la que mataba el proceso
+
+2026-10-13. El medidor de mutaciones contaba las ✗ del arnés para decidir si una
+guarda estaba cubierta. Dos mutaciones salieron «no detectadas», y una era
+mentira: al quitar la comprobación de autoridad, la verificación del documento
+válido **lanzaba**, el proceso moría, y un proceso muerto no imprime ni una ✗.
+
+    caidas = salida.count('✗')      # 0 → «nadie la detectó»
+
+El instrumento medía lo que sabía contar, no lo que importaba. Y el sesgo iba en
+la dirección peligrosa: daba por **no cubierta** una guarda que sí lo estaba, lo
+cual invita a añadir pruebas redundantes; pero el mismo criterio habría dado por
+**viva** cualquier mutación que rompiera el arranque del arnés, que es justo la
+clase de mutación más grave.
+
+Lo que cambió no fue el conteo, fue el criterio:
+
+> **Detectada = el arnés no acaba en verde.** Por fallos o porque revienta.
+
+Es la misma regla de la sección anterior —verificar el efecto, no la salida—
+aplicada al instrumento que verifica. Un medidor también es un instrumento.
 
 ## La guarda va ANTES del arreglo
 
@@ -2707,6 +2729,30 @@ trae la cifra —la tarifa está en el art. 50 y la vigencia en el art. 56—.
   visibles. Citarla obliga a decir que lo es y dónde está el texto auténtico
   —Diario Oficial—. La guarda no deja guardar un respaldo de una compilación
   sin esa nota.
+
+### Incompleto se ve; incoherente no
+
+2026-10-13, al ampliar la evidencia a documentos archivados. Un respaldo puede
+traer ahora las dos cosas: la URL y la autoridad declarada. Añadí una guarda que
+nadie pidió: si dice ser de la Superintendencia y su enlace es de la DIAN, se
+rechaza.
+
+La razón, que es la que la hace valer la pena:
+
+> **Un respaldo incompleto se ve. Uno incoherente no.**
+
+A un respaldo al que le falta el hash se le nota: hay un hueco, y la guarda lo
+nombra. Uno que tiene todos los campos llenos y dos de ellos se contradicen
+**parece completo**, pasa cualquier revisión a ojo, y la contradicción solo
+aparece el día que alguien va a comprobar la cifra contra el documento
+equivocado.
+
+Es la misma familia que el indicador agregado —que sumaba causas distintas y
+parecía un dato— y que la exención muerta —que daba la cifra que daría si la
+excepción no existiera—. Las tres se ven igual que lo correcto desde fuera.
+
+**La regla operativa:** cuando dos campos de una misma fila pueden decir lo
+mismo por caminos distintos, la guarda no es que estén llenos: es que coincidan.
 
 ### La exención muerta: una comparación de cadenas que no avisa
 

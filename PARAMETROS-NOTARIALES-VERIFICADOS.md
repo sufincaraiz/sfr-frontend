@@ -121,7 +121,98 @@ nota. Si aparece el PDF firmado de la registral, ese respaldo pasa a
 **Diario Oficial 53.444 del 30 de marzo de 2026** y que la compilación tiene
 erratas de digitación visibles. Añadida por el titular el 2026-10-13.
 
-## 5 · Lo que esta transcripción deja a la vista y no está resuelto
+## 5 · Bloque de cotejo — legible por máquina
+
+> **Para qué.** `node scripts/cotejar-notariales.mjs` lee la base de datos y la
+> compara con este bloque, fila por fila. Las dos lecturas son INDEPENDIENTES:
+> esta transcripción se hizo del PDF al documento, y la carga se hace del mismo
+> PDF al panel, a mano y en otro momento. Si divergen, alguien leyó mal el
+> papel — y ese es el único error que ningún arnés puede encontrar, porque el
+> motor estaría calculando perfectamente sobre una cifra equivocada.
+>
+> **Reglas del bloque.** Columnas fijas, una fila por cifra, sin agrupar y sin
+> derivar nada: si la resolución trae el aporte al Fondo, va su fila, aunque sea
+> la mitad del recaudo. Los valores van sin separadores de miles. La unidad de
+> un límite de tramo es la de ese límite, no la de la tarifa. Un tramo abierto
+> deja `abierto` en `hasta`.
+>
+> **Lo que NO está aquí** no es un olvido: es una cifra sin transcribir, y el
+> script la reporta como tal. El impuesto de registro de Cundinamarca, por
+> ejemplo, saldrá como `SIN_TRANSCRIBIR` hasta que se transcriba la ordenanza:
+> está cargado el 1 % de memoria, pero nadie lo ha leído dos veces.
+
+<!-- COTEJO:INICIO -->
+| concepto | campo | valor | unidad | articulo |
+|---|---|---|---|---|
+| (anio) | uvt | 52374 | PESOS | Res. DIAN 000238 de 2025, art. 1 |
+| (anio) | uvb | 12110 | PESOS | Res. MinHacienda 3488 de 2025, art. 1 |
+| acto_sin_cuantia | valor | 90600 | PESOS | art. 2 lit. a) |
+| derechos_escritura | tramo.1.hasta | 259300 | PESOS | art. 2 lit. b) |
+| derechos_escritura | tramo.1.valor | 30900 | PESOS | art. 2 lit. b) |
+| derechos_escritura | tramo.2.hasta | abierto | PESOS | art. 2 lit. b) |
+| derechos_escritura | tramo.2.valor | 3 | POR_MIL | art. 2 lit. b) |
+| hojas_papel_notarial | valor | 5600 | PESOS | art. 2 parágrafo |
+| copias | valor | 700 | PESOS | art. 5 |
+| copia_autentica | valor | 5600 | PESOS | art. 5 |
+| autenticaciones | valor | 2800 | PESOS | art. 6 |
+| biometria | valor | 4800 | PESOS | art. 6 |
+| firma_digital | valor | 10400 | PESOS | art. 6 parágrafo 2 |
+| recaudo_sin_cuantia | tramo.1.hasta | abierto | PESOS | art. 50 |
+| recaudo_sin_cuantia | tramo.1.valor | 19300 | PESOS | art. 50 |
+| recaudo_sin_cuantia | tramo.1.aporte_snr | 9650 | PESOS | art. 50 parágrafo |
+| recaudo_sin_cuantia | tramo.1.aporte_fondo | 9650 | PESOS | art. 50 parágrafo |
+| recaudo_snr | tramo.1.hasta | 100000000 | PESOS | art. 50 |
+| recaudo_snr | tramo.1.valor | 28900 | PESOS | art. 50 |
+| recaudo_snr | tramo.1.aporte_snr | 14450 | PESOS | art. 50 parágrafo |
+| recaudo_snr | tramo.1.aporte_fondo | 14450 | PESOS | art. 50 parágrafo |
+| recaudo_snr | tramo.2.hasta | 300000000 | PESOS | art. 50 |
+| recaudo_snr | tramo.2.valor | 43700 | PESOS | art. 50 |
+| recaudo_snr | tramo.2.aporte_snr | 21850 | PESOS | art. 50 parágrafo |
+| recaudo_snr | tramo.2.aporte_fondo | 21850 | PESOS | art. 50 parágrafo |
+| recaudo_snr | tramo.3.hasta | 500000000 | PESOS | art. 50 |
+| recaudo_snr | tramo.3.valor | 52700 | PESOS | art. 50 |
+| recaudo_snr | tramo.3.aporte_snr | 26350 | PESOS | art. 50 parágrafo |
+| recaudo_snr | tramo.3.aporte_fondo | 26350 | PESOS | art. 50 parágrafo |
+| recaudo_snr | tramo.4.hasta | 1000000000 | PESOS | art. 50 |
+| recaudo_snr | tramo.4.valor | 71900 | PESOS | art. 50 |
+| recaudo_snr | tramo.4.aporte_snr | 35950 | PESOS | art. 50 parágrafo |
+| recaudo_snr | tramo.4.aporte_fondo | 35950 | PESOS | art. 50 parágrafo |
+| recaudo_snr | tramo.5.hasta | 1500000000 | PESOS | art. 50 |
+| recaudo_snr | tramo.5.valor | 84800 | PESOS | art. 50 |
+| recaudo_snr | tramo.5.aporte_snr | 42400 | PESOS | art. 50 parágrafo |
+| recaudo_snr | tramo.5.aporte_fondo | 42400 | PESOS | art. 50 parágrafo |
+| recaudo_snr | tramo.6.hasta | abierto | PESOS | art. 50 |
+| recaudo_snr | tramo.6.valor | 96400 | PESOS | art. 50 |
+| recaudo_snr | tramo.6.aporte_snr | 48200 | PESOS | art. 50 parágrafo |
+| recaudo_snr | tramo.6.aporte_fondo | 48200 | PESOS | art. 50 parágrafo |
+| derechos_orip | tramo.1.hasta | 12852101 | PESOS | art. 1 lit. b) |
+| derechos_orip | tramo.1.valor | 53100 | PESOS | art. 1 lit. b) |
+| derechos_orip | tramo.2.hasta | 192778606 | PESOS | art. 1 lit. b) |
+| derechos_orip | tramo.2.valor | 9.11 | POR_MIL | art. 1 lit. b) |
+| derechos_orip | tramo.3.hasta | 334149656 | PESOS | art. 1 lit. b) |
+| derechos_orip | tramo.3.valor | 11.31 | POR_MIL | art. 1 lit. b) |
+| derechos_orip | tramo.4.hasta | 494798857 | PESOS | art. 1 lit. b) |
+| derechos_orip | tramo.4.valor | 12.60 | POR_MIL | art. 1 lit. b) |
+| derechos_orip | tramo.5.hasta | abierto | PESOS | art. 1 lit. b) |
+| derechos_orip | tramo.5.valor | 13.33 | POR_MIL | art. 1 lit. b) |
+| sistematizacion | valor | 2 | PORCENTAJE | parágrafo 8 |
+| certificado_tradicion | valor | 24300 | PESOS | art. 14 a) |
+<!-- COTEJO:FIN -->
+
+### Lo que este bloque NO cubre, y por qué
+
+- **El impuesto de registro de Cundinamarca** (1 %, Ordenanza 066 de 2021) y
+  **la retención** (1 %, E.T. art. 398): no vienen de estas dos resoluciones.
+  Necesitan su propia transcripción, de su propio documento.
+- **El impuesto de timbre**: tramos marginales en UVT del E.T. art. 519
+  parágrafo 3. Ídem.
+- **El redondeo del IVA**: es un criterio con carácter ADOPTADO, no una tarifa,
+  y su respaldo es el Concepto DIAN 003550. No se cuela aquí como si fuera una
+  cifra de estas resoluciones.
+- **Los certificados de la alcaldía y el ICCU** (paz y salvo, no valorización):
+  no son tarifas de la Superintendencia.
+
+## 6 · Lo que esta transcripción deja a la vista y no está resuelto
 
 - ~~La copia auténtica no está modelada.~~ **Resuelto (2026-10-13):** entra en
   v1 y no como opcional —sin copia auténtica la ORIP no inscribe—. Concepto

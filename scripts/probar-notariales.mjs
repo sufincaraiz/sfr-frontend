@@ -31,6 +31,11 @@ import { liquidarIva } from '../src/lib/notariales/iva.ts'
 import { codigoTrazabilidad, AVISO_NO_ALMACENADO } from '../src/lib/notariales/trazabilidad.ts'
 import { CRITERIOS_ADOPTADOS } from '../src/lib/notariales/iva.ts'
 import { FRASE_EVIDENCIA } from '../src/lib/notariales/tipos.ts'
+import {
+  leerBloqueCotejo, compararCotejo, resumirCotejo, normalizarValor,
+} from '../src/lib/notariales/cotejo.ts'
+import { valoresDesdeAnio, exigirEditable, subirVersion } from '../src/lib/notariales/datos.ts'
+import { readFileSync } from 'node:fs'
 import { calcularBaseRegistro, calcularBaseOrip } from '../src/lib/notariales/bases.ts'
 import { VERSION_MOTOR } from '../src/lib/notariales/tipos.ts'
 
@@ -1621,6 +1626,115 @@ check('el 0 % deja todo al vendedor', repartir(1000, 0).vendedor === 1000)
 check('el 100 % deja todo al comprador', repartir(1000, 100).comprador === 1000)
 check('un reparto raro (37 %) sigue cuadrando',
   (() => { const r = repartir(999_999, 37); return r.comprador + r.vendedor === 999_999 })())
+
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\n══ COTEJO: DOS LECTURAS DEL MISMO PAPEL ══')
+// ─────────────────────────────────────────────────────────────────────────────
+// Lo que esto verifica no lo puede verificar ningún otro arnés: que la cifra
+// CARGADA sea la que dice el PDF. El motor puede calcular impecablemente sobre
+// un número mal leído, con todo en verde.
+const BLOQUE_REAL = leerBloqueCotejo(readFileSync('PARAMETROS-NOTARIALES-VERIFICADOS.md', 'utf8'))
+check('el bloque del documento parsea', BLOQUE_REAL.length === 53, `(${BLOQUE_REAL.length} filas)`)
+check('…sin filas repetidas', new Set(BLOQUE_REAL.map(f => `${f.concepto}·${f.campo}`)).size === BLOQUE_REAL.length)
+check('…y cada fila dice de qué artículo sale', BLOQUE_REAL.every(f => f.articulo.length > 0))
+check('cubre los siete tramos del art. 50',
+  BLOQUE_REAL.filter(f => /^recaudo_(snr|sin_cuantia)$/.test(f.concepto) && /\.valor$/.test(f.campo)).length === 7)
+check('…y sus catorce aportes institucionales',
+  BLOQUE_REAL.filter(f => /aporte_(snr|fondo)$/.test(f.campo)).length === 14)
+check('cubre los cinco tramos registrales',
+  BLOQUE_REAL.filter(f => f.concepto === 'derechos_orip' && /\.valor$/.test(f.campo)).length === 5)
+check('los tramos abiertos se transcriben como «abierto»',
+  BLOQUE_REAL.filter(f => f.valor === 'abierto').length === 4)
+
+lanza('un bloque sin las marcas', () => leerBloqueCotejo('nada aquí'), 'ErrorBloqueCotejo', 'faltan las marcas')
+lanza('un bloque con la cabecera cambiada',
+  () => leerBloqueCotejo('<!-- COTEJO:INICIO -->\n| a | b |\n<!-- COTEJO:FIN -->'),
+  'ErrorBloqueCotejo', 'la cabecera tiene que ser')
+lanza('un bloque vacío',
+  () => leerBloqueCotejo('<!-- COTEJO:INICIO -->\n| concepto | campo | valor | unidad | articulo |\n<!-- COTEJO:FIN -->'),
+  'ErrorBloqueCotejo', 'ni una fila')
+lanza('una cifra transcrita dos veces',
+  () => leerBloqueCotejo('<!-- COTEJO:INICIO -->\n| concepto | campo | valor | unidad | articulo |\n' +
+    '| x | valor | 1 | PESOS | art. 1 |\n| x | valor | 2 | PESOS | art. 1 |\n<!-- COTEJO:FIN -->'),
+  'ErrorBloqueCotejo', 'dos veces')
+lanza('una fila sin artículo',
+  () => leerBloqueCotejo('<!-- COTEJO:INICIO -->\n| concepto | campo | valor | unidad | articulo |\n' +
+    '| x | valor | 1 | PESOS |  |\n<!-- COTEJO:FIN -->'),
+  'ErrorBloqueCotejo', 'falta articulo')
+
+// ── Las cuatro conclusiones, no dos ────────────────────────────────────────
+const FT = f => ({ concepto: 'x', campo: 'valor', valor: '100', unidad: 'PESOS', articulo: 'art. 1', ...f })
+check('dos lecturas iguales: COINCIDE',
+  compararCotejo([FT({})], [FT({})])[0].estado === 'COINCIDE')
+check('valor distinto: DIFIERE',
+  compararCotejo([FT({})], [FT({ valor: '110' })])[0].estado === 'DIFIERE')
+check('…diciendo las dos cifras',
+  compararCotejo([FT({})], [FT({ valor: '110' })])[0].diferencias
+    .some(d => /el documento dice 100 y la base tiene 110/.test(d)))
+check('UNIDAD distinta: DIFIERE, y es tan grave como el valor',
+  (() => { const r = compararCotejo([FT({ valor: '3', unidad: 'POR_MIL' })], [FT({ valor: '3', unidad: 'PORCENTAJE' })])[0]
+    return r.estado === 'DIFIERE' && r.diferencias.some(d => /unidad/.test(d)) })())
+check('ARTÍCULO distinto: DIFIERE, porque puede que se leyó otro artículo',
+  compararCotejo([FT({})], [FT({ articulo: 'art. 2' })])[0].estado === 'DIFIERE')
+check('cargado y no transcrito: SIN_TRANSCRIBIR',
+  compararCotejo([], [FT({})])[0].estado === 'SIN_TRANSCRIBIR')
+check('transcrito y no cargado: SIN_CARGAR',
+  compararCotejo([FT({})], [])[0].estado === 'SIN_CARGAR')
+
+check('«52.374» y «52374» son la misma cifra', normalizarValor('52.374') === normalizarValor('52374'))
+check('«3,00» y «3» también', normalizarValor('3,00') === normalizarValor('3'))
+check('«12.60» y «12,6» también', normalizarValor('12.60') === normalizarValor('12,6'))
+check('«abierto» y vacío son lo mismo', normalizarValor('abierto') === normalizarValor(''))
+check('pero 3 y 30 NO', normalizarValor('3') !== normalizarValor('30'))
+check('y «9.11» por mil no se confunde con 911',
+  normalizarValor('9.11') !== normalizarValor('911'))
+
+// ── `apto`: lo que bloquea activar y lo que no ─────────────────────────────
+check('una diferencia impide activar',
+  resumirCotejo(compararCotejo([FT({})], [FT({ valor: '110' })])).apto === false)
+check('una cifra cargada SIN transcribir también lo impide',
+  resumirCotejo(compararCotejo([], [FT({})])).apto === false)
+check('lo que falta por cargar NO lo impide: eso ya lo bloquea el respaldo',
+  resumirCotejo(compararCotejo([FT({})], [])).apto === true)
+
+// ── La derivación de las filas desde el año cargado ────────────────────────
+const FILAS = valoresDesdeAnio(ANIO)
+check('el año de prueba produce filas de cotejo', FILAS.length > 20, `(${FILAS.length})`)
+check('los tramos salen uno por uno, no agrupados',
+  FILAS.filter(f => f.concepto === 'recaudo_snr' && /^tramo\.\d+\.valor$/.test(f.campo)).length === 6)
+check('el límite abierto se deriva como «abierto»',
+  FILAS.some(f => f.campo === 'tramo.6.hasta' && f.valor === 'abierto'))
+check('la unidad de la tarifa viaja con el tramo',
+  FILAS.some(f => f.concepto === 'derechos_escritura' && f.campo === 'tramo.2.valor' && f.unidad === 'POR_MIL'))
+check('la unidad de un límite es la del límite, no la de la tarifa',
+  FILAS.find(f => f.concepto === 'derechos_escritura' && f.campo === 'tramo.1.hasta').unidad === 'PESOS')
+check('un concepto sin valor no produce fila',
+  !FILAS.some(f => f.concepto === 'predial_pendiente'))
+check('los aportes institucionales se cotejan uno a uno, sin deducir la mitad',
+  FILAS.filter(f => /aporte_(snr|fondo)$/.test(f.campo)).length === 14)
+
+// EL CASO QUE JUSTIFICA TODO ESTO: la cifra mal leída del papel.
+const CON_ERRATA = valoresDesdeAnio(ANIO).map(f =>
+  f.concepto === 'recaudo_snr' && f.campo === 'tramo.1.valor' ? { ...f, valor: '28090' } : f)
+check('un 28.900 teclado como 28.090 se detecta',
+  (() => { const r = compararCotejo(BLOQUE_REAL, CON_ERRATA)
+      .find(x => x.concepto === 'recaudo_snr' && x.campo === 'tramo.1.valor')
+    return r.estado === 'DIFIERE' && r.diferencias.some(d => /28900/.test(d) && /28090/.test(d)) })())
+check('…y deja el cotejo como NO apto',
+  resumirCotejo(compararCotejo(BLOQUE_REAL, CON_ERRATA)).apto === false)
+
+// ── Un año ACTIVO no se edita ──────────────────────────────────────────────
+check('un año en borrador se edita',
+  (() => { exigirEditable({ anio: 2026, estado: 'BORRADOR', cerrado: false }); return true })())
+lanza('un año ACTIVO no se edita sin devolverlo a borrador',
+  () => exigirEditable({ anio: 2026, estado: 'ACTIVO', cerrado: false }),
+  'ErrorEsquemaNotarial', 'devolverlo a borrador')
+lanza('un año cerrado tampoco',
+  () => exigirEditable({ anio: 2025, estado: 'BORRADOR', cerrado: true }),
+  'ErrorEsquemaNotarial', 'está cerrado')
+check('la versión sube de uno en uno, y con su fecha',
+  (() => { const v = subirVersion()
+    return v.version.increment === 1 && v.version_actualizada_en instanceof Date })())
 
 console.log(`\n${fail === 0 ? '✓ TODO EN VERDE' : '✗ HAY FALLOS'} — ${ok} verificaciones, ${fail} fallos\n`)
 process.exit(fail === 0 ? 0 : 1)
