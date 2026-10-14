@@ -59,6 +59,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
   // CRM porque no están listados para su rol: deny-by-default.
   { prefix: '/admin/finanzas',            label: 'Finanzas',            icon: 'Wallet',          roles: ['admin', 'contador'] },
   { prefix: '/admin/finanzas/parametros', label: 'Parámetros fiscales', icon: 'SlidersHorizontal', roles: ['admin'] },
+  { prefix: '/admin/notariales',          label: 'Tarifas notariales',  icon: 'Stamp',           roles: ['admin'] },
   { prefix: '/admin/blog',                label: 'Blog',                icon: 'PenSquare',       roles: ['admin', 'autor_blog'] },
   { prefix: '/admin/usuarios',            label: 'Usuarios',            icon: 'Shield',          roles: ['admin'] },
 ];

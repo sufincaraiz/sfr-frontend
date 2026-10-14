@@ -28,7 +28,9 @@ import {
 import { verificarTramos } from './tramos.ts'
 import { CRITERIOS_ADOPTADOS } from './iva.ts'
 import { leerAnio, leerFuentes, exigirEditable, subirVersion, valoresDesdeAnio, type ClienteNotarial } from './datos.ts'
-import { compararCotejo, resumirCotejo, type FilaTranscrita } from './cotejo.ts'
+import {
+  compararCotejo, resumirCotejo, veredictoPorSeccion, avance, type FilaTranscrita,
+} from './cotejo.ts'
 
 export const MODOS_REDONDEO = ['CERCANO', 'ARRIBA', 'ABAJO', 'PUBLICADO'] as const
 export const UNIDADES = ['PESOS', 'PORCENTAJE', 'POR_MIL'] as const
@@ -149,7 +151,7 @@ export async function sembrarAnio(db: ClienteNotarial, anio: number, por: string
         })),
       },
       reglas: { create: [REGLA_GENERAL] },
-    } as unknown,
+    },
   })
 }
 
@@ -469,7 +471,8 @@ export async function anioParaPantalla(
   try { verificarEsquema(cargado) } catch (e) { incoherencia = e instanceof Error ? e.message : String(e) }
 
   const pendientes = pendientesParaActivar(cargado, fuentes)
-  const cotejo = resumirCotejo(compararCotejo(transcritas, valoresDesdeAnio(cargado)))
+  const valores = valoresDesdeAnio(cargado)
+  const cotejo = resumirCotejo(compararCotejo(transcritas, valores))
 
   return {
     anio: cargado.anio,
@@ -489,6 +492,10 @@ export async function anioParaPantalla(
     })),
     respaldos_anio: (cargado.respaldos ?? []).map(r => ({ campo: r.campo, norma: r.norma, articulo: r.articulo, tipo_evidencia: r.tipo_evidencia })),
     pendientes: resumenDePendientes(pendientes),
+    // El veredicto por sección, para verlo mientras se carga y no tres días
+    // después. Lleva QUÉ difiere y DÓNDE mirar; jamás la cifra transcrita.
+    veredicto: veredictoPorSeccion(transcritas, valores),
+    avance: avance(transcritas, valores),
     // El motivo por el que NO se puede activar, a la vista: el botón deshabilitado
     // sin motivo obliga a adivinar.
     incoherencia,

@@ -18,34 +18,37 @@ import {
 import type { ValorCargado } from './cotejo.ts'
 
 /** Lo mínimo que se necesita del cliente, para no atar el módulo a Prisma. */
+/**
+ * Lo mínimo que se necesita del cliente, para no atar el módulo a los tipos
+ * generados por Prisma —que viven en `@prisma/client` y harían este archivo
+ * inservible desde el script del cotejo—.
+ *
+ * ⚠ Los argumentos van como `any` a propósito, y es el único `any` del módulo.
+ * Con `unknown` las firmas no son asignables desde las de Prisma —los
+ * parámetros de función son contravariantes— y el desacople no compilaría. El
+ * precio está confinado a estas declaraciones: lo que pasa por ellas se
+ * construye en este archivo, donde sí está tipado.
+ */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+type Lee<R> = (a?: any) => Promise<R>
+type Escribe = (a: any) => Promise<unknown>
+type Fila = Record<string, unknown>
+
 export interface ClienteNotarial {
   anioNotarial: {
-    findUnique: (a: unknown) => Promise<Record<string, unknown> | null>
-    findMany: (a?: unknown) => Promise<Record<string, unknown>[]>
-    update: (a: unknown) => Promise<unknown>
-    create: (a: unknown) => Promise<Record<string, unknown>>
-    delete: (a: unknown) => Promise<unknown>
+    findUnique: Lee<Fila | null>
+    findMany: Lee<Fila[]>
+    update: Escribe
+    create: (a: any) => Promise<Fila>
+    delete: Escribe
   }
-  respaldoNormativo: {
-    findMany: (a?: unknown) => Promise<Record<string, unknown>[]>
-    upsert: (a: unknown) => Promise<unknown>
-    deleteMany: (a: unknown) => Promise<unknown>
-  }
-  fuenteNormativa: {
-    findMany: (a?: unknown) => Promise<Record<string, unknown>[]>
-    upsert: (a: unknown) => Promise<unknown>
-  }
-  conceptoNotarial: {
-    update: (a: unknown) => Promise<unknown>
-    findUnique: (a: unknown) => Promise<Record<string, unknown> | null>
-    findMany: (a?: unknown) => Promise<Record<string, unknown>[]>
-  }
-  reglaRetencionNotarial: { findMany: (a?: unknown) => Promise<Record<string, unknown>[]> }
-  tramoConcepto: {
-    deleteMany: (a: unknown) => Promise<unknown>
-    createMany: (a: unknown) => Promise<unknown>
-  }
+  respaldoNormativo: { findMany: Lee<Fila[]>; upsert: Escribe; deleteMany: Escribe }
+  fuenteNormativa: { findMany: Lee<Fila[]>; upsert: Escribe }
+  conceptoNotarial: { findUnique: Lee<Fila | null>; findMany: Lee<Fila[]>; update: Escribe }
+  reglaRetencionNotarial: { findMany: Lee<Fila[]> }
+  tramoConcepto: { deleteMany: Escribe; createMany: Escribe }
 }
+/* eslint-enable @typescript-eslint/no-explicit-any */
 
 const texto = (v: unknown): string | null => (v === null || v === undefined ? null : String(v))
 const numero = (v: unknown): string | null => (v === null || v === undefined ? null : String(v))
@@ -170,8 +173,8 @@ export async function leerAnio(db: ClienteNotarial, anio: number): Promise<AnioN
   const fila = await db.anioNotarial.findUnique({
     where: { anio },
     include: {
-      conceptos: { orderBy: { orden: 'asc' } as unknown, include: { tramos: { orderBy: { orden: 'asc' } as unknown } } },
-      reglas: { orderBy: { orden: 'asc' } as unknown, include: { condiciones: true } },
+      conceptos: { orderBy: { orden: 'asc' }, include: { tramos: { orderBy: { orden: 'asc' } } } },
+      reglas: { orderBy: { orden: 'asc' }, include: { condiciones: true } },
     },
   })
   if (!fila) return null
