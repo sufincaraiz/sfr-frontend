@@ -3154,6 +3154,34 @@ mano y en otro momento. Ninguna ruta deriva de la otra. Si divergen, alguien ley
 mal el papel — y ese es el único error que ningún arnés puede encontrar, porque
 el motor calcularía impecablemente sobre la cifra equivocada, con todo en verde.
 
+### ⚠ No todas las 53 tienen dos lecturas. La cuenta honesta
+
+Aquí hay un eco que se cuela si no se mira de cerca, y me lo corrigió el
+titular después de que yo lo presentara mal:
+
+| Filas | De dónde salen | Qué prueba su «coincide» |
+|---|---|---|
+| **29 sembradas** —los 7 tramos del art. 50 y el acto sin cuantía— | de la MISMA lectura: se transcribieron al bloque y se sembraron desde ahí | **consistencia interna**: que no hay errata entre el seed y la transcripción |
+| **24 por cargar** | el titular las teclea del PDF, en otro momento | **dos lecturas**: la del bloque y la de la carga |
+
+Un «24 de 24 coinciden» en `recaudo_snr` **no es la verificación de dos
+lecturas**. Es el cotejo comparándose consigo mismo, que es exactamente el
+defecto contra el que existe. Presentarlo como buena señal da una confianza que
+no corresponde.
+
+Y una precisión más, por no inflar tampoco las otras 24: las dos lecturas son
+del **mismo lector en dos momentos**, no de dos personas. Eso caza un error de
+tecleo y un despiste de una de las dos veces; no caza un malentendido estable
+—leer siempre el artículo equivocado—. Es lo que hay, y es muchísimo mejor que
+una sola lectura, pero conviene saber qué compra.
+
+**Consecuencia para el panel**, pendiente de construir: el veredicto de una
+sección sembrada y el de una que el titular cargó **no valen lo mismo y no
+pueden verse igual**. Hay que marcarlos distinto —«sembrado» frente a
+«cargado»— y el informe final tiene que decir **cuántas de las 53 tienen dos
+lecturas de verdad**. Esa es la cifra que decide si el año se activa con
+confianza, no el total de coincidencias.
+
 **Cuatro conclusiones, no dos:**
 
 | | |
@@ -3238,6 +3266,10 @@ las escrituras rompiéndolas, y se limpia solo. Lo que prueba no es el cálculo
 
 ## 14.8 Lo que falta
 
+- **Distinguir «sembrado» de «cargado» en el veredicto**, y que el informe del
+  cotejo diga cuántas de las 53 tienen dos lecturas de verdad en vez del total
+  de coincidencias. Va con el editor de tramos. Ver §14.5: un «24 de 24» de una
+  sección sembrada es consistencia interna, no verificación.
 - **Las pantallas del panel.** Orden por norma y artículo con el artículo a la
   vista como NAVEGACIÓN, la unidad pegada al campo, pendientes por dueño,
   BORRADOR/ACTIVO con un año activo que no se edita, botón de activar con el
