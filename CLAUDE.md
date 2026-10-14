@@ -58,6 +58,26 @@ semana. Es la única copia. Ver `backup-service/RESTAURAR.md`.
   hook `commit-msg` rechaza las dos huellas que deja —doble espacio y espacio
   antes de dos puntos—; en un clon nuevo hay que activarlo una vez:
   `git config core.hooksPath .githooks`
+- **«Empujado» y «desplegado» son dos cosas distintas, y no se puede afirmar lo
+  segundo sin consultarlo: `npm run deploy:estado`.** Pregunta a Vercel por el
+  commit exacto de HEAD y sale con 1 mientras no esté READY. Un build verde en
+  esta máquina **no es un hecho sobre el despliegue**: son dos superficies, y el
+  2026-10-14 el mismo commit dio verde aquí y recházo allí por los finales de
+  línea. Decir «build limpio» sin decir en qué superficie no significa nada.
+- **La máquina de desarrollo es Windows y el objetivo es Linux.** Lo que eso
+  rompe en silencio —CRLF, mayúsculas en imports, separadores de ruta— lo
+  vigila `scripts/verificar-portabilidad.mjs`, dentro del build. Si una
+  herramienta escribe CRLF, `git diff` sale **vacío** y los bytes difieren de los
+  que tendrá Vercel: `node scripts/normalizar-saltos.mjs --escribir`.
+- **Al escribir archivos del repositorio desde Python: `newline='\n'`.** Sin
+  eso, `io.open(..., 'w')` traduce cada salto a CRLF en Windows. Es la causa de
+  los dos despliegues rechazados del 2026-10-14.
+- **Una mutación no cuenta hasta que se demuestra que el contenido cambió.** Las
+  mutaciones viven declaradas en `scripts/mutar.mjs` (`npm run mutar`), no en la
+  consola: si el texto buscado no está, el resultado es `ERROR_DE_LA_PRUEBA`, no
+  «sobrevivió». Pasó cuatro veces en un día.
+- **Las guardas del build corren todas y acumulan** (`npm run verificar`). `&&`
+  esconde el segundo problema y hace que se descubra uno por despliegue.
 - El código vive en `C:\sfr\frontend`, no en la carpeta de Google Drive.
 - Compilar requiere las variables de `.env.local`.
 - `npx prisma db push` para aplicar cambios de esquema (no `migrate dev`).

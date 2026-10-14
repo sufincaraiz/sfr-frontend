@@ -21,21 +21,14 @@
  *   node scripts/generar-transcripcion.mjs
  */
 import { readFileSync, writeFileSync } from 'node:fs'
-import { createHash } from 'node:crypto'
 import { leerBloqueCotejo } from '../src/lib/notariales/cotejo.ts'
+import { huellaDelBloque } from '../src/lib/notariales/huella.ts'
 
 const DOC = 'PARAMETROS-NOTARIALES-VERIFICADOS.md'
 const DESTINO = 'src/lib/notariales/transcripcion.generada.ts'
 
 const texto = readFileSync(DOC, 'utf8')
 const filas = leerBloqueCotejo(texto)
-
-/** La huella es del BLOQUE, no del documento: la prosa puede cambiar sin más. */
-function huellaDelBloque(contenido) {
-  const desde = contenido.indexOf('<!-- COTEJO:INICIO -->')
-  const hasta = contenido.indexOf('<!-- COTEJO:FIN -->')
-  return createHash('sha256').update(contenido.slice(desde, hasta)).digest('hex')
-}
 
 const huella = huellaDelBloque(texto)
 

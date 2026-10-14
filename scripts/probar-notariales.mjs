@@ -1131,6 +1131,19 @@ check('medio peso por encima de una frontera ya está en el tramo siguiente',
   `(dio ${evaluarTramos(ORIP, 12_852_101.5, null, 'ORIP', PESO)})`)
 check('…y justo EN la frontera sigue en el tramo fijo',
   evaluarTramos(ORIP, 12_852_101, null, 'ORIP', PESO) === 53_100)
+/* LA FRONTERA INFERIOR, que no tenía prueba.
+ *
+ * `desde < base`: el límite inferior NO pertenece al tramo. Faltaba
+ * comprobarlo, y el hueco lo encontró una mutación: cambiar `base > desde` por
+ * `base >= desde` SOBREVIVÍA al arnés entero. La razón es que en los bordes
+ * interiores gana el primer tramo que coincide, así que el resultado no cambia;
+ * el único sitio donde se nota es `base = 0`, que con `>` no cae en ningún
+ * tramo y mutado se calcularía con el primero como si nada.
+ *
+ * Una base de 0 en una compraventa es un dato imposible y tiene que doler. */
+lanza('una base de 0 no cae en ningún tramo: el límite inferior no pertenece',
+  () => evaluarTramos(ORIP, 0, null, 'ORIP', PESO),
+  'ErrorEsquemaNotarial', 'no cae en ningún tramo')
 check('un avalúo escrito a la colombiana con centavos se lee bien',
   calcularBaseNotarial({ valor_venta: 1, avaluo_catastral: '100.000.000,50' }).valor === 100_000_000.5)
 lanza('la tabla NO contigua del documento: hasta 100.000.000 / desde 100.000.001',

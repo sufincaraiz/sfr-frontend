@@ -13,19 +13,23 @@
  * build si no coinciden. Corre antes de `next build`.
  */
 import { readFileSync } from 'node:fs'
-import { createHash } from 'node:crypto'
+import { huellaDelBloque, SinMarcasDelBloque } from '../src/lib/notariales/huella.ts'
 
 const DOC = 'PARAMETROS-NOTARIALES-VERIFICADOS.md'
 const GENERADO = 'src/lib/notariales/transcripcion.generada.ts'
 
 const texto = readFileSync(DOC, 'utf8')
-const desde = texto.indexOf('<!-- COTEJO:INICIO -->')
-const hasta = texto.indexOf('<!-- COTEJO:FIN -->')
-if (desde < 0 || hasta < 0) {
-  console.log(`\n  ✗ ${DOC} no tiene las marcas del bloque de cotejo.\n`)
+
+let huella
+try {
+  huella = huellaDelBloque(texto)
+} catch (e) {
+  if (!(e instanceof SinMarcasDelBloque)) throw e
+  console.log(`
+  ✗ ${DOC} no tiene las marcas del bloque de cotejo.
+`)
   process.exit(1)
 }
-const huella = createHash('sha256').update(texto.slice(desde, hasta)).digest('hex')
 
 let generado
 try {

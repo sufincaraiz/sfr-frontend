@@ -76,8 +76,8 @@ export class ErrorBloqueCotejo extends Error {
   }
 }
 
-const INICIO = '<!-- COTEJO:INICIO -->'
-const FIN = '<!-- COTEJO:FIN -->'
+export const INICIO = '<!-- COTEJO:INICIO -->'
+export const FIN = '<!-- COTEJO:FIN -->'
 const COLUMNAS = ['concepto', 'campo', 'valor', 'unidad', 'articulo'] as const
 
 /**

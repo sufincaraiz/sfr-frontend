@@ -13,7 +13,7 @@
 import type { FilaTranscrita } from './cotejo'
 
 /** SHA-256 del bloque de cotejo del documento del que salió esto. */
-export const HUELLA_DEL_BLOQUE = 'b13440ff4d230e5d7fababbce6174301cc793be2eccb71b2800c9dbf6f5c630f'
+export const HUELLA_DEL_BLOQUE = '39b59fd732e5a496104dc914ac6783b6d341fc2131c8573760855ed9f939696a'
 
 export const TRANSCRIPCION: readonly FilaTranscrita[] = [
   {

@@ -2352,6 +2352,147 @@ Lo que cambió no fue el conteo, fue el criterio:
 Es la misma regla de la sección anterior —verificar el efecto, no la salida—
 aplicada al instrumento que verifica. Un medidor también es un instrumento.
 
+## Tercera superficie: mi máquina contra Vercel
+
+2026-10-14. El reporte decía «tsc y build limpios». Vercel había rechazado el
+mismo commit a los 17 segundos. **Las dos cosas eran ciertas**, y ahí está el
+problema: no hablaban de lo mismo.
+
+> **Un build verde en local no es un hecho sobre el despliegue.** Y «build
+> limpio» sin decir en qué superficie no significa nada.
+
+Es la tercera de la familia. Las otras dos ya estaban escritas aquí:
+
+| superficie A | superficie B | qué las separa |
+|---|---|---|
+| el arnés en memoria | la base de datos | no hay esquema en memoria |
+| la documentación | el código | nadie vuelve a leer la nota |
+| **el build local** | **el build de Vercel** | **el checkout, el sistema operativo, la caché** |
+
+### Qué pasó exactamente, porque la causa no era la que se supone
+
+No fue una variable de entorno ni la caché. Fue el **checkout**.
+`.gitattributes` guarda el texto con LF; la copia en Windows tenía CRLF, porque
+los scripts que parcheaban el documento escribían con `io.open(..., 'w')`, que
+traduce. Una guarda compara el SHA-256 del bloque de cotejo. El módulo generado
+viajó con la huella del CRLF (`b13440ff…`) y Vercel calculó la del LF
+(`39b59fd7…`).
+
+> **Hasheé la superficie en vez del contenido.**
+
+Un hash que cambia según quién hizo el checkout no identifica un documento:
+identifica una copia. Mientras eso fuera así, la guarda iba a dar un sí/no
+distinto en cada máquina y ninguna de las dos respuestas valía.
+
+Y lo que lo mantenía invisible: **`git diff` salía vacío.** Para git los dos
+archivos son el mismo. Un árbol de trabajo limpio no protege de esto; es
+justamente lo que lo esconde.
+
+### LA MÁQUINA DE DESARROLLO ES WINDOWS. EL OBJETIVO ES LINUX.
+
+Esto hay que saberlo dentro de tres meses, cuando nadie recuerde por qué
+importa. Lo que esa diferencia rompe **en silencio**:
+
+1. **Finales de línea.** CRLF aquí, LF allí, `git diff` vacío. Cualquier cosa
+   que lea bytes —un hash, un contador de líneas, un `replace` con `\n`— da
+   resultados distintos. **Había 28 archivos versionados con CRLF**, entre ellos
+   `prisma/schema.prisma`, los dos arneses y el hook de commit.
+2. **Mayúsculas en los nombres de archivo.** Windows no distingue la caja,
+   Linux sí. `import './Cotejo'` funciona aquí y no resuelve allí. *Revisado el
+   2026-10-14: ninguno estaba mal.*
+3. **Separadores de ruta.** `globSync` devuelve `\` en Windows —comprobado: 68
+   de 68 rutas— y `/` en Linux. Comparar con una ruta escrita a mano falla en
+   una de las dos. *Revisado: `verificar-escrituras` ya normalizaba.*
+4. **Permisos.** Todo en `100644` y ningún script se invoca sin `node` delante,
+   así que el bit de ejecución no decide nada **hoy**. El día que algo se
+   invoque directamente, esto se queda corto.
+
+Los dos primeros los vigila `scripts/verificar-portabilidad.mjs`, y se arreglan
+con `scripts/normalizar-saltos.mjs`. El tercero y el cuarto no tienen guarda:
+están aquí escritos, que es el nivel más bajo de la jerarquía y ya sabemos lo
+que vale.
+
+## El par del día: afirmar un resultado que no se comprobó
+
+2026-10-14, con ocho horas de diferencia y en dos capas distintas:
+
+- La pantalla dijo **«no se pudo crear»** de un año que sí se había creado, con
+  sus 19 conceptos.
+- El reporte dijo **«build limpio»** de un build que había fallado.
+
+Es **el mismo defecto**: dar por resultado algo que no se verificó. La primera
+vez el `catch` no sabía qué había alcanzado a pasar antes del `throw`; la
+segunda, yo no sabía qué había pasado en una máquina que no era la mía. En los
+dos casos el mensaje era cómodo y falso.
+
+La primera ya tenía guarda (`verificar-escrituras.mjs`). La segunda es
+`scripts/estado-del-deploy.mjs`:
+
+> **«Empujado» y «desplegado» son dos cosas distintas.**
+
+Y la disciplina sola no basta, que es lo que demostró el día: por la mañana se
+consultó Vercel y se reportó bien; al tercer lote «empujado» pasó por
+desplegado dos veces seguidas. Por eso el guión pregunta por
+`--meta githubCommitSha` y **sale con 1 mientras el commit de HEAD no esté
+READY**, y distingue tres cosas que no se pueden agregar: READY, ERROR, y **«no
+pude preguntar»**. La primera versión leía «no pude preguntar» como «no hay
+despliegue», y eso era tranquilizador y falso en la dirección contraria.
+
+## `&&` es la forma equivocada para una cadena de guardas
+
+El build era `guarda && guarda && next build && guarda && guarda`. El primer
+fallo esconde a los demás: se descubre **un problema por despliegue**.
+
+Lo que costó el 2026-10-14, con el log en la mano:
+
+| commit | eslabones | corrieron | **nunca corrieron** |
+|---|---|---|---|
+| `259856d` | 6 | 3 | 3 |
+| `af8dae0` | 7 | 3 | **4** |
+
+El escáner de escrituras se añadió en `af8dae0` y **nunca se ejecutó una sola
+vez en Vercel**: nació y murió en la máquina de desarrollo. La prueba no es
+deducirlo de la cadena, es que el log imprime el comando entero incluyéndolo y
+su cabecera no aparece en ninguna línea.
+
+Ahora es `scripts/verificar.mjs antes|despues`: corren **todas**, acumulan, y el
+proceso sale con 1 al final con el listado completo. Cada una en su propio
+proceso, para que un cuelgue no se lleve a las que faltan, y un cuelgue cuenta
+como fallo —el criterio es «no terminó en verde», no «imprimió una ✗»—.
+
+## Una mutación no cuenta hasta que se demuestra que mutó
+
+2026-10-14, **cuatro veces el mismo día**:
+
+- el contador de mutantes contaba solo las ✗ y no los cuelgues;
+- un patrón con separadores de miles (`| 100.000.000`) no existía en un bloque
+  que escribe las cifras sin separadores, así que el `replace` no tocó nada;
+- dos casos abrían el archivo en escritura antes de leerlo y lo truncaban, de
+  modo que la guarda se quejaba de otra cosa.
+
+> **Una mutación que no ocurre se lee como «la verificación pasó», que es
+> indistinguible de «todo está bien».** El modo de fallo apunta siempre a la
+> dirección cómoda.
+
+Arreglarlo en cada script no servía. Es propiedad del instrumento,
+`scripts/mutar.mjs`:
+
+1. Si el texto buscado no está, el resultado **no** es «sobrevivió» ni «pasó»:
+   es `ERROR_DE_LA_PRUEBA`, y la suite falla.
+2. La restauración se comprueba **byte a byte**, de todos los archivos que la
+   mutación tocó.
+3. Las tres salidas no se agregan: `DETECTADA`, `SOBREVIVIO` y
+   `ERROR_DE_LA_PRUEBA`. La última no dice nada del código —dice que el
+   instrumento está roto—.
+
+**Y el precio de no haberlo tenido antes:** de las mutaciones que dimos por
+buenas durante meses no se puede saber cuántas mutaban de verdad, porque eran
+ediciones de consola que no quedaron escritas. En la primera pasada bajo las
+reglas nuevas, de 8 mutaciones declaradas: 4 detectadas, **2 sobrevivieron y 2
+no mutaban**. Una de las que sobrevivían descubrió un hueco real —la frontera
+INFERIOR del tramo no tenía prueba: `base >= desde` solo se nota en `base = 0`,
+porque en los bordes interiores gana el primer tramo que coincide—.
+
 ## Duodécima forma de esconderse: la respuesta literal verdadera
 
 2026-10-14. El titular preguntó: «¿alguno de los valores que quedan sembrados en
