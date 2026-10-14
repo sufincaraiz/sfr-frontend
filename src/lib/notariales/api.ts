@@ -1,8 +1,9 @@
 import 'server-only'
 import { readFile } from 'node:fs/promises'
+import { join } from 'node:path'
 import { NextResponse } from 'next/server'
 import { leerBloqueCotejo, type FilaTranscrita } from './cotejo'
-import { ErrorEsquemaNotarial, RespaldoNoOficial } from './tipos'
+import { clasificarError } from './errores'
 
 /**
  * Lo compartido por las rutas del panel.
@@ -12,7 +13,14 @@ import { ErrorEsquemaNotarial, RespaldoNoOficial } from './tipos'
  * error que habla de `checkFields` y no de lo que pasa.
  */
 
-const DOCUMENTO = 'PARAMETROS-NOTARIALES-VERIFICADOS.md'
+/**
+ * Desde `process.cwd()` y no relativo: en una función serverless el directorio
+ * de trabajo no es la raíz del repositorio, y una ruta relativa resuelve donde
+ * no está el archivo. Que el archivo VIAJE con la función es cosa de
+ * `outputFileTracingIncludes` en next.config.ts, vigilado por
+ * `scripts/verificar-trazas.mjs`.
+ */
+const DOCUMENTO = join(process.cwd(), 'PARAMETROS-NOTARIALES-VERIFICADOS.md')
 
 /**
  * El bloque de cotejo, leído del documento del repositorio.
@@ -26,14 +34,14 @@ export async function transcripcion(): Promise<FilaTranscrita[]> {
 }
 
 /**
- * Los errores del módulo hablan con el usuario: dicen qué hay que resolver. Un
- * «error interno» obligaría a adivinar, y aquí adivinar significa volver a
- * abrir el PDF sin saber qué buscar.
+ * El envoltorio HTTP. La clasificación vive en `errores.ts`, como función pura,
+ * para poder probarla en el arnés: una clasificación de errores que nadie
+ * prueba acaba teniendo todas las ramas menos la que hace falta.
  */
 export function respuestaDeError(e: unknown, donde: string) {
-  if (e instanceof ErrorEsquemaNotarial || e instanceof RespaldoNoOficial) {
-    return NextResponse.json({ error: e.message, guarda: e.name }, { status: 409 })
-  }
+  // Siempre al log, clasificado o no: el detalle técnico no va al usuario pero
+  // tiene que quedar en alguna parte.
   console.error(`[notariales] ${donde}`, e)
-  return NextResponse.json({ error: 'No se pudo guardar.' }, { status: 500 })
+  const { error, causa, status } = clasificarError(e, donde)
+  return NextResponse.json({ error, causa }, { status })
 }

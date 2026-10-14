@@ -27,6 +27,13 @@ const nextConfig: NextConfig = {
     '/sitemap.xml': ['./content/blog/**/*'],
     '/blog': ['./content/blog/**/*'],
     '/blog/**': ['./content/blog/**/*'],
+    // El panel notarial lee el bloque de cotejo de este documento en runtime.
+    // Sin esta línea la función no lo lleva y en producción es un ENOENT: pasó
+    // el 2026-10-14 y el panel le dijo al titular «no se pudo crear» un año que
+    // sí se había creado. Lo vigila `scripts/verificar-trazas.mjs`, que corre
+    // en el build.
+    '/api/admin/notariales': ['./PARAMETROS-NOTARIALES-VERIFICADOS.md'],
+    '/api/admin/notariales/**': ['./PARAMETROS-NOTARIALES-VERIFICADOS.md'],
   },
 
   images: {

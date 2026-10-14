@@ -31,6 +31,8 @@ import { liquidarIva } from '../src/lib/notariales/iva.ts'
 import { codigoTrazabilidad, AVISO_NO_ALMACENADO } from '../src/lib/notariales/trazabilidad.ts'
 import { CRITERIOS_ADOPTADOS } from '../src/lib/notariales/iva.ts'
 import { FRASE_EVIDENCIA } from '../src/lib/notariales/tipos.ts'
+import { clasificarError } from '../src/lib/notariales/errores.ts'
+import { ErrorEsquemaNotarial } from '../src/lib/notariales/tipos.ts'
 import {
   leerBloqueCotejo, compararCotejo, resumirCotejo, normalizarValor,
   veredictoPorSeccion, avance,
@@ -1834,6 +1836,50 @@ lanza('un año cerrado tampoco',
 check('la versión sube de uno en uno, y con su fecha',
   (() => { const v = subirVersion()
     return v.version.increment === 1 && v.version_actualizada_en instanceof Date })())
+
+// ───────────────────────────────────────────────────────────────────────────────
+console.log('\n══ CADA CAUSA, SU FRASE: NUNCA «NO SE PUDO GUARDAR» ══')
+// ───────────────────────────────────────────────────────────────────────────────
+// El 2026-10-14 el panel dijo «no se pudo crear» de un año que SÍ se creó: la
+// siembra había escrito 19 conceptos y lo que falló fue una lectura posterior.
+// Un mensaje que agrupa causas no solo estorba: miente sobre el resultado.
+const cl = (e) => clasificarError(e, 'prueba')
+
+check('una guarda del módulo pasa su propio mensaje',
+  (() => { const r = cl(new ErrorEsquemaNotarial('Los tramos tienen un hueco.', 'tramos'))
+    return r.causa === 'GUARDA_DEL_MODULO' && r.error === 'Los tramos tienen un hueco.' && r.status === 409 })())
+check('tabla que no existe: lo dice, y dice que la migración no está en ESTA base',
+  (() => { const r = cl({ code: 'P2021', meta: { table: 'anios_notariales' } })
+    return r.causa === 'TABLA_FALTANTE' && /anios_notariales/.test(r.error) &&
+      /no está aplicada en la base que usa esta aplicación/.test(r.error) })())
+check('…también por el mensaje de Prisma sin código',
+  cl({ message: 'The table X does not exist in the current database.' }).causa === 'TABLA_FALTANTE')
+check('ya existe: dice que NO se tocó lo que había',
+  (() => { const r = cl({ code: 'P2002' })
+    return r.causa === 'YA_EXISTE' && /no se modificó/.test(r.error) && r.status === 409 })())
+check('la base no responde: 503, y dice que no es culpa del dato',
+  (() => { const r = cl({ code: 'P1001' })
+    return r.causa === 'BASE_NO_RESPONDE' && r.status === 503 &&
+      /No es un problema de lo que enviaste/.test(r.error) })())
+check('falta un archivo: lo distingue de un dato mal escrito',
+  (() => { const r = cl({ code: 'ENOENT', message: "open 'X.md'" })
+    return r.causa === 'ARCHIVO_FALTANTE' && /no es un problema de lo que escribiste/i.test(r.error) })())
+check('lo que no se sabe, se DICE que no se sabe',
+  (() => { const r = cl(new Error('algo raro'))
+    return r.causa === 'SIN_CLASIFICAR' && /no supimos clasificar/.test(r.error) })())
+check('…y manda al log, nombrando dónde', /prueba/.test(cl(new Error('algo raro')).error))
+check('las seis causas son distintas entre sí',
+  new Set([
+    cl(new ErrorEsquemaNotarial('x')).causa, cl({ code: 'P2021' }).causa, cl({ code: 'P2002' }).causa,
+    cl({ code: 'P1001' }).causa, cl({ code: 'ENOENT' }).causa, cl(new Error('x')).causa,
+  ]).size === 6)
+check('NINGUNA de las seis dice «no se pudo guardar»',
+  ![cl(new ErrorEsquemaNotarial('x')), cl({ code: 'P2021' }), cl({ code: 'P2002' }),
+    cl({ code: 'P1001' }), cl({ code: 'ENOENT' }), cl(new Error('x'))]
+    .some(r => /no se pudo guardar/i.test(r.error)))
+check('todas las guardas del módulo están en la lista',
+  ['AnioNoPublicable', 'FueraDeVigencia', 'ErrorDeEntrada', 'ErrorBloqueCotejo', 'SinReglaAplicable']
+    .every(n => cl({ name: n, message: 'su mensaje' }).causa === 'GUARDA_DEL_MODULO'))
 
 console.log(`\n${fail === 0 ? '✓ TODO EN VERDE' : '✗ HAY FALLOS'} — ${ok} verificaciones, ${fail} fallos\n`)
 process.exit(fail === 0 ? 0 : 1)

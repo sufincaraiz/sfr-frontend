@@ -31,7 +31,7 @@ async function uvtFiscal(anio: number): Promise<string | null> {
   }
 }
 
-export async function GET(_req: NextRequest, ctx: { params: Promise<{ anio: string }> }) {
+export async function GET(req: NextRequest, ctx: { params: Promise<{ anio: string }> }) {
   if (!(await requireRole(ROLES))) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   try {
     const anio = anioDe(await ctx.params)
@@ -39,7 +39,7 @@ export async function GET(_req: NextRequest, ctx: { params: Promise<{ anio: stri
     if (!pantalla) return NextResponse.json({ error: 'No existe' }, { status: 404 })
     return NextResponse.json(pantalla)
   } catch (e) {
-    return respuestaDeError(e, 'anio')
+    return respuestaDeError(e, `${req.method} /api/admin/notariales/[anio]`)
   }
 }
 
@@ -89,7 +89,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ anio: str
     const pantalla = await anioParaPantalla(prisma, anio, await transcripcion(), await uvtFiscal(anio))
     return NextResponse.json(pantalla)
   } catch (e) {
-    return respuestaDeError(e, 'anio')
+    return respuestaDeError(e, `${req.method} /api/admin/notariales/[anio]`)
   }
 }
 
@@ -105,16 +105,16 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ anio: stri
     const pantalla = await anioParaPantalla(prisma, anio, await transcripcion(), await uvtFiscal(anio))
     return NextResponse.json(pantalla)
   } catch (e) {
-    return respuestaDeError(e, 'anio')
+    return respuestaDeError(e, `${req.method} /api/admin/notariales/[anio]`)
   }
 }
 
-export async function DELETE(_req: NextRequest, ctx: { params: Promise<{ anio: string }> }) {
+export async function DELETE(req: NextRequest, ctx: { params: Promise<{ anio: string }> }) {
   if (!(await requireRole(ROLES))) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   try {
     await borrarAnio(prisma, anioDe(await ctx.params))
     return NextResponse.json({ ok: true })
   } catch (e) {
-    return respuestaDeError(e, 'anio')
+    return respuestaDeError(e, `${req.method} /api/admin/notariales/[anio]`)
   }
 }

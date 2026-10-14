@@ -50,7 +50,17 @@ export default function NotarialesPage() {
     });
     const j = await res.json();
     setCreando(false);
-    if (!res.ok) { setError(j.error ?? 'No se pudo crear.'); return; }
+    if (!res.ok) {
+      // El mensaje del servidor se muestra TAL CUAL: él sabe qué falló y lo
+      // dice clasificado. Envolverlo en un «no se pudo crear» apilaba dos
+      // frases genéricas y borraba la única que decía algo.
+      setError(j.error ?? 'El servidor respondió un error sin mensaje.');
+      // Y se recarga la lista: si la siembra alcanzó a escribir antes de
+      // fallar, el año existe y hay que verlo. Decir «no se creó» mientras
+      // existe es peor que no decir nada.
+      cargar();
+      return;
+    }
     window.location.href = `/admin/notariales/${nuevo}`;
   }
 
@@ -72,7 +82,7 @@ export default function NotarialesPage() {
       {error && (
         <div role="alert" style={{ background: '#FEF2F2', border: '2px solid #FCA5A5', color: '#7F1D1D', borderRadius: 14, padding: '0.9rem 1.1rem', fontSize: '0.86rem', marginBottom: '1rem', lineHeight: 1.5 }}>
           <strong style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-            <AlertTriangle size={17} /> No se pudo crear
+            <AlertTriangle size={17} /> El servidor rechazó la operación
           </strong>
           {error}
         </div>

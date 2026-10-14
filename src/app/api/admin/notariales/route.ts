@@ -21,11 +21,15 @@ export async function POST(req: NextRequest) {
   if (!s) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   try {
     const { anio } = await req.json()
+    // LO QUE HACE FALTA, ANTES DE ESCRIBIR. La transcripción se lee primero a
+    // propósito: el 2026-10-14 se sembró el año y después falló esta lectura,
+    // así que la respuesta dijo «no se pudo crear» de algo que SÍ se creó. Si
+    // algo va a faltar, que falte antes de tocar la base.
+    const transcrita = await transcripcion()
     await sembrarAnio(prisma, Number(anio), s.email ?? 'admin')
     await asegurarFuentes(prisma)
-    const pantalla = await anioParaPantalla(prisma, Number(anio), await transcripcion())
-    return NextResponse.json(pantalla)
+    return NextResponse.json(await anioParaPantalla(prisma, Number(anio), transcrita))
   } catch (e) {
-    return respuestaDeError(e, 'POST')
+    return respuestaDeError(e, 'POST /api/admin/notariales')
   }
 }

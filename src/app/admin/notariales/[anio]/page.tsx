@@ -94,7 +94,7 @@ export default function CargaNotarialPage({ params }: { params: Promise<{ anio: 
     if (res.status === 401) { window.location.href = '/admin/login'; return; }
     if (res.status === 404) { setError(`El año ${anio} no está sembrado.`); setCargando(false); return; }
     const j = await res.json();
-    if (!res.ok) setError(j.error ?? 'No se pudo cargar.'); else setP(j);
+    if (!res.ok) setError(j.error ?? 'El servidor respondió un error sin mensaje.'); else setP(j);
     setCargando(false);
   }, [anio]);
 
@@ -110,7 +110,11 @@ export default function CargaNotarialPage({ params }: { params: Promise<{ anio: 
     });
     const j = await res.json();
     setGuardando(null);
-    if (!res.ok) { setError(j.error ?? 'No se pudo guardar.'); return; }
+    if (!res.ok) {
+      // Tal cual lo manda el servidor: él clasificó la causa.
+      setError(j.error ?? 'El servidor respondió un error sin mensaje.');
+      return;
+    }
     setP(j);
     // Lo guardado deja de ser borrador local: lo que se ve viene ya del servidor.
     setBorrador(b => {
@@ -128,7 +132,7 @@ export default function CargaNotarialPage({ params }: { params: Promise<{ anio: 
     });
     const j = await res.json();
     setGuardando(null);
-    if (!res.ok) { setError(j.error ?? 'No se pudo.'); return; }
+    if (!res.ok) { setError(j.error ?? 'El servidor respondió un error sin mensaje.'); return; }
     setP(j);
   }
 
@@ -181,7 +185,7 @@ export default function CargaNotarialPage({ params }: { params: Promise<{ anio: 
         </div>
       </Tarjeta>
 
-      {error && <Aviso tono="bad" titulo="No se guardó">{error}</Aviso>}
+      {error && <Aviso tono="bad" titulo="El servidor rechazó la operación">{error}</Aviso>}
 
       {p.incoherencia && (
         <Aviso tono="bad" titulo="El esquema se contradice">
