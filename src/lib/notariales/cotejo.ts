@@ -103,6 +103,18 @@ const normalizarTexto = (v: string): string =>
   String(v ?? '').trim().replace(/\s+/g, ' ').toLowerCase()
 
 /**
+ * ¿Las dos citas hablan del mismo sitio del documento? Una contiene a la otra
+ * cuando una es más específica —«art. 50» y «art. 50 parágrafo»—. Si ninguna
+ * contiene a la otra, son dos artículos distintos.
+ */
+function articulosCompatibles(a: string, b: string): boolean {
+  const x = normalizarTexto(a)
+  const y = normalizarTexto(b)
+  if (!x || !y) return true
+  return x === y || x.startsWith(y) || y.startsWith(x)
+}
+
+/**
  * Lee el bloque de columnas fijas. Es una tabla de Markdown para que la misma
  * fila se lea a ojo y por máquina: si viviera en un JSON aparte, la prosa y el
  * dato podrían desincronizarse y nadie lo vería.
@@ -188,7 +200,14 @@ export function compararCotejo(
     // El artículo se compara SOLO si el respaldo ya lo trae. Mientras no hay
     // respaldo no hay segunda lectura, y reportar «difiere» contra un vacío
     // convertiría una carga a medias en un falso hallazgo.
-    if (c.articulo && normalizarTexto(t.articulo) !== normalizarTexto(c.articulo)) {
+    //
+    // Y se compara por COMPATIBILIDAD, no por igualdad, porque las dos lecturas
+    // no tienen la misma granularidad: un respaldo cubre todos los tramos de un
+    // concepto con «art. 50», y la transcripción distingue que los aportes
+    // salen del «art. 50 parágrafo». Eso no es una contradicción: es un
+    // refinamiento. Lo que sí es contradicción —y se reporta— es «art. 50»
+    // contra «art. 51», que significa que alguien leyó otro artículo.
+    if (c.articulo && !articulosCompatibles(t.articulo, c.articulo)) {
       diferencias.push(
         `artículo: el documento dice «${t.articulo}» y el respaldo cita «${c.articulo}». ` +
         'Uno de los dos leyó otro artículo',
@@ -200,6 +219,113 @@ export function compararCotejo(
       transcrito: t, cargado: c, diferencias,
     }
   })
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EL VEREDICTO QUE VE EL PANEL
+//
+// ⚠⚠ ESTO NO PUEDE LLEVAR LA CIFRA TRANSCRITA. NUNCA. ⚠⚠
+//
+// `ResultadoCotejo.diferencias` dice «el documento dice 28900 y la base tiene
+// 28090». Eso sirve para el informe del script, que se lee después. Si llegara
+// a la pantalla mientras se carga, el titular leería la cifra esperada y la
+// copiaría — y el cotejo dejaría de comparar dos lecturas del PDF para comparar
+// una lectura consigo misma. Habría costado el trabajo de escribirlo y no
+// detectaría nada.
+//
+// Por eso el panel recibe `VeredictoCampo`: QUÉ difiere y DÓNDE mirar, nunca
+// qué se esperaba. La navegación se muestra, el dato no. Es el mismo cuidado
+// que con el artículo, que es navegación y no campo.
+//
+// Si alguien quiere «mejorar» el mensaje añadiendo el valor esperado para que
+// sea más útil: eso es exactamente lo que no se puede hacer, y hay una
+// verificación en el arnés que serializa el veredicto entero y comprueba que la
+// cifra transcrita no aparezca en ninguna parte.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type AspectoDiferente = 'valor' | 'unidad' | 'articulo'
+
+export interface VeredictoCampo {
+  concepto: string
+  campo: string
+  estado: EstadoCotejo
+  /** El artículo de la transcripción: navegación, para volver al PDF. */
+  mirar_en: string
+  /** Qué aspecto no coincide. Sin decir qué se esperaba. */
+  difiere_en: AspectoDiferente[]
+}
+
+export interface VeredictoSeccion {
+  concepto: string
+  total: number
+  coinciden: number
+  difieren: number
+  sin_transcribir: number
+  sin_cargar: number
+  campos: VeredictoCampo[]
+}
+
+const ASPECTO: Record<string, AspectoDiferente> = {
+  valor: 'valor', unidad: 'unidad', 'artículo': 'articulo',
+}
+
+/** Qué aspectos difieren, leído de los mensajes y vaciado de cifras. */
+function aspectosDe(r: ResultadoCotejo): AspectoDiferente[] {
+  const out: AspectoDiferente[] = []
+  for (const d of r.diferencias) {
+    const etiqueta = d.split(':')[0]?.trim() ?? ''
+    const aspecto = ASPECTO[etiqueta]
+    if (aspecto && !out.includes(aspecto)) out.push(aspecto)
+  }
+  return out
+}
+
+/**
+ * El cotejo agrupado por concepto, listo para la pantalla. Cada sección se
+ * guarda por su cuenta, así que cada sección tiene su propio veredicto: «7 de 7
+ * coinciden» se ve mientras se avanza, con el PDF todavía abierto, en vez de
+ * tres días después.
+ */
+export function veredictoPorSeccion(
+  transcritas: FilaTranscrita[],
+  cargados: ValorCargado[],
+): VeredictoSeccion[] {
+  const resultados = compararCotejo(transcritas, cargados)
+  const porConcepto = new Map<string, ResultadoCotejo[]>()
+  for (const r of resultados) {
+    if (!porConcepto.has(r.concepto)) porConcepto.set(r.concepto, [])
+    porConcepto.get(r.concepto)!.push(r)
+  }
+  const articuloDe = new Map(transcritas.map(t => [`${t.concepto}·${t.campo}`, t.articulo]))
+
+  return [...porConcepto.entries()].map(([concepto, suyos]) => ({
+    concepto,
+    total: suyos.length,
+    coinciden: suyos.filter(r => r.estado === 'COINCIDE').length,
+    difieren: suyos.filter(r => r.estado === 'DIFIERE').length,
+    sin_transcribir: suyos.filter(r => r.estado === 'SIN_TRANSCRIBIR').length,
+    sin_cargar: suyos.filter(r => r.estado === 'SIN_CARGAR').length,
+    campos: suyos.map(r => ({
+      concepto: r.concepto,
+      campo: r.campo,
+      estado: r.estado,
+      // El artículo de la transcripción es navegación y sí se muestra.
+      mirar_en: articuloDe.get(`${r.concepto}·${r.campo}`) ?? '',
+      difiere_en: aspectosDe(r),
+    })),
+  }))
+}
+
+/** Cuántas de las cifras transcritas llevan ya valor cargado. */
+export function avance(transcritas: FilaTranscrita[], cargados: ValorCargado[]): {
+  cargadas: number
+  total: number
+  porcentaje: number
+} {
+  const hay = new Set(cargados.map(c => `${c.concepto}·${c.campo}`))
+  const cargadas = transcritas.filter(t => hay.has(`${t.concepto}·${t.campo}`)).length
+  const total = transcritas.length
+  return { cargadas, total, porcentaje: total ? Math.round((cargadas / total) * 100) : 0 }
 }
 
 export interface ResumenCotejo {

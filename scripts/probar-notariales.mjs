@@ -33,6 +33,7 @@ import { CRITERIOS_ADOPTADOS } from '../src/lib/notariales/iva.ts'
 import { FRASE_EVIDENCIA } from '../src/lib/notariales/tipos.ts'
 import {
   leerBloqueCotejo, compararCotejo, resumirCotejo, normalizarValor,
+  veredictoPorSeccion, avance,
 } from '../src/lib/notariales/cotejo.ts'
 import { valoresDesdeAnio, exigirEditable, subirVersion } from '../src/lib/notariales/datos.ts'
 import { readFileSync } from 'node:fs'
@@ -1722,6 +1723,15 @@ check('UNIDAD distinta: DIFIERE, y es tan grave como el valor',
 // a medias en un falso hallazgo.
 check('ARTÍCULO distinto: DIFIERE, porque uno de los dos leyó otro artículo',
   compararCotejo([FT({})], [FT({ articulo: 'art. 2' })])[0].estado === 'DIFIERE')
+// Las dos lecturas no tienen la misma granularidad: un respaldo cubre todos los
+// tramos con «art. 50» y la transcripción distingue el parágrafo. Eso es un
+// refinamiento, no una contradicción.
+check('un artículo MÁS específico no es una diferencia',
+  compararCotejo([FT({ articulo: 'art. 50 parágrafo' })], [FT({ articulo: 'art. 50' })])[0].estado === 'COINCIDE')
+check('…ni al revés', 
+  compararCotejo([FT({ articulo: 'art. 50' })], [FT({ articulo: 'art. 50 parágrafo' })])[0].estado === 'COINCIDE')
+check('pero art. 50 contra art. 51 sí lo es',
+  compararCotejo([FT({ articulo: 'art. 50' })], [FT({ articulo: 'art. 51' })])[0].estado === 'DIFIERE')
 check('…y el mensaje lo dice así',
   compararCotejo([FT({})], [FT({ articulo: 'art. 2' })])[0].diferencias
     .some(d => /leyó otro artículo/.test(d)))
@@ -1775,6 +1785,42 @@ check('un 28.900 teclado como 28.090 se detecta',
     return r.estado === 'DIFIERE' && r.diferencias.some(d => /28900/.test(d) && /28090/.test(d)) })())
 check('…y deja el cotejo como NO apto',
   resumirCotejo(compararCotejo(BLOQUE_REAL, CON_ERRATA)).apto === false)
+
+// ── EL VEREDICTO DEL PANEL NO PUEDE LLEVAR LA CIFRA TRANSCRITA ─────────────
+// Si la llevara, el titular la leería y la copiaría, y el cotejo pasaría de
+// comparar dos lecturas del PDF a comparar una consigo misma.
+const CARGADO_MAL = valoresDesdeAnio(ANIO).map(f =>
+  f.concepto === 'recaudo_snr' && f.campo === 'tramo.1.valor' ? { ...f, valor: '28090' } : f)
+const VEREDICTO = veredictoPorSeccion(BLOQUE_REAL, CARGADO_MAL)
+const SERIALIZADO = JSON.stringify(VEREDICTO)
+check('el veredicto NO contiene la cifra transcrita (28900)',
+  !SERIALIZADO.includes('28900'), '(¡la lleva!)')
+check('…ni ninguna otra cifra del documento',
+  !BLOQUE_REAL.some(f => /^\d{4,}$/.test(f.valor) && SERIALIZADO.includes(f.valor)),
+  '(alguna se cuela)')
+check('…pero SÍ dice que difiere, y solo en esa cifra',
+  (() => { const r = VEREDICTO.find(v => v.concepto === 'recaudo_snr')
+    return r.difieren === 1 && r.campos.find(c => c.estado === 'DIFIERE').campo === 'tramo.1.valor' })(),
+  `(difieren=${VEREDICTO.find(v => v.concepto === 'recaudo_snr').difieren})`)
+check('…y en qué aspecto', VEREDICTO.find(v => v.concepto === 'recaudo_snr')
+  .campos.find(c => c.campo === 'tramo.1.valor').difiere_en.join() === 'valor')
+check('…y en qué artículo mirar', VEREDICTO.find(v => v.concepto === 'recaudo_snr')
+  .campos.find(c => c.campo === 'tramo.1.valor').mirar_en === 'art. 50')
+check('una unidad distinta se reporta como unidad, no como valor',
+  veredictoPorSeccion([FT({ valor: '3', unidad: 'POR_MIL' })], [FT({ valor: '3', unidad: 'PORCENTAJE' })])[0]
+    .campos[0].difiere_en.join() === 'unidad')
+check('el veredicto va agrupado por concepto, que es como se guarda',
+  VEREDICTO.length === new Set([...BLOQUE_REAL.map(f => f.concepto), ...CARGADO_MAL.map(f => f.concepto)]).size,
+  `(${VEREDICTO.length} secciones)`)
+check('cada sección trae su propio recuento',
+  VEREDICTO.every(v => v.coinciden + v.difieren + v.sin_transcribir + v.sin_cargar === v.total))
+
+// ── El avance, para no cargar a ciegas ────────────────────────────────────
+check('el avance cuenta sobre las 53 transcritas',
+  avance(BLOQUE_REAL, []).total === 53 && avance(BLOQUE_REAL, []).cargadas === 0)
+check('…y sube con lo cargado',
+  avance(BLOQUE_REAL, valoresDesdeAnio(ANIO)).cargadas > 0)
+check('…con su porcentaje', avance(BLOQUE_REAL, []).porcentaje === 0)
 
 // ── Un año ACTIVO no se edita ──────────────────────────────────────────────
 check('un año en borrador se edita',
