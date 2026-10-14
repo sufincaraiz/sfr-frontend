@@ -23,7 +23,7 @@ import {
   pendientesParaActivar, resumenDePendientes, exigirAnioPublicable, divergenciaUvt, copiarAnio,
   exigirOrdenDeDerivados,
   esFechaIso, cubreLaFecha, exigirVigencia,
-  esHashSha256, tipoDeEvidencia, fuenteDelRespaldo,
+  esHashSha256, tipoDeEvidencia, fuenteDelRespaldo, citaPublica,
 } from '../src/lib/notariales/guardas.ts'
 import { CONCEPTOS_V1, FUENTES_OFICIALES, camposExigidos } from '../src/lib/notariales/catalogo.ts'
 import { liquidar } from '../src/lib/notariales/calculo.ts'
@@ -150,6 +150,8 @@ const DOC = {
   obtenido_de: 'Entregado en ventanilla, con firma, radicado y sellos de aprobación.',
   obtenido_en: '2026-10-13',
   archivado_por: 'titular',
+  donde_conseguirlo: 'Se solicita en la Superintendencia de Notariado y Registro ' +
+    'o se consulta en el Diario Oficial.',
   vigencia_desde: '2026-02-01',
   articulo_vigencia: 'art. 56',
   verificado_en: '2026-10-13',
@@ -206,10 +208,41 @@ check('a un documento archivado no se le exige la nota de compilación',
   (() => { exigirRespaldoOficial({ ...DOC, fuente_dominio: 'cancilleria.gov.co', nota: null },
     FUENTES_OFICIALES); return true })())
 
+lanza('un documento archivado que no dice dónde lo consigue el lector',
+  () => exigirRespaldoOficial({ ...DOC, donde_conseguirlo: null }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'dónde puede conseguirlo')
+
 // Y EL PDF DE LA SIMULACIÓN DICE CUÁL DE LOS DOS FUE.
 check('las dos frases existen y son distintas',
   FRASE_EVIDENCIA.URL_OFICIAL === 'enlace oficial' &&
   FRASE_EVIDENCIA.DOCUMENTO_ARCHIVADO === 'documento oficial archivado')
+
+// ── NUNCA UN ENLACE A NUESTRO DOMINIO COMO FUENTE DE LA NORMA ──────────────
+// El PDF se archiva como authenticated: publicar una copia de una norma que no
+// emitimos nos convertiría en un sitio desde el que citarla, y cuando la
+// entidad la modifique —como la registral a los diez días— nuestra copia diría
+// lo viejo con nuestra marca encima.
+const CITA_DOC = citaPublica(DOC)
+check('un documento archivado NO lleva enlace', CITA_DOC.enlace === null)
+check('…ni menciona la ruta de nuestra copia',
+  !CITA_DOC.cita.includes('normas/2026') && !/sufincaraiz/i.test(CITA_DOC.cita))
+check('…nombra la norma y el artículo', /RES-2026-000964-6/.test(CITA_DOC.cita) && /art\. 50/.test(CITA_DOC.cita))
+check('…la entidad emisora', /Superintendencia de Notariado y Registro/.test(CITA_DOC.cita))
+check('…la fecha de verificación', /verificada contra el documento oficial el 2026-10-13/.test(CITA_DOC.cita))
+check('…y dónde lo consigue el lector por su cuenta',
+  /Diario Oficial/.test(CITA_DOC.cita), `(${CITA_DOC.cita})`)
+
+const CITA_URL = citaPublica(RESP('tramos'))
+check('un respaldo de enlace SÍ lleva el enlace',
+  CITA_URL.enlace === 'https://www.supernotariado.gov.co/resolucion.pdf')
+check('…y el enlace es del dominio de la autoridad, no del nuestro',
+  !/sufincaraiz/i.test(CITA_URL.enlace))
+lanza('una cita que apunte a nuestro dominio se rechaza',
+  () => citaPublica({ ...RESP('tramos'), url: 'https://www.sufincaraiz.com.co/normas/res.pdf' }),
+  'ErrorEsquemaNotarial', 'no se cita desde nuestro sitio')
+lanza('…y una que exponga la ruta de la copia archivada, también',
+  () => citaPublica({ ...DOC, donde_conseguirlo: 'Está en normas/2026/res-2026-000964-6.pdf' }),
+  'ErrorEsquemaNotarial', 'evidencia interna')
 
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\n══ LA SIEMBRA REAL NACE VACÍA ══')
@@ -760,6 +793,15 @@ check('la liquidación resume con qué se sustenta cada norma',
   (() => { const e = liquidar(ANIO_CON_DOCUMENTO, ENTRADA, { fuentes: FUENTES_OFICIALES }).evidencias
     return e.length >= 2 && e.some(x => x.tipo === 'DOCUMENTO_ARCHIVADO') &&
       e.some(x => x.tipo === 'URL_OFICIAL') })())
+check('…con la cita ya redactada para el PDF',
+  liquidar(ANIO_CON_DOCUMENTO, ENTRADA, { fuentes: FUENTES_OFICIALES }).evidencias
+    .every(x => x.cita.length > 0))
+check('…y NINGUNA evidencia enlaza a nuestro dominio',
+  liquidar(ANIO_CON_DOCUMENTO, ENTRADA, { fuentes: FUENTES_OFICIALES }).evidencias
+    .every(x => !/sufincaraiz/i.test(x.cita) && !/sufincaraiz/i.test(x.enlace ?? '')))
+check('…y la del documento archivado no trae enlace ninguno',
+  liquidar(ANIO_CON_DOCUMENTO, ENTRADA, { fuentes: FUENTES_OFICIALES }).evidencias
+    .filter(x => x.tipo === 'DOCUMENTO_ARCHIVADO').every(x => x.enlace === null))
 lanza('un año cuyo documento archivado está incompleto NO se activa',
   () => exigirAnioPublicable({
     ...ANIO_CON_DOCUMENTO,

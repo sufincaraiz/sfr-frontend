@@ -28,7 +28,9 @@ import { Prisma } from '@prisma/client'
 import { evaluarTramos, pesos, redondear, repartir, tasa } from './tramos.ts'
 import { calcularBase, type Base } from './bases.ts'
 import { calcularRetencion } from './retencion.ts'
-import { exigirAnioPublicable, exigirFechaIso, exigirVigencia, tipoDeEvidencia } from './guardas.ts'
+import {
+  citaPublica, exigirAnioPublicable, exigirFechaIso, exigirVigencia, tipoDeEvidencia,
+} from './guardas.ts'
 import { liquidarIva, type AporteIva } from './iva.ts'
 import { codigoTrazabilidad } from './trazabilidad.ts'
 
@@ -220,10 +222,12 @@ export function liquidar(
   const uvt = anio.uvt === null || anio.uvt === undefined ? null : Number(anio.uvt)
   const lineas: Linea[] = []
   const aportes: AporteIva[] = []
-  const evidencias = new Map<string, { norma: string; tipo: TipoEvidencia; frase: string }>()
-  for (const r of anio.respaldos ?? []) {
-    evidencias.set(r.norma, { norma: r.norma, tipo: tipoDeEvidencia(r), frase: FRASE_EVIDENCIA[tipoDeEvidencia(r)] })
+  const evidencias = new Map<string, { norma: string; tipo: TipoEvidencia; frase: string; cita: string; enlace: string | null }>()
+  const anotarEvidencia = (r: typeof anio.respaldos extends (infer T)[] | undefined ? T : never) => {
+    const tipo = tipoDeEvidencia(r)
+    evidencias.set(r.norma, { norma: r.norma, tipo, frase: FRASE_EVIDENCIA[tipo], ...citaPublica(r) })
   }
+  for (const r of anio.respaldos ?? []) anotarEvidencia(r)
   const basesUsadas = new Map<string, Base>()
   let tarifaRegistral: number | null = null
 
@@ -377,7 +381,7 @@ export function liquidar(
       normas.push(
         `${r.norma}${r.articulo ? `, ${r.articulo}` : ''} — ${FRASE_EVIDENCIA[tipoDeEvidencia(r)]}`,
       )
-      evidencias.set(r.norma, { norma: r.norma, tipo: tipoDeEvidencia(r), frase: FRASE_EVIDENCIA[tipoDeEvidencia(r)] })
+      anotarEvidencia(r)
     }
     if (c.motivo_reparto === 'NORMA_SUPLETIVA' && c.norma_reparto) {
       normas.push(`Reparto: ${c.norma_reparto} (salvo pacto entre las partes).`)

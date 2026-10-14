@@ -157,6 +157,15 @@ export function exigirRespaldoOficial(r: Respaldo, fuentes: Fuente[]): void {
         'Un documento no trae dominio, así que la autoridad hay que nombrarla.',
       )
     }
+    // Nuestra copia del PDF no se publica, así que el lector necesita saber
+    // dónde conseguir la norma por su cuenta. Sin esta frase, la simulación
+    // citaría un documento que nadie más puede ver.
+    if (!String(r.donde_conseguirlo ?? '').trim()) {
+      throw new RespaldoNoOficial(
+        `El respaldo de «${r.campo}» es un documento archivado y no dice dónde puede conseguirlo ` +
+        'el lector. Nuestra copia es evidencia interna y no se publica.',
+      )
+    }
   } else if (!String(r.url ?? '').trim()) {
     throw new RespaldoNoOficial(`El respaldo de «${r.campo}» no tiene url.`)
   }
@@ -231,6 +240,65 @@ const estadoDelRespaldo = (
 
 const tieneRespaldo = (respaldos: Respaldo[] | undefined, campo: string, fuentes: Fuente[]): boolean =>
   estadoDelRespaldo(respaldos, campo, fuentes).vale
+
+// ─────────────────────────────────────────────────────────────────────────────
+// La cita que ve el público
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * NUNCA UN ENLACE A NUESTRO DOMINIO PRESENTADO COMO LA FUENTE DE LA NORMA.
+ *
+ * El PDF de la resolución se archiva como `authenticated`, no público, y la
+ * razón importa: publicar una copia de una norma que no emitimos nos convierte
+ * en un sitio desde el que se puede citar esa norma. Y cuando la entidad la
+ * modifique —como pasó con la registral a los diez días— nuestra copia pública
+ * diría lo viejo con nuestra marca encima. El PDF es evidencia interna, no
+ * contenido.
+ *
+ * Consecuencia: con DOCUMENTO_ARCHIVADO la cita no enlaza nada. Nombra la
+ * norma, el artículo, la entidad emisora y la fecha de verificación, y dice
+ * dónde la consigue el lector. Con URL_OFICIAL sí va el enlace.
+ */
+export function citaPublica(r: Respaldo): { cita: string; enlace: string | null } {
+  const encabezado = `${r.norma}${r.articulo ? `, ${r.articulo}` : ''}`
+
+  if (tipoDeEvidencia(r) === 'DOCUMENTO_ARCHIVADO') {
+    const partes = [encabezado]
+    if (r.entidad_emisora) partes.push(`expedida por ${r.entidad_emisora}`)
+    partes.push(`verificada contra el documento oficial el ${r.verificado_en}`)
+    if (r.donde_conseguirlo) partes.push(r.donde_conseguirlo)
+    const cita = `${partes.join('. ')}`
+    exigirCitaSinNuestroDominio(cita, r)
+    return { cita, enlace: null }
+  }
+
+  const cita = `${encabezado}. ${r.url ?? ''}`.trim()
+  exigirCitaSinNuestroDominio(cita, r)
+  return { cita, enlace: r.url ?? null }
+}
+
+/**
+ * Guarda de último recurso, por si alguien cambia la plantilla de arriba: una
+ * cita pública no puede contener nuestro dominio ni la ruta del archivo. Va
+ * aquí y no en una revisión porque es la clase de cosa que se cuela al editar
+ * un texto, no al diseñar el sistema.
+ */
+function exigirCitaSinNuestroDominio(cita: string, r: Respaldo): void {
+  const bajo = cita.toLowerCase()
+  if (bajo.includes('sufincaraiz')) {
+    throw new ErrorEsquemaNotarial(
+      `La cita pública de «${r.campo}» apunta a nuestro propio dominio. Una norma que no emitimos ` +
+      'no se cita desde nuestro sitio.',
+      'cita',
+    )
+  }
+  if (r.documento_ruta && bajo.includes(String(r.documento_ruta).toLowerCase())) {
+    throw new ErrorEsquemaNotarial(
+      `La cita pública de «${r.campo}» expone la ruta de nuestra copia archivada, que es evidencia interna.`,
+      'cita',
+    )
+  }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Coherencia del esquema — ROJO

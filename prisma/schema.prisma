@@ -1163,6 +1163,13 @@ model RespaldoNormativo {
   obtenido_de     String?   @db.Text
   obtenido_en     DateTime? @db.Date
   archivado_por   String?
+  /// DÓNDE LO CONSIGUE EL LECTOR por su cuenta. Obligatorio con un documento
+  /// archivado: el PDF se guarda como `authenticated` y NO se publica —publicar
+  /// una copia de una norma que no emitimos nos convertiría en un sitio desde el
+  /// que citarla, y cuando la entidad la modifique nuestra copia diría lo viejo
+  /// con nuestra marca encima—. Sin esta frase, la simulación citaría un
+  /// documento que nadie más puede ver.
+  donde_conseguirlo String? @db.Text
 
   fuente_id String?
   fuente    FuenteNormativa? @relation(fields: [fuente_id], references: [id])

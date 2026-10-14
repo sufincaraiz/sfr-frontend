@@ -225,6 +225,13 @@ export interface Respaldo {
   /** Cuándo se obtuvo (AAAA-MM-DD). */
   obtenido_en?: string | null
   archivado_por?: string | null
+  /**
+   * DÓNDE LO CONSIGUE EL LECTOR por su cuenta. Obligatorio con
+   * DOCUMENTO_ARCHIVADO, y no es un adorno: el PDF de la simulación no puede
+   * enlazar nuestra copia —ver `citaPublica`—, así que sin esta frase el lector
+   * se queda sin forma de comprobar la norma.
+   */
+  donde_conseguirlo?: string | null
   fecha_norma?: string | null
   /**
    * DESDE CUÁNDO RIGE esta norma (AAAA-MM-DD). Obligatorio.
@@ -479,8 +486,12 @@ export interface Linea {
 export interface Liquidacion {
   /** La fecha con la que se escogieron las normas. */
   fecha_acto: string
-  /** Con qué se sustenta cada norma usada. El PDF lo imprime. */
-  evidencias: { norma: string; tipo: TipoEvidencia; frase: string }[]
+  /**
+   * Con qué se sustenta cada norma usada, ya redactado para el PDF público.
+   * `enlace` es null cuando la evidencia es un documento archivado: nuestra
+   * copia no se publica. Ver `citaPublica`.
+   */
+  evidencias: { norma: string; tipo: TipoEvidencia; frase: string; cita: string; enlace: string | null }[]
   lineas: Linea[]
   grupos: { clave: Grupo; titulo: string; nota: string; total: number; comprador: number; vendedor: number }[]
   /**
