@@ -19,7 +19,8 @@
  */
 
 import {
-  ErrorDeEntrada, ErrorEsquemaNotarial, GRUPOS,
+  ErrorDeEntrada, ErrorEsquemaNotarial, FRASE_EVIDENCIA, GRUPOS,
+  type TipoEvidencia,
   type AnioNotarial, type Concepto, type Entrada, type Fuente,
   type Grupo, type Linea, type Liquidacion, type Modo,
 } from './tipos.ts'
@@ -27,7 +28,7 @@ import { Prisma } from '@prisma/client'
 import { evaluarTramos, pesos, redondear, repartir, tasa } from './tramos.ts'
 import { calcularBase, type Base } from './bases.ts'
 import { calcularRetencion } from './retencion.ts'
-import { exigirAnioPublicable, exigirFechaIso, exigirVigencia } from './guardas.ts'
+import { exigirAnioPublicable, exigirFechaIso, exigirVigencia, tipoDeEvidencia } from './guardas.ts'
 import { liquidarIva, type AporteIva } from './iva.ts'
 import { codigoTrazabilidad } from './trazabilidad.ts'
 
@@ -219,6 +220,10 @@ export function liquidar(
   const uvt = anio.uvt === null || anio.uvt === undefined ? null : Number(anio.uvt)
   const lineas: Linea[] = []
   const aportes: AporteIva[] = []
+  const evidencias = new Map<string, { norma: string; tipo: TipoEvidencia; frase: string }>()
+  for (const r of anio.respaldos ?? []) {
+    evidencias.set(r.norma, { norma: r.norma, tipo: tipoDeEvidencia(r), frase: FRASE_EVIDENCIA[tipoDeEvidencia(r)] })
+  }
   const basesUsadas = new Map<string, Base>()
   let tarifaRegistral: number | null = null
 
@@ -365,7 +370,15 @@ export function liquidar(
     }
     const rv = repartir(valor, pct)
 
-    for (const r of c.respaldos ?? []) normas.push(`${r.norma}${r.articulo ? `, ${r.articulo}` : ''}`)
+    for (const r of c.respaldos ?? []) {
+      // «documento oficial archivado» y «enlace oficial» son dos afirmaciones
+      // distintas, y quien lea la simulación tiene derecho a saber cuál tiene
+      // delante. Va pegado a la norma, no en una nota al pie.
+      normas.push(
+        `${r.norma}${r.articulo ? `, ${r.articulo}` : ''} — ${FRASE_EVIDENCIA[tipoDeEvidencia(r)]}`,
+      )
+      evidencias.set(r.norma, { norma: r.norma, tipo: tipoDeEvidencia(r), frase: FRASE_EVIDENCIA[tipoDeEvidencia(r)] })
+    }
     if (c.motivo_reparto === 'NORMA_SUPLETIVA' && c.norma_reparto) {
       normas.push(`Reparto: ${c.norma_reparto} (salvo pacto entre las partes).`)
     }
@@ -473,6 +486,7 @@ export function liquidar(
 
   return {
     fecha_acto: fechaActo,
+    evidencias: [...evidencias.values()],
     lineas,
     grupos,
     iva,

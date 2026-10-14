@@ -23,12 +23,14 @@ import {
   pendientesParaActivar, resumenDePendientes, exigirAnioPublicable, divergenciaUvt, copiarAnio,
   exigirOrdenDeDerivados,
   esFechaIso, cubreLaFecha, exigirVigencia,
+  esHashSha256, tipoDeEvidencia, fuenteDelRespaldo,
 } from '../src/lib/notariales/guardas.ts'
 import { CONCEPTOS_V1, FUENTES_OFICIALES, camposExigidos } from '../src/lib/notariales/catalogo.ts'
 import { liquidar } from '../src/lib/notariales/calculo.ts'
 import { liquidarIva } from '../src/lib/notariales/iva.ts'
 import { codigoTrazabilidad, AVISO_NO_ALMACENADO } from '../src/lib/notariales/trazabilidad.ts'
 import { CRITERIOS_ADOPTADOS } from '../src/lib/notariales/iva.ts'
+import { FRASE_EVIDENCIA } from '../src/lib/notariales/tipos.ts'
 import { calcularBaseRegistro, calcularBaseOrip } from '../src/lib/notariales/bases.ts'
 import { VERSION_MOTOR } from '../src/lib/notariales/tipos.ts'
 
@@ -78,6 +80,12 @@ check('RECHAZA un dominio que solo CONTIENE el oficial',
 lanza('un respaldo sin quién verificó',
   () => exigirRespaldoOficial({ ...RESP('valor'), verificado_por: '' }, FUENTES_OFICIALES),
   'RespaldoNoOficial')
+lanza('un respaldo de tipo enlace que no trae url',
+  () => exigirRespaldoOficial({ ...RESP('valor'), url: null }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'no tiene url')
+lanza('…ni con la url en blanco',
+  () => exigirRespaldoOficial({ ...RESP('valor'), url: '   ' }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'no tiene url')
 lanza('un respaldo que no dice desde cuándo rige la norma',
   () => exigirRespaldoOficial({ ...RESP('valor'), vigencia_desde: undefined }, FUENTES_OFICIALES),
   'RespaldoNoOficial', 'desde cuándo rige')
@@ -118,6 +126,85 @@ check('…ni con una fecha de alta ilegible',
 check('una fuente oficial DESACTIVADA deja de servir',
   esFuenteOficial('https://www.dian.gov.co/x.pdf',
     FUENTES_OFICIALES.map(f => f.dominio === 'dian.gov.co' ? { ...f, activo: false } : f)) === null)
+
+// ─────────────────────────────────────────────────────────────────────────────
+console.log('\n══ EVIDENCIA: UN PDF FIRMADO VALE, UN BLOG NO ══')
+// ─────────────────────────────────────────────────────────────────────────────
+// La URL nunca fue el requisito: era un sustituto de la procedencia. La
+// compilación de la Cancillería TIENE enlace y es peor evidencia que el PDF
+// firmado de la resolución. Lo que se amplía es el soporte, no la autoridad.
+const DOC = {
+  campo: 'tramos',
+  norma: 'Resolución RES-2026-000964-6',
+  articulo: 'art. 50',
+  tipo_evidencia: 'DOCUMENTO_ARCHIVADO',
+  fuente_dominio: 'supernotariado.gov.co',
+  documento_ruta: 'normas/2026/res-2026-000964-6.pdf',
+  documento_hash: 'a'.repeat(64),
+  entidad_emisora: 'Superintendencia de Notariado y Registro',
+  obtenido_de: 'Entregado en ventanilla, con firma, radicado y sellos de aprobación.',
+  obtenido_en: '2026-10-13',
+  archivado_por: 'titular',
+  vigencia_desde: '2026-02-01',
+  articulo_vigencia: 'art. 56',
+  verificado_en: '2026-10-13',
+  verificado_por: 'titular',
+}
+check('un documento archivado, completo, SÍ respalda',
+  (() => { exigirRespaldoOficial(DOC, FUENTES_OFICIALES); return true })())
+check('…sin necesidad de URL', !DOC.url)
+check('el tipo por defecto sigue siendo el enlace',
+  tipoDeEvidencia({ ...DOC, tipo_evidencia: undefined }) === 'URL_OFICIAL')
+for (const [campo, trozo] of [
+  ['documento_ruta', 'dónde quedó archivado'],
+  ['entidad_emisora', 'qué entidad lo emitió'],
+  ['obtenido_de', 'de dónde se obtuvo'],
+  ['archivado_por', 'quién lo archivó'],
+]) {
+  lanza(`un documento archivado sin ${campo}`,
+    () => exigirRespaldoOficial({ ...DOC, [campo]: null }, FUENTES_OFICIALES),
+    'RespaldoNoOficial', trozo)
+}
+lanza('un documento archivado sin hash',
+  () => exigirRespaldoOficial({ ...DOC, documento_hash: null }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'sustituir el archivo no dejaría rastro')
+lanza('…ni con un hash a medias',
+  () => exigirRespaldoOficial({ ...DOC, documento_hash: 'abc123' }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'hash SHA-256')
+check('el hash se valida como 64 hexadecimales',
+  esHashSha256('f'.repeat(64)) && !esHashSha256('F'.repeat(64)) &&
+  !esHashSha256('a'.repeat(63)) && !esHashSha256('z'.repeat(64)))
+lanza('un documento archivado sin la fecha en que se obtuvo',
+  () => exigirRespaldoOficial({ ...DOC, obtenido_en: 'ayer' }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'cuándo se obtuvo')
+lanza('un documento archivado que no dice de qué autoridad es',
+  () => exigirRespaldoOficial({ ...DOC, fuente_dominio: null }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'no trae dominio')
+
+// LO QUE NO CAMBIA: la autoridad. Se amplía el soporte y nada más.
+lanza('un PDF de una notaría particular NO es evidencia',
+  () => exigirRespaldoOficial({ ...DOC, fuente_dominio: 'notaria19bogota.com' }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'no corresponde a una autoridad oficial activa')
+lanza('…ni de un sitio comercial',
+  () => exigirRespaldoOficial({ ...DOC, fuente_dominio: 'gastosnotariales.co' }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'venga como enlace o como PDF')
+lanza('…ni con la autoridad desactivada en la tabla',
+  () => exigirRespaldoOficial(DOC,
+    FUENTES_OFICIALES.map(f => f.dominio === 'supernotariado.gov.co' ? { ...f, activo: false } : f)),
+  'RespaldoNoOficial', 'no corresponde a una autoridad oficial activa')
+check('la autoridad de un documento se resuelve contra la MISMA tabla',
+  fuenteDelRespaldo(DOC, FUENTES_OFICIALES)?.dominio === 'supernotariado.gov.co')
+lanza('un respaldo que dice ser de una entidad y enlaza a otra',
+  () => exigirRespaldoOficial({ ...DOC, url: 'https://www.dian.gov.co/x.pdf' }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'y su enlace es de')
+check('a un documento archivado no se le exige la nota de compilación',
+  (() => { exigirRespaldoOficial({ ...DOC, fuente_dominio: 'cancilleria.gov.co', nota: null },
+    FUENTES_OFICIALES); return true })())
+
+// Y EL PDF DE LA SIMULACIÓN DICE CUÁL DE LOS DOS FUE.
+check('las dos frases existen y son distintas',
+  FRASE_EVIDENCIA.URL_OFICIAL === 'enlace oficial' &&
+  FRASE_EVIDENCIA.DOCUMENTO_ARCHIVADO === 'documento oficial archivado')
 
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\n══ LA SIEMBRA REAL NACE VACÍA ══')
@@ -604,7 +691,7 @@ lanza('con la Superintendencia desactivada, el año deja de activarse',
   () => exigirAnioPublicable(ANIO, SIN_SUPERNOTARIADO), 'AnioNoPublicable')
 check('…y el aviso dice QUÉ fuente y por qué',
   (() => { const p = pendientesParaActivar(ANIO, SIN_SUPERNOTARIADO)
-    return p.some(x => /no pertenece a una autoridad oficial activa/.test(x.que)) &&
+    return p.some(x => /no corresponde a una autoridad oficial activa/.test(x.que)) &&
       p.some(x => /supernotariado\.gov\.co/.test(x.que)) })(),
   `(${JSON.stringify(pendientesParaActivar(ANIO, SIN_SUPERNOTARIADO).slice(0, 2))})`)
 check('…y no dice «falta la tarifa», que sería mentira: la tarifa está',
@@ -621,7 +708,7 @@ lanza('ni con la fuente borrada de la tabla en vez de desactivada',
 const SIN_DIAN = FUENTES_OFICIALES.map(f => f.dominio === 'dian.gov.co' ? { ...f, activo: false } : f)
 check('con la DIAN desactivada, el pendiente del UVT dice el motivo',
   pendientesParaActivar(ANIO, SIN_DIAN)
-    .some(x => x.campo === 'uvt' && /no pertenece a una autoridad oficial activa/.test(x.que)),
+    .some(x => x.campo === 'uvt' && /no corresponde a una autoridad oficial activa/.test(x.que)),
   `(${JSON.stringify(pendientesParaActivar(ANIO, SIN_DIAN).filter(x => x.campo === 'uvt'))})`)
 check('…y nombra el dominio, no un «sin respaldo» genérico',
   pendientesParaActivar(ANIO, SIN_DIAN).some(x => x.campo === 'uvt' && /dian\.gov\.co/.test(x.que)))
@@ -641,6 +728,42 @@ const ENTRADA = {
 }
 const L = liquidar(ANIO, ENTRADA, { fuentes: FUENTES_OFICIALES, fecha: new Date(2026, 9, 6) })
 const linea = k => L.lineas.find(l => l.clave === k)
+
+// El año 2026 deja de estar bloqueado por un enlace que puede no existir, y
+// sigue bloqueado por lo que importa: que cada cifra tenga su documento.
+const ANIO_CON_DOCUMENTO = {
+  ...ANIO,
+  conceptos: ANIO.conceptos.map(c => c.clave !== 'derechos_escritura' ? c : {
+    ...c,
+    respaldos: (c.respaldos ?? []).map(r => ({ ...DOC, campo: r.campo })),
+  }),
+}
+check('un año respaldado con el PDF archivado también es publicable',
+  (() => { try { exigirAnioPublicable(ANIO_CON_DOCUMENTO, FUENTES_OFICIALES); return true }
+    catch (e) { return `(${e.message})` } })() === true)
+check('…y liquida igual', liquidar(ANIO_CON_DOCUMENTO, ENTRADA, { fuentes: FUENTES_OFICIALES })
+  .totales.total === 3_728_742)
+check('…y la línea DICE que su evidencia es un documento archivado',
+  liquidar(ANIO_CON_DOCUMENTO, ENTRADA, { fuentes: FUENTES_OFICIALES })
+    .lineas.find(l => l.clave === 'derechos_escritura').normas
+    .some(n => /documento oficial archivado/.test(n)))
+check('…y las demás siguen diciendo enlace oficial',
+  liquidar(ANIO_CON_DOCUMENTO, ENTRADA, { fuentes: FUENTES_OFICIALES })
+    .lineas.find(l => l.clave === 'impuesto_registro').normas
+    .some(n => /enlace oficial/.test(n)))
+check('la liquidación resume con qué se sustenta cada norma',
+  (() => { const e = liquidar(ANIO_CON_DOCUMENTO, ENTRADA, { fuentes: FUENTES_OFICIALES }).evidencias
+    return e.length >= 2 && e.some(x => x.tipo === 'DOCUMENTO_ARCHIVADO') &&
+      e.some(x => x.tipo === 'URL_OFICIAL') })())
+lanza('un año cuyo documento archivado está incompleto NO se activa',
+  () => exigirAnioPublicable({
+    ...ANIO_CON_DOCUMENTO,
+    conceptos: ANIO_CON_DOCUMENTO.conceptos.map(c => c.clave !== 'derechos_escritura' ? c : {
+      ...c, respaldos: (c.respaldos ?? []).map(r => ({ ...r, documento_hash: null })),
+    }),
+  }, FUENTES_OFICIALES),
+  'AnioNoPublicable')
+
 
 check('derechos notariales: 330.122', linea('derechos_escritura').valor === 330_122)
 check('ORIP: 911.000', linea('derechos_orip').valor === 911_000)

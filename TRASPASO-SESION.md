@@ -2619,6 +2619,45 @@ comportamiento que nadie había visto ocurrir. La regla de la sección anterior
 —verificar el efecto, no la salida— vale igual para las pruebas: **el nombre
 de una prueba no es prueba de nada; lo es el efecto que deja.**
 
+### La URL no era el requisito: era un sustituto de la procedencia
+
+2026-10-13. La guarda de respaldos exigía una URL de dominio oficial, y con eso
+bloqueaba el año 2026 entero porque la resolución notarial no está publicada
+como página accesible —el listado de la Superintendencia tiene 3.224 resultados
+por fecha y la de enero queda sepultada; el normograma de la Cancillería solo
+compiló las registrales—.
+
+Y al mirarlo de cerca, **el requisito se invertía**:
+
+| | Compilación de la Cancillería | PDF de la resolución |
+|---|---|---|
+| Tiene enlace | **Sí** | No |
+| Es la entidad emisora | No, es un normograma | **Sí** |
+| Erratas de digitación | **Sí**, visibles | No |
+| Firma, radicado y sellos | No | **Sí** |
+
+La que pasaba la guarda era la **peor** evidencia de las dos.
+
+**La regla.** La URL nunca fue el requisito: era un **sustituto** de la
+procedencia, cómodo de comprobar porque un dominio se valida en una línea. Donde
+el sustituto y lo sustituido apuntan en direcciones opuestas, manda lo
+sustituido.
+
+Por eso el respaldo gana `tipo_evidencia`: `URL_OFICIAL` o
+`DOCUMENTO_ARCHIVADO`, y el segundo exige las seis cosas que un enlace daba
+gratis —el archivo guardado, su hash SHA-256, la entidad emisora, de dónde se
+obtuvo, cuándo, y quién lo archivó—.
+
+**Lo que NO se amplió es la autoridad.** Un PDF de una notaría particular, de un
+gremio o de un sitio comercial sigue sin valer, y la comprobación es la misma
+tabla de siempre: un documento archivado nombra su autoridad y se resuelve
+contra `FuenteNormativa`. Se amplió el soporte, no quién puede sustentar.
+
+Y el PDF de la simulación imprime **cuál de los dos fue**, porque «Resolución
+RES-2026-000964-6, documento oficial archivado» es una afirmación distinta de un
+enlace público, y quien lee la simulación tiene derecho a saber cuál tiene
+delante.
+
 ### El artículo de vigencia que ya estaba derogado
 
 2026-10-13, calculadora de gastos notariales. Dos hallazgos encadenados del
@@ -2809,9 +2848,24 @@ guarda que los **exige** cuando la etiqueta tiene más de una palabra —porque
 «copia auténtica» y «firma o diligencia» no pluralizan mecánicamente—. Ahí la
 regla deja de depender de que alguien se acuerde.
 
-Nótese el orden en que se encontró: no lo vio una revisión, lo vio **el arnés**,
-porque había una verificación que comparaba el texto del desglose carácter por
-carácter. Una regla de redacción solo se defiende sola si algo compara el texto.
+#### Y la regla general que sale de aquí
+
+No lo vio una revisión: lo vio **el arnés**, porque había una verificación que
+comparaba el texto del desglose carácter por carácter.
+
+> **Todo texto que lee un cliente necesita al menos una verificación que lo
+> compare carácter por carácter. Sin eso, la regla de redacción es decoración.**
+
+Es la hermana de «documentar no es defender», aplicada a lo que se escribe en
+pantalla. Y tiene una consecuencia incómoda que conviene aceptar de frente: una
+verificación así es **frágil a propósito** —cambiar una coma la rompe—, y eso es
+exactamente lo que se quiere. Si el texto cambia, alguien tiene que mirarlo.
+Una comprobación laxa —«que contenga la palabra copias»— habría dejado pasar
+«3 copia auténticas» sin un fallo.
+
+Donde el texto todavía no existe —la pantalla del panel, el PDF— la regla se
+cumple el día que se escriba, no antes: lo que no se puede es escribirlo y
+dejarlo sin nada que lo compare.
 
 ### La variable de entorno que el código inventó
 

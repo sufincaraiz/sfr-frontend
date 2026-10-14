@@ -16,8 +16,8 @@
  */
 
 import {
-  AnioNoPublicable, ErrorEsquemaNotarial, FueraDeVigencia, RespaldoNoOficial,
-  type AnioNotarial, type Concepto, type Fuente, type Respaldo,
+  AnioNoPublicable, ErrorEsquemaNotarial, FRASE_EVIDENCIA, FueraDeVigencia, RespaldoNoOficial,
+  type AnioNotarial, type Concepto, type Fuente, type Respaldo, type TipoEvidencia,
 } from './tipos.ts'
 import { camposExigidos, DUENO_DEL_CONCEPTO, DUENOS, type Dueno } from './catalogo.ts'
 import { verificarTramos } from './tramos.ts'
@@ -103,11 +103,62 @@ export function esFuenteOficial(url: string, fuentes: Fuente[]): Fuente | null {
  * entre una cifra verificada y una cifra que alguien copió de un blog: lo
  * segundo ya nos pasó en el glosario, y ahí sigue, publicado y desactualizado.
  */
+/** Un SHA-256 en hexadecimal, 64 dígitos. Ni más corto ni en otro alfabeto. */
+export const esHashSha256 = (v: unknown): boolean => /^[0-9a-f]{64}$/.test(String(v ?? ''))
+
+export const tipoDeEvidencia = (r: Respaldo): TipoEvidencia => r.tipo_evidencia ?? 'URL_OFICIAL'
+
+/** La autoridad detrás de un respaldo, sea cual sea su soporte. */
+export function fuenteDelRespaldo(r: Respaldo, fuentes: Fuente[]): Fuente | null {
+  if (r.fuente_dominio) {
+    const buscado = r.fuente_dominio.toLowerCase().replace(/^www\./, '')
+    const f = fuentes.find(x => x.dominio.toLowerCase() === buscado)
+    if (!f) return null
+    // Se reaprovecha la misma comprobación: activa, OFICIAL y con constancia de
+    // quién la añadió. La autoridad no se relaja porque el soporte sea un PDF.
+    return esFuenteOficial(`https://${f.dominio}/`, fuentes)
+  }
+  return r.url ? esFuenteOficial(r.url, fuentes) : null
+}
+
 export function exigirRespaldoOficial(r: Respaldo, fuentes: Fuente[]): void {
-  for (const campo of ['norma', 'url', 'verificado_en', 'verificado_por'] as const) {
+  for (const campo of ['norma', 'verificado_en', 'verificado_por'] as const) {
     if (!String(r[campo] ?? '').trim()) {
       throw new RespaldoNoOficial(`El respaldo de «${r.campo}» no tiene ${campo}.`)
     }
+  }
+  const tipo = tipoDeEvidencia(r)
+  if (tipo === 'DOCUMENTO_ARCHIVADO') {
+    // Seis exigencias, y ninguna es decorativa: sin la ruta no se puede volver
+    // a abrir, sin el hash alguien lo sustituye en silencio, y sin la
+    // procedencia no se distingue un PDF firmado de uno descargado de un blog.
+    for (const [campo, falta] of [
+      ['documento_ruta', 'dónde quedó archivado'],
+      ['entidad_emisora', 'qué entidad lo emitió'],
+      ['obtenido_de', 'de dónde se obtuvo'],
+      ['archivado_por', 'quién lo archivó'],
+    ] as const) {
+      if (!String(r[campo] ?? '').trim()) {
+        throw new RespaldoNoOficial(`El respaldo de «${r.campo}» es un documento archivado y no dice ${falta}.`)
+      }
+    }
+    if (!esHashSha256(r.documento_hash)) {
+      throw new RespaldoNoOficial(
+        `El respaldo de «${r.campo}» no trae el hash SHA-256 del documento. ` +
+        'Sin él, sustituir el archivo no dejaría rastro.',
+      )
+    }
+    if (!esFechaIso(r.obtenido_en)) {
+      throw new RespaldoNoOficial(`El respaldo de «${r.campo}» no dice cuándo se obtuvo el documento.`)
+    }
+    if (!String(r.fuente_dominio ?? '').trim()) {
+      throw new RespaldoNoOficial(
+        `El respaldo de «${r.campo}» no dice a qué autoridad corresponde. ` +
+        'Un documento no trae dominio, así que la autoridad hay que nombrarla.',
+      )
+    }
+  } else if (!String(r.url ?? '').trim()) {
+    throw new RespaldoNoOficial(`El respaldo de «${r.campo}» no tiene url.`)
   }
   // Una norma sin fecha de vigencia no sirve para decidir si aplica a un acto.
   if (!esFechaIso(r.vigencia_desde)) {
@@ -126,17 +177,28 @@ export function exigirRespaldoOficial(r: Respaldo, fuentes: Fuente[]): void {
       )
     }
   }
-  const fuente = esFuenteOficial(r.url, fuentes)
+  const fuente = fuenteDelRespaldo(r, fuentes)
   if (!fuente) {
     throw new RespaldoNoOficial(
-      `La URL del respaldo de «${r.campo}» no pertenece a una autoridad oficial activa: ${r.url}. ` +
-      'Una tabla publicada por un particular no respalda una tarifa.',
+      `El respaldo de «${r.campo}» no corresponde a una autoridad oficial activa ` +
+      `(${r.fuente_dominio ?? r.url}). Una tabla publicada por un particular, un gremio o un ` +
+      'sitio comercial no respalda una tarifa, venga como enlace o como PDF.',
     )
+  }
+  // Si trae las dos cosas, tienen que decir lo mismo: un documento de la
+  // Superintendencia con un enlace de la DIAN es un respaldo incoherente.
+  if (r.fuente_dominio && r.url) {
+    const porUrl = esFuenteOficial(r.url, fuentes)
+    if (porUrl && porUrl.dominio !== fuente.dominio) {
+      throw new RespaldoNoOficial(
+        `El respaldo de «${r.campo}» dice ser de ${fuente.dominio} y su enlace es de ${porUrl.dominio}.`,
+      )
+    }
   }
   // Citar una compilación sin decir que lo es convierte un normograma en la
   // entidad emisora. La nota es obligatoria, y la advertencia de la fuente se
   // imprime al lado de la cifra.
-  if (fuente.es_compilacion && !String(r.nota ?? '').trim()) {
+  if (tipoDeEvidencia(r) === 'URL_OFICIAL' && fuente.es_compilacion && !String(r.nota ?? '').trim()) {
     throw new RespaldoNoOficial(
       `El respaldo de «${r.campo}» cita ${fuente.dominio}, que es una COMPILACIÓN y no la entidad ` +
       'emisora. Falta la nota que diga qué edición se consultó y dónde está el texto auténtico.',

@@ -134,6 +134,25 @@ export interface Redondeo {
  */
 export type Monotonicidad = 'NO_DECRECIENTE' | 'LIBRE'
 
+/**
+ * CÓMO SE SUSTENTA UNA CIFRA. La URL nunca fue el requisito: era un sustituto
+ * de la procedencia, y en el caso de la resolución notarial apunta al revés.
+ * La compilación de la Cancillería TIENE enlace y es PEOR evidencia que el PDF
+ * firmado —trae erratas de digitación y no es la entidad emisora—, mientras el
+ * documento lleva firma, radicado y sellos.
+ *
+ * Lo que se amplía es el SOPORTE, no la autoridad: una tabla de notaría
+ * particular, un gremio o un sitio comercial sigue sin poder ser evidencia de
+ * ninguno de los dos tipos.
+ */
+export type TipoEvidencia = 'URL_OFICIAL' | 'DOCUMENTO_ARCHIVADO'
+
+/** Lo que se imprime en el PDF: son dos afirmaciones distintas. */
+export const FRASE_EVIDENCIA: Record<TipoEvidencia, string> = {
+  URL_OFICIAL: 'enlace oficial',
+  DOCUMENTO_ARCHIVADO: 'documento oficial archivado',
+}
+
 export type EstadoAnio = 'BORRADOR' | 'ACTIVO'
 export type TipoFuente = 'OFICIAL' | 'SECUNDARIA'
 export type Modo = 'SENCILLA' | 'AVANZADA'
@@ -167,6 +186,8 @@ export interface Fuente {
 export interface Respaldo {
   campo: string
   norma: string
+  /** URL_OFICIAL o DOCUMENTO_ARCHIVADO. Por defecto, el primero. */
+  tipo_evidencia?: TipoEvidencia
   /**
    * ¿La norma EXIGE esto, o lo PERMITE y lo adoptamos nosotros?
    *
@@ -183,7 +204,27 @@ export interface Respaldo {
   nota?: string | null
   /** El artículo donde está la CIFRA. */
   articulo?: string | null
-  url: string
+  /** Obligatoria con URL_OFICIAL. Con DOCUMENTO_ARCHIVADO puede no existir. */
+  url?: string | null
+  /**
+   * La autoridad, identificada por su fila en `FuenteNormativa`. Con una URL se
+   * deduce del dominio; con un documento archivado hay que decirla, porque un
+   * papel no trae dominio. Es lo que mantiene la AUTORIDAD intacta aunque el
+   * soporte cambie.
+   */
+  fuente_dominio?: string | null
+  // ── Solo DOCUMENTO_ARCHIVADO. La guarda exige las seis. ──
+  /** Dónde quedó guardado, para que el sistema pueda volver a abrirlo. */
+  documento_ruta?: string | null
+  /** SHA-256 en hexadecimal, para que nadie lo sustituya en silencio. */
+  documento_hash?: string | null
+  /** La entidad que lo emitió, como la nombra el propio documento. */
+  entidad_emisora?: string | null
+  /** De dónde se obtuvo, en texto. */
+  obtenido_de?: string | null
+  /** Cuándo se obtuvo (AAAA-MM-DD). */
+  obtenido_en?: string | null
+  archivado_por?: string | null
   fecha_norma?: string | null
   /**
    * DESDE CUÁNDO RIGE esta norma (AAAA-MM-DD). Obligatorio.
@@ -438,6 +479,8 @@ export interface Linea {
 export interface Liquidacion {
   /** La fecha con la que se escogieron las normas. */
   fecha_acto: string
+  /** Con qué se sustenta cada norma usada. El PDF lo imprime. */
+  evidencias: { norma: string; tipo: TipoEvidencia; frase: string }[]
   lineas: Linea[]
   grupos: { clave: Grupo; titulo: string; nota: string; total: number; comprador: number; vendedor: number }[]
   /**

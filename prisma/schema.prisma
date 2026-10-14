@@ -1138,7 +1138,31 @@ model RespaldoNormativo {
   norma    String
   /// El artículo donde está la CIFRA.
   articulo String?
-  url      String
+  /// URL_OFICIAL | DOCUMENTO_ARCHIVADO.
+  ///
+  /// La URL nunca fue el requisito: era un sustituto de la procedencia, y en la
+  /// resolución notarial apunta al revés. La compilación de la Cancillería TIENE
+  /// enlace y es PEOR evidencia que el PDF firmado —trae erratas y no es la
+  /// entidad emisora—, mientras el documento lleva firma, radicado y sellos.
+  /// Lo que se amplía es el SOPORTE, no la autoridad: un PDF de una notaría
+  /// particular, de un gremio o de un sitio comercial sigue sin valer.
+  tipo_evidencia String @default("URL_OFICIAL")
+  /// Obligatoria con URL_OFICIAL. Con un documento archivado puede no existir.
+  url      String?
+  /// La autoridad, por su fila en fuentes_normativas. Con una URL se deduce del
+  /// dominio; un documento no trae dominio, así que hay que nombrarla.
+  fuente_dominio String?
+  // ── Solo DOCUMENTO_ARCHIVADO: la guarda exige las seis ──
+  /// Dónde quedó guardado, para poder volver a abrirlo.
+  documento_ruta  String?
+  /// SHA-256 en hexadecimal: sin él, sustituir el archivo no deja rastro.
+  documento_hash  String?
+  /// La entidad que lo emitió, como la nombra el propio documento.
+  entidad_emisora String?
+  /// De dónde se obtuvo, en texto, y cuándo.
+  obtenido_de     String?   @db.Text
+  obtenido_en     DateTime? @db.Date
+  archivado_por   String?
 
   fuente_id String?
   fuente    FuenteNormativa? @relation(fields: [fuente_id], references: [id])

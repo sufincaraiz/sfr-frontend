@@ -103,7 +103,18 @@ medio-hacia-arriba sale por analogía con la doctrina del art. 577. Es criterio
 |---|---|---|
 | Registral RES-2026-001726-6 | `cancilleria.gov.co/normograma/compilacion/docs/resolucion_superregistro_17266_2026.htm` | Compilación. Exige nota en el respaldo |
 | Modificatoria RES-2026-001896-6 | `cancilleria.gov.co/normograma/compilacion/docs/resolucion_superregistro_18966_2026.htm` | Ídem |
-| Notarial RES-2026-000964-6 | — | **PENDIENTE.** Sin ella el año no se activa |
+| Notarial RES-2026-000964-6 | — (no publicada como página accesible) | Entra como **DOCUMENTO_ARCHIVADO** |
+
+**La URL dejó de ser el requisito.** Un respaldo puede sustentarse con
+`DOCUMENTO_ARCHIVADO`: el PDF oficial guardado, con su hash SHA-256, la entidad
+emisora, de dónde se obtuvo y cuándo, y quién lo archivó. La autoridad se
+comprueba contra la misma tabla, así que un PDF de una notaría particular sigue
+sin valer. El PDF de la simulación imprime con cuál de los dos se sustentó cada
+norma.
+
+Las dos registrales se quedan como `URL_OFICIAL` sobre la compilación, con su
+nota. Si aparece el PDF firmado de la registral, ese respaldo pasa a
+`DOCUMENTO_ARCHIVADO` y la compilación queda como referencia secundaria.
 
 `cancilleria.gov.co` quedó en `FuenteNormativa` como OFICIAL, marcada
 `es_compilacion`, con la advertencia de que el texto auténtico está en el
