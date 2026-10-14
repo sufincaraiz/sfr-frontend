@@ -2894,6 +2894,47 @@ guarda que los **exige** cuando la etiqueta tiene más de una palabra —porque
 «copia auténtica» y «firma o diligencia» no pluralizan mecánicamente—. Ahí la
 regla deja de depender de que alguien se acuerde.
 
+#### Segundo caso de la misma familia: el comentario de `next.config.ts`
+
+2026-10-14, el panel notarial. Una ruta leía
+`PARAMETROS-NOTARIALES-VERIFICADOS.md` con `readFile` y una ruta relativa.
+Compiló, pasó el typecheck, funcionó en local —donde el proceso corre en la
+raíz del proyecto— y en producción dio **ENOENT**: una función serverless no se
+despliega con el repositorio.
+
+Lo que lo pone en esta familia: **el mecanismo para evitarlo ya estaba en el
+proyecto, resuelto y comentado**, en `next.config.ts`, para los MDX del blog. El
+comentario dice textualmente que sin `outputFileTracingIncludes` el `readdirSync`
+no encuentra los archivos en `/var/task`. Esa nota estaba a treinta líneas de
+donde hacía falta y no se consultó.
+
+Es la segunda vez que pasa exactamente esto. La primera fue la guarda del dígito
+de verificación del NIT: puesta, documentada, y muerta —nunca se ejecutaba—
+hasta que se provocó.
+
+> Una nota junto al código no se lee cuando se escribe código nuevo en otro
+> archivo. Solo se lee cuando ya se está mirando ese sitio, que es después.
+
+El camino que lo hace imposible es `scripts/verificar-trazas.mjs`: declara qué
+archivos lee cada ruta en runtime y comprueba, contra los `.nft.json`, que viajen
+con su función. Corre en el build. Se provocó antes de arreglar nada y falló en
+las dos rutas del panel.
+
+**Y dos cosas que vale más recordar que la guarda misma:**
+
+Primero, la guarda casó un tercer «fallo» que no existía: declaré que
+`sitemap.xml` leía los MDX del blog, y quién los lee es `sitemap-blog.xml`. Un
+instrumento mal declarado engaña igual que uno roto —§ «Instrumentos que
+engañan»—, así que cada fila declara QUÉ ruta y POR QUÉ, para poder comprobar
+la declaración antes de creerle.
+
+Segundo, y es lo mejor del caso: al final la lectura en runtime se **eliminó**.
+El bloque de cotejo se convierte en módulo en tiempo de generación
+(`scripts/generar-transcripcion.mjs`), con una huella del bloque y una guarda
+que rompe el build si la copia se queda vieja. **Una lectura que no existe no
+necesita guarda**, y eso es mejor que vigilarla. La fuente sigue siendo una —el
+documento— y el panel no la escribe, que es lo que hace valer el cotejo.
+
 #### El cierre del patrón: una regla que no se consulta hay que hacerla imposible
 
 El 2026-10-14 el mismo patrón apareció una **cuarta** vez, en otro sitio: los

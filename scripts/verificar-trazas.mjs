@@ -13,7 +13,10 @@
  *   · con los MDX del blog, que desaparecían del sitemap al revalidar;
  *   · con PARAMETROS-NOTARIALES-VERIFICADOS.md, el 2026-10-14: el panel
  *     notarial devolvía 500 y le decía al titular «no se pudo crear» un año
- *     que SÍ se había creado.
+ *     que SÍ se había creado. Ese caso ya no está en la lista de abajo
+ *     porque se resolvió mejor: el documento se convierte en módulo en
+ *     tiempo de generación y en runtime no se lee nada. Una lectura que no
+ *     existe no necesita guarda.
  *
  * La segunda ocurrió teniendo la primera resuelta y comentada en
  * `next.config.ts`. Una regla escrita que no se consulta al teclear no se
@@ -30,14 +33,6 @@ import { readFileSync, existsSync } from 'node:fs'
  * y `espera` un trozo de ruta que tiene que aparecer en su lista de archivos.
  */
 const LECTURAS_EN_RUNTIME = [
-  {
-    porque: 'el panel notarial lee el bloque de cotejo del documento transcrito',
-    trazas: [
-      '.next/server/app/api/admin/notariales/route.js.nft.json',
-      '.next/server/app/api/admin/notariales/[anio]/route.js.nft.json',
-    ],
-    espera: 'PARAMETROS-NOTARIALES-VERIFICADOS.md',
-  },
   {
     // Ojo: lo lee sitemap-BLOG.xml, no sitemap.xml. La primera versión de esta
     // verificación declaró la ruta equivocada y reportó un fallo que no

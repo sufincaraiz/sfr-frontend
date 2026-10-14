@@ -35,7 +35,7 @@ export async function GET(req: NextRequest, ctx: { params: Promise<{ anio: strin
   if (!(await requireRole(ROLES))) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   try {
     const anio = anioDe(await ctx.params)
-    const pantalla = await anioParaPantalla(prisma, anio, await transcripcion(), await uvtFiscal(anio))
+    const pantalla = await anioParaPantalla(prisma, anio, transcripcion(), await uvtFiscal(anio))
     if (!pantalla) return NextResponse.json({ error: 'No existe' }, { status: 404 })
     return NextResponse.json(pantalla)
   } catch (e) {
@@ -86,7 +86,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ anio: str
         throw new ErrorEsquemaNotarial(`Sección desconocida: ${String(cuerpo.seccion)}.`, 'seccion')
     }
 
-    const pantalla = await anioParaPantalla(prisma, anio, await transcripcion(), await uvtFiscal(anio))
+    const pantalla = await anioParaPantalla(prisma, anio, transcripcion(), await uvtFiscal(anio))
     return NextResponse.json(pantalla)
   } catch (e) {
     return respuestaDeError(e, `${req.method} /api/admin/notariales/[anio]`)
@@ -102,7 +102,7 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ anio: stri
     if (accion === 'activar') await activarAnio(prisma, anio, s.email ?? 'admin')
     else if (accion === 'borrador') await volverABorrador(prisma, anio, s.email ?? 'admin')
     else throw new ErrorEsquemaNotarial(`Acción desconocida: ${String(accion)}.`, 'accion')
-    const pantalla = await anioParaPantalla(prisma, anio, await transcripcion(), await uvtFiscal(anio))
+    const pantalla = await anioParaPantalla(prisma, anio, transcripcion(), await uvtFiscal(anio))
     return NextResponse.json(pantalla)
   } catch (e) {
     return respuestaDeError(e, `${req.method} /api/admin/notariales/[anio]`)

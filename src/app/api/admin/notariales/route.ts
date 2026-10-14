@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
     // propósito: el 2026-10-14 se sembró el año y después falló esta lectura,
     // así que la respuesta dijo «no se pudo crear» de algo que SÍ se creó. Si
     // algo va a faltar, que falte antes de tocar la base.
-    const transcrita = await transcripcion()
+    const transcrita = transcripcion()
     await sembrarAnio(prisma, Number(anio), s.email ?? 'admin')
     await asegurarFuentes(prisma)
     return NextResponse.json(await anioParaPantalla(prisma, Number(anio), transcrita))

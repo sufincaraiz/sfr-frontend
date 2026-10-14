@@ -47,6 +47,11 @@ semana. Es la única copia. Ver `backup-service/RESTAURAR.md`.
 - **Para saber qué está construido: `node scripts/estado-traspaso.mjs`.** Manda
   el script, no TRASPASO-SESION.md — el documento ya acumuló nueve afirmaciones
   falsas de estado, y por eso el estado se deriva.
+- **Mensajes de commit: prosa, sin tablas ni columnas.** Nada de alinear con
+  espacios ni de listas de `clave   valor`: el hook las rechaza y tiene razón
+  —dos espacios seguidos son indistinguibles de un mensaje mutilado—. Lo que
+  pide una tabla va en el traspaso, no en el mensaje. Paró tres commits de
+  cuatro por esto.
 - **Mensajes de commit: a un archivo y `git commit -F`.** Nunca con `-m` si el
   texto lleva acentos graves: el shell los interpreta como sustitución de
   comandos y se come la palabra sin error visible. Ha pasado cuatro veces. El
