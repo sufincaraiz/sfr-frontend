@@ -66,13 +66,49 @@ const GUARDAS = {
  * Esta línea se queda después de fijarla: es cómo se comprueba que el pin
  * surtió efecto, y cómo se verá el día que el proveedor cambie de imagen.
  */
+/**
+ * El npm que DEBE construir esto, y la razón de que sea este y no el de la
+ * máquina de desarrollo.
+ *
+ * Medido el 2026-10-15: Vercel construye con **npm 11.19.0** y node v24.21.0
+ * sobre linux; esta máquina tenía npm 11.13.0 y node v24.16.0 sobre win32.
+ * Nada lo declaraba, y la diferencia se descubrió por casualidad al intentar
+ * `npm approve-scripts`, que existe desde 11.16 y aquí no.
+ *
+ * ⚠ MANDA LA SUPERFICIE QUE CONSTRUYE LO QUE LA GENTE USA. Fijar el npm de la
+ * máquina de desarrollo sería fijar el de la máquina que no despliega nada.
+ *
+ * Y de aquí se desbloquea `allowScripts`: con el gestor fijado, el campo lo
+ * genera la herramienta en vez de escribirse de memoria.
+ */
+const NPM_ESPERADO = '11.19.0'
+
 function quienConstruye() {
   const npm = spawnSync('npm --version', { encoding: 'utf8', shell: true })
   const v = `${npm.stdout ?? ''}`.trim() || '(no respondio)'
-  const fijado = process.env.npm_config_user_agent ?? ''
+  const agente = process.env.npm_config_user_agent ?? ''
+  /* `ci/vercel` lo pone el propio npm en su user-agent: es cómo se distingue el
+   * build que despliega del que corre en una máquina de desarrollo. */
+  const enCi = /ci\/\w/.test(agente) || !!process.env.VERCEL
   console.log(`\n══ CON QUÉ SE CONSTRUYE ════════════════════════════════════`)
-  console.log(`  node ${process.version} · npm ${v} · ${process.platform}/${process.arch}`)
-  if (fijado) console.log(`  agente: ${fijado.slice(0, 90)}`)
+  console.log(`  node ${process.version} · npm ${v} · ${process.platform}/${process.arch}` +
+    `${enCi ? ' · CI' : ''}`)
+  console.log(`  declarado en packageManager: npm@${NPM_ESPERADO}`)
+  if (v === NPM_ESPERADO) return null
+
+  /* EN CI ROMPE; EN LOCAL AVISA. No es timidez: en CI una divergencia significa
+   * que el pin no surtió efecto o que el proveedor cambió de imagen, y eso hay
+   * que saberlo antes de desplegar. En la máquina de desarrollo significa que
+   * falta actualizar npm, y bloquear el build por eso impediría trabajar sin
+   * arreglar nada. El día que las dos coincidan, esta distinción sobra. */
+  if (enCi) {
+    console.log(`  ✗ el build de CI corre npm ${v} y el declarado es ${NPM_ESPERADO}.`)
+    console.log('    O el pin no surtió efecto, o el proveedor cambió de imagen de build.')
+    return `npm ${v} ≠ ${NPM_ESPERADO} declarado`
+  }
+  console.log(`  ⚠ esta máquina corre npm ${v}; el que despliega es ${NPM_ESPERADO}.`)
+  console.log('    No rompe aquí, pero lo que se pruebe en local no se probó con el npm que despliega.')
+  return null
 }
 
 const fase = process.argv[2]
@@ -81,9 +117,17 @@ if (!GUARDAS[fase]) {
   process.exit(1)
 }
 
-if (fase === 'antes') quienConstruye()
-
 const caidas = []
+
+if (fase === 'antes') {
+  const problema = quienConstruye()
+  if (problema) {
+    caidas.push({
+      nombre: 'gestor de paquetes', vigila: 'que el npm que construye sea el declarado',
+      como: problema,
+    })
+  }
+}
 for (const g of GUARDAS[fase]) {
   const r = spawnSync(process.execPath, [`scripts/${g.guion}`], { stdio: 'inherit' })
   /* Ni código 0 ni código: una señal también es un fallo. Lo que cuenta es que

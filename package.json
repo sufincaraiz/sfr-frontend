@@ -2,6 +2,7 @@
   "name": "sufincaraiz-frontend",
   "version": "2.0.0",
   "description": "Portal Inmobiliario Su Finca Raíz — Next.js 15",
+  "packageManager": "npm@11.19.0",
   "scripts": {
     "dev": "next dev --turbopack",
     "deploy:estado": "node scripts/estado-del-deploy.mjs",
