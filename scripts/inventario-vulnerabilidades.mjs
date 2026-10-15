@@ -1,32 +1,44 @@
 #!/usr/bin/env node
 /**
- * LAS VULNERABILIDADES, CLASIFICADAS POR QUIÉN LAS ALCANZA
- * =======================================================
+ * LAS VULNERABILIDADES, CLASIFICADAS POR QUIÉN CONTROLA LA ENTRADA
+ * ===============================================================
  *
- * «19 vulnerabilities (4 moderate, 14 high, 1 critical)» sale en cada build
- * desde hace meses y nadie la había leído, porque el log solo se abre cuando
- * sale rojo. Un build verde imprime lo mismo y nadie lo mira: es una superficie
- * sin inspeccionar.
+ * «19 vulnerabilities (4 moderate, 14 high, 1 critical)» salía en cada build
+ * desde hacía meses y nadie la había leído, porque el log solo se abre cuando
+ * sale rojo. Un build verde dice lo mismo que uno rojo sobre todo lo que no hizo
+ * fallar el build.
  *
- * Y el número agregado no sirve para decidir, por lo mismo que no servía el
+ * El número agregado no sirve para decidir, por lo mismo que no servía el
  * indicador agregado del módulo financiero: mete en la misma cuenta una
- * dependencia de `eslint` que nunca corre en producción y el marco que sirve
- * cada petición. Lo que decide es **quién puede alcanzar la ruta vulnerable**.
+ * dependencia de `eslint` y el marco que sirve cada petición.
  *
- * Por eso aquí hay DOS cifras y no una:
+ * ⚠ DOS CORRECCIONES QUE COSTARON UN DESPLIEGUE ROJO. Las dos van aquí porque
+ * las dos eran mías y las dos son reutilizables.
  *
- *   · VISITANTE  un visitante de sufincaraiz.com puede alcanzarla.
- *   · INTERNA    vive en el build o en herramientas de desarrollo que nunca
- *                corren sirviendo una petición.
+ * 1. LA MEDICIÓN DEPENDÍA DE LA SUPERFICIE. La primera versión llamaba a
+ *    `npm audit` sin banderas. Aquí cuenta 19; en Vercel contaba **8**, porque
+ *    allí `NODE_ENV=production` y npm omite las devDependencies del audit. El
+ *    guion concluyó que once paquetes declarados «ya no aparecen» y rompió el
+ *    build. Es el mismo error que la huella del documento: **medir la superficie
+ *    en vez del contenido**. Ahora las dos consultas van con bandera explícita
+ *    —`--omit=dev` y `--include=dev`—, así que dan lo mismo en cualquier máquina.
  *
- * ⚠ LA CLASIFICACIÓN SE DECLARA Y SE COMPRUEBA.
+ * 2. «DE DESARROLLO» ERA FALSO PARA SEIS. El árbol de PRODUCCIÓN trae ocho, y
+ *    entre ellos `js-yaml`, `argparse` y `sprintf-js`, que vienen de
+ *    `gray-matter` —el que parsea el frontmatter del blog, y esas rutas leen el
+ *    MDX en runtime—, y `postcss`, `nanoid` y `source-map-js`, que vienen de
+ *    `next` y de `critters` con `optimizeCss` activo. **Su código sí corre
+ *    sirviendo peticiones.** Lo que los separa de la crítica no es que no
+ *    corran: es que **la entrada es nuestra y no del visitante**.
  *
- * Cada paquete lleva su alcance y el **porqué**, y donde el porqué era
- * comprobable se comprobó en producción, no de memoria. Si `npm audit` saca un
- * paquete que no está declarado, esto **rompe el build**: una vulnerabilidad
- * nueva no puede entrar en silencio. Y si un paquete declarado desaparece del
- * audit, también rompe: una excepción que sobrevive a su causa engaña igual que
- * una fila mal declarada.
+ * TRES CATEGORÍAS, no dos:
+ *
+ *   · VISITANTE          el visitante alcanza la ruta Y controla la entrada.
+ *   · ENTRADA_NUESTRA    el código puede correr sirviendo, pero lo que procesa
+ *                        sale de nuestro repositorio o de nuestra configuración.
+ *   · SOLO_DESARROLLO    no está en el árbol de producción. **Y eso se
+ *                        COMPRUEBA**: tiene que estar ausente del audit sin dev
+ *                        y presente en el audit con dev. No es una opinión.
  *
  * Lo que NO hace: fallar por las vulnerabilidades en sí. Están medidas y
  * aplazadas a propósito. Lo medido se puede aplazar; lo invisible no.
@@ -35,16 +47,10 @@
  */
 import { spawnSync } from 'node:child_process'
 
-/**
- * El alcance de cada paquete vulnerable, con su razón.
- *
- * `comprobado` es para lo que se verificó contra producción y no se razonó: va
- * con el resultado literal, para que mañana se pueda repetir.
- */
 const ALCANCE = {
+  /* ── El visitante alcanza la ruta y controla la entrada ───────────────── */
   next: {
-    alcance: 'VISITANTE', severidad: 'critical',
-    porque: 'es el marco que sirve cada peticion: cualquier fallo suyo esta en el camino caliente',
+    alcance: 'VISITANTE', por: 'el marco sirve cada peticion: cualquier fallo suyo esta en el camino caliente',
     /* Las CUATRO alertas que npm pliega bajo este paquete, una por una. Ninguna
      * aplica a ESTE despliegue, y las dos primeras se comprobaron: */
     comprobado:
@@ -52,122 +58,138 @@ const ALCANCE = {
       'RCE en la Image Optimization API con AVIF: /_next/image devuelve 404 en produccion ' +
       '-comprobado con curl, tres variantes- porque next.config usa loader custom de Cloudinary. ' +
       'Las dos de envenenamiento de cache de SSG/ISR dicen «in self-hosted applications» y esto ' +
-      'no es autoalojado. El salto que las cierra es a 15.5.24 o superior dentro de la misma mayor.',
+      'no es autoalojado. El salto que las cierra es a 15.5.24, dentro de la misma mayor.',
   },
+
+  /* ── Corre sirviendo, pero con entrada nuestra ─────────────────────────── */
   sharp: {
-    alcance: 'INTERNA', severidad: 'high',
-    porque: 'transitiva de next, solo la usa el optimizador de imagenes del servidor',
-    comprobado: '/_next/image devuelve 404 en produccion, asi que ningun byte de imagen pasa por sharp en runtime',
+    alcance: 'ENTRADA_NUESTRA', por: 'transitiva de next, solo la usa el optimizador de imagenes',
+    comprobado: '/_next/image devuelve 404 en produccion: ningun byte de imagen pasa por sharp en runtime',
   },
+  'js-yaml': {
+    alcance: 'ENTRADA_NUESTRA',
+    por: 'via gray-matter, que parsea el frontmatter del blog; esas rutas leen el MDX en runtime',
+    comprobado: 'el YAML que procesa son los .mdx del repositorio, no algo que mande el visitante',
+  },
+  argparse: { alcance: 'ENTRADA_NUESTRA', por: 'transitiva de js-yaml, misma cadena de gray-matter' },
+  'sprintf-js': { alcance: 'ENTRADA_NUESTRA', por: 'transitiva de argparse, misma cadena' },
+  postcss: {
+    alcance: 'ENTRADA_NUESTRA',
+    por: 'via next y critters (optimizeCss activo); el CSS que procesa lo escribimos nosotros',
+  },
+  nanoid: { alcance: 'ENTRADA_NUESTRA', por: 'transitiva de postcss; el fallo exige un generador propio con tamano cero' },
+  'source-map-js': { alcance: 'ENTRADA_NUESTRA', por: 'transitiva de postcss; mapas de nuestras propias fuentes' },
 
-  /* ── Build: corren al compilar y su salida es estatica ─────────────────── */
-  postcss: { alcance: 'INTERNA', severidad: 'high',
-    porque: 'procesa el CSS al compilar; la XSS del stringify afecta a CSS que escribimos nosotros' },
-  'postcss-selector-parser': { alcance: 'INTERNA', severidad: 'moderate', porque: 'idem, al compilar' },
-  'source-map-js': { alcance: 'INTERNA', severidad: 'high', porque: 'mapas de fuentes del build' },
-  browserslist: { alcance: 'INTERNA', severidad: 'high', porque: 'decide los navegadores objetivo al compilar' },
-  'baseline-browser-mapping': { alcance: 'INTERNA', severidad: 'moderate', porque: 'dato de browserslist, al compilar' },
-  nanoid: { alcance: 'INTERNA', severidad: 'high',
-    porque: 'transitiva; nuestro codigo no lo usa y el fallo exige un generador propio con tamano cero' },
-
-  /* ── Desarrollo: eslint, tailwind y sus glob ───────────────────────────── */
-  tailwindcss: { alcance: 'INTERNA', severidad: 'high', porque: 'dependencia de desarrollo' },
-  'eslint-config-next': { alcance: 'INTERNA', severidad: 'high', porque: 'dependencia de desarrollo' },
-  '@next/eslint-plugin-next': { alcance: 'INTERNA', severidad: 'high', porque: 'dependencia de desarrollo' },
-  chokidar: { alcance: 'INTERNA', severidad: 'high', porque: 'vigilancia de archivos en desarrollo' },
-  'fast-glob': { alcance: 'INTERNA', severidad: 'high', porque: 'glob de herramientas' },
-  micromatch: { alcance: 'INTERNA', severidad: 'high', porque: 'glob de herramientas' },
-  braces: { alcance: 'INTERNA', severidad: 'high', porque: 'glob de herramientas' },
-  'brace-expansion': { alcance: 'INTERNA', severidad: 'high', porque: 'glob de herramientas' },
-  'js-yaml': { alcance: 'INTERNA', severidad: 'high', porque: 'transitiva de herramientas de desarrollo' },
-  argparse: { alcance: 'INTERNA', severidad: 'moderate', porque: 'transitiva de js-yaml' },
-  'sprintf-js': { alcance: 'INTERNA', severidad: 'moderate', porque: 'transitiva de argparse' },
+  /* ── Fuera del arbol de produccion. COMPROBADO, no afirmado ───────────── */
+  tailwindcss: { alcance: 'SOLO_DESARROLLO', por: 'devDependency' },
+  'eslint-config-next': { alcance: 'SOLO_DESARROLLO', por: 'devDependency' },
+  '@next/eslint-plugin-next': { alcance: 'SOLO_DESARROLLO', por: 'via eslint-config-next' },
+  'postcss-selector-parser': { alcance: 'SOLO_DESARROLLO', por: 'via tailwindcss' },
+  browserslist: { alcance: 'SOLO_DESARROLLO', por: 'herramienta de compilacion' },
+  'baseline-browser-mapping': { alcance: 'SOLO_DESARROLLO', por: 'dato de browserslist' },
+  chokidar: { alcance: 'SOLO_DESARROLLO', por: 'vigilancia de archivos en desarrollo' },
+  'fast-glob': { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
+  micromatch: { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
+  braces: { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
+  'brace-expansion': { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
 }
 
-/* ── preguntar ─────────────────────────────────────────────────────────────── */
+/* ── preguntar, con bandera explícita ─────────────────────────────────────── */
 
 class NoPudePreguntar extends Error {}
 
-function auditar() {
-  const r = spawnSync('npm audit --json', { encoding: 'utf8', shell: true, maxBuffer: 32 * 1024 * 1024 })
+/**
+ * `modo` va SIEMPRE explícito. Sin bandera, el resultado depende de `NODE_ENV`
+ * y por tanto de la máquina, que es lo que rompió el despliegue del 2026-10-15.
+ */
+function auditar(modo) {
+  const r = spawnSync(`npm audit --json ${modo}`, {
+    encoding: 'utf8', shell: true, maxBuffer: 32 * 1024 * 1024,
+  })
   const texto = `${r.stdout ?? ''}`
-  if (!texto.trim()) throw new NoPudePreguntar(`npm audit no devolvio nada (${r.stderr ?? ''}`.slice(0, 160))
+  if (!texto.trim()) throw new NoPudePreguntar(`npm audit ${modo} no devolvio nada`)
   let j
   try {
     j = JSON.parse(texto)
   } catch {
-    throw new NoPudePreguntar('npm audit devolvio algo que no es JSON')
+    throw new NoPudePreguntar(`npm audit ${modo} devolvio algo que no es JSON`)
   }
-  if (!j.metadata?.vulnerabilities) throw new NoPudePreguntar('npm audit no trae el resumen')
-  return j
+  if (!j.metadata?.vulnerabilities) throw new NoPudePreguntar(`npm audit ${modo} no trae el resumen`)
+  const paquetes = Object.values(j.vulnerabilities ?? {}).filter(v => v.severity !== 'info')
+  return { resumen: j.metadata.vulnerabilities, paquetes, nombres: new Set(paquetes.map(v => v.name)) }
 }
 
-console.log('\n══ VULNERABILIDADES, POR QUIÉN LAS ALCANZA ═══════════════════')
+console.log('\n══ VULNERABILIDADES, POR QUIÉN CONTROLA LA ENTRADA ═══════════')
 
-let auditoria
+let prod, todo
 try {
-  auditoria = auditar()
+  prod = auditar('--omit=dev')
+  todo = auditar('--include=dev')
 } catch (e) {
   if (!(e instanceof NoPudePreguntar)) throw e
   /* «No pude preguntar» NO es «no hay». Se dice, y no se rompe el build por una
-   * red caida: esto informa, no bloquea. Pero tiene que verse distinto. */
+   * red caida: esto informa. Pero tiene que verse distinto de un cero. */
   console.log(`  ⚠ NO PUDE PREGUNTAR: ${e.message}`)
   console.log('    Esto no dice que no haya vulnerabilidades: dice que no se consultaron.\n')
   process.exit(0)
 }
 
-const m = auditoria.metadata.vulnerabilities
-const paquetes = Object.values(auditoria.vulnerabilities ?? {}).filter(v => v.severity !== 'info')
+const visitante = prod.paquetes.filter(v => ALCANCE[v.name]?.alcance === 'VISITANTE')
+const nuestra = prod.paquetes.filter(v => ALCANCE[v.name]?.alcance === 'ENTRADA_NUESTRA')
+const soloDesarrollo = [...todo.nombres].filter(n => !prod.nombres.has(n))
 
-const sinDeclarar = paquetes.filter(v => !ALCANCE[v.name])
-const declaradosQueYaNoSalen = Object.keys(ALCANCE).filter(n => !paquetes.some(v => v.name === n))
-
-const visitante = paquetes.filter(v => ALCANCE[v.name]?.alcance === 'VISITANTE')
-const interna = paquetes.filter(v => ALCANCE[v.name]?.alcance === 'INTERNA')
-
-console.log(`  npm cuenta ${m.total}: ${m.critical} critica(s) · ${m.high} alta(s) · ` +
-  `${m.moderate} moderada(s) · ${m.low} baja(s)`)
+console.log(`  ARBOL DE PRODUCCION: ${prod.resumen.total} ` +
+  `(${prod.resumen.critical} critica · ${prod.resumen.high} alta · ${prod.resumen.moderate} moderada)`)
+console.log(`  ARBOL COMPLETO, con desarrollo: ${todo.resumen.total}`)
 console.log('')
-console.log(`  ALCANZABLES POR UN VISITANTE: ${visitante.length}`)
+console.log(`  ① ALCANZABLES POR UN VISITANTE: ${visitante.length}`)
 for (const v of visitante) {
-  console.log(`     ! ${v.name} (${v.severity})`)
-  console.log(`       ${ALCANCE[v.name].porque}`)
-  if (ALCANCE[v.name].comprobado) {
-    for (const linea of partir(ALCANCE[v.name].comprobado, 84)) console.log(`       ${linea}`)
+  console.log(`     ! ${v.name} (${v.severity}) — ${ALCANCE[v.name].por}`)
+  if (ALCANCE[v.name].comprobado) for (const l of partir(ALCANCE[v.name].comprobado, 82)) console.log(`       ${l}`)
+}
+console.log(`\n  ② CORREN SIRVIENDO, PERO CON ENTRADA NUESTRA: ${nuestra.length}`)
+for (const v of nuestra) {
+  console.log(`     · ${v.name} (${v.severity}) — ${ALCANCE[v.name].por}`)
+  if (ALCANCE[v.name].comprobado) for (const l of partir(ALCANCE[v.name].comprobado, 82)) console.log(`       ${l}`)
+}
+console.log(`\n  ③ FUERA DEL ARBOL DE PRODUCCION: ${soloDesarrollo.length}`)
+console.log(`     ${soloDesarrollo.sort().join(', ')}`)
+
+/* ── las comprobaciones ───────────────────────────────────────────────────── */
+
+const problemas = []
+
+for (const v of todo.paquetes) {
+  if (!ALCANCE[v.name]) problemas.push(`${v.name} (${v.severity}) es NUEVA y no esta clasificada`)
+}
+for (const [n, d] of Object.entries(ALCANCE)) {
+  if (!todo.nombres.has(n)) { problemas.push(`${n} esta clasificado y ya no aparece en el audit: quita su fila`); continue }
+  /* LA CATEGORIA SE COMPRUEBA, no se cree. Un paquete declarado como solo de
+   * desarrollo que SI esta en el arbol de produccion es una clasificacion
+   * equivocada, y es exactamente el error que costo el despliegue rojo. */
+  const enProd = prod.nombres.has(n)
+  if (d.alcance === 'SOLO_DESARROLLO' && enProd) {
+    problemas.push(`${n} esta declarado SOLO_DESARROLLO y SI esta en el arbol de produccion`)
   }
-}
-console.log(`\n  INTERNAS (build o desarrollo, nunca sirviendo una peticion): ${interna.length}`)
-const porAlcance = new Map()
-for (const v of interna) {
-  const k = ALCANCE[v.name].porque
-  if (!porAlcance.has(k)) porAlcance.set(k, [])
-  porAlcance.get(k).push(`${v.name} (${v.severity})`)
-}
-for (const [porque, nombres] of porAlcance) {
-  console.log(`     · ${nombres.join(', ')}`)
-  console.log(`       ${porque}`)
+  if (d.alcance !== 'SOLO_DESARROLLO' && !enProd) {
+    problemas.push(`${n} esta declarado ${d.alcance} y NO esta en el arbol de produccion: es de desarrollo`)
+  }
 }
 
-if (sinDeclarar.length || declaradosQueYaNoSalen.length) {
+if (problemas.length) {
   console.log('')
-  for (const v of sinDeclarar) {
-    console.log(`  ✗ ${v.name} (${v.severity}) es NUEVA y no esta clasificada.`)
-    console.log('     Clasificala en ALCANCE diciendo quien la alcanza y por que.')
-  }
-  for (const n of declaradosQueYaNoSalen) {
-    console.log(`  ✗ ${n} esta clasificado y ya no aparece en el audit. Quita su fila.`)
-  }
+  for (const p of problemas) console.log(`  ✗ ${p}.`)
   console.log('')
   process.exit(1)
 }
 
-console.log('\n  → las ' + paquetes.length + ' estan clasificadas. Medidas y aplazadas a proposito.\n')
+console.log(`\n  → las ${todo.paquetes.length} estan clasificadas y cada categoria cuadra con el audit.`)
+console.log('    Medidas y aplazadas a proposito.\n')
 
 function partir(texto, ancho) {
-  const palabras = texto.split(' ')
   const lineas = []
   let actual = ''
-  for (const p of palabras) {
+  for (const p of texto.split(' ')) {
     if ((actual + ' ' + p).trim().length > ancho) { lineas.push(actual.trim()); actual = p }
     else actual += ' ' + p
   }

@@ -2460,6 +2460,52 @@ proceso sale con 1 al final con el listado completo. Cada una en su propio
 proceso, para que un cuelgue no se lleve a las que faltan, y un cuelgue cuenta
 como fallo —el criterio es «no terminó en verde», no «imprimió una ✗»—.
 
+## Cuarta superficie, y esta la causó el instrumento que medía las otras
+
+2026-10-15, el mismo día. El guión recién escrito para contar vulnerabilidades
+llamaba a `npm audit` **sin banderas**. Aquí cuenta 19; en Vercel contó **8**,
+porque allí `NODE_ENV=production` y npm omite las devDependencies del audit. El
+guión concluyó que once paquetes declarados «ya no aparecen» y rompió el
+despliegue.
+
+> **Es el mismo error que la huella del documento: medir la superficie en vez
+> del contenido.** Un recuento que cambia según la máquina no cuenta nada.
+
+El arreglo es el mismo también: **bandera explícita siempre**. `--omit=dev` para
+el árbol de producción y `--include=dev` para el completo, con lo que las dos
+cifras dan igual en cualquier máquina. Y de paso el informe gana: son **dos**
+números y no uno, 8 y 19, y la diferencia es exactamente lo que no se despliega.
+
+La lección de forma, que vale para el próximo instrumento: **una herramienta que
+mide no puede heredar su configuración del entorno.** Si el resultado depende de
+una variable que no pusimos nosotros, el resultado no es un hecho.
+
+### Y la clasificación estaba mal en seis de diecinueve
+
+El fallo rojo obligó a mirar quién arrastra cada paquete, y ahí se vio que
+«dependencia de desarrollo» era **falso** para seis:
+
+- `js-yaml` → `argparse` → `sprintf-js` vienen de **`gray-matter`**, que parsea
+  el frontmatter del blog, y esas rutas leen el MDX **en runtime**.
+- `postcss` → `nanoid`, `source-map-js` vienen de **`next`** y de **`critters`**,
+  con `optimizeCss` activo.
+
+Su código **sí corre sirviendo peticiones**. Lo que los separa de la crítica no
+es que no corran:
+
+> **Lo que decide no es si el código vulnerable se ejecuta, sino QUIÉN CONTROLA
+> LA ENTRADA que procesa.**
+
+De ahí las tres categorías de `scripts/inventario-vulnerabilidades.mjs`:
+VISITANTE —alcanza la ruta y controla la entrada—, ENTRADA_NUESTRA —corre, pero
+procesa lo que hay en nuestro repositorio o nuestra configuración— y
+SOLO_DESARROLLO. Y la tercera **se comprueba**: tiene que estar ausente del audit
+sin dev y presente en el audit con dev. Una categoría que se afirma es la que
+estaba mal; una que se comprueba contra la herramienta no puede estarlo.
+
+Provocado cruzando dos clasificaciones a mano: denuncia las dos, cada una por su
+lado.
+
 ## El punto ciego de un inventario: la fila es la decisión, el riesgo es la ocurrencia
 
 2026-10-15. El inventario de decisiones no vio el cuarto sitio de la escala de
