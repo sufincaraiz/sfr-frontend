@@ -18,6 +18,7 @@ import { Prisma } from '@prisma/client'
 // Extensión `.ts` explícita: Node la exige al ejecutar la prueba directamente.
 // Excepción acotada a los módulos hoja de lib/finanzas (ver tsconfig).
 import { pendientesParaActivar, type ProcedenciaEscalares } from './pendientes.ts'
+import { DIVISOR } from '../escala-tarifa.ts'
 
 export class ParametroFiscalFaltante extends Error {
   constructor(mensaje: string) {
@@ -340,7 +341,10 @@ export function calcularIca(
       'Cárgala en los parámetros del año: no se asume cero ni se usa la de otro municipio.',
     )
   }
-  return dec(base).mul(dec(tarifa.tarifa_por_mil)).div(1000).toDecimalPlaces(2)
+  /* El divisor sale de `escala-tarifa.ts`: la misma escala que usan los tramos
+   * y las retenciones notariales. Un `1000` literal aquí era el cuarto sitio
+   * donde vivía la misma decisión, y el que menos se parecía a los otros tres. */
+  return dec(base).mul(dec(tarifa.tarifa_por_mil)).div(DIVISOR.POR_MIL).toDecimalPlaces(2)
 }
 
 /** Valor neto que se recibe de un ingreso. DERIVADO — nunca columna. */

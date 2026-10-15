@@ -50,6 +50,11 @@ import { spawnSync } from 'node:child_process'
 const H_NOTARIAL = 'node scripts/probar-notariales.mjs'
 const G_TRANSCRIPCION = 'node scripts/verificar-transcripcion.mjs'
 const G_ESCRITURAS = 'node scripts/verificar-escrituras.mjs'
+const H_FINANZAS = 'node scripts/probar-finanzas.mjs'
+/* La escala vive en un modulo que usan los DOS motores, asi que su mutacion
+ * tiene que correr los dos arneses: si solo corriera uno, media cobertura
+ * seria una suposicion. */
+const LOS_DOS = `${H_NOTARIAL} && ${H_FINANZAS}`
 
 /**
  * Cada mutación dice qué rompe, dónde, y QUIÉN tiene que enterarse.
@@ -98,6 +103,52 @@ const MUTACIONES = [
     a: "    clave: 'acto_sin_cuantia',\n    valor: 90_600,",
     comando: H_NOTARIAL,
   },
+  /* ── LOTE 1: las que hoy producen una cifra PLAUSIBLE y equivocada ────── */
+  {
+    nombre: 'escala: el por mil pasa a por ciento',
+    porque: 'un 3 por mil leído como 3 % da diez veces la cifra y sigue pareciendo un gasto normal.',
+    archivo: 'src/lib/escala-tarifa.ts',
+    de: '  POR_MIL: 1000,',
+    a: '  POR_MIL: 100,',
+    /* Esta sola mutación vigila CUATRO sitios —los tramos notariales, las reglas
+     * de retención, las tarifas sueltas y el ICA del módulo financiero— porque
+     * la escala dejó de estar escrita cuatro veces. Antes hacían falta cuatro, y
+     * el inventario solo había encontrado tres de los cuatro sitios. */
+    comando: LOS_DOS,
+  },
+  {
+    nombre: 'escala: el porcentaje pasa a por mil',
+    porque: 'la confusión va en los dos sentidos: un 19 % leído como 19 por mil también es plausible.',
+    archivo: 'src/lib/escala-tarifa.ts',
+    de: '  PORCENTAJE: 100,',
+    a: '  PORCENTAJE: 1000,',
+    comando: LOS_DOS,
+  },
+  {
+    nombre: 'NIT: el dígito de verificación invierte su rama',
+    porque: 'el DV sale impreso en cada documento que se entrega, y otro dígito es igual de plausible.',
+    archivo: 'src/lib/finanzas/empresa.ts',
+    de: 'return String(r > 1 ? 11 - r : r)',
+    a: 'return String(r > 1 ? r : 11 - r)',
+    comando: H_FINANZAS,
+  },
+  {
+    nombre: 'retefuente: la base mínima deja de incluir el igual',
+    porque: 'un pago de exactamente la base mínima SÍ se retiene, y el único sitio donde se nota es ese peso.',
+    archivo: 'src/lib/finanzas/calculo.ts',
+    de: 'if (minimo.gt(0) && base.lt(minimo))',
+    a: 'if (minimo.gt(0) && base.lte(minimo))',
+    comando: H_FINANZAS,
+  },
+  {
+    nombre: 'retención: el orden de las reglas se invierte',
+    porque: 'con la general primero, ninguna exención se aplicaría nunca y nadie lo vería.',
+    archivo: 'src/lib/notariales/retencion.ts',
+    de: 'const activas = reglas.filter(r => r.activa).sort((a, b) => a.orden - b.orden)',
+    a: 'const activas = reglas.filter(r => r.activa).sort((a, b) => b.orden - a.orden)',
+    comando: H_NOTARIAL,
+  },
+
   {
     nombre: 'transcripción: una cifra del bloque cambia',
     porque: 'el módulo generado no puede quedarse viejo respecto al documento.',

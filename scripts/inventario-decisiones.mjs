@@ -63,12 +63,6 @@ const DECISIONES = [
   { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'el orden en que se recorren los tramos',
     ancla: 'const orden = [...tramos].sort((a, b) => a.orden - b.orden)',
     invertida: 'gana otro tramo: el primero que coincide es el que devuelve', mutacion: null },
-  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'la escala de una tarifa en PORCENTAJE',
-    ancla: "if (t.unidad === 'PORCENTAJE') return v / 100",
-    invertida: 'la tarifa se multiplica o divide por diez', mutacion: null },
-  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'la escala de una tarifa en POR_MIL',
-    ancla: "if (t.unidad === 'POR_MIL') return v / 1000",
-    invertida: 'diez veces la cifra, y plausible', mutacion: null },
   { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'un límite en UVT se convierte a pesos',
     ancla: 'return n * uvt',
     invertida: 'los límites quedan en UVT y ninguna base cae donde debe', mutacion: null },
@@ -82,6 +76,29 @@ const DECISIONES = [
   { archivo: `${N}tramos.ts`, grado: 'DEGENERADA', decide: 'una tabla sin tramos se detiene',
     ancla: 'if (!tramos.length) throw new ErrorEsquemaNotarial',
     invertida: 'devolvería cero y el concepto desaparecería de la liquidación', mutacion: null },
+
+  /* ── escala-tarifa.ts: UNA decisión que antes vivía en CUATRO sitios ──────
+   *
+   * Estaba en `tramos.ts`, `retencion.ts`, `calculo.ts` y, con un 1000 literal,
+   * en `finanzas/calculo.ts`. El primer inventario encontró TRES de los cuatro:
+   * la de `calculo.ts` se pasó, y ese es el modo de fallo de una decisión
+   * repetida —cada copia es una ocasión de no verla—. Ahora una sola mutación
+   * vigila los cuatro usos. */
+  { archivo: 'src/lib/escala-tarifa.ts', grado: 'CRITICA', decide: 'un por mil se divide por 1.000',
+    ancla: '  POR_MIL: 1000,',
+    invertida: 'diez veces la cifra en tarifas notariales, retenciones e ICA, y plausible',
+    mutacion: 'escala: el por mil pasa a por ciento',
+    prueba: 'un por mil se divide por 1.000', arnes: ARNES_N },
+  { archivo: 'src/lib/escala-tarifa.ts', grado: 'CRITICA', decide: 'un porcentaje se divide por 100',
+    ancla: '  PORCENTAJE: 100,',
+    invertida: 'la confusión en el otro sentido, igual de plausible',
+    mutacion: 'escala: el porcentaje pasa a por mil',
+    prueba: 'un porcentaje se divide por 100', arnes: ARNES_N },
+  { archivo: 'src/lib/escala-tarifa.ts', grado: 'CRITICA', decide: 'PESOS no es una tasa y no tiene divisor',
+    ancla: '  return null',
+    invertida: 'un valor en pesos se trataría como tasa y se dividiría',
+    mutacion: null,
+    prueba: 'PESOS no es una tasa: no tiene divisor', arnes: ARNES_N },
 
   /* ── notariales/iva.ts ────────────────────────────────────────────────── */
   { archivo: `${N}iva.ts`, grado: 'CRITICA', decide: 'el IVA se aproxima hacia ARRIBA cuando la regla lo dice',
@@ -122,7 +139,9 @@ const DECISIONES = [
   /* ── notariales/retencion.ts ──────────────────────────────────────────── */
   { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'el orden en que se prueban las reglas de retención',
     ancla: 'const activas = reglas.filter(r => r.activa).sort((a, b) => a.orden - b.orden)',
-    invertida: 'la regla general taparía las excepciones y nadie se eximiría', mutacion: null },
+    invertida: 'la regla general taparía las excepciones y nadie se eximiría',
+    mutacion: 'retención: el orden de las reglas se invierte',
+    prueba: 'una exención da cero CON regla nombrada', arnes: ARNES_N },
   { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'las condiciones de una regla se exigen TODAS',
     ancla: 'if (!cumple(c, ctx)) { aplica = false; break }',
     invertida: 'con una sola condición bastaría: exenciones aplicadas de más', mutacion: null },
@@ -138,9 +157,6 @@ const DECISIONES = [
   { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'un TOPE limita por arriba',
     ancla: 'valor: alPeso(Math.min(plena, tope))',
     invertida: 'con max, el tope se convierte en un mínimo', mutacion: null },
-  { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'la escala de la tarifa de retención',
-    ancla: "if (unidad === 'POR_MIL') return v / 1000",
-    invertida: 'diez veces la retención', mutacion: null },
   { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'solo se llega a cero por una EXENCION con nombre',
     ancla: "throw new SinReglaAplicable(",
     invertida: 'un cero por caerse de la lista se leería como «no hay retención»', mutacion: null,
@@ -180,7 +196,9 @@ const DECISIONES = [
   /* ── finanzas ─────────────────────────────────────────────────────────── */
   { archivo: `${F}calculo.ts`, grado: 'DEGENERADA', decide: 'la base mínima en UVT: el igual SÍ retiene',
     ancla: 'if (minimo.gt(0) && base.lt(minimo))',
-    invertida: 'justo en la base mínima se retiene o no se retiene', mutacion: null },
+    invertida: 'justo en la base mínima se retiene o no se retiene',
+    mutacion: 'retefuente: la base mínima deja de incluir el igual',
+    prueba: 'base EXACTAMENTE igual al mínimo', arnes: ARNES_F },
   { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'la tarifa depende de si el tercero declara renta',
     ancla: 'const tarifa = dec(esDeclaranteRenta ? c.tarifa_declarante : c.tarifa_no_declarante)',
     invertida: 'se retiene la tarifa del otro, y el tercero reclama', mutacion: null },
@@ -191,8 +209,10 @@ const DECISIONES = [
     ancla: 'const tarifa = exacta ?? general',
     invertida: 'se liquida ICA con la tarifa del municipio y no de la actividad', mutacion: null },
   { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'el ICA va por mil',
-    ancla: 'return dec(base).mul(dec(tarifa.tarifa_por_mil)).div(1000).toDecimalPlaces(2)',
-    invertida: 'diez veces el ICA declarado', mutacion: null },
+    ancla: 'div(DIVISOR.POR_MIL).toDecimalPlaces(2)',
+    invertida: 'diez veces el ICA declarado',
+    mutacion: 'escala: el por mil pasa a por ciento',
+    prueba: 'CIIU exacto usa su tarifa', arnes: ARNES_F },
   { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'los signos del neto: el IVA suma y las retenciones restan',
     ancla: 'return dec(a.valor_base).plus(dec(a.iva_generado))',
     invertida: 'el neto que se espera recibir queda mal en cada factura', mutacion: null },
@@ -207,7 +227,9 @@ const DECISIONES = [
     invertida: 'el IVA sobre la comisión arrastra el error', mutacion: null },
   { archivo: `${F}empresa.ts`, grado: 'CRITICA', decide: 'el dígito de verificación del NIT, módulo 11 de la DIAN',
     ancla: 'return String(r > 1 ? 11 - r : r)',
-    invertida: 'el NIT sale mal en todo documento que se entregue', mutacion: null },
+    invertida: 'el NIT sale mal en todo documento que se entregue',
+    mutacion: 'NIT: el dígito de verificación invierte su rama',
+    prueba: 'DV DIAN: 800197268', arnes: ARNES_F },
   { archivo: `${F}empresa.ts`, grado: 'CRITICA', decide: 'los pesos del módulo 11 se aplican de derecha a izquierda',
     ancla: "const suma = nit.split('').reverse().reduce",
     invertida: 'otro dígito, igual de plausible', mutacion: null },
@@ -238,7 +260,8 @@ const EXTREMOS = [
   { caso: 'lista de tramos vacía', prueba: null, arnes: ARNES_N },
   { caso: 'lista de aportes de IVA vacía', prueba: null, arnes: ARNES_N },
   { caso: 'reparto 50/50 con IVA en empate exacto', prueba: null, arnes: ARNES_N },
-  { caso: 'base exactamente igual a la base mínima en UVT', prueba: null, arnes: ARNES_F },
+  { caso: 'base exactamente igual a la base mínima en UVT',
+    prueba: 'base EXACTAMENTE igual al mínimo', arnes: ARNES_F },
   { caso: 'cantidad capturada igual a cero en un concepto por cantidad', prueba: null, arnes: ARNES_N },
 ]
 

@@ -33,6 +33,7 @@
 
 import { leerNumero } from '../finanzas/numeros.ts'
 import { ErrorEsquemaNotarial, type Monotonicidad, type Redondeo, type Tramo } from './tipos.ts'
+import { divisorDe } from '../escala-tarifa.ts'
 
 /** Pesos: «52.374» son cincuenta y dos mil, no 52,374. */
 export function pesos(v: unknown, campo: string): number {
@@ -105,8 +106,8 @@ export function repartir(total: number, pctComprador: number): { comprador: numb
 /** El multiplicador de un tramo según su unidad. PESOS no es una tasa. */
 function multiplicador(t: Tramo, etiqueta: string): number {
   const v = tasa(t.valor, `${etiqueta} (tramo ${t.orden})`)
-  if (t.unidad === 'PORCENTAJE') return v / 100
-  if (t.unidad === 'POR_MIL') return v / 1000
+  const divisor = divisorDe(t.unidad)
+  if (divisor !== null) return v / divisor
   throw new ErrorEsquemaNotarial(
     `El tramo ${t.orden} de ${etiqueta} usa ${t.modo_calculo} con unidad PESOS: una tasa no se expresa en pesos.`,
     'unidad',

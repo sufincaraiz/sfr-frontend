@@ -15,6 +15,7 @@ import {
   exigirCamposConocidosDelTramo,
 } from '../src/lib/notariales/tramos.ts'
 import { hashDeBytes, huellaDelBloque } from '../src/lib/notariales/huella.ts'
+import { DIVISOR, divisorDe } from '../src/lib/escala-tarifa.ts'
 import {
   calcularBaseNotarial, calcularBaseRetencion, calcularBaseTimbre, BASES,
 } from '../src/lib/notariales/bases.ts'
@@ -1961,6 +1962,23 @@ check('todas las guardas del módulo están en la lista',
 
 
 // ────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────
+console.log('\n══ LA ESCALA DE UNA TARIFA, EN UN SOLO SITIO ══')
+// ────────────────────────────────────────────────────────────────────────
+/*
+ * Vale 100 o 1.000, y confundirlos da una cifra DIEZ VECES mayor y plausible.
+ * Estaba escrito cuatro veces —tramos, retención, tarifa suelta y el ICA del
+ * módulo financiero— y el inventario solo encontró tres: la cuarta se pasó,
+ * que es el modo de fallo de una decisión repetida. Ahora vive en
+ * `src/lib/escala-tarifa.ts` y una sola mutación la vigila en los cuatro.
+ */
+check('un porcentaje se divide por 100', DIVISOR.PORCENTAJE === 100)
+check('un por mil se divide por 1.000', DIVISOR.POR_MIL === 1000)
+check('los dos divisores NO son el mismo', DIVISOR.PORCENTAJE !== DIVISOR.POR_MIL)
+check('PESOS no es una tasa: no tiene divisor', divisorDe('PESOS') === null)
+check('una unidad en blanco tampoco', divisorDe(null) === null && divisorDe(undefined) === null)
+check('…y una unidad inventada tampoco pasa por porcentaje', divisorDe('PORCIENTO') === null)
+
 console.log('\n══ LA HUELLA DE LA EVIDENCIA ES DEL CONTENIDO ══')
 // ────────────────────────────────────────────────────────────────────────
 /*

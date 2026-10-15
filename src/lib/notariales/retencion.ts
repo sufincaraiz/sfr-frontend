@@ -27,6 +27,7 @@ import {
   type Condicion, type ReglaRetencion, type UnidadValor,
 } from './tipos.ts'
 import { alPeso, tasa } from './tramos.ts'
+import { divisorDe } from '../escala-tarifa.ts'
 
 /**
  * Lista blanca de campos del contexto. `pregunta_en_formulario` es la frontera
@@ -102,8 +103,8 @@ function cumple(cond: Condicion, ctx: Contexto): boolean {
 
 function multiplicador(valor: unknown, unidad: UnidadValor | null | undefined, etiqueta: string): number {
   const v = tasa(valor, etiqueta)
-  if (unidad === 'PORCENTAJE') return v / 100
-  if (unidad === 'POR_MIL') return v / 1000
+  const divisor = divisorDe(unidad)
+  if (divisor !== null) return v / divisor
   throw new ErrorEsquemaNotarial(`${etiqueta}: la tarifa no dice si es porcentaje o por mil.`, 'unidad')
 }
 

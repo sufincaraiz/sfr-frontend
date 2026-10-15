@@ -2460,6 +2460,75 @@ proceso sale con 1 al final con el listado completo. Cada una en su propio
 proceso, para que un cuelgue no se lleve a las que faltan, y un cuelgue cuenta
 como fallo —el criterio es «no terminó en verde», no «imprimió una ✗»—.
 
+## Una deuda se prioriza por EXPOSICIÓN ACTUAL, no por gravedad
+
+2026-10-15. Con el inventario de decisiones en la mano, el primer orden que
+propuse fue por gravedad del fallo: las escalas por mil primero, porque un error
+de diez veces da una cifra plausible. El titular lo corrigió, y la corrección es
+la regla:
+
+> **La prioridad de una deuda se decide por quién está expuesto hoy, y la
+> gravedad desempata.**
+
+El módulo notarial no le entrega una cifra a nadie —cero de 53 cargadas, sin
+página pública—. El financiero sí: se captura cada semana, y el dígito de
+verificación del NIT sale impreso en cada documento que sale de aquí. La misma
+gravedad en los dos módulos no es la misma urgencia.
+
+### El corolario, que es lo que compró el inventario
+
+> **Una deuda medida e impresa en cada build se puede aplazar. Una invisible,
+> no.**
+
+Por eso las dos cifras del inventario salen en el log de cada despliegue y los
+extremos sin prueba se nombran uno a uno. Aplazar 36 decisiones sin vigilar es
+una decisión; no saber que son 36 es un accidente esperando.
+
+### El primer lote, y lo que se encontró al abrirlo
+
+Seis decisiones, elegidas por exposición: el por mil del ICA, el dígito del NIT
+y la base mínima en UVT estaban expuestas hoy; el por mil de los tramos, el de
+la retención y el orden de las reglas iban a estarlo. Lo que las une es que
+**todas producen una cifra plausible**: un diez veces en un por mil no se ve, y
+una exención que nunca se aplica tampoco.
+
+Al abrirlo apareció lo que el inventario no había visto: **la escala estaba en
+CUATRO sitios, no en tres.** El cuarto, `notariales/calculo.ts`, se me pasó. Y
+ese es el modo de fallo propio de una decisión repetida: cada copia es una
+ocasión más de no verla, y la que falta nunca es la que uno busca.
+
+Así que la respuesta a «¿debería existir una sola vez?» fue sí, y el lote de
+seis se cubrió con **cinco** mutaciones: tres de las seis eran la misma
+decisión. Lo que NO se unificó, y es deliberado: los mensajes de error —cada
+sitio sabe si habla de un tramo, de una regla o de un concepto— y la
+aritmética, porque el motor notarial trabaja en `number` y el financiero en
+`Prisma.Decimal`. Se comparte la ESCALA, no la cuenta. Ver `src/lib/escala-tarifa.ts`.
+
+## El filtro para inventariar decisiones
+
+> **Lo que al invertirse revienta no puede llegar a un cliente.**
+
+Ese filtro es lo que convirtió 621 sitios candidatos en 48 decisiones reales.
+Entra una decisión en el inventario si al invertirla **el motor sigue
+funcionando y entrega otra cifra**. No entran:
+
+- las que al invertirse no compilan o revientan —un `switch` sin caso, un tipo
+  incompatible—, porque un fallo ruidoso no llega a nadie;
+- las comparaciones de etiquetas (`=== 'PESOS'`) **salvo** cuando el otro valor
+  también es legal y produce una cifra distinta.
+
+Y el corolario de método: el grep da la **población candidata** y nunca la
+respuesta. 621 líneas con un operador de comparación no distinguen una frontera
+de tarifa de un `=== 'PESOS'`; hay que abrirlas. Es la misma regla que ya estaba
+escrita para los mapeos.
+
+### Y dónde mirar primero dentro del inventario
+
+Las decisiones **repetidas** antes que las únicas, aunque parezcan menos graves:
+una decisión en cuatro sitios necesita cuatro mutaciones, se queda sin cobertura
+en cuanto alguien añade un quinto sitio, y es la que el inventario cuenta mal.
+Unificarla primero hace que todo lo demás cueste menos.
+
 ## La simetría que nos faltó: evidencia para los datos, ninguna para el instrumento
 
 2026-10-14. Al módulo notarial le exigimos evidencia **reproducible** en cada

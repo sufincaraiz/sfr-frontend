@@ -33,12 +33,13 @@ import {
 } from './guardas.ts'
 import { liquidarIva, type AporteIva } from './iva.ts'
 import { codigoTrazabilidad } from './trazabilidad.ts'
+import { divisorDe } from '../escala-tarifa.ts'
 
 /** Multiplicador de una tarifa suelta (no de un tramo). */
 function multiplicador(c: Concepto): number {
   const v = tasa(c.valor, `la tarifa de ${c.label}`)
-  if (c.unidad === 'PORCENTAJE') return v / 100
-  if (c.unidad === 'POR_MIL') return v / 1000
+  const divisor = divisorDe(c.unidad)
+  if (divisor !== null) return v / divisor
   throw new ErrorEsquemaNotarial(`${c.label}: la tarifa no dice si es porcentaje o por mil.`, 'unidad')
 }
 

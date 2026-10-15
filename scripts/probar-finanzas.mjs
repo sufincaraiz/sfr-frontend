@@ -85,6 +85,25 @@ console.log('\n══ 5. BASE MÍNIMA EN UVT (la regla que más se olvida) ═�
 const bajo = calcularRetefuente({ base: 150000, concepto: 'servicios', esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA })
 check('base bajo el mínimo → NO retiene', bajo.retuvo === false && bajo.valor.toString() === '0')
 check('…y explica por qué', /no supera la base mínima/i.test(bajo.motivo ?? ''))
+/* EL BORDE EXACTO, que no tenía prueba y es dinero vivo.
+ *
+ * `base_minima_uvt: 4` con UVT 49.799 son $199.196 exactos. La condición del
+ * motor es `base.lt(minimo)`, así que en el igual SÍ se retiene: la base
+ * mínima es el valor a partir del cual se retiene, incluido.
+ *
+ * Faltaba porque las pruebas miran el medio —muy por debajo y muy por encima—
+ * y el único sitio donde `lt` y `lte` se distinguen es este peso. Sin esta
+ * verificación, cambiar uno por otro no rompía nada y la retención de un pago
+ * de exactamente la base mínima se dejaba de practicar en silencio. */
+const MINIMO_SERVICIOS = 4 * 49799   // 199.196
+const enElBorde = calcularRetefuente({ base: MINIMO_SERVICIOS, concepto: 'servicios', esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA })
+check('base EXACTAMENTE igual al mínimo → SÍ retiene (el mínimo está incluido)',
+  enElBorde.retuvo === true, `(retuvo ${enElBorde.retuvo}, valor ${enElBorde.valor})`)
+check('…y retiene el 4 % de los 199.196 = 7.967,84',
+  enElBorde.valor.toString() === '7967.84', `(dio ${enElBorde.valor})`)
+const unPesoDebajo = calcularRetefuente({ base: MINIMO_SERVICIOS - 1, concepto: 'servicios', esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA })
+check('un peso por debajo del mínimo → NO retiene',
+  unPesoDebajo.retuvo === false && unPesoDebajo.valor.toString() === '0')
 const alto = calcularRetefuente({ base: 1000000, concepto: 'servicios', esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA })
 check('base sobre el mínimo → retiene 4% = 40.000', alto.retuvo && alto.valor.toString() === '40000')
 check('declarante 11%', calcularRetefuente({ base: 1000000, concepto: 'comisiones', esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA }).valor.toString() === '110000')
