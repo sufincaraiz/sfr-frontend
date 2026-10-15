@@ -2538,6 +2538,173 @@ definición de un ayudante.
 Y como la lectura es cara, se gasta donde la decisión es cara. Esos siete
 módulos —los que deciden dinero— son la lista.
 
+# LAS CUATRO CLASES DE FECHA
+
+2026-10-15. Nada fijaba `TZ` en el repositorio: la máquina de desarrollo es
+UTC−5 y Vercel es UTC. Doce sitios construían o comparaban un día a partir de
+componentes locales de un `Date`, y cuatro de ellos decidían **qué norma aplica
+o de qué año fiscal es un movimiento**.
+
+> **Lo que una persona escribe es un DÍA. Lo que el sistema anota por su cuenta
+> es un INSTANTE.**
+
+## 1. DÍA PURO
+
+Lo que teclea una persona: la fecha de un acto, de un gasto, de un ingreso, la
+vigencia de una resolución, el periodo de un reporte. **Sin hora y sin zona.**
+Columna `DATE`, cadena `AAAA-MM-DD`, comparada lexicográficamente. Nunca se
+convierte.
+
+## 2. INSTANTE
+
+Lo que el sistema anota solo: `created_at`, el acceso al enlace del contador, la
+subida de un archivo. UTC, comparado como instante.
+
+## 3. EL PUENTE
+
+Un instante convertido al día de Bogotá **en el momento de usarlo**: la fecha por
+defecto de un acto, la del código de trazabilidad, el año del pie. Existe UNA
+VEZ, con nombre, en `src/lib/dia-colombia.ts`.
+
+## 4. LITERAL — la que apareció al mirar el décimo sitio
+
+`faq-data.ts` calculaba el año con `new Date().getFullYear()` **al construir**.
+No es ninguna de las tres: es una **constante de tiempo de build**, con la zona
+de la máquina que compila. Cinco horas al año el build habría horneado el año
+siguiente, y lo que queda horneado en una página estática lo indexa un buscador.
+
+Se eligió literal, con una guarda que rompe el build cuando se queda atrás **o
+cuando va adelantado**. Y la razón generaliza mucho más allá de las fechas:
+
+> **Un valor por petición en una página que no se renderiza por petición es la
+> misma mentira con más pasos.**
+
+Vale para cualquier dato que parezca dinámico en una página estática: un precio,
+un contador, un «actualizado hace», un «quedan 3 disponibles». Si la página se
+hornea, el dato se hornea con ella, y calcularlo «en vivo» solo mueve la mentira
+al sitio donde nadie la busca. O se hornea con una guarda que avise cuando
+caduque, o la página deja de ser estática. No hay tercera.
+
+## POR QUÉ `TZ=America/Bogota` NO ERA EL ARREGLO
+
+La idea era poner la variable y terminar. Se midió antes de moverla, y **la
+medición mató el arreglo**: las fechas iban en DOS DIRECCIONES OPUESTAS según de
+dónde vinieran.
+
+| de dónde viene la fecha | hoy, con TZ=UTC | con TZ=America/Bogota |
+|---|---|---|
+| escrita `'2026-12-31'` | 31 dic 2026 ✓ | **30 dic 2026** ✗ |
+| escrita `'2027-01-01'` | año 2027 ✓ | **año 2026** ✗ |
+| del reloj, 31 dic 20:00 Colombia | **1 ene 2027** ✗ | 31 dic 2026 ✓ |
+
+Arreglaba el tercer caso y rompía los dos primeros, **retroactivamente sobre
+fechas ya guardadas**. Una variable de entorno cambia los doce sitios a la vez,
+en silencio, y quien lea el código después no sabe cuál de los doce quería qué.
+
+**La causa raíz no era la zona: era que un día del calendario y un instante se
+guardaban en la misma columna.**
+
+## MIGRAR LA COLUMNA ERA NECESARIO Y NO SUFICIENTE
+
+Prisma devuelve una columna `DATE` como un `Date` de JavaScript **a medianoche
+UTC**. Medido:
+
+```
+DATE 2026-12-31  ->  2026-12-31T00:00:00.000Z
+getDate() con TZ=America/Bogota  ->  30
+```
+
+Así que `.getFullYear()` o `.getDate()` sobre una columna ya migrada **siguen
+moviéndose con la zona del proceso**. El patrón completo son DOS piezas:
+
+1. columna `DATE`, y
+2. lectura como cadena con `toISOString().slice(0, 10)`, comparada
+   lexicográficamente.
+
+Con una sola de las dos, el arreglo no está hecho.
+
+## La lección ya estaba escrita en el archivo vecino — TERCER CASO
+
+El patrón completo **ya existía en esta misma base de datos**, al lado del módulo
+que no lo usaba:
+
+| | tipo | qué es |
+|---|---|---|
+| `respaldos_normativos.vigencia_desde` | `DATE` | día puro ✓ |
+| `respaldos_normativos.vigencia_hasta` | `DATE` | día puro ✓ |
+| `respaldos_normativos.fecha_norma` | `DATE` | día puro ✓ |
+| `respaldos_normativos.obtenido_en` | `DATE` | día puro ✓ |
+| `respaldos_normativos.verificado_en` | `timestamp` | instante ✓ |
+| `egresos.fecha` | `timestamp` | día puro ✗ |
+| `ingresos.fecha_causacion` | `timestamp` | día puro ✗ |
+
+Y `notariales/datos.ts` ya leía esas columnas con `toISOString().slice(0, 10)`.
+El módulo notarial lo había hecho bien y el financiero no lo copió.
+
+**Los tres casos de esta familia han sido en archivos vecinos**, no en
+documentación olvidada ni en otro repositorio: la escala de tarifas, la frontera
+del tramo y ahora las fechas. La conclusión operativa es incómoda y útil:
+**antes de diseñar algo, mirar cómo lo resolvió el módulo de al lado** —no la
+documentación, el código—. Es más rápido que diseñarlo, y además delata cuando
+uno de los dos está mal.
+
+## La coincidencia afortunada que creamos NOSOTROS
+
+Y esta es la nota que más vale de todo el lote.
+
+A las **12:03** se desplegó `1a4c5a9`: las nueve columnas migradas a `DATE`. A
+las **14:43** se desplegó `5c4c3af`: los doce sitios reconectados. **Durante dos
+horas y cuarenta minutos**, producción dio el resultado correcto por una sola
+razón: **Vercel corre en UTC**, que es justo la zona donde `.getFullYear()`
+sobre una columna `DATE` acierta.
+
+El día anterior se había escrito, en este mismo archivo:
+
+> Una divergencia protegida solo por el orden en que se llaman dos funciones
+> está a un refactor de estar viva. Eso no es una guarda: es una coincidencia
+> afortunada.
+
+Y a las 12:03 se creó una, a propósito, con la frase a dos pantallas de
+distancia. No se detectó revisándolo: **lo nombró el titular**.
+
+> **La regla vale también cuando el que la incumple la acaba de escribir.** Y
+> sobre todo entonces: haberla escrito da la sensación de haberla aplicado.
+
+Lo operativo: **un lote que deja el sistema correcto por accidente no está
+cerrado, está interrumpido.** Si hay que partirlo —y a veces hay que partirlo,
+porque la migración tenía una ventana de 2 filas—, el mensaje del commit dice
+qué queda y por qué el sistema acierta mientras tanto. El de `1a4c5a9` lo decía,
+y aun así la coincidencia estuvo ahí dos horas y cuarenta minutos.
+
+# LA LECTURA COMPLETA VA 3 DE 3
+
+2026-10-15. Tres veces se ha leído un archivo o un grupo de archivos de
+principio a fin, sin grep y sin buscar nada concreto. Las tres encontró lo que
+ningún instrumento podía, y **las tres veces el defecto resultó PEOR que el
+reporte previo**:
+
+| lectura | qué encontró | el reporte previo decía |
+|---|---|---|
+| siete módulos del motor | 18 decisiones que el grep no podía ver | 49 de 67 inventariadas |
+| la cadena vacía | es ausencia en el notarial y no lo es en el financiero | nada: ningún normalizador las agrupa |
+| `mac_knowledge` | la vigencia perdía **casi dos días** | «vence cinco horas antes» |
+
+Ese «peor que el reporte previo» es la parte que importa: no es que la lectura
+encuentre **más** cosas, es que corrige la **magnitud** de las que ya se creían
+entendidas. Un defecto estimado a la baja se aplaza con tranquilidad.
+
+> **La lectura completa no es una medida excepcional para cuando un instrumento
+> falla. Es el instrumento de mayor rendimiento que tenemos, y dieciséis
+> archivos no la han recibido nunca.**
+
+Por eso `scripts/inventario-decisiones.mjs` imprime, junto a la deuda de
+mutaciones, **cuántos archivos han recibido lectura completa y cuántos no**. Lo
+medido se puede aplazar; lo invisible no.
+
+Y el orden en que se gasta, con el criterio ya fijado —exposición primero,
+gravedad después—: los que están vivos y tocan dinero antes que los
+instrumentos y las pantallas.
+
 # LO QUE ESCONDE EL QUE RECIBE LA ORDEN
 
 Las doce formas son del que **informa**. Las cuatro de la sección siguiente son

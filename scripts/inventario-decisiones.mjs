@@ -446,32 +446,64 @@ const sinMutacion = DECISIONES.filter(d => !d.mutacion)
 const extremosSinPrueba = EXTREMOS.filter(e => !e.prueba)
 
 /**
- * ⚠ A QUÉ ARCHIVOS CORRESPONDE ESTA CUENTA.
+ * ⚠ A QUÉ ARCHIVOS CORRESPONDE ESTA CUENTA, Y CUÁNTOS NO LA HAN RECIBIDO.
  *
- * Un denominador sin alcance declarado es la misma trampa de la que acabamos de
- * salir: invita a leerlo como «todo el proyecto». **No lo es.** La cifra sale de
- * los siete módulos que se leyeron de principio a fin el 2026-10-15, más los
- * sitios que las pasadas anteriores habían tocado.
+ * Un denominador sin alcance declarado invita a leerse como «todo el proyecto».
+ * No lo es. Y la distinción que importa no es «mirado» contra «no mirado», sino
+ * **lectura completa** contra el resto: tres de tres veces, leer un archivo de
+ * principio a fin —sin grep— encontró lo que ningún instrumento podía, y las
+ * tres el defecto resultó PEOR que el reporte previo.
  */
-const ALCANCE_LEIDO = [
-  'src/lib/notariales/tramos.ts', 'src/lib/notariales/bases.ts',
-  'src/lib/notariales/retencion.ts', 'src/lib/notariales/calculo.ts',
-  'src/lib/notariales/iva.ts', 'src/lib/finanzas/calculo.ts',
-  'src/lib/finanzas/dinero.ts',
-  'src/lib/escala-tarifa.ts', 'src/lib/notariales/huella.ts',
-  'src/lib/notariales/guardas.ts', 'src/lib/finanzas/empresa.ts',
+
+/** Leídos de principio a fin, sin grep. La fecha es cuándo. */
+const LECTURA_COMPLETA = [
+  { archivo: 'src/lib/notariales/tramos.ts', cuando: '2026-10-15' },
+  { archivo: 'src/lib/notariales/bases.ts', cuando: '2026-10-15' },
+  { archivo: 'src/lib/notariales/retencion.ts', cuando: '2026-10-15' },
+  { archivo: 'src/lib/notariales/calculo.ts', cuando: '2026-10-15' },
+  { archivo: 'src/lib/notariales/iva.ts', cuando: '2026-10-15' },
+  { archivo: 'src/lib/finanzas/calculo.ts', cuando: '2026-10-15' },
+  { archivo: 'src/lib/finanzas/dinero.ts', cuando: '2026-10-15' },
+  { archivo: 'src/app/api/admin/mac/route.ts', cuando: '2026-10-15' },
+  { archivo: 'src/lib/agent/knowledge.ts', cuando: '2026-10-15' },
+  { archivo: 'src/app/admin/mac/page.tsx', cuando: '2026-10-15' },
 ]
 
-/** Lo que NUNCA se ha leído de principio a fin, y por tanto no cuenta. */
-const FUERA_DEL_ALCANCE = [
-  'src/lib/notariales/datos.ts', 'src/lib/notariales/panel.ts',
-  'src/lib/notariales/cotejo.ts', 'src/lib/notariales/evidencia.ts',
-  'src/lib/notariales/trazabilidad.ts', 'src/lib/finanzas/parametros.ts',
-  'src/lib/finanzas/custodia.ts', 'src/lib/finanzas/pendientes.ts',
-  'src/lib/finanzas/numeros.ts', 'src/lib/finanzas/ingresos.ts',
-  'src/lib/finanzas/egresos.ts', 'src/lib/finanzas/completar.ts',
-  'src/lib/finanzas/reportes.ts', 'src/lib/finanzas/captura*.ts',
-  'las rutas de src/app/api', 'la generación del PDF',
+/**
+ * Tocados por una pasada anterior, sin lectura completa. Aportan filas al
+ * inventario, así que la cuenta los cubre EN PARTE —y eso es justo lo que una
+ * lectura completa suele desmentir—.
+ */
+const TOCADOS_SIN_LECTURA = [
+  'src/lib/escala-tarifa.ts',
+  'src/lib/notariales/huella.ts',
+  'src/lib/notariales/guardas.ts',
+  'src/lib/finanzas/empresa.ts',
+  'src/lib/dia-colombia.ts',
+]
+
+/**
+ * NUNCA leídos de principio a fin. `expuesto` aplica el criterio ya fijado:
+ * exposición actual primero, gravedad después.
+ */
+const SIN_LECTURA_COMPLETA = [
+  { archivo: 'src/lib/finanzas/numeros.ts', expuesto: 'VIVO, convierte texto en plata' },
+  { archivo: 'src/lib/finanzas/custodia.ts', expuesto: 'VIVO, maneja dinero de terceros' },
+  { archivo: 'src/lib/finanzas/parametros.ts', expuesto: 'VIVO, decide tarifas del año' },
+  { archivo: 'src/lib/finanzas/ingresos.ts', expuesto: 'VIVO, causa ingresos' },
+  { archivo: 'src/lib/finanzas/egresos.ts', expuesto: 'VIVO, causa gastos' },
+  { archivo: 'src/lib/finanzas/completar.ts', expuesto: 'VIVO, edita lo causado' },
+  { archivo: 'src/lib/finanzas/reportes.ts', expuesto: 'VIVO, de aquí sale lo que declara el contador' },
+  { archivo: 'src/lib/finanzas/recibos.ts', expuesto: 'VIVO, entrega documentos' },
+  { archivo: 'la generación del PDF notarial', expuesto: 'lo que recibe un cliente' },
+  { archivo: 'src/lib/notariales/datos.ts', expuesto: 'instrumento del panel' },
+  { archivo: 'src/lib/notariales/panel.ts', expuesto: 'instrumento del panel' },
+  { archivo: 'src/lib/notariales/cotejo.ts', expuesto: 'instrumento del panel' },
+  { archivo: 'src/lib/notariales/evidencia.ts', expuesto: 'instrumento del panel' },
+  { archivo: 'src/lib/notariales/trazabilidad.ts', expuesto: 'instrumento del panel' },
+  { archivo: 'src/lib/finanzas/pendientes.ts', expuesto: 'instrumento del panel' },
+  { archivo: 'src/lib/finanzas/captura*.ts', expuesto: 'pantallas de captura' },
+  { archivo: 'las rutas de src/app/api', expuesto: 'pantallas y rutas' },
 ]
 
 console.log('\n══ DECISIONES CRÍTICAS Y SU COBERTURA ════════════════════════')
@@ -479,9 +511,14 @@ console.log(`  decisiones inventariadas: ${DECISIONES.length}` +
   `  (${criticas.length} críticas · ${degeneradas.length} degeneradas)`)
 console.log(`  con una mutación que las vigile: ${conMutacion.length}`)
 console.log(`  DEUDA: ${sinMutacion.length} sin mutación\n`)
-console.log(`  ⚠ ALCANCE: esta cuenta cubre ${ALCANCE_LEIDO.length} archivos leídos de principio a fin.`)
-console.log(`    NO cubre ${FUERA_DEL_ALCANCE.length} más, entre ellos ${FUERA_DEL_ALCANCE.slice(0, 3).join(', ')}`)
-console.log(`    y las rutas. El número NO es «todo el proyecto».\n`)
+const vivos = SIN_LECTURA_COMPLETA.filter(x => x.expuesto.startsWith('VIVO'))
+console.log(`  ⚠ ALCANCE. El número de arriba NO es «todo el proyecto».`)
+console.log(`    lectura completa:      ${LECTURA_COMPLETA.length} archivos`)
+console.log(`    tocados sin leer:      ${TOCADOS_SIN_LECTURA.length}`)
+console.log(`    SIN lectura completa:  ${SIN_LECTURA_COMPLETA.length}, de los cuales ${vivos.length} están vivos y tocan dinero:`)
+for (const v of vivos) console.log(`       ${v.archivo.padEnd(34)} ${v.expuesto}`)
+console.log(`    Tres de tres veces, una lectura completa encontró lo que ningún`)
+console.log(`    instrumento podía, y el defecto resultó peor que el reporte previo.\n`)
 
 const porArchivo = new Map()
 for (const d of sinMutacion) {
