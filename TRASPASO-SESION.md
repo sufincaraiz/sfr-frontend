@@ -2538,6 +2538,92 @@ definición de un ayudante.
 Y como la lectura es cara, se gasta donde la decisión es cara. Esos siete
 módulos —los que deciden dinero— son la lista.
 
+# EL QUINTO PUNTO CIEGO, Y ES DE OTRA CLASE
+
+2026-10-15. Los cuatro de la sección siguiente son del **instrumento**: no podían
+ver lo que no preguntaban, y se arreglan con mejores preguntas. Este no.
+
+> **«Las había visto y las descarté como cosméticas.»**
+>
+> No es que el instrumento no lo mostrara: lo mostró. Es que **la etiqueta lo
+> enterró**. Y una etiqueta no se arregla preguntando mejor.
+
+El caso: al barrer las fechas, siete sitios de `src/app/` aparecieron en la
+salida del grep y se clasificaron como «cosméticos: el año de un pie, el año de
+un desplegable». **Dos de esos siete eran rutas del servidor que decidían el año
+fiscal de un reporte y de los parámetros del año** —o sea, qué tarifas aplican—.
+
+Y «cosmético» no era mentira **en ese momento**: era cierto mientras nada
+dependiera de ello. Lo que cambió fue el contexto, no el código.
+
+## La regla
+
+> **Lo que una pasada marca como cosmético queda marcado CON QUIÉN y CUÁNDO lo
+> marcó, y vuelve a revisarse cuando cambia el contexto.**
+
+Un «cosmético» sin firma ni fecha es una decisión que nadie puede auditar,
+porque no se sabe contra qué realidad se tomó. Con firma y fecha, la pregunta
+«¿sigue siendo cierto?» tiene a quién y a cuándo mirar.
+
+Y la forma práctica, que es la que de verdad lo cierra: **no clasificar y
+seguir**. Si la clasificación descarta algo, el descarte entra en el artefacto
+medido —una fila, no una decisión mental—. Los siete sitios no estaban en
+`inventario-fechas.mjs`: estaban en mi cabeza, clasificados y olvidados. El
+detector los encontró porque **no clasifica**: cuenta.
+
+# UN ARNÉS SIN CÓDIGO DE SALIDA ES UN INFORME, NO UN ARNÉS
+
+2026-10-15, el hallazgo que salió de contar qué arneses están fuera del build.
+
+`probar-panel-notarial.mjs` tenía un `ok()` que **solo imprimía**. Sin contador,
+sin `process.exit`. Salía con 0 aunque la pantalla estuviera llena de ✗.
+
+> **Su verde no lo podía leer una máquina**, así que dependía de que una persona
+> mirara la pantalla hasta el final. Y nadie mira hasta el final cuando las
+> primeras treinta líneas están en verde.
+
+**Lo que apareció al ponerle código de salida: cinco fallos de treinta y seis.**
+Cuatro eran verificaciones que **sobrevivieron a su premisa** —afirmaban las 29
+cifras sembradas que salieron del catálogo esa misma mañana—. Y el quinto era un
+defecto de verdad:
+
+```
+{"total":53,"sin_cargar":53,"coinciden":0,"apto":true}
+```
+
+**`apto: true` en un año completamente vacío.** Es correcto para lo que `apto`
+significa —«nada de lo cargado contradice la transcripción», y un año vacío no
+contradice nada— y es exactamente la forma de indicador que miente en la
+dirección cómoda si alguien lo lee como «apto para publicar». Peor:
+`cotejar-notariales.mjs` **salía con 0** basándose en él.
+
+Resuelto separando las dos cosas: `apto` sigue siendo consistencia y nace
+`completo` —`sin_cargar === 0`—, y el guión del cotejo exige las dos.
+
+## El censo, y lo que dio
+
+| | cuántos |
+|---|---|
+| verificadores en la cadena del build | 13 |
+| fuera de la cadena | 9 |
+| de esos, **en memoria y sin base** | **3** |
+
+Los tres en memoria tardan **270 ms, 202 ms y 1,3 s** —menos de dos segundos
+entre los tres, para más de 800 verificaciones—. Estaban fuera **por nada**, y
+entraron: la cadena pasó de 13 a 15 guardas.
+
+Para el que sí toca la base y no puede correr en cada despliegue —crea y borra
+un año de prueba, y eso escribiría en producción cada vez— el build comprueba
+otra cosa: **cuándo corrió en verde por última vez**. El arnés escribe su propia
+fecha en `scripts/registro-de-arneses.json` al pasar, y
+`verificar-arneses-frescos.mjs` rompe el build si el registro pasa de catorce
+días.
+
+> **Un arnés que nadie corre está en la misma familia que una guarda que nadie
+> llama: su verde es de la última vez que alguien se acordó.** La diferencia es
+> que una guarda sin llamar se encuentra leyendo el código, y un arnés sin
+> correr no deja rastro de su ausencia. Por eso el rastro hay que fabricarlo.
+
 # CUATRO INSTRUMENTOS, CUATRO PUNTOS CIEGOS, LA MISMA FORMA
 
 2026-10-15. En un día, cuatro instrumentos distintos dejaron pasar algo, y los

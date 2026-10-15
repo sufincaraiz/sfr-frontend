@@ -1,0 +1,11 @@
+{
+  "_que_es": "Cuándo corrió en verde por última vez cada arnés que NO puede correr en el build porque toca la base de datos. Lo escriben los propios arneses al pasar, y scripts/verificar-arneses-frescos.mjs rompe el build cuando un registro se queda viejo.",
+  "_por_que": "Un arnés que nadie corre está en la misma familia que una guarda que nadie llama: su verde es de la última vez que alguien se acordó. El check de limpieza del arnés del panel llevaba días fallando y nadie lo notó.",
+  "corridas": {
+    "probar-panel-notarial.mjs": {
+      "cuando": "2026-10-15T20:33:29.329Z",
+      "verificaciones": 36,
+      "contra": "la base de produccion (ano de prueba 2099, autolimpiado)"
+    }
+  }
+}

@@ -11,12 +11,30 @@
  *   node scripts/probar-panel-notarial.mjs
  */
 import { PrismaClient } from '@prisma/client'
-import { readFileSync } from 'node:fs'
+import { readFileSync, writeFileSync } from 'node:fs'
 import { sembrarAnio, borrarAnio, anioParaPantalla, guardarCampoAnio, guardarConcepto, guardarTramos, activarAnio, volverABorrador, guardarRespaldo } from '../src/lib/notariales/panel.ts'
 import { leerAnio } from '../src/lib/notariales/datos.ts'
 import { leerBloqueCotejo } from '../src/lib/notariales/cotejo.ts'
 
-const ok = (t, c, x = '') => console.log(`  ${c ? '✓' : '✗'} ${t}${c ? '' : ' ' + x}`)
+/*
+ * ⚠ ESTE ARNÉS NO PODÍA FALLAR.
+ *
+ * `ok()` solo IMPRIMÍA. No llevaba cuenta y el guión salía con 0 aunque hubiera
+ * ✗ en la pantalla. Por eso el check de limpieza llevaba días rojo sin que nadie
+ * lo notara: no es solo que el arnés estuviera fuera del build —es que, incluso
+ * corriéndolo a mano, nada se detenía—.
+ *
+ * > **Un arnés sin código de salida no es un arnés: es un informe.** Su verde no
+ * > lo puede leer una máquina, así que depende de que una persona mire la
+ * > pantalla hasta el final.
+ */
+let corridas = 0
+let fallos = 0
+const ok = (t, c, x = '') => {
+  corridas++
+  if (!c) fallos++
+  console.log(`  ${c ? '✓' : '✗'} ${t}${c ? '' : ' ' + x}`)
+}
 const lanza = async (t, fn, trozo = '') => {
   try { await fn(); console.log(`  ✗ ${t} (NO lanzó)`) }
   catch (e) { ok(`${t} → lanza`, !trozo || e.message.includes(trozo), `(${e.message})`) }
@@ -51,10 +69,16 @@ try {
   ok('sin redondeo del IVA', !a.redondeo_iva)
   ok('CERO respaldos', (a.respaldos ?? []).length === 0 &&
     a.conceptos.every(c => (c.respaldos ?? []).length === 0))
-  ok('solo las tres verificadas traen cifra',
-    a.conceptos.filter(c => c.valor !== null).map(c => c.clave).join() === 'acto_sin_cuantia')
-  ok('…y los dos recaudos sus tramos',
-    a.conceptos.filter(c => (c.tramos ?? []).length).map(c => c.clave).sort().join() === 'recaudo_sin_cuantia,recaudo_snr')
+  /* ⚠ ESTAS DOS AFIRMABAN LAS 29 CIFRAS SEMBRADAS, que salieron del catálogo el
+   * 2026-10-15. Sobrevivieron a su premisa durante toda la sesión sin que nadie
+   * lo notara, porque este arnés no tenía código de salida: imprimía la ✗ y
+   * seguía. Ahora afirman lo contrario, que es lo verdadero. */
+  ok('NINGÚN concepto nace con cifra',
+    a.conceptos.filter(c => c.valor !== null).length === 0,
+    `(traen cifra: ${a.conceptos.filter(c => c.valor !== null).map(c => c.clave).join() || '—'})`)
+  ok('…ni con tramos',
+    a.conceptos.filter(c => (c.tramos ?? []).length).length === 0,
+    `(traen tramos: ${a.conceptos.filter(c => (c.tramos ?? []).length).map(c => c.clave).join() || '—'})`)
   ok('la clave ajena derivada quedó bien',
     a.conceptos.find(c => c.clave === 'copia_autentica').multiplica_cantidad_de === 'hojas_papel_notarial')
   ok('la regla general de retención existe, sin tarifa',
@@ -69,16 +93,23 @@ try {
   ok('…y sin un campo de artículo por cifra que teclear',
     p.campos.every(c => !('articulo' in c)))
   ok('…y la unidad esperada al lado', p.campos.every(c => c.unidad_esperada.length > 0))
-  // 29 = el acto sin cuantía (1) + las siete filas del art. 50 con sus cuatro
-  // cifras cada una (28). Son las tres verificadas contra el PDF y nada más:
-  // los otros 24 campos del bloque salen vacíos.
-  ok('solo salen cargados los de las tres verificadas: 29 de 53',
-    p.campos.filter(c => c.valor !== null).length === 29, `(${p.campos.filter(c => c.valor !== null).length})`)
-  ok('…y los demás 24 salen vacíos', p.campos.filter(c => c.valor === null).length === 24)
-  ok('los pendientes vienen partidos por dueño', p.pendientes.porDueno.length === 3,
+  /* Antes aqui habia un comentario explicando las 29 cifras sembradas. Las
+   * cifras salieron del catalogo el 2026-10-15 y el comentario sobrevivio a
+   * ellas, igual que las verificaciones que las afirmaban. */
+  ok('la pantalla arranca en 0 de 53 cargadas',
+    p.avance.cargadas === 0 && p.avance.total === 53,
+    `(${p.avance.cargadas} de ${p.avance.total})`)
+  ok('…y las 53 salen vacías',
+    p.campos.filter(c => c.valor !== null).length === 0,
+    `(con valor: ${p.campos.filter(c => c.valor !== null).length})`)
+  ok('los pendientes vienen partidos por dueno', p.pendientes.porDueno.length === 3,
     JSON.stringify(p.pendientes.porDueno.map(d => [d.dueno, d.cantidad])))
   ok('el esquema no se contradice', p.incoherencia === null, `(${p.incoherencia})`)
-  ok('el cotejo ya reporta lo sembrado', p.cotejo.coinciden > 0 || p.cotejo.difieren > 0,
+  /* Y la que destapó el defecto: `apto` salía `true` con 53 sin cargar, porque
+   * dice CONSISTENCIA y no completitud. Ahora se exigen las dos. */
+  ok('el cotejo reporta 53 sin cargar, apto por consistencia y NO completo',
+    p.cotejo.total === 53 && p.cotejo.sin_cargar === 53 &&
+    p.cotejo.coinciden === 0 && p.cotejo.apto === true && p.cotejo.completo === false,
     JSON.stringify(p.cotejo))
   ok('los criterios adoptados viajan a la pantalla', p.criterios_adoptados.length === 2)
 
@@ -148,6 +179,30 @@ try {
     (await prisma.respaldoNormativo.count()) === BASE.respaldos,
     `(conceptos ${await prisma.conceptoNotarial.count()} vs base ${BASE.conceptos}, ` +
     `respaldos ${await prisma.respaldoNormativo.count()} vs base ${BASE.respaldos})`)
+  console.log(`\n${fallos === 0 ? '✓ TODO EN VERDE' : '✗ CON FALLOS'} — ${corridas} verificaciones, ${fallos} fallos`)
+
+  /* EL REGISTRO. Este arnes no puede correr en el build —crea y borra un ano de
+   * prueba, y eso escribiria en produccion en cada despliegue—, asi que lo que
+   * el build comprueba es CUANDO corrio por ultima vez en verde.
+   *
+   * Se escribe solo si no hubo fallos: un registro de una corrida roja seria
+   * peor que ninguno. */
+  if (fallos === 0) {
+    const ruta = 'scripts/registro-de-arneses.json'
+    const reg = JSON.parse(readFileSync(ruta, 'utf8'))
+    reg.corridas['probar-panel-notarial.mjs'] = {
+      cuando: new Date().toISOString(),
+      verificaciones: corridas,
+      contra: 'la base de produccion (ano de prueba 2099, autolimpiado)',
+    }
+    writeFileSync(ruta, JSON.stringify(reg, null, 2) + '\n', 'utf8')
+    console.log(`
+  registro actualizado: ${ruta}`)
+  }
 } finally {
   await prisma.$disconnect()
 }
+
+/* El código de salida va DESPUÉS de cerrar la conexión: un `process.exit` dentro
+ * del `finally` dejaría el cliente de Prisma colgado. */
+if (fallos > 0) process.exit(1)

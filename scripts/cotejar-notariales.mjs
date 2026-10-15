@@ -101,7 +101,14 @@ try {
   } else {
     console.log('\n✓ LAS DOS LECTURAS COINCIDEN en todo lo cargado: dos pares de ojos sobre cada cifra.\n')
   }
-  process.exit(resumen.apto ? 0 : 1)
+  /* ⚠ `apto` SOLO NO BASTA. Significa «nada de lo cargado contradice la
+   * transcripción», y un año vacío no contradice nada: salía con 0 sobre 53
+   * cifras sin cargar. Para pasar hacen falta las dos cosas. */
+  if (!resumen.completo) {
+    console.log(`\n  ⚠ ${resumen.sin_cargar} de ${resumen.total} cifras SIN CARGAR.`)
+    console.log('    El cotejo no contradice nada porque no hay nada que cotejar.')
+  }
+  process.exit(resumen.apto && resumen.completo ? 0 : 1)
 } finally {
   await prisma.$disconnect()
 }

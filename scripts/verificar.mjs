@@ -28,6 +28,19 @@ import { spawnSync } from 'node:child_process'
 
 const GUARDAS = {
   antes: [
+    /* LOS ARNESES EN MEMORIA, que estaban fuera del build POR NADA.
+     *
+     * 270 ms, 202 ms y 1,3 s: menos de dos segundos entre los tres, para mas de
+     * 800 verificaciones. No tocan la base, asi que nada impedia que corrieran
+     * en cada despliegue. Su verde era de la ultima vez que alguien se acordo. */
+    { nombre: 'motor notarial', guion: 'probar-notariales.mjs',
+      vigila: '552 verificaciones del motor: tramos, bases, retencion, IVA, guardas' },
+    { nombre: 'motor financiero', guion: 'probar-finanzas.mjs',
+      vigila: '249 verificaciones: retefuente, IVA, ICA, custodia, numeros, NIT' },
+    { nombre: 'promocion', guion: 'probar-promocion.mjs',
+      vigila: 'lo que el sitio promete y como se calcula' },
+    { nombre: 'arneses frescos', guion: 'verificar-arneses-frescos.mjs',
+      vigila: 'cuando corrio en verde por ultima vez lo que NO puede correr aqui' },
     { nombre: 'volcados de tablas', guion: 'verificar-volcados.mjs',
       vigila: 'que ningun archivo versionado sea un volcado de filas con datos de terceros' },
     { nombre: 'migraciones SQL', guion: 'verificar-migraciones-sql.mjs',

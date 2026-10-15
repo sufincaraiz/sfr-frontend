@@ -336,6 +336,8 @@ export interface ResumenCotejo {
   sin_cargar: number
   /** ¿Se puede activar el año con esto? Solo si NADA difiere ni sobra. */
   apto: boolean
+  /** `sin_cargar === 0`. `apto` sin esto no autoriza a publicar. */
+  completo: boolean
 }
 
 /**
@@ -348,12 +350,29 @@ export function resumirCotejo(resultados: ResultadoCotejo[]): ResumenCotejo {
   const cuenta = (e: EstadoCotejo) => resultados.filter(r => r.estado === e).length
   const difieren = cuenta('DIFIERE')
   const sinTranscribir = cuenta('SIN_TRANSCRIBIR')
+  const sinCargar = cuenta('SIN_CARGAR')
   return {
     total: resultados.length,
     coinciden: cuenta('COINCIDE'),
     difieren,
     sin_transcribir: sinTranscribir,
-    sin_cargar: cuenta('SIN_CARGAR'),
+    sin_cargar: sinCargar,
+    /**
+     * CONSISTENCIA, no completitud: «nada de lo cargado contradice la
+     * transcripción». Deliberado y probado —un año vacío no contradice nada—.
+     */
     apto: difieren === 0 && sinTranscribir === 0,
+    /**
+     * COMPLETITUD, que faltaba y es la mitad que engaña.
+     *
+     * ⚠ `apto` sale `true` en un año VACÍO: con 53 cifras sin cargar, no hay
+     * ninguna que difiera ni ninguna sin transcribir. Eso es correcto para lo
+     * que `apto` dice, y es exactamente la forma de indicador que miente en la
+     * dirección cómoda si alguien lo lee como «apto para publicar».
+     *
+     * Lo descubrió el arnés del panel el día que se le puso un código de salida:
+     * imprimía `{"sin_cargar":53,"apto":true}` y nadie lo había mirado.
+     */
+    completo: sinCargar === 0,
   }
 }
