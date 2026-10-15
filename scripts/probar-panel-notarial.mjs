@@ -22,6 +22,19 @@ const lanza = async (t, fn, trozo = '') => {
   catch (e) { ok(`${t} → lanza`, !trozo || e.message.includes(trozo), `(${e.message})`) }
 }
 const prisma = new PrismaClient()
+
+/*
+ * LA LÍNEA BASE. Se toma ANTES de tocar nada: lo que esta prueba tiene que
+ * dejar como estaba es lo que había, no «cero».
+ */
+const BASE = {
+  conceptos: await prisma.conceptoNotarial.count(),
+  respaldos: await prisma.respaldoNormativo.count(),
+}
+if ((await prisma.anioNotarial.count({ where: { anio: 2099 } })) > 0) {
+  console.log('\n  ⚠ el año 2099 ya existía: una corrida anterior murió sin limpiar.')
+  console.log('    Se borra antes de empezar, para que la línea base sea la de verdad.\n')
+}
 const ANIO = 2099
 const BLOQUE = leerBloqueCotejo(readFileSync('PARAMETROS-NOTARIALES-VERIFICADOS.md', 'utf8'))
 
@@ -113,11 +126,28 @@ try {
     await guardarCampoAnio(prisma, ANIO, 'uvb', '12110').then(() => true).catch(() => false))
 
   console.log('\n── Limpieza ──')
+  /*
+   * ⚠ ESTE CHECK MEDÍA EL ESTADO GLOBAL, no el suyo.
+   *
+   * Compraba `conceptoNotarial.count() === 0` y `respaldoNormativo.count() === 0`
+   * SIN filtro, así que afirmaba que la base entera estaba vacía. Pasó mientras
+   * no hubo más años que el de prueba, y empezó a fallar en cuanto el año 2026
+   * real se sembró con sus 19 conceptos. La limpieza funcionaba; el check no.
+   *
+   * Y no se notó porque este arnés NO está en la cadena del build: toca la base,
+   * así que se corre a mano. Un instrumento que solo se mira cuando uno se
+   * acuerda deja de avisar justo cuando hace falta.
+   *
+   * Ahora se mide contra una LÍNEA BASE tomada antes de empezar: lo que tiene
+   * que volver a cero es lo que ESTA prueba creó, no la base.
+   */
   await borrarAnio(prisma, ANIO)
   ok('el año de prueba se borró con todo lo suyo, respaldos incluidos',
     (await prisma.anioNotarial.count({ where: { anio: ANIO } })) === 0 &&
-    (await prisma.conceptoNotarial.count()) === 0 &&
-    (await prisma.respaldoNormativo.count()) === 0)
+    (await prisma.conceptoNotarial.count()) === BASE.conceptos &&
+    (await prisma.respaldoNormativo.count()) === BASE.respaldos,
+    `(conceptos ${await prisma.conceptoNotarial.count()} vs base ${BASE.conceptos}, ` +
+    `respaldos ${await prisma.respaldoNormativo.count()} vs base ${BASE.respaldos})`)
 } finally {
   await prisma.$disconnect()
 }

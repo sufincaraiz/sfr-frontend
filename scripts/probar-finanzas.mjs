@@ -15,7 +15,7 @@ import {
 } from '../src/lib/finanzas/calculo.ts'
 import { roleCanAccessAdminPath, roleHome } from '../src/lib/permissions.ts'
 import { CODIFICADOR_JS, PREFIJO_RESPUESTA, decodificarRespuesta } from '../src/lib/finanzas/formulario-contador.ts'
-import { leerNumero } from '../src/lib/finanzas/numeros.ts'
+import { leerNumero, leerNumeroConUnidad, exigirUnidadCoherente, ErrorNumero } from '../src/lib/finanzas/numeros.ts'
 import { erroresDeCaptura, faltantesDeCaptura, estaPorCompletar, ordenarPorUso, tramoAntiguedad, repetirEgreso, colorDeEspera } from '../src/lib/finanzas/captura.ts'
 import { leerCola, encolar, vaciarCola, avisoDeCola, leerRecibos, encolarRecibo, vaciarRecibos, avisoDeRecibos } from '../src/lib/finanzas/cola-egresos.ts'
 import {
@@ -522,5 +522,53 @@ check('admin SÍ → /admin/finanzas/parametros', roleCanAccessAdminPath('admin'
 check('home del contador es /admin/finanzas', roleHome('contador') === '/admin/finanzas')
 
 console.log(`\n${'='.repeat(60)}`)
+console.log('\n══ LA UNIDAD ESCRITA CONTRA LA DECLARADA ══')
+/*
+ * El defecto: `leerNumero` quitaba «por mil», «%» y «‰» del texto y los
+ * descartaba, y la unidad la decidía un campo aparte. Teclear «9,11 por mil» en
+ * un campo PORCENTAJE daba DIEZ VECES la cifra, y plausible. La única guarda que
+ * existía era una frase en un mensaje de chat pidiendo que se fijaran en la
+ * etiqueta: eso es un recordatorio, y los recordatorios fallan en la fila 14
+ * de 24.
+ */
+const u = v => leerNumeroConUnidad(v, 'tasa', 'x').unidad
+check('«por mil» se detecta', u('9,11 por mil') === 'POR_MIL')
+check('el símbolo ‰ también', u('19 ‰') === 'POR_MIL')
+check('«por ciento» se detecta', u('0,27 por ciento') === 'PORCENTAJE')
+check('el símbolo % también', u('19%') === 'PORCENTAJE')
+check('el peso se detecta', u('$52.374') === 'PESOS')
+check('un número a secas no declara nada', u('9,11') === null)
+check('…y el valor se sigue leyendo igual', leerNumero('9,11 por mil', 'tasa', 'x') === '9.11')
+
+/* LAS DOS DIRECCIONES. Ninguna está privilegiada. */
+const choca = (esc, dec) => {
+  try { exigirUnidadCoherente(esc, dec, 'la tarifa'); return false } catch (e) { return e instanceof ErrorNumero }
+}
+check('«por mil» en un campo PORCENTAJE se detiene', choca('POR_MIL', 'PORCENTAJE'))
+check('«%» en un campo POR_MIL también se detiene', choca('PORCENTAJE', 'POR_MIL'))
+check('«por mil» en un campo POR_MIL pasa', !choca('POR_MIL', 'POR_MIL'))
+check('«%» en un campo PORCENTAJE pasa', !choca('PORCENTAJE', 'PORCENTAJE'))
+
+/* EL SILENCIO NO ES CONTRADICCIÓN. */
+check('un texto sin unidad usa la declarada, no se detiene', !choca(null, 'PORCENTAJE'))
+check('…ni con POR_MIL', !choca(null, 'POR_MIL'))
+check('un campo sin unidad declarada tampoco choca', !choca('POR_MIL', null))
+
+/* EL MENSAJE DICE LAS DOS COSAS, porque cualquiera de los dos puede ser el malo. */
+check('el mensaje nombra lo escrito Y lo declarado', (() => {
+  try { exigirUnidadCoherente('POR_MIL', 'PORCENTAJE', 'la tarifa') } catch (e) {
+    return /por mil/.test(e.message) && /por ciento/.test(e.message)
+  }
+  return false
+})())
+
+/* UN TEXTO MAL ESCRITO NO ES UN CAMPO VACÍO. */
+check('«52.374=» lanza en vez de devolver null', (() => {
+  try { leerNumeroConUnidad('52.374=', 'pesos', 'el UVT'); return false }
+  catch (e) { return /mal escrito/.test(e.message) }
+})())
+check('…y un campo de verdad vacío sigue dando null',
+  leerNumeroConUnidad('', 'pesos', 'x').valor === null)
+
 console.log(`${ok} ok · ${fail} fallos`)
 process.exit(fail ? 1 : 0)

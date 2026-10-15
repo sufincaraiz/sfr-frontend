@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { Mail, Lock, Eye, EyeOff, LogIn } from 'lucide-react';
+import { anioEnColombia } from '@/lib/dia-colombia';
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -165,7 +166,7 @@ export default function AdminLoginPage() {
         </form>
 
         <p style={{ textAlign: 'center', color: '#CBD5E1', fontSize: '0.75rem', marginTop: '1.5rem' }}>
-          Su Finca Raíz © {new Date().getFullYear()} · Acceso restringido
+          Su Finca Raíz © {anioEnColombia()} · Acceso restringido
         </p>
       </div>
     </div>

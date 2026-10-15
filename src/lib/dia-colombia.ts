@@ -138,3 +138,48 @@ export function siguienteDia(dia: string): string {
   const t = new Date(Date.UTC(a!, m! - 1, d! + 1))
   return t.toISOString().slice(0, 10)
 }
+
+/* ══ ESCRIBIR UN DÍA PURO ═══════════════════════════════════════
+ *
+ * ⚠ LA OTRA DIRECCIÓN, y es la que se nos pasó entera.
+ *
+ * El barrido del 2026-10-15 buscó dónde se LEEN componentes locales de un
+ * `Date` —`getFullYear`, `getMonth`, `getDate`— y encontró doce sitios. Nunca
+ * buscó dónde se ESCRIBE un INSTANTE en una columna de DÍA. Son dos preguntas y
+ * solo se corrió una.
+ *
+ * Al correr la segunda aparecieron CINCO escrituras, dos de ellas en archivos
+ * que ya se creían revisados. Y la aritmética es implacable: un
+ * `fecha_cierre: new Date()` a las 19:00 de Colombia produce el instante
+ * `2026-10-16T00:00:00.000Z`, y una columna `DATE` guarda el **16**. El día real
+ * era el 15.
+ *
+ * Por eso estos dos ayudantes existen con nombre: escribir «el día de hoy» en
+ * una columna de día no es `new Date()`.
+ */
+
+/**
+ * El día de HOY en Colombia, listo para escribir en una columna `DATE`.
+ *
+ * Devuelve la medianoche UTC de ese día, que es exactamente lo que una columna
+ * `DATE` guarda: ni se corre al día siguiente por la tarde ni depende de la
+ * zona del proceso.
+ */
+export function hoyComoDiaPuro(): Date {
+  return new Date(`${hoyEnColombia()}T00:00:00Z`)
+}
+
+/**
+ * Un día que viene de fuera —del formulario, de otra capa— listo para escribir
+ * en una columna `DATE`. `null` si viene vacío.
+ *
+ * Normaliza al día ANTES de construir el instante: si llega un ISO con hora,
+ * recortarlo en UTC convertiría un «15 a las 20:00 de Colombia» en el 16. Así
+ * el día guardado es el día escrito, venga como venga.
+ */
+export function diaComoFecha(v: unknown): Date | null {
+  const dia = diaPuro(v)
+  if (dia === null) return null
+  const d = new Date(`${dia}T00:00:00Z`)
+  return Number.isNaN(d.getTime()) ? null : d
+}

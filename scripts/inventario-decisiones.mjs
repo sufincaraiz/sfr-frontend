@@ -486,6 +486,24 @@ const TOCADOS_SIN_LECTURA = [
  * NUNCA leídos de principio a fin. `expuesto` aplica el criterio ya fijado:
  * exposición actual primero, gravedad después.
  */
+/**
+ * EL FINAL DE LA AUDITORIA, DECLARADO.
+ *
+ * La lectura completa va 4 de 4 y seguiria encontrando cosas para siempre. Sin
+ * un final declarado no se vuelve a construir nunca, asi que la lista esta
+ * CERRADA: son los seis que quedan marcados VIVO aqui abajo. Despues de ellos
+ * el trabajo vuelve a ser construir, y lo que aparezca entra al tablero medido
+ * y aplazado salvo que sea dinero vivo.
+ */
+const AUDITORIA_TERMINA_CON = [
+  'src/lib/finanzas/parametros.ts',
+  'src/lib/finanzas/ingresos.ts',
+  'src/lib/finanzas/egresos.ts',
+  'src/lib/finanzas/completar.ts',
+  'src/lib/finanzas/reportes.ts',
+  'src/lib/finanzas/recibos.ts',
+]
+
 const SIN_LECTURA_COMPLETA = [
   { archivo: 'src/lib/finanzas/numeros.ts', expuesto: 'VIVO, convierte texto en plata' },
   { archivo: 'src/lib/finanzas/custodia.ts', expuesto: 'VIVO, maneja dinero de terceros' },
@@ -517,7 +535,8 @@ console.log(`    lectura completa:      ${LECTURA_COMPLETA.length} archivos`)
 console.log(`    tocados sin leer:      ${TOCADOS_SIN_LECTURA.length}`)
 console.log(`    SIN lectura completa:  ${SIN_LECTURA_COMPLETA.length}, de los cuales ${vivos.length} están vivos y tocan dinero:`)
 for (const v of vivos) console.log(`       ${v.archivo.padEnd(34)} ${v.expuesto}`)
-console.log(`    Tres de tres veces, una lectura completa encontró lo que ningún`)
+console.log(`    La auditoria TERMINA con ${AUDITORIA_TERMINA_CON.length} archivos, lista cerrada.`)
+console.log(`    Cuatro de cuatro veces, una lectura completa encontro lo que ningun`)
 console.log(`    instrumento podía, y el defecto resultó peor que el reporte previo.\n`)
 
 const porArchivo = new Map()

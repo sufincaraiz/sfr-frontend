@@ -1,4 +1,5 @@
 import { CODIFICADOR_JS } from '@/lib/finanzas/formulario-contador'
+import { hoyEnColombia } from '@/lib/dia-colombia'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // FORMULARIO DEL CONTADOR — parámetros fiscales del año
@@ -243,6 +244,10 @@ const HTML = `<!doctype html>
 ${CODIFICADOR_JS}
 (function () {
   var CLAVE = 'sfr-datos-contador';
+  // EL DIA DE COLOMBIA LO INYECTA EL SERVIDOR. Este script corre en el
+  // navegador del contador: new Date() usaria SU zona, y toISOString() usa
+  // UTC, que a las 7 de la tarde pre-rellenaba MANANA.
+  var HOY_CO = '${hoyEnColombia()}';
   var WHATSAPP = '${WHATSAPP}';
   var $ = function (s) { return document.querySelector(s); };
   var $$ = function (s) { return Array.prototype.slice.call(document.querySelectorAll(s)); };
@@ -294,8 +299,8 @@ ${CODIFICADOR_JS}
     var datos = null;
     try { datos = JSON.parse(localStorage.getItem(CLAVE) || 'null'); } catch (e) {}
     if (!datos) {
-      $('#anio').value = String(new Date().getFullYear());
-      $('#fecha').value = new Date().toISOString().slice(0, 10);
+      $('#anio').value = HOY_CO.slice(0, 4);
+      $('#fecha').value = HOY_CO;
       return;
     }
     Object.keys(datos.campos || {}).forEach(function (f) {

@@ -40,7 +40,7 @@
  *
  *   node scripts/inventario-fechas.mjs
  */
-import { readFileSync } from 'node:fs'
+import { readFileSync, globSync } from 'node:fs'
 
 /**
  * `efecto` dice qué pasa si `TZ` pasa a `America/Bogota`. Es lo que hay que
@@ -106,6 +106,75 @@ const SITIOS = [
     porque: 'idem' },
 ]
 
+/* ══ EL DETECTOR, EN LAS DOS DIRECCIONES ═══════════════════════════
+ *
+ * ⚠ EL BARRIDO ORIGINAL SOLO HIZO UNA DE LAS DOS PREGUNTAS.
+ *
+ * Buscó dónde se LEEN componentes locales de un `Date` y encontró doce sitios.
+ * Nunca buscó dónde se ESCRIBE un INSTANTE en una columna de DÍA. Al correr la
+ * segunda pregunta aparecieron CINCO escrituras más, dos de ellas en archivos
+ * que ya se creían revisados —una de ellas, el gasto capturado a las 20:00 del
+ * 31 de diciembre que cambiaba de año fiscal—.
+ *
+ * > **La pregunta decide lo que se puede encontrar.** Un detector no tiene un
+ * > punto ciego por descuido: lo tiene por la forma de lo que pregunta.
+ *
+ * SIN LISTA DE EXCEPCIONES. Hoy no queda ninguna de las dos formas, así que
+ * cualquiera nueva rompe el build. Una excepción declarada es una afirmación
+ * que nadie vuelve a comprobar; cero es una propiedad.
+ */
+
+/** Las nueve columnas de día puro, según la migración del 2026-10-15. */
+const COLUMNAS_DIA = [
+  'fecha', 'fecha_reembolso', 'fecha_causacion', 'fecha_recaudo',
+  'periodo_desde', 'periodo_hasta', 'fecha_recibido', 'fecha_cierre', 'vigente_hasta',
+]
+
+/** El único archivo donde la zona de Colombia puede nombrarse. */
+const EL_PUENTE = 'src/lib/dia-colombia.ts'
+
+function sinComentarios(src) {
+  const fuera = []
+  let enBloque = false
+  for (const l of src.split('\n')) {
+    if (/^\s*\/\*/.test(l)) enBloque = true
+    if (enBloque) { if (/\*\//.test(l)) enBloque = false; fuera.push(''); continue }
+    if (/^\s*(\/\/|\*)/.test(l)) { fuera.push(''); continue }
+    fuera.push(l.replace(/\/\/.*$/, ''))
+  }
+  return fuera
+}
+
+function detectar() {
+  const archivos = globSync('src/**/*.{ts,tsx}')
+  const lecturas = []
+  const escrituras = []
+  /* `: new Date()` que TERMINA ahi: `new Date().toISOString()` es una cadena y
+   * no un instante escrito en una columna. */
+  const reEscritura = new RegExp(
+    `\\b(${COLUMNAS_DIA.join('|')})\\s*:\\s*new Date\\(\\)\\s*[,)}]`)
+  const reLectura = /\.(getFullYear|getMonth|getDate|getHours|getMinutes|getDay)\(\)/
+
+  for (const f of archivos) {
+    const norm = f.replace(/\\/g, '/')
+    if (norm === EL_PUENTE) continue
+    let src
+    try {
+      src = readFileSync(f, 'utf8')
+    } catch {
+      continue
+    }
+    const lineas = sinComentarios(src)
+    for (let i = 0; i < lineas.length; i++) {
+      const l = lineas[i]
+      if (!l.trim()) continue
+      if (reLectura.test(l)) lecturas.push({ archivo: norm, linea: i + 1, texto: l.trim().slice(0, 86) })
+      if (reEscritura.test(l)) escrituras.push({ archivo: norm, linea: i + 1, texto: l.trim().slice(0, 86) })
+    }
+  }
+  return { lecturas, escrituras }
+}
+
 /* ── la comprobación ─────────────────────────────────────────────────────── */
 
 const cache = new Map()
@@ -143,6 +212,23 @@ for (const c of CLASES) {
 console.log('\n  Quien comprueba que el resultado no depende de la zona es')
 console.log('  scripts/verificar-fechas-invariantes.mjs, sobre los DOS caminos:')
 console.log('  el puente en memoria y lo que sale de la base.')
+
+const { lecturas, escrituras } = detectar()
+
+console.log('\n══ EL DETECTOR, EN LAS DOS DIRECCIONES ══════════════════════')
+console.log(`  LEE componentes locales de un Date:        ${lecturas.length}`)
+console.log(`  ESCRIBE un instante en columna de dia:     ${escrituras.length}`)
+for (const x of [...lecturas, ...escrituras]) {
+  console.log(`     ✗ ${x.archivo}:${x.linea}`)
+  console.log(`        ${x.texto}`)
+}
+if (lecturas.length || escrituras.length) {
+  console.log('\n  El dia de Colombia se nombra en src/lib/dia-colombia.ts y en ningun otro')
+  console.log('  sitio. Si esto es legitimo, no lo declares aqui: usa el puente.')
+  problemas.push(`${lecturas.length + escrituras.length} sitio(s) nuevos con componentes locales`)
+} else {
+  console.log('  ✓ ninguna de las dos formas queda en el codigo.')
+}
 
 if (problemas.length) {
   console.log(`\n  ✗ el inventario no cuadra con el codigo (${problemas.length}):`)

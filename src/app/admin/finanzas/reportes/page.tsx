@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { AlertTriangle, Loader2, TrendingDown, TrendingUp } from 'lucide-react';
+import { anioEnColombia } from '@/lib/dia-colombia';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LOS TRES REPORTES QUE NO DEPENDEN DE TARIFAS
@@ -29,8 +30,11 @@ const dinero = (v: string) => `$ ${Number(v).toLocaleString('es-CO')}`;
 const MESES = ['Todo el año', 'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
 
 export default function ReportesPage() {
-  const hoy = new Date();
-  const [anio, setAnio] = useState(hoy.getFullYear());
+  // EL AÑO FISCAL ES UN HECHO SOBRE COLOMBIA, no sobre dónde esté quien mira.
+  // `anioEnColombia` usa Intl con la zona de Bogotá, así que da lo mismo desde
+  // qué zona se abra la pantalla.
+  const anioHoy = anioEnColombia();
+  const [anio, setAnio] = useState(anioHoy);
   const [mes, setMes] = useState(0);
   const [r, setR] = useState<Reporte | null>(null);
   const [cargando, setCargando] = useState(true);
@@ -58,7 +62,7 @@ export default function ReportesPage() {
     <div style={{ maxWidth: 900, paddingBottom: '4rem' }}>
       <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: '1.25rem', flexWrap: 'wrap' }}>
         <select value={anio} onChange={e => setAnio(Number(e.target.value))} style={selS}>
-          {[hoy.getFullYear(), hoy.getFullYear() - 1, hoy.getFullYear() - 2].map(a => <option key={a} value={a}>{a}</option>)}
+          {[anioHoy, anioHoy - 1, anioHoy - 2].map(a => <option key={a} value={a}>{a}</option>)}
         </select>
         <select value={mes} onChange={e => setMes(Number(e.target.value))} style={selS}>
           {MESES.map((m, i) => <option key={m} value={i}>{m}</option>)}

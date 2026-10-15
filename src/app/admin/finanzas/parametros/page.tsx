@@ -9,6 +9,7 @@ import {
   type Procedencia, type ProcedenciaEscalares,
 } from '@/lib/finanzas/pendientes';
 import { decodificarRespuesta } from '@/lib/finanzas/formulario-contador';
+import { anioEnColombia } from '@/lib/dia-colombia';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Parámetros fiscales del año.
@@ -118,7 +119,8 @@ const procFila = (r: { origen: string; copiado_de_anio: number | null; cargado_p
     : undefined;
 
 export default function ParametrosFiscalesPage() {
-  const anioActual = new Date().getFullYear();
+  // El año de Colombia: de él dependen las tarifas, y no de la zona del que mira.
+  const anioActual = anioEnColombia();
   const [anio, setAnio] = useState(anioActual);
   const [datos, setDatos] = useState<Datos | null>(null);
   const [form, setForm] = useState<Form>(vacioForm());

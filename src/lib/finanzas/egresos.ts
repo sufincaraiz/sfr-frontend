@@ -8,7 +8,7 @@ import {
 } from '@/lib/finanzas/captura'
 import { egresosDeResultado, gastoDeResultado } from '@/lib/finanzas/calculo'
 import { esPublicIdDeRecibo } from '@/lib/finanzas/recibos'
-import { hoyEnColombia } from '../dia-colombia.ts'
+import { hoyEnColombia, diaComoFecha, hoyComoDiaPuro } from '../dia-colombia.ts'
 
 /**
  * EGRESOS — captura rápida y listados.
@@ -107,7 +107,9 @@ export async function crearEgreso(e: EntradaEgreso, por: string) {
   if (!categoria) throw new ErrorEgreso('Esa categoría no existe.', 404)
 
   const naturaleza = e.naturaleza as Naturaleza
-  const fecha = e.fecha ? new Date(e.fecha) : new Date()
+  // DÍA PURO. Con `new Date()`, un gasto capturado a las 20:00 del 31 de
+  // diciembre se fechaba el 1 de enero y cambiaba de AÑO FISCAL.
+  const fecha = diaComoFecha(e.fecha) ?? hoyComoDiaPuro()
   if (Number.isNaN(fecha.getTime())) throw new ErrorEgreso('Fecha inválida.')
 
   const creado = await prisma.egreso.create({
@@ -229,7 +231,8 @@ export async function marcarReembolsado(id: string, por: string) {
     where: { id },
     data: {
       estado_reembolso: 'REEMBOLSADO',
-      fecha_reembolso: new Date(),
+      // DÍA PURO: el día del reembolso, no el instante en que se marcó.
+      fecha_reembolso: hoyComoDiaPuro(),
       motivo_reclasificacion: null,
       reclasificado_por: por,
       reclasificado_en: new Date(),

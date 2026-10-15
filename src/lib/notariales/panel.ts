@@ -20,6 +20,7 @@
  */
 
 import { ErrorEsquemaNotarial, type AnioNotarial, type Respaldo, type Tramo } from './tipos.ts'
+import { leerNumeroConUnidad, exigirUnidadCoherente } from '../finanzas/numeros.ts'
 import { CONCEPTOS_V1, DUENO_DEL_CONCEPTO, FUENTES_OFICIALES, camposExigidos } from './catalogo.ts'
 import {
   exigirRespaldoOficial, exigirOrdenDeDerivados, pendientesParaActivar, resumenDePendientes,
@@ -224,6 +225,16 @@ export async function guardarConcepto(
   if (!Object.keys(data).length) return
 
   // La guarda ANTES de guardar: se simula el concepto resultante y se verifica.
+  /* El valor suelto de un concepto, con la misma exigencia que los tramos: la
+   * unidad declarada puede venir en esta misma llamada o estar ya guardada. */
+  if ('valor' in data && data.valor !== null && data.valor !== undefined && data.valor !== '') {
+    const unidadDeclarada = 'unidad' in data ? (data.unidad as string | null) : concepto.unidad
+    const esTasa = concepto.tipo === 'PORCENTAJE' || concepto.tipo === 'POR_MIL'
+    const leido = leerNumeroConUnidad(data.valor, esTasa ? 'tasa' : 'pesos',
+      `el valor de ${concepto.label}`)
+    exigirUnidadCoherente(leido.unidad, unidadDeclarada ?? null, `el valor de ${concepto.label}`)
+  }
+
   const resultante = {
     ...concepto,
     valor: 'valor' in data ? (data.valor as string | null) : concepto.valor,
@@ -245,6 +256,47 @@ export async function guardarConcepto(
 }
 
 /**
+ * LA UNIDAD QUE SE ESCRIBE CONTRA LA QUE DECLARA EL CAMPO.
+ *
+ * ⚠ Esta es la guarda que no existía, y lo que había en su lugar era una frase
+ * en un mensaje de chat pidiéndole al titular que se fijara en la etiqueta.
+ *
+ * `leerNumero` quitaba «por mil», «%» y «‰» del texto y los descartaba; la
+ * unidad la decidía un campo aparte. Teclear «9,11 por mil» en un tramo cuya
+ * `unidad` quedó en PORCENTAJE daba **diez veces la cifra**, y plausible. Es el
+ * camino que se usa al cargar las 53 cifras con el PDF al lado, donde las
+ * tarifas notariales están escritas «por mil».
+ *
+ * > **Una guarda que vive en una instrucción a un humano no es una guarda: es un
+ * > recordatorio, y los recordatorios fallan en la fila 14 de 24.**
+ *
+ * El silencio NO es contradicción: «9,11» a secas usa la unidad declarada.
+ */
+function exigirUnidadesDeLosTramos(tramos: Tramo[], etiqueta: string): void {
+  for (const t of tramos) {
+    /* El VALOR de un tramo FIJO va en pesos y el de una tasa en su unidad: en
+     * los dos casos, lo que el texto declare tiene que coincidir. */
+    const leido = leerNumeroConUnidad(t.valor, t.modo_calculo === 'FIJO' ? 'pesos' : 'tasa',
+      `${etiqueta}: el valor del tramo ${t.orden}`)
+    exigirUnidadCoherente(leido.unidad, t.unidad ?? null,
+      `${etiqueta}: el valor del tramo ${t.orden}`)
+    /* Los límites van en pesos o en UVT, nunca en una tasa: un «%» en un
+     * límite es un error de campo, no de unidad. */
+    for (const [campo, v] of [['desde', t.desde], ['hasta', t.hasta]] as const) {
+      if (v === null || v === undefined) continue
+      const l = leerNumeroConUnidad(v, 'pesos', `${etiqueta}: ${campo} del tramo ${t.orden}`)
+      if (l.unidad === 'PORCENTAJE' || l.unidad === 'POR_MIL') {
+        throw new ErrorEsquemaNotarial(
+          `${etiqueta}: el ${campo} del tramo ${t.orden} lleva una tasa escrita ` +
+          `(«${String(v)}») y un límite de tramo va en pesos o en UVT.`,
+          campo,
+        )
+      }
+    }
+  }
+}
+
+/**
  * Reemplaza la tabla de tramos completa. No se editan de a uno: una tabla
  * parcialmente guardada tendría un hueco, y un hueco da una cifra plausible y
  * equivocada. Se verifica entera y se guarda entera.
@@ -259,6 +311,9 @@ export async function guardarTramos(
   if (concepto.tipo !== 'TRAMOS') {
     throw new ErrorEsquemaNotarial(`${concepto.label} no se cobra por tramos.`, 'tipo')
   }
+  // ANTES de verificarTramos: si la unidad escrita contradice la declarada, ese
+  // es el mensaje que hay que dar, no uno sobre la coherencia de la tabla.
+  exigirUnidadesDeLosTramos(tramos, concepto.label)
   const uvt = cargado?.uvt === null || cargado?.uvt === undefined ? null : Number(cargado.uvt)
   verificarTramos(tramos, uvt, concepto.label, {
     monotonicidad: concepto.monotonicidad,

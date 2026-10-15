@@ -2,6 +2,7 @@ import 'server-only'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { leerNumero } from '@/lib/finanzas/numeros'
+import { diaComoFecha, hoyComoDiaPuro } from '@/lib/dia-colombia'
 import {
   colorDeCustodia, diasEnCustodia, erroresDeCustodia, faltantesDeCustodia, motivoDeEspera,
   type CustodiaCapturada, type NaturalezaCustodia,
@@ -96,7 +97,9 @@ export async function crearCustodia(c: CustodiaCapturada, por: string) {
       concepto: String(c.concepto).trim(),
       tercero_id: c.tercero_id!,
       property_id: c.property_id ?? null,
-      fecha_recibido: c.fecha_recibido ? new Date(c.fecha_recibido) : new Date(),
+      // DÍA PURO: la columna es DATE. `new Date()` habría guardado el día
+      // siguiente a partir de las 19:00 de Colombia.
+      fecha_recibido: diaComoFecha(c.fecha_recibido) ?? hoyComoDiaPuro(),
       valor: pesos(c.valor, 'el valor'),
       estado: 'RECIBIDO',
       notas: c.notas ?? null,
@@ -150,7 +153,8 @@ export async function causarCustodia(
 
   const r = await prisma.movimientoCustodia.updateMany({
     where: { id, estado: 'RECIBIDO' },
-    data: { estado: 'APLICADO', ingreso_id: ingreso.id, fecha_cierre: new Date() },
+    // `fecha_cierre` es DÍA PURO: ver dia-colombia.ts.
+    data: { estado: 'APLICADO', ingreso_id: ingreso.id, fecha_cierre: hoyComoDiaPuro() },
   })
   if (r.count === 0) {
     // Otra pestaña lo cerró entre la lectura y la escritura. El ingreso ya
@@ -183,7 +187,7 @@ export async function cerrarCustodia(
     data: {
       estado: accion === 'entregado' ? 'ENTREGADO' : 'DEVUELTO',
       entregado_a_tercero_id: accion === 'entregado' ? entregadoATerceroId : null,
-      fecha_cierre: new Date(),
+      fecha_cierre: hoyComoDiaPuro(),
       registrado_por: por,
     },
   })

@@ -2538,6 +2538,62 @@ definición de un ayudante.
 Y como la lectura es cara, se gasta donde la decisión es cara. Esos siete
 módulos —los que deciden dinero— son la lista.
 
+# CUATRO INSTRUMENTOS, CUATRO PUNTOS CIEGOS, LA MISMA FORMA
+
+2026-10-15. En un día, cuatro instrumentos distintos dejaron pasar algo, y los
+cuatro por la misma razón:
+
+| instrumento | no veía | lo encontró |
+|---|---|---|
+| `inventario-decisiones` | **copias** de una decisión ya registrada | una pregunta del titular |
+| el grep de la auditoría | lo que no se sospechaba | la lectura completa |
+| `decisiones-repetidas` | la misma decisión escrita de **otra forma** | la lectura completa |
+| el barrido de fechas | la **dirección** que no preguntó | una pregunta del titular |
+
+> **La pregunta decide lo que se puede encontrar.** Un instrumento no tiene un
+> punto ciego por descuido: lo tiene por la forma de lo que pregunta. Y esa
+> forma es invisible desde dentro del instrumento, porque todo lo que devuelve
+> cae dentro de ella.
+
+El cuarto caso es el más limpio de los cuatro. El barrido de fechas buscó dónde
+se **LEEN** componentes locales de un `Date` —`getFullYear`, `getMonth`,
+`getDate`— y dio doce sitios. Nunca buscó dónde se **ESCRIBE** un instante en una
+columna de día. Son dos preguntas y solo se corrió una.
+
+Al correr la segunda aparecieron **cinco escrituras** más —dos en archivos que
+ya se creían revisados— y, al añadir el detector al build, **siete lecturas
+más** en `src/app/`, que el barrido original no había mirado porque solo recorrió
+`src/lib/` y `src/components/`. De esas siete, **dos eran rutas del servidor que
+decidían el año fiscal de un reporte y de los parámetros** —y yo las había visto
+y descartado como cosméticas—.
+
+**La regla operativa:** al escribir un detector, enunciar la pregunta en voz
+alta y después buscar su contraria. Lectura y escritura. Lo que entra y lo que
+sale. Lo que existe y lo que falta. Y declarar el ÁMBITO: «barrí `src/lib`» no
+es «barrí el proyecto».
+
+## La trampa de `toFixed(2)` contra `Decimal.toString()`
+
+Nota aparte, porque **no es una trampa para el dinero sino para las
+verificaciones**, y por eso es más peligrosa a largo plazo.
+
+```
+saldoEnCustodia   -> total.toFixed(2)        -> "51228.50"
+resumenDeCustodia -> Decimal.toString()      -> "51228.5"
+```
+
+**El mismo número, dos cadenas distintas.** Cualquier comparación entre las
+salidas de las dos funciones falla sin que nada esté mal.
+
+Y pasó de verdad: al medir si la suma en coma flotante derívaba, la medición
+comparó **texto** en vez de valor y dio «✗ SE SEPARAN» en 50, 100, 500, 1.000 y
+5.000 filas. Todas falsas. Comparando valores con `Decimal`, ninguna se separa:
+50.000 filas coinciden, y 2.000 movimientos de millones coinciden. **Estuve a
+punto de reportar una pérdida de dinero que no existe.**
+
+> **Una verificación sobre dinero no compara cadenas.** Y si una cadena viene de
+> `toFixed` y la otra de `Decimal.toString()`, no son comparables ni con el ojo.
+
 # LAS CUATRO CLASES DE FECHA
 
 2026-10-15. Nada fijaba `TZ` en el repositorio: la máquina de desarrollo es

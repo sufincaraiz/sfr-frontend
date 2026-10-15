@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/auth'
 import { estadoDeResultados, periodoDelAnio, periodoDelMes } from '@/lib/finanzas/reportes'
 import { CustodiaSinIngreso } from '@/lib/finanzas/custodia'
 import { ErrorNaturalezaEgreso } from '@/lib/finanzas/calculo'
+import { anioEnColombia } from '@/lib/dia-colombia'
 
 // Los tres reportes que no dependen de tarifas. Los de retenciones, IVA e ICA
 // no existen todavía: con el año en borrador solo mostrarían ceros.
@@ -13,7 +14,10 @@ export async function GET(req: NextRequest) {
   if (!s) return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
 
   const p = new URL(req.url).searchParams
-  const anio = Number(p.get('anio')) || new Date().getFullYear()
+  // EL AÑO FISCAL POR DEFECTO ES EL DE COLOMBIA. Con el reloj del servidor,
+  // que en Vercel es UTC, las últimas cinco horas del 31 de diciembre el
+  // reporte salía del año siguiente.
+  const anio = Number(p.get('anio')) || anioEnColombia()
   const mes = Number(p.get('mes')) || 0
   const periodo = mes >= 1 && mes <= 12 ? periodoDelMes(anio, mes) : periodoDelAnio(anio)
 
