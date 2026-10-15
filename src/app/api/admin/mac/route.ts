@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
 import { invalidarConocimiento } from '@/lib/agent/knowledge'
+import { diaPuro } from '@/lib/dia-colombia'
 
 /** Fichas de la base de conocimiento de Mac (lo que el agente sabe además de su prompt). */
 const FichaSchema = z.object({
@@ -14,9 +15,18 @@ const FichaSchema = z.object({
   vigente_hasta: z.string().trim().optional().or(z.literal('')),
 })
 
+/**
+ * La vigencia que llega del formulario es un DÍA PURO, y se guarda como tal.
+ *
+ * `new Date('2026-10-15')` ya da medianoche UTC, pero si alguien manda un ISO
+ * con hora, la columna `DATE` recortaría en UTC y un «15 a las 20:00 de
+ * Colombia» se guardaría como el 16. Se normaliza al día antes de construir el
+ * instante, así que el día guardado es el día escrito, venga como venga.
+ */
 function fechaVigencia(v?: string): Date | null {
-  if (!v) return null
-  const d = new Date(v)
+  const dia = diaPuro(v)
+  if (dia === null) return null
+  const d = new Date(`${dia}T00:00:00Z`)
   return isNaN(d.getTime()) ? null : d
 }
 

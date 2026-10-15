@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { hoyEnColombia } from '@/lib/dia-colombia'
 
 /**
  * Base de conocimiento de Mac: fichas que el equipo carga en /admin/mac
@@ -21,13 +22,30 @@ export interface FichaMac {
   updated_at: Date
 }
 
-/** Fichas activas y vigentes, en orden de prioridad. */
+/**
+ * Fichas activas y vigentes, en orden de prioridad.
+ *
+ * ⚠ LA VIGENCIA ES UN DÍA, Y SE COMPARABA CONTRA UN INSTANTE.
+ *
+ * `vigente_hasta` sale de un `<input type="date">`: es un DÍA PURO, y su columna
+ * es `DATE` desde la migración del 2026-10-15. El filtro era `{ gte: new Date() }`
+ * —un instante—, y al comparar `date` con `timestamp` Postgres promueve el día a
+ * su medianoche. Resultado: una ficha vigente «hasta el 15» dejaba de usarse
+ * desde las 19:00 del 14 en Colombia, porque a esa hora en UTC ya es el 15 a las
+ * 00:00 y `2026-10-15 >= 2026-10-15 00:00` deja de cumplirse en cuanto el reloj
+ * avanza un minuto. Perdía casi dos días, no cinco horas.
+ *
+ * Ahora se compara DÍA contra DÍA: la medianoche UTC del día de hoy en Colombia,
+ * que es exactamente lo que guarda una columna `DATE`. Así el último día de
+ * vigencia se incluye entero, que es lo que entiende quien escribe «hasta el
+ * 15» en el formulario.
+ */
 export async function fichasActivas(): Promise<FichaMac[]> {
-  const ahora = new Date()
+  const hoy = new Date(`${hoyEnColombia()}T00:00:00Z`)
   return prisma.macKnowledge.findMany({
     where: {
       activo: true,
-      OR: [{ vigente_hasta: null }, { vigente_hasta: { gte: ahora } }],
+      OR: [{ vigente_hasta: null }, { vigente_hasta: { gte: hoy } }],
     },
     orderBy: [{ orden: 'asc' }, { updated_at: 'desc' }],
   })

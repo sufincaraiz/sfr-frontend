@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Save, Loader2, Trash2, Pencil, Plus, X, Bot, Power } from 'lucide-react';
+import { diaPuro, hoyEnColombia } from '@/lib/dia-colombia';
 
 interface Ficha {
   id: string;
@@ -88,7 +89,13 @@ export default function AdminMacPage() {
   };
 
   const activas = list.filter(f => f.activo).length;
-  const vencida = (f: Ficha) => !!f.vigente_hasta && new Date(f.vigente_hasta) < new Date();
+  // DÍA contra DÍA, como el filtro del servidor. Comparando `new Date(dia)`
+  // contra `new Date()` la etiqueta aparecía casi dos días antes de vencer, y
+  // además dependia de la zona del visitante.
+  const vencida = (f: Ficha) => {
+    const d = diaPuro(f.vigente_hasta);
+    return d !== null && d < hoyEnColombia();
+  };
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', maxWidth: 900 }}>

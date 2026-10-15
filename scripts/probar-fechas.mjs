@@ -89,5 +89,28 @@ check('el día siguiente cruza el fin de mes', siguienteDia('2026-01-31') === '2
 check('…y el fin de año', siguienteDia('2026-12-31') === '2027-01-01')
 check('…y el 28 de febrero de un año bisiesto', siguienteDia('2028-02-28') === '2028-02-29')
 
+console.log('\n══ EL BORDE DE UNA VIGENCIA: EL ÚLTIMO DÍA CUENTA ENTERO ══')
+/*
+ * `mac_knowledge.vigente_hasta` es un día puro en columna DATE, y su filtro lo
+ * compara contra la medianoche UTC del día de hoy en Colombia. Antes comparaba
+ * contra un INSTANTE, y al promover Postgres el `date` a su medianoche una ficha
+ * vigente «hasta el 15» dejaba de usarse desde las 19:00 del 14 en Colombia:
+ * perdía casi dos días, no cinco horas.
+ *
+ * Esto fija la semántica del borde, que es la que el filtro de SQL reproduce.
+ * No prueba el SQL —eso lo hace `probar-fechas-base.mjs` leyendo de la base—:
+ * prueba que el último día de vigencia cuenta entero.
+ */
+const limite = dia => new Date(`${dia}T00:00:00Z`)
+check('una vigencia «hasta el 15» sigue vigente el 15',
+  limite('2026-10-15') >= limite('2026-10-15'))
+check('…y el 16 ya no',
+  !(limite('2026-10-15') >= limite('2026-10-16')))
+check('…y el 14, por supuesto, sí',
+  limite('2026-10-15') >= limite('2026-10-14'))
+check('las 19:30 del 15 en Colombia dan la medianoche UTC del 15, no del 16',
+  limite(diaEnColombia(new Date('2026-10-15T19:30:00-05:00'))).toISOString() === '2026-10-15T00:00:00.000Z',
+  `(dio ${limite(diaEnColombia(new Date('2026-10-15T19:30:00-05:00'))).toISOString()})`)
+
 console.log(`\n${fallos.length === 0 ? '✓ TODO EN VERDE' : '✗ CON FALLOS'} — ${ok} verificaciones, ${fallos.length} fallos`)
 if (fallos.length) process.exit(1)
