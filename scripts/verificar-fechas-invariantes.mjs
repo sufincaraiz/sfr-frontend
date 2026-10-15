@@ -37,6 +37,16 @@ const ZONAS = ['UTC', 'America/Bogota']
 const ARNESES = [
   { guion: 'scripts/probar-fechas.mjs', que: 'el puente, en memoria' },
   { guion: 'scripts/probar-fechas-base.mjs', que: 'lo que sale de la base' },
+  /* LOS DOS MOTORES, en las dos zonas.
+   *
+   * El 2026-10-15 un fixture de probar-notariales construia su entrada con
+   * `new Date(2026, 9, 6)` —componentes LOCALES— y daba el dia 6 en una maquina
+   * UTC-5 y el dia 5 en Vercel. La PRUEBA tenia el defecto que estaba
+   * verificando, y solo se vio cuando el arnes entro al build y corrio en la
+   * otra superficie. Corriendolos aqui en las dos zonas, el siguiente falla en
+   * esta maquina y no en un despliegue. */
+  { guion: 'scripts/probar-notariales.mjs', que: 'el motor notarial, en dos zonas' },
+  { guion: 'scripts/probar-finanzas.mjs', que: 'el motor financiero, en dos zonas' },
 ]
 
 console.log('\n══ LAS FECHAS NO DEPENDEN DE LA ZONA DEL PROCESO ═════════════')
@@ -98,5 +108,5 @@ if (malas) {
   process.exit(1)
 }
 
-console.log('\n  ✓ los dos caminos dan lo mismo con TZ=UTC y con TZ=America/Bogota.')
+console.log(`\n  ✓ los ${ARNESES.length} caminos dan lo mismo con TZ=UTC y con TZ=America/Bogota.`)
 console.log('    Si se quita TZ de la ecuación, el resultado sigue siendo el mismo.\n')

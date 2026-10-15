@@ -857,7 +857,14 @@ const ENTRADA = {
   opcionales: ['biometria', 'certificado_tradicion', 'paz_salvo_predial', 'no_valorizacion', 'predial_pendiente'],
   valores_libres: { predial_pendiente: '450.000' },
 }
-const L = liquidar(ANIO, ENTRADA, { fuentes: FUENTES_OFICIALES, fecha: new Date(2026, 9, 6) })
+/* MEDIODIA DE COLOMBIA, escrito con su desplazamiento.
+ *
+ * Antes era `new Date(2026, 9, 6)`, que construye con componentes LOCALES: en
+ * una maquina UTC-5 da el 6 a las 00:00 de Colombia y en Vercel, que corre en
+ * UTC, da el 5 a las 19:00 de Colombia. La PRUEBA construia su entrada con el
+ * mismo patron que estaba verificando, y solo se vio al meter este arnes en el
+ * build, que corre en la otra superficie. Los dos instrumentos se cazaron. */
+const L = liquidar(ANIO, ENTRADA, { fuentes: FUENTES_OFICIALES, fecha: new Date('2026-10-06T12:00:00-05:00') })
 const linea = k => L.lineas.find(l => l.clave === k)
 
 // El año 2026 deja de estar bloqueado por un enlace que puede no existir, y
@@ -1705,7 +1712,7 @@ check('el único día con una norma vigente y la otra no es el 1 de febrero',
 
 // La fecha del acto sale en la liquidación, para que el PDF la imprima.
 check('sin fecha del acto se usa hoy, y se devuelve',
-  liquidar(ANIO, ENTRADA, { fuentes: FUENTES_OFICIALES, fecha: new Date(2026, 9, 6) }).fecha_acto === '2026-10-06')
+  liquidar(ANIO, ENTRADA, { fuentes: FUENTES_OFICIALES, fecha: new Date('2026-10-06T12:00:00-05:00') }).fecha_acto === '2026-10-06')
 check('con fecha del acto, se devuelve esa',
   liquidar(ANIO, { ...ENTRADA, fecha_acto: '2026-03-15' }, { fuentes: FUENTES_OFICIALES }).fecha_acto === '2026-03-15')
 lanza('una fecha del acto ilegible',
@@ -1773,7 +1780,7 @@ check('el código lleva año, versión de parámetros, versión de motor y fecha
   L.trazabilidad === `SFR-N2026/P07/M${String(VERSION_MOTOR).padStart(2, '0')}/2026-10-06`,
   `(dio ${L.trazabilidad})`)
 check('cambia si cambian los parámetros del año',
-  codigoTrazabilidad({ anio: 2026, version: 8, fecha: new Date(2026, 9, 6) }) !== L.trazabilidad)
+  codigoTrazabilidad({ anio: 2026, version: 8, fecha: new Date('2026-10-06T12:00:00-05:00') }) !== L.trazabilidad)
 check('el aviso de no almacenado existe y lo dice en claro',
   /no se almacena/.test(AVISO_NO_ALMACENADO))
 lanza('una versión de parámetros inválida', () => codigoTrazabilidad({ anio: 2026, version: 0 }),
