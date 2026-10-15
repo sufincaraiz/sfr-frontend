@@ -2460,6 +2460,61 @@ proceso sale con 1 al final con el listado completo. Cada una en su propio
 proceso, para que un cuelgue no se lleve a las que faltan, y un cuelgue cuenta
 como fallo —el criterio es «no terminó en verde», no «imprimió una ✗»—.
 
+## La simetría que nos faltó: evidencia para los datos, ninguna para el instrumento
+
+2026-10-14. Al módulo notarial le exigimos evidencia **reproducible** en cada
+capa, y con dureza:
+
+- ninguna cifra entra sin su respaldo —norma, artículo, URL oficial, fecha de
+  verificación y quién verificó—;
+- la transcripción lleva una huella SHA-256 y el build se rompe si el módulo
+  derivado se queda viejo;
+- las resoluciones se archivan con su hash para poder volver al documento;
+- el cotejo exige **dos lecturas independientes** de la misma cifra, porque una
+  sola lectura puede estar mal y nadie lo vería.
+
+Y al instrumento que valida todo eso nunca le exigimos nada.
+
+> **Un instrumento cuyo resultado no se puede volver a producir mañana no es un
+> instrumento: es un recuerdo.**
+
+La mutación era un **rito**. Se hacía, producía un informe en la consola, el
+informe se citaba en un mensaje de commit y se borraba la edición. No quedaba
+nada que otro pudiera volver a correr: ni el archivo tocado, ni el texto
+cambiado, ni el comando. Exactamente lo que no le toleramos a una cifra.
+
+Y el precio, medido el mismo día que se arregló:
+
+- De 8 mutaciones recuperadas —las que por casualidad quedaron anotadas en
+  prosa— **2 no mutaban nada**. El `replace` no encontraba su texto y el
+  resultado se leía como verificación en verde.
+- Una tercera **destapó un hueco real de meses**: la frontera INFERIOR del tramo
+  no tenía prueba. `base >= desde` sobrevivía al arnés entero porque en los
+  bordes interiores gana el primer tramo que coincide; solo se nota en
+  `base = 0`.
+- Cuántas se corrieron en los meses anteriores sin anotarlas es
+  **indeterminable**. Ese es el verdadero coste y no se puede recuperar.
+
+Lo que queda en su lugar: `scripts/mutar.mjs` (las mutaciones declaradas, con la
+regla de que una mutación que no muta es `ERROR_DE_LA_PRUEBA`) y
+`scripts/inventario-decisiones.mjs`, que deriva del código la población de
+decisiones cuya inversión cambia una cifra que ve un cliente y la compara con las
+mutaciones que existen. Las dos cifras del primer barrido: **46 decisiones
+inventariadas, 4 vigiladas por una mutación.** La deuda nunca se había medido.
+
+Cada fila del inventario lleva un **ancla**: un trozo literal de la línea que
+decide. Si alguien reescribe esa línea, el guión falla, porque un inventario que
+sobrevive a su código engaña igual que una nota vieja.
+
+### Y el corolario sobre dónde mirar
+
+`base = 0` no fue casualidad. **Las pruebas miran el medio interesante y no el
+extremo degenerado**, porque el medio es donde está la cuenta que uno quiere
+comprobar a mano. El barrido de extremos —cero, lista vacía, un solo tramo, el
+tramo superior abierto, el importe exactamente igual al límite— vale más que
+diez mutaciones nuevas, y la sección `EXTREMOS` del inventario lleva la cuenta:
+**7 de 13 tenían prueba** la primera vez que se miró.
+
 ## Una mutación no cuenta hasta que se demuestra que mutó
 
 2026-10-14, **cuatro veces el mismo día**:

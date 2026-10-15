@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { use } from 'react';
 import Link from 'next/link';
+import FormularioEvidencia from './FormularioEvidencia';
 import {
   AlertTriangle, ArrowLeft, Check, FileUp, Loader2, Lock, ShieldCheck, Unlock, X,
 } from 'lucide-react';
@@ -72,6 +73,10 @@ interface Pantalla {
   avance: { cargadas: number; total: number; porcentaje: number };
   aviso_uvt: string | null;
   criterios_adoptados: { clave: string; criterio: string; porque: string; adoptado_por: string }[];
+  /* Las fuentes dadas de alta: el respaldo de un documento archivado tiene que
+   * nombrar su autoridad, porque un papel no trae dominio del que deducirla. */
+  fuentes: { dominio: string; entidad: string; es_compilacion: boolean; advertencia: string | null }[];
+  respaldos_anio: { campo: string; norma: string; articulo: string | null; tipo_evidencia: string }[];
 }
 
 const DUENO: Record<string, string> = {
@@ -312,6 +317,24 @@ export default function CargaNotarialPage({ params }: { params: Promise<{ anio: 
               >
                 {guardando === marca ? 'Guardando…' : 'Guardar esta sección'}
               </button>
+            )}
+
+            {/* EL RESPALDO, EN LA MISMA TARJETA QUE LA CIFRA.
+                No en una pantalla aparte: la cifra y de dónde salió se cargan
+                con el mismo PDF delante, y separarlos invita a cargar
+                diecinueve cifras y dejar los respaldos «para después». */}
+            {editable && (
+              <FormularioEvidencia
+                ambito={concepto === '(anio)' ? 'ANIO' : 'CONCEPTO'}
+                clave={concepto === '(anio)' ? undefined : concepto}
+                campos={campos.map(c => c.campo)}
+                fuentes={p.fuentes ?? []}
+                respaldos={concepto === '(anio)'
+                  ? (p.respaldos_anio ?? [])
+                  : (p.conceptos.find(c => c.clave === concepto)?.respaldos ?? [])}
+                guardar={guardarSeccion}
+                guardando={guardando}
+              />
             )}
           </Tarjeta>
         );

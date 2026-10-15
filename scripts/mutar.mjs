@@ -127,6 +127,14 @@ const MUTACIONES = [
     ],
   },
   {
+    nombre: 'evidencia: la huella del PDF normaliza los saltos',
+    porque: 'la huella de un archivo es del CONTENIDO y la comprueba cualquiera con sha256sum.',
+    archivo: 'src/lib/notariales/huella.ts',
+    de: "return createHash('sha256').update(bytes).digest('hex')",
+    a: "return createHash('sha256').update(Buffer.from(bytes.toString('latin1').replace(/\\r\\n/g, '\\n'), 'latin1')).digest('hex')",
+    comando: H_NOTARIAL,
+  },
+  {
     nombre: 'escáner de escrituras: el return se mira antes del await',
     porque: 'así escondía los casos `return NextResponse.json(await …)`, que son la mitad.',
     archivo: 'scripts/verificar-escrituras.mjs',

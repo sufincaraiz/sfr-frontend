@@ -1,5 +1,5 @@
 import 'server-only'
-import { createHash } from 'node:crypto'
+import { hashDeBytes } from './huella'
 import { v2 as cloudinary } from 'cloudinary'
 
 /**
@@ -46,10 +46,15 @@ function configurar() {
   cloudinary.config({ cloud_name: CLOUD, api_key: KEY, api_secret: SECRET, secure: true })
 }
 
-/** SHA-256 de los bytes que llegaron. Hexadecimal en minúsculas, 64 dígitos. */
-export function hashDeBytes(bytes: Buffer): string {
-  return createHash('sha256').update(bytes).digest('hex')
-}
+/**
+ * SHA-256 de los bytes que llegaron. Hexadecimal en minúsculas, 64 dígitos.
+ *
+ * Vive en `huella.ts` y aquí solo se reexporta: este módulo importa
+ * `server-only` y el arnés no puede entrar, así que la función de la que
+ * depende toda la evidencia estaría sin una sola prueba. Ver el comentario de
+ * allá sobre por qué esto NO normaliza y `huellaDelBloque` sí.
+ */
+export { hashDeBytes }
 
 export interface DocumentoArchivado {
   ruta: string

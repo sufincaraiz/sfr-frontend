@@ -34,6 +34,8 @@ const GUARDAS = {
       vigila: 'lo que Windows perdona y Linux no: CRLF y mayúsculas' },
     { nombre: 'transcripción', guion: 'verificar-transcripcion.mjs',
       vigila: 'que el módulo generado no se quede viejo respecto al documento' },
+    { nombre: 'inventario de decisiones', guion: 'inventario-decisiones.mjs',
+      vigila: 'que el inventario de decisiones criticas siga hablando del codigo real' },
     { nombre: 'escrituras', guion: 'verificar-escrituras.mjs',
       vigila: 'escrituras seguidas de algo que puede fallar en el mismo try' },
   ],

@@ -50,3 +50,31 @@ export function huellaDelBloque(documento: string): string {
   if (desde < 0 || hasta < 0) throw new SinMarcasDelBloque()
   return createHash('sha256').update(texto.slice(desde, hasta)).digest('hex')
 }
+
+/**
+ * SHA-256 DE UNOS BYTES, SIN TOCARLOS. La huella de un PDF de evidencia.
+ *
+ * Vive aquí y no en `evidencia.ts` por una razón concreta: aquel módulo importa
+ * `server-only`, y el arnés no puede entrar. Una función que **nadie puede
+ * probar** es exactamente lo que no debe guardar una propiedad de la que
+ * depende la evidencia de una norma.
+ *
+ * ⚠ AQUÍ NO SE NORMALIZA NADA, al contrario que en `huellaDelBloque`. Y la
+ * diferencia no es un descuido:
+ *
+ *   · `huellaDelBloque` identifica un DOCUMENTO DE TEXTO VERSIONADO, cuya
+ *     representación en disco cambia según quién hizo el checkout. Ahí los
+ *     saltos de línea son superficie y hay que quitarlos.
+ *   · esto identifica un ARCHIVO que alguien tiene en la mano. Cualquier
+ *     transformación —normalizar, re-guardar, leer en modo texto— produciría
+ *     una huella que solo nuestro código sabe reproducir, y eso no es
+ *     evidencia: es un número.
+ *
+ * La prueba de que no se normaliza está en el arnés contra una constante
+ * calculada con `sha256sum` y `certutil`, dos herramientas que no son nuestras.
+ * El titular puede comprobar cualquier huella del panel con el PDF y uno de
+ * esos dos comandos.
+ */
+export function hashDeBytes(bytes: Uint8Array): string {
+  return createHash('sha256').update(bytes).digest('hex')
+}

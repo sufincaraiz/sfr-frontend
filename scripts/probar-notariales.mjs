@@ -14,6 +14,7 @@ import {
   evaluarTramos, evaluarTramosCrudo, verificarTramos, repartir, alPeso, redondear,
   exigirCamposConocidosDelTramo,
 } from '../src/lib/notariales/tramos.ts'
+import { hashDeBytes, huellaDelBloque } from '../src/lib/notariales/huella.ts'
 import {
   calcularBaseNotarial, calcularBaseRetencion, calcularBaseTimbre, BASES,
 } from '../src/lib/notariales/bases.ts'
@@ -1957,6 +1958,34 @@ check('NINGUNA de las seis dice «no se pudo guardar»',
 check('todas las guardas del módulo están en la lista',
   ['AnioNoPublicable', 'FueraDeVigencia', 'ErrorDeEntrada', 'ErrorBloqueCotejo', 'SinReglaAplicable']
     .every(n => cl({ name: n, message: 'su mensaje' }).causa === 'GUARDA_DEL_MODULO'))
+
+
+// ────────────────────────────────────────────────────────────────────────
+console.log('\n══ LA HUELLA DE LA EVIDENCIA ES DEL CONTENIDO ══')
+// ────────────────────────────────────────────────────────────────────────
+/*
+ * La constante NO sale de nuestro código: se calculó con `sha256sum` y se
+ * confirmó con `certutil -hashfile ... SHA256`, dos herramientas ajenas que
+ * coinciden. Es lo único que convierte la huella en evidencia: alguien con el
+ * mismo PDF y sin nuestro código tiene que obtener los mismos 64 dígitos.
+ *
+ * Los bytes llevan CRLF A PROPÓSITO. Si alguien añadiera una normalización
+ * —copiando el patrón de `huellaDelBloque`, que sí la necesita— esta
+ * verificación se cae, y es justo lo que tiene que pasar.
+ */
+const BYTES_PDF = Buffer.from('%PDF-1.4\r\nlinea dos\r\n', 'latin1')
+const HUELLA_EXTERNA = '2d77a43d4ce3f5d2504a56af277c5d2f1a88552af9d262cf48e86792ed509cc9'
+
+check('la huella de unos bytes coincide con la de sha256sum y certutil',
+  hashDeBytes(BYTES_PDF) === HUELLA_EXTERNA,
+  `(dio ${hashDeBytes(BYTES_PDF)})`)
+check('…y por tanto NO se normalizan los saltos de línea del archivo',
+  hashDeBytes(BYTES_PDF) !== hashDeBytes(Buffer.from('%PDF-1.4\nlinea dos\n', 'latin1')))
+check('la huella de un documento de TEXTO sí ignora los saltos, que es lo contrario',
+  huellaDelBloque('<!-- COTEJO:INICIO -->\r\na\r\n<!-- COTEJO:FIN -->')
+  === huellaDelBloque('<!-- COTEJO:INICIO -->\na\n<!-- COTEJO:FIN -->'))
+check('un byte distinto da una huella distinta',
+  hashDeBytes(Buffer.from('%PDF-1.4\r\nlinea tres\r\n', 'latin1')) !== HUELLA_EXTERNA)
 
 console.log(`\n${fail === 0 ? '✓ TODO EN VERDE' : '✗ HAY FALLOS'} — ${ok} verificaciones, ${fail} fallos\n`)
 process.exit(fail === 0 ? 0 : 1)

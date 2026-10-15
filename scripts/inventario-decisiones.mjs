@@ -1,0 +1,322 @@
+#!/usr/bin/env node
+/**
+ * LAS DECISIONES QUE, INVERTIDAS, CAMBIAN UNA CIFRA QUE VE UN CLIENTE
+ * ==================================================================
+ *
+ * Ocho mutaciones recuperadas no son una cobertura: eran las que por casualidad
+ * quedaron anotadas en prosa. Cuántas se corrieron sin anotar es indeterminable.
+ * Esto deriva la población del CÓDIGO y la compara con las mutaciones que
+ * existen, para que la deuda sea un número y no una sensación.
+ *
+ * ⚠ CADA FILA SE COMPRUEBA, NO SE CREE.
+ *
+ *   · `ancla` tiene que aparecer en su archivo. Si alguien reescribe la línea,
+ *     esta fila deja de hablar de nada y el guion falla: un inventario que
+ *     sobrevive a su código es peor que no tenerlo.
+ *   · `mutacion` tiene que ser el nombre exacto de una mutación declarada en
+ *     `scripts/mutar.mjs`. No vale decir «esto está cubierto».
+ *   · `prueba` tiene que ser un trozo literal del arnés. Igual: la afirmación
+ *     «tiene prueba» se verifica abriendo el arnés, no recordándolo.
+ *
+ * CRITERIO DE ENTRADA, que es lo que hace la lista discutible y por tanto útil:
+ * entra una decisión si al invertirla el motor **sigue funcionando y entrega
+ * otra cifra**. No entran las que al invertirlas revientan (un `switch` sin
+ * caso, un tipo que no compila), porque esas no pueden llegar a un cliente. Y
+ * no entran las comparaciones de etiquetas —`=== 'PESOS'`— salvo cuando el otro
+ * valor también es legal y produce una cifra distinta.
+ *
+ * `grado` separa dos cosas que no se miden igual:
+ *   · CRITICA     cambia la cifra en el caso corriente.
+ *   · DEGENERADA  cambia la cifra solo en un extremo —cero, lista vacía, un
+ *                 solo tramo, el borde exacto—. Es donde vivía la frontera
+ *                 inferior del tramo durante meses: las pruebas miran el medio
+ *                 interesante y no el extremo.
+ *
+ *   node scripts/inventario-decisiones.mjs
+ */
+import { readFileSync } from 'node:fs'
+
+const N = 'src/lib/notariales/'
+const F = 'src/lib/finanzas/'
+const ARNES_N = 'scripts/probar-notariales.mjs'
+const ARNES_F = 'scripts/probar-finanzas.mjs'
+
+const DECISIONES = [
+  /* ── notariales/tramos.ts ─────────────────────────────────────────────── */
+  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'el límite SUPERIOR del tramo pertenece al tramo',
+    ancla: 'base > desde && (hasta === null || base <= hasta)',
+    invertida: 'una base en la frontera salta al tramo siguiente, con otra tarifa',
+    mutacion: 'frontera del tramo: ≤ pasa a <' },
+  { archivo: `${N}tramos.ts`, grado: 'DEGENERADA', decide: 'el límite INFERIOR del tramo NO pertenece',
+    ancla: 'base > desde && (hasta === null || base <= hasta)',
+    invertida: 'una base de 0 se liquida con el primer tramo en vez de detenerse',
+    mutacion: 'frontera del tramo: > pasa a ≥', prueba: 'una base de 0 no cae en ningún tramo', arnes: ARNES_N },
+  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'en una tabla marginal, dónde corta la acumulación',
+    ancla: 'if (base <= desde) break',
+    invertida: 'se acumula un tramo de más o de menos en el excedente', mutacion: null },
+  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'el excedente gravado en un tramo marginal',
+    ancla: 'total += multiplicador(t, etiqueta) * (Math.min(base, hasta) - desde)',
+    invertida: 'con max en vez de min, el último tramo grava más de lo que existe', mutacion: null },
+  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'si la tabla se lee marginal o por tramo único',
+    ancla: "const marginal = orden.some(t => t.modo_calculo === 'TASA_MARGINAL')",
+    invertida: 'con every, una tabla mixta (mínimo fijo + marginal) se lee como tramo único', mutacion: null },
+  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'el orden en que se recorren los tramos',
+    ancla: 'const orden = [...tramos].sort((a, b) => a.orden - b.orden)',
+    invertida: 'gana otro tramo: el primero que coincide es el que devuelve', mutacion: null },
+  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'la escala de una tarifa en PORCENTAJE',
+    ancla: "if (t.unidad === 'PORCENTAJE') return v / 100",
+    invertida: 'la tarifa se multiplica o divide por diez', mutacion: null },
+  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'la escala de una tarifa en POR_MIL',
+    ancla: "if (t.unidad === 'POR_MIL') return v / 1000",
+    invertida: 'diez veces la cifra, y plausible', mutacion: null },
+  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'un límite en UVT se convierte a pesos',
+    ancla: 'return n * uvt',
+    invertida: 'los límites quedan en UVT y ninguna base cae donde debe', mutacion: null },
+  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'el sentido del redondeo de la tarifa',
+    ancla: "const entero = r.modo === 'ARRIBA' ? Math.ceil(q) : r.modo === 'ABAJO' ? Math.floor(q) : Math.round(q)",
+    invertida: 'la cifra se aparta del múltiplo que manda la resolución', mutacion: null,
+    prueba: 'a la centena, arriba: 61.622,10 → 61.700', arnes: ARNES_N },
+  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'quién se queda el peso del reparto y quién el residuo',
+    ancla: 'const comprador = alPeso((total * pctComprador) / 100)',
+    invertida: 'el peso impar cambia de parte en cada concepto', mutacion: null },
+  { archivo: `${N}tramos.ts`, grado: 'DEGENERADA', decide: 'una tabla sin tramos se detiene',
+    ancla: 'if (!tramos.length) throw new ErrorEsquemaNotarial',
+    invertida: 'devolvería cero y el concepto desaparecería de la liquidación', mutacion: null },
+
+  /* ── notariales/iva.ts ────────────────────────────────────────────────── */
+  { archivo: `${N}iva.ts`, grado: 'CRITICA', decide: 'el IVA se aproxima hacia ARRIBA cuando la regla lo dice',
+    ancla: "regla.modo === 'ARRIBA' ? q.ceil()",
+    invertida: 'el IVA liquidado se aparta del múltiplo normativo', mutacion: null },
+  { archivo: `${N}iva.ts`, grado: 'CRITICA', decide: 'el IVA se aproxima al múltiplo más cercano por defecto',
+    ancla: 'q.toDecimalPlaces(0, D.ROUND_HALF_UP)',
+    invertida: 'el IVA baja sistemáticamente al múltiplo inferior',
+    mutacion: 'redondeo: ROUND_HALF_UP pasa a ROUND_DOWN' },
+  { archivo: `${N}iva.ts`, grado: 'DEGENERADA', decide: 'en el empate exacto, el residuo del IVA es del comprador',
+    ancla: 'const compradorEsMenor = compradorExacto.lessThan(vendedorExacto)',
+    invertida: 'con lessThanOrEqualTo, en el 50/50 exacto el peso cambia de parte', mutacion: null },
+  { archivo: `${N}iva.ts`, grado: 'DEGENERADA', decide: 'una base de IVA de cero no divide por cero',
+    ancla: 'const proporcion = base.isZero() ? new D(0) : ponderado.div(base)',
+    invertida: 'NaN recorrería el reparto sin lanzar', mutacion: null },
+  { archivo: `${N}iva.ts`, grado: 'CRITICA', decide: 'la tarifa de IVA se lee como porcentaje',
+    ancla: 'const bruto = base.mul(tarifa).div(100)',
+    invertida: 'el IVA se multiplica por cien', mutacion: null },
+  { archivo: `${N}iva.ts`, grado: 'CRITICA', decide: 'se reparte el IVA LIQUIDADO, no el bruto',
+    ancla: 'const compradorExacto = liquidado.mul(proporcion)',
+    invertida: 'las partes no suman el total liquidado', mutacion: null },
+
+  /* ── notariales/bases.ts ──────────────────────────────────────────────── */
+  { archivo: `${N}bases.ts`, grado: 'CRITICA', decide: 'la base es el MAYOR de los candidatos',
+    ancla: 'const ganador = candidatos.reduce((a, b) => (b.valor > a.valor ? b : a))',
+    invertida: 'se liquida sobre el menor: menos impuesto del que corresponde', mutacion: null },
+  { archivo: `${N}bases.ts`, grado: 'DEGENERADA', decide: 'en empate gana el primero, que es el valor pactado',
+    ancla: 'const ganador = candidatos.reduce((a, b) => (b.valor > a.valor ? b : a))',
+    invertida: 'con >=, el motivo diría «supera el valor pactado» de un valor igual', mutacion: null },
+  { archivo: `${N}bases.ts`, grado: 'CRITICA', decide: 'el registro toma DOS candidatos y lo notarial CUATRO',
+    ancla: "return { ...mayor(e, 'impuesto de registro', DOS), clave: 'REGISTRO' }",
+    invertida: 'el autoavalúo entraría en una base en la que la norma no lo pone', mutacion: null },
+  { archivo: `${N}bases.ts`, grado: 'DEGENERADA', decide: 'un valor de venta de cero o negativo se detiene',
+    ancla: "if (venta <= 0) throw new ErrorEsquemaNotarial",
+    invertida: 'toda la liquidación saldría en cero y parecería válida', mutacion: null,
+    prueba: 'un valor de venta en cero', arnes: ARNES_N },
+
+  /* ── notariales/retencion.ts ──────────────────────────────────────────── */
+  { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'el orden en que se prueban las reglas de retención',
+    ancla: 'const activas = reglas.filter(r => r.activa).sort((a, b) => a.orden - b.orden)',
+    invertida: 'la regla general taparía las excepciones y nadie se eximiría', mutacion: null },
+  { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'las condiciones de una regla se exigen TODAS',
+    ancla: 'if (!cumple(c, ctx)) { aplica = false; break }',
+    invertida: 'con una sola condición bastaría: exenciones aplicadas de más', mutacion: null },
+  { archivo: `${N}retencion.ts`, grado: 'DEGENERADA', decide: 'el borde de una condición MENOR no incluye el igual',
+    ancla: "case 'MENOR': return Number(actual) < Number(esperado)",
+    invertida: 'justo en el umbral, la exención entra o no entra', mutacion: null },
+  { archivo: `${N}retencion.ts`, grado: 'DEGENERADA', decide: 'el borde de MAYOR_IGUAL incluye el igual',
+    ancla: "case 'MAYOR_IGUAL': return Number(actual) >= Number(esperado)",
+    invertida: 'igual, en el otro sentido', mutacion: null },
+  { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'la reducción por años se topa en 100 %',
+    ancla: 'const pct = Math.min(100, tasa(r.valor_efecto',
+    invertida: 'con muchos años, una retención negativa', mutacion: null },
+  { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'un TOPE limita por arriba',
+    ancla: 'valor: alPeso(Math.min(plena, tope))',
+    invertida: 'con max, el tope se convierte en un mínimo', mutacion: null },
+  { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'la escala de la tarifa de retención',
+    ancla: "if (unidad === 'POR_MIL') return v / 1000",
+    invertida: 'diez veces la retención', mutacion: null },
+  { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'solo se llega a cero por una EXENCION con nombre',
+    ancla: "throw new SinReglaAplicable(",
+    invertida: 'un cero por caerse de la lista se leería como «no hay retención»', mutacion: null,
+    prueba: 'ninguna regla aplica: jamás devuelve cero', arnes: ARNES_N },
+
+  /* ── notariales/guardas.ts: no es cálculo, pero decide QUÉ norma calcula ── */
+  { archivo: `${N}guardas.ts`, grado: 'CRITICA', decide: 'una norma que no estaba en vigor ese día no liquida',
+    ancla: 'if (fecha < r.vigencia_desde) return false',
+    invertida: 'se liquidaría enero de 2026 con tarifas que empezaron el 2 de febrero',
+    mutacion: 'vigencia: una fecha anterior deja de quedar fuera' },
+
+  /* ── notariales/calculo.ts ────────────────────────────────────────────── */
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'extraer el IVA de un precio que ya lo incluye',
+    ancla: 'const neto = bruto.div(new Prisma.Decimal(1).add(new Prisma.Decimal(tarifaIva).div(100)))',
+    invertida: 'el IVA se cobraría dos veces sobre la copia auténtica', mutacion: null },
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'un precio con IVA incluido NO aporta a la base de IVA',
+    ancla: 'if (c.grava_iva && !c.precio_incluye_iva) {',
+    invertida: 'su base entraría dos veces en el IVA del total', mutacion: null },
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'las OBLIGACIONES no entran en el total del trámite',
+    ancla: 'const tramite = lineas.filter(l => !esObligacion(l.grupo))',
+    invertida: 'las deudas del vendedor se sumarían a los gastos de escrituración', mutacion: null },
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'el IVA liquidado se suma una vez al total',
+    ancla: 'total: tramite.reduce((s, l) => s + l.total, 0) + iva.liquidado',
+    invertida: 'el total no cuadra con las partes', mutacion: null },
+
+  /* ── notariales/huella.ts: la evidencia tiene que ser comprobable sin nosotros ── */
+  { archivo: `${N}huella.ts`, grado: 'CRITICA', decide: 'la huella de un PDF de evidencia es de los bytes, sin tocarlos',
+    ancla: "return createHash('sha256').update(bytes).digest('hex')",
+    invertida: 'la huella solo la reproduce nuestro código y deja de ser evidencia',
+    mutacion: 'evidencia: la huella del PDF normaliza los saltos',
+    prueba: 'la huella de unos bytes coincide con la de sha256sum y certutil', arnes: ARNES_N },
+  { archivo: `${N}huella.ts`, grado: 'CRITICA', decide: 'la huella de un documento de TEXTO sí normaliza los saltos',
+    ancla: "const texto = documento.replace(/\\r\\n/g, '\\n')",
+    invertida: 'la misma transcripción da dos huellas según quién hizo el checkout',
+    mutacion: 'transcripción: la huella deja de normalizar los saltos' },
+
+  /* ── finanzas ─────────────────────────────────────────────────────────── */
+  { archivo: `${F}calculo.ts`, grado: 'DEGENERADA', decide: 'la base mínima en UVT: el igual SÍ retiene',
+    ancla: 'if (minimo.gt(0) && base.lt(minimo))',
+    invertida: 'justo en la base mínima se retiene o no se retiene', mutacion: null },
+  { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'la tarifa depende de si el tercero declara renta',
+    ancla: 'const tarifa = dec(esDeclaranteRenta ? c.tarifa_declarante : c.tarifa_no_declarante)',
+    invertida: 'se retiene la tarifa del otro, y el tercero reclama', mutacion: null },
+  { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'a un autorretenedor no se le practica retención',
+    ancla: "motivo: 'El tercero es autorretenedor: no se le practica retención.'",
+    invertida: 'se le retiene a quien se autorretiene: doble retención', mutacion: null },
+  { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'la tarifa de ICA exacta por CIIU gana a la general',
+    ancla: 'const tarifa = exacta ?? general',
+    invertida: 'se liquida ICA con la tarifa del municipio y no de la actividad', mutacion: null },
+  { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'el ICA va por mil',
+    ancla: 'return dec(base).mul(dec(tarifa.tarifa_por_mil)).div(1000).toDecimalPlaces(2)',
+    invertida: 'diez veces el ICA declarado', mutacion: null },
+  { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'los signos del neto: el IVA suma y las retenciones restan',
+    ancla: 'return dec(a.valor_base).plus(dec(a.iva_generado))',
+    invertida: 'el neto que se espera recibir queda mal en cada factura', mutacion: null },
+  { archivo: `${F}calculo.ts`, grado: 'DEGENERADA', decide: 'la tolerancia de discrepancia es estricta',
+    ancla: 'hay: diff.abs().gt(dec(toleranciaPesos))',
+    invertida: 'una diferencia de exactamente un peso se reporta o se calla', mutacion: null },
+  { archivo: `${F}dinero.ts`, grado: 'CRITICA', decide: 'volver al peso entero redondea al más cercano',
+    ancla: 'return BigInt(valor.toDecimalPlaces(0).toFixed(0))',
+    invertida: 'cada comisión pierde o gana un peso, y se nota al cuadrar', mutacion: null },
+  { archivo: `${F}dinero.ts`, grado: 'CRITICA', decide: 'la comisión se guarda con dos decimales',
+    ancla: '.div(100)\n    .toDecimalPlaces(2)',
+    invertida: 'el IVA sobre la comisión arrastra el error', mutacion: null },
+  { archivo: `${F}empresa.ts`, grado: 'CRITICA', decide: 'el dígito de verificación del NIT, módulo 11 de la DIAN',
+    ancla: 'return String(r > 1 ? 11 - r : r)',
+    invertida: 'el NIT sale mal en todo documento que se entregue', mutacion: null },
+  { archivo: `${F}empresa.ts`, grado: 'CRITICA', decide: 'los pesos del módulo 11 se aplican de derecha a izquierda',
+    ancla: "const suma = nit.split('').reverse().reduce",
+    invertida: 'otro dígito, igual de plausible', mutacion: null },
+]
+
+/* ── los extremos degenerados, barridos aparte ─────────────────────────────── */
+
+/**
+ * `base = 0` no fue casualidad: las pruebas miran el medio interesante. Esta es
+ * la lista de los extremos del motor notarial y de si el arnés los toca.
+ */
+const EXTREMOS = [
+  { caso: 'base exactamente igual al límite superior del tramo',
+    prueba: 'ORIP justo en la frontera usa el tramo fijo', arnes: ARNES_N },
+  { caso: 'base exactamente en el umbral del timbre',
+    prueba: 'timbre justo en el umbral sigue en cero', arnes: ARNES_N },
+  { caso: 'base en el tramo superior abierto',
+    prueba: 'ORIP en el tramo abierto', arnes: ARNES_N },
+  { caso: 'el excedente marginal es exactamente cero',
+    prueba: 'derechos en la frontera: el excedente es cero', arnes: ARNES_N },
+  { caso: 'el redondeo cae en el medio exacto del múltiplo',
+    prueba: 'a la centena, cercano, en el medio exacto', arnes: ARNES_N },
+  { caso: 'valor de venta igual a cero',
+    prueba: 'un valor de venta en cero', arnes: ARNES_N },
+  { caso: 'base igual a cero contra la tabla de tramos',
+    prueba: 'una base de 0 no cae en ningún tramo', arnes: ARNES_N },
+  { caso: 'tabla con UN SOLO tramo', prueba: null, arnes: ARNES_N },
+  { caso: 'lista de tramos vacía', prueba: null, arnes: ARNES_N },
+  { caso: 'lista de aportes de IVA vacía', prueba: null, arnes: ARNES_N },
+  { caso: 'reparto 50/50 con IVA en empate exacto', prueba: null, arnes: ARNES_N },
+  { caso: 'base exactamente igual a la base mínima en UVT', prueba: null, arnes: ARNES_F },
+  { caso: 'cantidad capturada igual a cero en un concepto por cantidad', prueba: null, arnes: ARNES_N },
+]
+
+/* ── la comprobación ───────────────────────────────────────────────────────── */
+
+const cache = new Map()
+const leer = f => {
+  if (!cache.has(f)) {
+    try {
+      cache.set(f, readFileSync(f, 'utf8'))
+    } catch {
+      cache.set(f, null)
+    }
+  }
+  return cache.get(f)
+}
+
+const mutarFuente = leer('scripts/mutar.mjs') ?? ''
+const NOMBRES_MUTACION = new Set(
+  [...mutarFuente.matchAll(/^\s*nombre: '([^']+)'/gm)].map(m => m[1]))
+
+const problemas = []
+
+for (const d of DECISIONES) {
+  const src = leer(d.archivo)
+  if (src === null) { problemas.push(`no existe ${d.archivo}`); continue }
+  if (!src.includes(d.ancla)) {
+    problemas.push(`${d.archivo}: el ancla ya no está en el archivo → «${d.ancla.slice(0, 60)}»`)
+  }
+  if (d.mutacion && !NOMBRES_MUTACION.has(d.mutacion)) {
+    problemas.push(`mutación declarada que no existe en mutar.mjs: «${d.mutacion}»`)
+  }
+  if (d.prueba) {
+    const a = leer(d.arnes)
+    if (a === null) problemas.push(`no existe ${d.arnes}`)
+    else if (!a.includes(d.prueba)) problemas.push(`${d.arnes}: no contiene «${d.prueba}»`)
+  }
+}
+
+for (const e of EXTREMOS) {
+  if (!e.prueba) continue
+  const a = leer(e.arnes)
+  if (a === null) problemas.push(`no existe ${e.arnes}`)
+  else if (!a.includes(e.prueba)) problemas.push(`${e.arnes}: no contiene «${e.prueba}»`)
+}
+
+/* ── el informe ────────────────────────────────────────────────────────────── */
+
+const criticas = DECISIONES.filter(d => d.grado === 'CRITICA')
+const degeneradas = DECISIONES.filter(d => d.grado === 'DEGENERADA')
+const conMutacion = DECISIONES.filter(d => d.mutacion)
+const sinMutacion = DECISIONES.filter(d => !d.mutacion)
+const extremosSinPrueba = EXTREMOS.filter(e => !e.prueba)
+
+console.log('\n══ DECISIONES CRÍTICAS Y SU COBERTURA ════════════════════════')
+console.log(`  decisiones inventariadas: ${DECISIONES.length}` +
+  `  (${criticas.length} críticas · ${degeneradas.length} degeneradas)`)
+console.log(`  con una mutación que las vigile: ${conMutacion.length}`)
+console.log(`  DEUDA: ${sinMutacion.length} sin mutación\n`)
+
+const porArchivo = new Map()
+for (const d of sinMutacion) {
+  if (!porArchivo.has(d.archivo)) porArchivo.set(d.archivo, [])
+  porArchivo.get(d.archivo).push(d)
+}
+for (const [f, ds] of porArchivo) {
+  console.log(`  ${f}  — ${ds.length} sin vigilar`)
+  for (const d of ds) console.log(`     ${d.grado === 'DEGENERADA' ? '·' : '!'} ${d.decide}`)
+}
+
+console.log(`\n══ EXTREMOS DEGENERADOS ══════════════════════════════════════`)
+console.log(`  ${EXTREMOS.length - extremosSinPrueba.length} de ${EXTREMOS.length} tienen prueba.`)
+for (const e of extremosSinPrueba) console.log(`     ✗ sin prueba: ${e.caso}`)
+
+if (problemas.length) {
+  console.log(`\n  ✗ el inventario no cuadra con el código (${problemas.length}):`)
+  for (const p of problemas) console.log(`     ${p}`)
+  console.log('\n  Un inventario que sobrevive a su código engaña igual que una nota vieja.\n')
+  process.exit(1)
+}
+console.log('\n  ✓ cada ancla existe, cada mutación declarada existe, cada prueba citada existe.\n')
