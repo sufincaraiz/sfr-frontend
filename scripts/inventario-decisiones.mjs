@@ -158,9 +158,38 @@ const DECISIONES = [
     ancla: 'valor: alPeso(Math.min(plena, tope))',
     invertida: 'con max, el tope se convierte en un mínimo', mutacion: null },
   { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'solo se llega a cero por una EXENCION con nombre',
-    ancla: "throw new SinReglaAplicable(",
+    /* El ancla anterior era `throw new SinReglaAplicable(`, que aparece TRES veces
+     * en el archivo: un ancla que coincide en tres sitios no ancla nada, y el
+     * contador de ocurrencias lo delato. Ahora apunta al mensaje, que es unico. */
+    ancla: "'Ninguna regla de retención aplicó a esta operación. El cálculo se detiene: ' +",
     invertida: 'un cero por caerse de la lista se leería como «no hay retención»', mutacion: null,
     prueba: 'ninguna regla aplica: jamás devuelve cero', arnes: ARNES_N },
+
+  /* ── LA SEGUNDA COPIA DE LA FRONTERA, encontrada el 2026-10-15 ─────────
+   *
+   * `desgloseDe` reimplementa la frontera del tramo y la conversión UVT dentro
+   * de `calculo.ts`, para repartir el recaudo entre la SNR y el Fondo. Las dos
+   * mutaciones de la frontera vigilan la copia de `tramos.ts` y NO esta.
+   *
+   * ⚠ Y LAS DOS COPIAS NO SE COMPORTAN IGUAL: con una tabla en UVT y el año sin
+   * UVT cargado, `tramos.ts/limite()` LANZA y esta multiplica por 1, tratando
+   * los límites en UVT como pesos, en silencio. No es solo duplicación: es una
+   * divergencia que falla hacia el lado cómodo.
+   *
+   * Está aquí para que se cuente. El arreglo —que las dos usen el mismo
+   * ayudante— toca el motor y lo decide el titular. */
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'qué tramo aplica al repartir el recaudo SNR/Fondo',
+    ancla: 'if (base > desde && (hasta === null || base <= hasta)) {',
+    invertida: 'el recaudo se reparte con el tramo equivocado entre dos entidades',
+    mutacion: null },
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'convertir un límite en UVT dentro del desglose institucional',
+    ancla: 'Number(t.desde) * (t.en_uvt && uvt ? uvt : 1)',
+    invertida: 'sin UVT cargado trata los límites en UVT como pesos en vez de detenerse',
+    mutacion: null },
+  { archivo: `${N}guardas.ts`, grado: 'CRITICA', decide: 'el orden en que se recorren los conceptos para las guardas',
+    ancla: 'const orden = [...conceptos].sort((a, b) => a.orden - b.orden)',
+    invertida: 'las guardas de derivados comprobarían el orden al revés',
+    mutacion: null },
 
   /* ── notariales/guardas.ts: no es cálculo, pero decide QUÉ norma calcula ── */
   { archivo: `${N}guardas.ts`, grado: 'CRITICA', decide: 'una norma que no estaba en vigor ese día no liquida',
@@ -342,4 +371,21 @@ if (problemas.length) {
   console.log('\n  Un inventario que sobrevive a su código engaña igual que una nota vieja.\n')
   process.exit(1)
 }
+/* ¿ALGUNA ANCLA APARECE MÁS DE UNA VEZ EN SU ARCHIVO?
+ *
+ * El punto ciego del 2026-10-15: el inventario tiene una fila por DECISIÓN y el
+ * riesgo vive en la OCURRENCIA, así que una segunda copia no tenía dónde ir.
+ * Esto cuenta las copias dentro del mismo archivo; las que están en archivos
+ * distintos las busca `scripts/decisiones-repetidas.mjs`, porque ahí hace falta
+ * comparar formas y no texto. */
+const repetidas = DECISIONES
+  .map(d => ({ d, veces: (leer(d.archivo) ?? '').split(d.ancla).length - 1 }))
+  .filter(r => r.veces > 1)
+
+if (repetidas.length) {
+  console.log(`\n  ⚠ ${repetidas.length} ancla(s) aparecen más de una vez en su archivo:`)
+  for (const r of repetidas) console.log(`     ${r.d.archivo} ×${r.veces} — ${r.d.decide}`)
+  console.log('     Una mutación sobre la primera copia no dice nada de las otras.')
+}
+
 console.log('\n  ✓ cada ancla existe, cada mutación declarada existe, cada prueba citada existe.\n')

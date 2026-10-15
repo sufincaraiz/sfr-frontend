@@ -2460,6 +2460,85 @@ proceso sale con 1 al final con el listado completo. Cada una en su propio
 proceso, para que un cuelgue no se lleve a las que faltan, y un cuelgue cuenta
 como fallo —el criterio es «no terminó en verde», no «imprimió una ✗»—.
 
+## El punto ciego de un inventario: la fila es la decisión, el riesgo es la ocurrencia
+
+2026-10-15. El inventario de decisiones no vio el cuarto sitio de la escala de
+tarifas. El titular preguntó **cómo** apareció, y la respuesta importa más que el
+arreglo: apareció por un `grep` de `POR_MIL` que se corrió **después** de que
+él preguntara si la escala debería existir una sola vez. Sin esa pregunta no se
+habría visto.
+
+El punto ciego tiene dos capas, y la segunda es estructural:
+
+**1. De método: un inventario guiado por grep solo contiene lo que ya se
+sospechaba.** No se leyeron los archivos de principio a fin: se grepearon los
+conceptos esperados —`119`, `precio_incluye_iva`, `OBLIGACIONES`,
+`ROUND_HALF_UP`— y se leyeron esas regiones. De `calculo.ts` se leyeron las
+líneas 344-375 y 444-460, y nunca las 30-50, donde estaba. Era una pasada de
+**confirmación** disfrazada de descubrimiento.
+
+**2. Estructural, y es la que predice dónde habrá más:**
+
+> **Un inventario con una fila por decisión no puede representar «esto está
+> escrito en cuatro sitios». La fila es la decisión; el riesgo es la
+> ocurrencia.**
+
+Cuando la escala apareció en `tramos.ts` y en `retencion.ts`, la fila quedó
+escrita y la búsqueda se detuvo: una segunda ocurrencia **no tenía dónde ir** en
+ese modelo, así que nada obligaba a contarlas.
+
+### Lo que encontró al medirlo, que es el punto
+
+Se añadieron dos instrumentos en vez de una promesa: un contador de ocurrencias
+dentro del inventario, y `scripts/decisiones-repetidas.mjs`, que normaliza cada
+línea —identificadores a un hueco, operadores y literales en pie— y agrupa
+formas de decisión repetidas entre archivos. En la primera pasada:
+
+- **Una grave:** `calculo.ts` tiene una SEGUNDA implementación de la frontera
+  del tramo y de la conversión UVT, dentro de `desgloseDe`, para repartir el
+  recaudo entre la SNR y el Fondo. Las dos mutaciones de la frontera vigilan la
+  copia de `tramos.ts` y **no** esa. Y **las dos copias no se comportan igual**:
+  con una tabla en UVT y el año sin UVT cargado, `tramos.ts/limite()` LANZA y la
+  copia multiplica por 1, tratando los límites en UVT como pesos, en silencio.
+  No es solo duplicación: es una divergencia que falla hacia el lado cómodo.
+- **Una real y hoy inocua:** `sort((a, b) => a.orden - b.orden)` en cinco sitios
+  de cuatro archivos. Una sola tiene mutación.
+- **Un defecto del propio inventario:** el ancla de una fila era
+  `throw new SinReglaAplicable(`, que aparece **tres veces** en su archivo. Un
+  ancla que coincide en tres sitios no ancla nada. Lo delató el contador de
+  ocurrencias el día que se añadió.
+
+El resto de los 33 grupos son coincidencias de forma —comprobaciones de `null`
+sueltas, idioms de mapeo—. **Por eso el barrido imprime y no rompe el build:**
+repetir una forma no siempre es repetir una decisión, y decidirlo pide leerlas.
+
+### La regla reutilizable
+
+Al inventariar, **las decisiones repetidas van antes que las únicas**, aunque
+parezcan menos graves: una decisión en N sitios necesita N mutaciones, se queda
+sin cobertura en cuanto alguien añade el N+1, y es **la que el inventario cuenta
+mal**. Y el grep da la población candidata, nunca la respuesta.
+
+## Un build verde también es una superficie sin inspeccionar
+
+2026-10-15. El log de Vercel imprimía «19 vulnerabilities (4 moderate, 14 high,
+1 critical)» y «npm warn Unknown env config "cache-dir"» en **cada** build desde
+hacía meses. Nadie lo había leído, porque el log solo se abre cuando sale rojo.
+
+> **Un build verde dice lo mismo que uno rojo sobre todo lo que no hizo fallar
+> el build. Que nadie lo lea no lo convierte en silencio.**
+
+Es la misma familia que el resto de la semana: el arnés en memoria contra la
+base, el build local contra el de Vercel, la mutación que no mutaba. Una
+superficie que produce información que nadie mira.
+
+Y el número agregado no servía para decidir, por lo mismo que no servía el
+indicador agregado del módulo financiero: metía en la misma cuenta una
+dependencia de `eslint` y el marco que sirve cada petición. Ahora
+`scripts/inventario-vulnerabilidades.mjs` imprime **dos** cifras —alcanzables
+por un visitante e internas—, clasifica cada paquete con su por qué, y **rompe
+el build si aparece una sin clasificar**.
+
 ## Una deuda se prioriza por EXPOSICIÓN ACTUAL, no por gravedad
 
 2026-10-15. Con el inventario de decisiones en la mano, el primer orden que
