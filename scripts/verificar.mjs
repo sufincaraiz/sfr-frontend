@@ -38,6 +38,8 @@ const GUARDAS = {
       vigila: 'que el inventario de decisiones criticas siga hablando del codigo real' },
     { nombre: 'vulnerabilidades', guion: 'inventario-vulnerabilidades.mjs',
       vigila: 'que ninguna vulnerabilidad nueva entre sin clasificar quien la alcanza' },
+    { nombre: 'fechas en la zona del servidor', guion: 'inventario-fechas.mjs',
+      vigila: 'donde se lee un dia a partir de componentes locales de una fecha' },
     { nombre: 'decisiones repetidas', guion: 'decisiones-repetidas.mjs',
       vigila: 'la misma decision escrita en mas de un archivo (informativo: no rompe)' },
     { nombre: 'escrituras', guion: 'verificar-escrituras.mjs',

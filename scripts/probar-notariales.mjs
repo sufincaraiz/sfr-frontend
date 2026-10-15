@@ -19,7 +19,9 @@ import { DIVISOR, divisorDe } from '../src/lib/escala-tarifa.ts'
 import {
   calcularBaseNotarial, calcularBaseRetencion, calcularBaseTimbre, BASES,
 } from '../src/lib/notariales/bases.ts'
-import { calcularRetencion, verificarReglas, exigirValorDeCondicion, CAMPOS_CONDICION } from '../src/lib/notariales/retencion.ts'
+import { calcularRetencion, verificarReglas, exigirValorDeCondicion, CAMPOS_CONDICION ,
+  exigirContextoConocido,
+} from '../src/lib/notariales/retencion.ts'
 import {
   esFuenteOficial, exigirRespaldoOficial, verificarEsquema, verificarConcepto,
   pendientesParaActivar, resumenDePendientes, exigirAnioPublicable, divergenciaUvt, copiarAnio,
@@ -680,6 +682,53 @@ lanza('ninguna regla aplica: jamás devuelve cero',
 lanza('la regla general no puede ser una reducción',
   () => verificarReglas([{ ...GENERAL, tipo_efecto: 'REDUCCION_PCT_POR_ANIO' }]),
   'ErrorEsquemaNotarial', 'fijar una TARIFA')
+
+/* EL CAMINO DEL EFECTO, que la guarda no vigilaba.
+ *
+ * `verificarReglas` exigía que toda CONDICIÓN se apoyara en un campo que el
+ * formulario pregunta. El EFECTO de `REDUCCION_PCT_POR_ANIO` lee
+ * `ctx.anios_tenencia` y ese campo no estaba declarado en ninguna parte: había
+ * un camino al contexto que esquivaba entera la guarda construida para
+ * vigilarlo. Ahora se exige por los dos lados. */
+lanza('una reducción ACTIVA cuyo efecto necesita un dato que el formulario no pregunta',
+  () => verificarReglas([
+    { ...GENERAL, clave: 'reduccion', orden: 10, activa: true, tipo_efecto: 'REDUCCION_PCT_POR_ANIO',
+      valor_efecto: 10, unidad: 'PORCENTAJE',
+      // La condicion se apoya en un campo que el formulario SI pregunta: asi lo
+      // unico que puede fallar es el EFECTO, que es lo que se esta probando.
+      condiciones: [{ campo: 'tipo_persona_vendedor', operador: 'IGUAL', valor: 'NATURAL' }] },
+    GENERAL,
+  ]),
+  'ErrorEsquemaNotarial', 'su efecto necesita')
+check('…y la misma regla DESACTIVADA sí pasa: lo que se prohíbe es activarla',
+  (() => {
+    verificarReglas([
+      { ...GENERAL, clave: 'reduccion', orden: 10, activa: false, tipo_efecto: 'REDUCCION_PCT_POR_ANIO',
+        valor_efecto: 10, unidad: 'PORCENTAJE',
+      // La condicion se apoya en un campo que el formulario SI pregunta: asi lo
+      // unico que puede fallar es el EFECTO, que es lo que se esta probando.
+      condiciones: [{ campo: 'tipo_persona_vendedor', operador: 'IGUAL', valor: 'NATURAL' }] },
+      GENERAL,
+    ])
+    return true
+  })())
+
+/* EL CONTEXTO QUE LLEGA DE FUERA.
+ *
+ * El `valor_en_uvt` lo deriva el motor de la base. Se esparcía ANTES del
+ * contexto del cliente, así que el cliente lo pisaba. Hoy ninguna regla lo usa
+ * y era inofensivo; el día que una regla por umbral sea «una fila», quien
+ * pregunta podría dispararla mandando el valor que le convenga. */
+lanza('el cliente no puede mandar un valor que el motor deriva',
+  () => exigirContextoConocido({ valor_en_uvt: 0 }),
+  'ErrorEsquemaNotarial', 'lo deriva el motor')
+lanza('una clave de contexto desconocida DETIENE, no se descarta en silencio',
+  () => exigirContextoConocido({ es_amigo_del_notario: true }),
+  'ErrorEsquemaNotarial', 'no es un campo del contexto')
+check('un campo declarado sí pasa',
+  (() => { exigirContextoConocido({ tipo_persona_vendedor: 'NATURAL' }); return true })())
+check('un contexto vacío pasa',
+  (() => { exigirContextoConocido({}); return true })())
 
 // ─────────────────────────────────────────────────────────────────────────────
 console.log('\n══ EL AÑO VACÍO NO LIQUIDA, Y DICE QUÉ FALTA Y A QUIÉN ══')

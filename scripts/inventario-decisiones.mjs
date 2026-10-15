@@ -267,10 +267,22 @@ const DECISIONES = [
     invertida: 'en Vercel, que corre en UTC, una liquidacion de las 19:30 de Colombia del 1 de febrero ' +
       'fecha el 2 de febrero, que es justo la frontera de vigencia registral',
     mutacion: null },
-  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'el contexto del cliente se esparce DESPUES del derivado',
-    ancla: '{ ...(uvt ? { valor_en_uvt: base!.valor / uvt } : {}), ...(entrada.contexto ?? {}) },',
-    invertida: 'hoy el cliente puede pisar el valor_en_uvt derivado y disparar una regla por umbral',
-    mutacion: null },
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'el valor derivado gana al contexto del cliente',
+    ancla: '{ ...(entrada.contexto ?? {}), ...(uvt ? { valor_en_uvt: base!.valor / uvt } : {}) },',
+    invertida: 'el orden al reves deja que quien pregunta pise un valor que el motor deriva, ' +
+      'y basta con que una regla por umbral se convierta en una fila para que importe',
+    mutacion: null,
+    prueba: 'el cliente no puede mandar un valor que el motor deriva', arnes: ARNES_N },
+  { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'una clave de contexto desconocida DETIENE',
+    ancla: 'export function exigirContextoConocido(ctx: Contexto): void {',
+    invertida: 'descartarla en silencio es como se pierde una condicion sin que nadie lo note',
+    mutacion: null,
+    prueba: 'una clave de contexto desconocida DETIENE', arnes: ARNES_N },
+  { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'el EFECTO de una regla tambien exige el campo preguntado',
+    ancla: 'for (const nombre of CAMPOS_DEL_EFECTO[r.tipo_efecto] ?? []) {',
+    invertida: 'habia un camino al contexto que esquivaba entera la guarda construida para vigilarlo',
+    mutacion: null,
+    prueba: 'su efecto necesita', arnes: ARNES_N },
   { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'la lista de opcionales REEMPLAZA los valores por defecto',
     ancla: '.filter(c => !c.opcional || (elegidos ? elegidos.includes(c.clave) : c.activo_por_defecto))',
     invertida: 'entrarian conceptos apagados o se caerian los encendidos, y el total cambia',
@@ -432,11 +444,43 @@ const conMutacion = DECISIONES.filter(d => d.mutacion)
 const sinMutacion = DECISIONES.filter(d => !d.mutacion)
 const extremosSinPrueba = EXTREMOS.filter(e => !e.prueba)
 
+/**
+ * ⚠ A QUÉ ARCHIVOS CORRESPONDE ESTA CUENTA.
+ *
+ * Un denominador sin alcance declarado es la misma trampa de la que acabamos de
+ * salir: invita a leerlo como «todo el proyecto». **No lo es.** La cifra sale de
+ * los siete módulos que se leyeron de principio a fin el 2026-10-15, más los
+ * sitios que las pasadas anteriores habían tocado.
+ */
+const ALCANCE_LEIDO = [
+  'src/lib/notariales/tramos.ts', 'src/lib/notariales/bases.ts',
+  'src/lib/notariales/retencion.ts', 'src/lib/notariales/calculo.ts',
+  'src/lib/notariales/iva.ts', 'src/lib/finanzas/calculo.ts',
+  'src/lib/finanzas/dinero.ts',
+  'src/lib/escala-tarifa.ts', 'src/lib/notariales/huella.ts',
+  'src/lib/notariales/guardas.ts', 'src/lib/finanzas/empresa.ts',
+]
+
+/** Lo que NUNCA se ha leído de principio a fin, y por tanto no cuenta. */
+const FUERA_DEL_ALCANCE = [
+  'src/lib/notariales/datos.ts', 'src/lib/notariales/panel.ts',
+  'src/lib/notariales/cotejo.ts', 'src/lib/notariales/evidencia.ts',
+  'src/lib/notariales/trazabilidad.ts', 'src/lib/finanzas/parametros.ts',
+  'src/lib/finanzas/custodia.ts', 'src/lib/finanzas/pendientes.ts',
+  'src/lib/finanzas/numeros.ts', 'src/lib/finanzas/ingresos.ts',
+  'src/lib/finanzas/egresos.ts', 'src/lib/finanzas/completar.ts',
+  'src/lib/finanzas/reportes.ts', 'src/lib/finanzas/captura*.ts',
+  'las rutas de src/app/api', 'la generación del PDF',
+]
+
 console.log('\n══ DECISIONES CRÍTICAS Y SU COBERTURA ════════════════════════')
 console.log(`  decisiones inventariadas: ${DECISIONES.length}` +
   `  (${criticas.length} críticas · ${degeneradas.length} degeneradas)`)
 console.log(`  con una mutación que las vigile: ${conMutacion.length}`)
 console.log(`  DEUDA: ${sinMutacion.length} sin mutación\n`)
+console.log(`  ⚠ ALCANCE: esta cuenta cubre ${ALCANCE_LEIDO.length} archivos leídos de principio a fin.`)
+console.log(`    NO cubre ${FUERA_DEL_ALCANCE.length} más, entre ellos ${FUERA_DEL_ALCANCE.slice(0, 3).join(', ')}`)
+console.log(`    y las rutas. El número NO es «todo el proyecto».\n`)
 
 const porArchivo = new Map()
 for (const d of sinMutacion) {

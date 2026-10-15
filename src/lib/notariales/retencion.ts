@@ -57,10 +57,76 @@ export const CAMPOS_CONDICION: {
   { campo: 'es_casa_habitacion', label: 'Es la casa o apartamento de habitación del vendedor', tipo: 'booleano', pregunta_en_formulario: false },
   { campo: 'anio_adquisicion', label: 'Año en que el vendedor lo adquirió', tipo: 'numero', pregunta_en_formulario: false },
   { campo: 'es_vis', label: 'Es vivienda de interés social', tipo: 'booleano', pregunta_en_formulario: false },
+  // Lo lee el EFECTO de una reducción por años, no una condición. Ver
+  // CAMPOS_DEL_EFECTO: hasta el 2026-10-15 este campo no estaba declarado en
+  // ninguna parte y la guarda no lo alcanzaba.
+  { campo: 'anios_tenencia', label: 'Años que el vendedor lo tuvo', tipo: 'numero', pregunta_en_formulario: false },
 ]
 
 const CAMPOS = new Map(CAMPOS_CONDICION.map(c => [c.campo, c]))
 
+/**
+ * QUÉ CAMPOS DEL CONTEXTO LEE EL **EFECTO** DE CADA TIPO DE REGLA.
+ *
+ * ⚠ EL AGUJERO QUE ESTO CIERRA, encontrado el 2026-10-15 leyendo el archivo
+ * de principio a fin.
+ *
+ * `verificarReglas` exigía que toda CONDICIÓN se apoyara en un campo que el
+ * formulario pregunta —la frontera entre «una fila» y «código—. Pero el
+ * EFECTO de una regla también lee el contexto: `REDUCCION_PCT_POR_ANIO` usa
+ * `ctx.anios_tenencia`, que no estaba en la lista blanca ni en ningún otro
+ * sitio. O sea: había un camino hasta el contexto **que esquivaba entera la
+ * guarda construida para vigilarlo**.
+ *
+ * No era deuda: era un agujero en una guarda nuestra. Una regla de reducción se
+ * podía activar con el formulario sin preguntar los años de tenencia, y lo que
+ * fallaba era el cálculo en producción —con `SinReglaAplicable`, que detiene,
+ * así que no daba una cifra mala; pero la promesa de «activar es una fila»
+ * quedaba rota y se descubría liquidando—.
+ */
+export const CAMPOS_DEL_EFECTO: Record<string, string[]> = {
+  TARIFA: [],
+  EXENCION: [],
+  REDUCCION_PCT_POR_ANIO: ['anios_tenencia'],
+  TOPE: [],
+}
+
+/**
+ * CAMPOS QUE **DERIVA EL MOTOR** Y QUE NADIE PUEDE MANDAR.
+ *
+ * ⚠ Lo que esto cierra, encontrado el 2026-10-15 leyendo `calculo.ts` entero:
+ * el contexto del cliente se esparcía DESPUÉS del `valor_en_uvt` derivado, así
+ * que lo pisaba. Hoy ninguna regla lo usa y era inofensivo; mañana una regla
+ * por umbral es «una fila», y ese día quien pregunta podría dispararla
+ * mandando el valor que le convenga.
+ *
+ * > **Un valor que el motor deriva no puede ser sobrescribible por quien
+ * > pregunta.** No se espera a que haya una fila que lo aproveche.
+ */
+export const CAMPOS_DERIVADOS = new Set(['valor_en_uvt'])
+
+/**
+ * Comprueba el contexto que llega de fuera. Lo desconocido **detiene**, no se
+ * descarta: descartar en silencio es como se pierde una condición sin que nadie
+ * lo note, y es el mismo criterio de `exigirClavesConocidas` para los conceptos.
+ */
+export function exigirContextoConocido(ctx: Contexto): void {
+  for (const clave of Object.keys(ctx)) {
+    if (CAMPOS_DERIVADOS.has(clave)) {
+      throw new ErrorEsquemaNotarial(
+        `«${clave}» lo deriva el motor a partir de la base: no se manda desde fuera.`,
+        'contexto',
+      )
+    }
+    if (!CAMPOS.has(clave)) {
+      throw new ErrorEsquemaNotarial(
+        `«${clave}» no es un campo del contexto de retención. Los que hay: ` +
+        `${[...CAMPOS.keys()].join(', ')}.`,
+        'contexto',
+      )
+    }
+  }
+}
 export type Contexto = Record<string, string | number | boolean | undefined>
 
 function comparar(cond: Condicion, actual: string | number | boolean): boolean {
@@ -197,6 +263,29 @@ export function verificarReglas(reglas: ReglaRetencion[]): void {
         throw new ErrorEsquemaNotarial(
           `La regla ${r.clave} está activa y depende de «${campo.label}», que el formulario no pregunta. ` +
           'Añadir esa pregunta es código, no una fila: la regla no puede activarse antes.',
+          'campo',
+        )
+      }
+    }
+
+    /* LA MISMA EXIGENCIA, POR EL CAMINO DEL EFECTO.
+     *
+     * Sin esto, una regla sin condiciones cuyo EFECTO lee el contexto se podía
+     * activar sin que el formulario preguntara el dato: la guarda miraba las
+     * condiciones y el efecto entraba por detrás. */
+    for (const nombre of CAMPOS_DEL_EFECTO[r.tipo_efecto] ?? []) {
+      const campo = CAMPOS.get(nombre)
+      if (!campo) {
+        throw new ErrorEsquemaNotarial(
+          `El efecto ${r.tipo_efecto} de la regla ${r.clave} lee «${nombre}», que no está en la ` +
+          'lista blanca de campos del contexto. Decláralo en CAMPOS_CONDICION.',
+          'campo',
+        )
+      }
+      if (!campo.pregunta_en_formulario && r.activa) {
+        throw new ErrorEsquemaNotarial(
+          `La regla ${r.clave} está activa y su efecto necesita «${campo.label}», que el formulario ` +
+          'no pregunta. Añadir esa pregunta es código, no una fila: la regla no puede activarse antes.',
           'campo',
         )
       }

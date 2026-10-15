@@ -2494,6 +2494,50 @@ Cerrada: las dos decisiones viven en `tramos.ts/tramoQueAplica`, que usan la
 tarifa y el desglose, y el arnés prueba que una tabla en UVT sin UVT **se
 detiene** en vez de multiplicar por 1.
 
+## La lectura completa encontró en una hora más que el grep en semanas
+
+2026-10-15. Leer siete módulos de principio a fin —sin grep, sin buscar nada
+concreto— dio **18 decisiones nuevas en una hora**. El método anterior, grepear
+y leer las regiones que el grep devolvía, llevaba semanas y había encontrado 49.
+
+> **El grep solo devuelve lo que ya sospechabas.** Por eso una pasada guiada por
+> grep es una **confirmación** disfrazada de descubrimiento: encuentra
+> instancias de lo que ya sabes nombrar, y nunca la categoría que no se te
+> había ocurrido.
+
+### El inventario tenía 49 de 67
+
+> **La cifra empeoró al mirar mejor, que es la única dirección en que un
+> inventario puede mejorar.**
+
+El 37 de deuda que se reportaba el día anterior no significaba nada: el
+denominador estaba mal. Y de ahí sale la regla del alcance declarado —ver
+`ALCANCE_LEIDO` en `inventario-decisiones.mjs`—: **un denominador sin alcance es
+la misma trampa**, porque invita a leerlo como «todo el proyecto». Hoy el
+inventario imprime de qué once archivos sale la cuenta y nombra los dieciséis
+que nunca se han leído.
+
+### La prueba de que el instrumento tenía que ser humano
+
+El caso, y es el mejor de los dieciocho:
+
+| | ¿una cadena vacía es una ausencia? |
+|---|---|
+| `notariales/bases.ts:103` | **Sí**: `v === ''` → el candidato no se informa |
+| `finanzas/calculo.ts:32` | **No**: `vacio = v === null \|\| v === undefined` |
+
+Dos respuestas **opuestas** a la misma pregunta, en dos archivos del mismo
+proyecto. Y **ningún normalizador de formas las agrupa**, porque el código no se
+parece en nada: una es una condición dentro de un bucle y la otra es la
+definición de un ayudante.
+
+> **`decisiones-repetidas.mjs` encuentra formas COPIADAS. La misma decisión
+> escrita de dos maneras distintas no la encuentra ninguna herramienta: eso es
+> lectura.**
+
+Y como la lectura es cara, se gasta donde la decisión es cara. Esos siete
+módulos —los que deciden dinero— son la lista.
+
 # LO QUE ESCONDE EL QUE RECIBE LA ORDEN
 
 Las doce formas son del que **informa**. Las cuatro de la sección siguiente son
