@@ -213,6 +213,81 @@ const DECISIONES = [
     invertida: 'la misma transcripción da dos huellas según quién hizo el checkout',
     mutacion: 'transcripción: la huella deja de normalizar los saltos' },
 
+  /* ══ LO QUE ENCONTRÓ LA LECTURA COMPLETA, 2026-10-15 ════════════════
+   *
+   * El inventario anterior salió de grepear los conceptos que ya se sospechaban
+   * y leer esas regiones. Esto salió de leer siete módulos de principio a fin,
+   * sin buscar nada concreto: tramos, bases, retencion, calculo, iva,
+   * finanzas/calculo y dinero. Son DIECIOCHO decisiones que el método anterior
+   * no podía encontrar, y la medida del punto ciego: el inventario tenía 49 de
+   * 67 reales, o sea le faltaba el 27 %.
+   *
+   * Para la siguiente pasada: la lectura completa es el único instrumento para
+   * la clase «la misma decisión escrita de dos maneras distintas», y es cara, así
+   * que se gasta donde la decisión es cara. Estos siete archivos son esa lista.
+   */
+
+  /* ── bases.ts ── */
+  { archivo: `${N}bases.ts`, grado: 'CRITICA', decide: 'una cadena vacía cuenta como candidato NO informado',
+    ancla: "if (v === null || v === undefined || v === '') continue",
+    invertida: 'un avaluo que llega en blanco se leeria como cero y la base bajaria, o al contrario',
+    mutacion: null },
+  { archivo: `${N}bases.ts`, grado: 'CRITICA', decide: 'el timbre y la retencion toman la venta, NO el mayor',
+    ancla: "    motivo: 'Se tomó el valor de la enajenación.',",
+    invertida: 'el avaluo entraria en dos bases donde la norma no lo pone y subiria el impuesto',
+    mutacion: null },
+
+  /* ── tramos.ts ── */
+  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'el redondeo interno del motor es al peso mas cercano',
+    ancla: 'export const alPeso = (n: number): number => Math.round(n)',
+    invertida: 'el reparto entre partes y la retencion se desvian un peso cada uno, siempre al mismo lado',
+    mutacion: null },
+  { archivo: `${N}tramos.ts`, grado: 'CRITICA', decide: 'leer un numero como PESOS y no como TASA',
+    ancla: "const s = leerNumero(v, 'pesos', campo)",
+    invertida: '52.374 pasaria de cincuenta y dos mil a 52,374: un factor de mil elegido por sitio de llamada',
+    mutacion: null },
+
+  /* ── retencion.ts ── */
+  { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'una condicion sobre un dato que no llega DETIENE',
+    ancla: 'throw new SinReglaAplicable(`La regla depende de',
+    invertida: 'la regla se saltaria y aplicaria la general: una exencion perdida sin aviso',
+    mutacion: null },
+  { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'IGUAL compara texto exacto, sensible a mayusculas',
+    ancla: "case 'IGUAL': return String(actual) === esperado",
+    invertida: 'una regla aplicaria donde hoy no aplica, o al contrario, segun la caja de una letra',
+    mutacion: null },
+  { archivo: `${N}retencion.ts`, grado: 'CRITICA', decide: 'la retencion se redondea al peso',
+    ancla: 'valor: alPeso(base * m),',
+    invertida: 'un peso de diferencia en la cifra con la que alguien cierra un negocio',
+    mutacion: null },
+
+  /* ── calculo.ts ── */
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'la fecha del acto por defecto sale del reloj del servidor',
+    ancla: "`${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`",
+    invertida: 'en Vercel, que corre en UTC, una liquidacion de las 19:30 de Colombia del 1 de febrero ' +
+      'fecha el 2 de febrero, que es justo la frontera de vigencia registral',
+    mutacion: null },
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'el contexto del cliente se esparce DESPUES del derivado',
+    ancla: '{ ...(uvt ? { valor_en_uvt: base!.valor / uvt } : {}), ...(entrada.contexto ?? {}) },',
+    invertida: 'hoy el cliente puede pisar el valor_en_uvt derivado y disparar una regla por umbral',
+    mutacion: null },
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'la lista de opcionales REEMPLAZA los valores por defecto',
+    ancla: '.filter(c => !c.opcional || (elegidos ? elegidos.includes(c.clave) : c.activo_por_defecto))',
+    invertida: 'entrarian conceptos apagados o se caerian los encendidos, y el total cambia',
+    mutacion: null },
+  { archivo: `${N}calculo.ts`, grado: 'DEGENERADA', decide: 'una cantidad de 0 se rechaza: el camino es apagar el concepto',
+    ancla: 'if (!Number.isInteger(n) || n < 1) {',
+    invertida: 'un 0 daria valor cero en silencio en vez de pedir que se desactive el concepto',
+    mutacion: null },
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'la tarifa registral derivada sale de derechos_orip',
+    ancla: "if (c.clave === 'derechos_orip') tarifaRegistral = valor",
+    invertida: 'los conceptos que se liquidan sobre la tarifa registral tomarian otra cifra',
+    mutacion: null },
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'el IVA liquidado se atribuye al grupo COSTOS_NOTARIALES',
+    ancla: "const suIva = g.clave === 'COSTOS_NOTARIALES'",
+    invertida: 'el total de dos grupos cambiaria y el usuario veria el IVA donde no se genera',
+    mutacion: null },
+
   /* ── finanzas ─────────────────────────────────────────────────────────── */
   { archivo: `${F}calculo.ts`, grado: 'DEGENERADA', decide: 'la base mínima en UVT: el igual SÍ retiene',
     ancla: 'if (minimo.gt(0) && base.lt(minimo))',
@@ -239,6 +314,27 @@ const DECISIONES = [
   { archivo: `${F}calculo.ts`, grado: 'DEGENERADA', decide: 'la tolerancia de discrepancia es estricta',
     ancla: 'hay: diff.abs().gt(dec(toleranciaPesos))',
     invertida: 'una diferencia de exactamente un peso se reporta o se calla', mutacion: null },
+  { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'por defecto se asume que el servicio GENERA IVA',
+    ancla: 'export function calcularIva(base: Num, parametros: ParametrosAnioLike, generaIva = true)',
+    invertida: 'el defecto decide si se cobra IVA a quien no lleva: el lado comodo es cobrarlo',
+    mutacion: null },
+  { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'sin tarifa de reteIVA devuelve CERO, y sin tarifa de IVA LANZA',
+    ancla: 'if (parametros.responsable_iva === false || vacio(parametros.tarifa_reteiva)) {',
+    invertida: 'la asimetria ya existe: una tarifa que falta detiene y la otra no, en silencio',
+    mutacion: null },
+  { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'el IVA pagado es costo solo si NO somos responsables',
+    ancla: '    : dec(e.valor_base).plus(dec(e.iva_pagado)).toDecimalPlaces(2)',
+    invertida: 'cada egreso quedaria subestimado o inflado en el 19 % y el reporte de gastos mentiria',
+    mutacion: null },
+  { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'un egreso REEMBOLSABLE no entra al estado de resultados',
+    ancla: "return egresos.filter(e => e.naturaleza !== 'REEMBOLSABLE')",
+    invertida: 'se pagaria impuesto sobre plata adelantada por cuenta del cliente',
+    mutacion: null },
+  { archivo: `${F}calculo.ts`, grado: 'CRITICA', decide: 'una cadena vacia NO es un vacio en el modulo financiero',
+    ancla: 'const vacio = (v: unknown): boolean => v === null || v === undefined',
+    invertida: 'convencion OPUESTA a la del modulo notarial, donde la cadena vacia SI es ausencia; ' +
+      'ninguna herramienta de formas las agrupa porque el codigo no se parece',
+    mutacion: null },
   { archivo: `${F}dinero.ts`, grado: 'CRITICA', decide: 'volver al peso entero redondea al más cercano',
     ancla: 'return BigInt(valor.toDecimalPlaces(0).toFixed(0))',
     invertida: 'cada comisión pierde o gana un peso, y se nota al cuadrar', mutacion: null },

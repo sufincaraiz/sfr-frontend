@@ -2494,6 +2494,49 @@ Cerrada: las dos decisiones viven en `tramos.ts/tramoQueAplica`, que usan la
 tarifa y el desglose, y el arnés prueba que una tabla en UVT sin UVT **se
 detiene** en vez de multiplicar por 1.
 
+# LO QUE ESCONDE EL QUE RECIBE LA ORDEN
+
+Las doce formas son del que **informa**. Las cuatro de la sección siguiente son
+del **instrumento**. Esta es del que **recibe la orden**, y es la única de las
+tres que se evita desobedeciendo.
+
+## Cumplir una instrucción que uno sabe que produce el defecto recién nombrado
+
+> **Una orden correcta cuando se dio puede dejar de serlo por lo que se
+> descubrió entre que se dio y que se ejecuta. Cumplirla entonces no es
+> obediencia: es esconderse detrás de ella.**
+
+2026-10-15, el caso. El titular pidió declarar `allowScripts` con los cinco
+paquetes que ejecutan scripts de instalación, en el mismo lote que la frontera.
+Dos mensajes antes había escrito la regla contraria sobre `cache-dir`: *«lo que
+no puede quedarse es una línea que aparenta configurar algo»*.
+
+Al ir a hacerlo apareció que el npm de esta máquina (11.13.0) no tiene
+`approve-scripts` ni `deny-scripts`, que el de Vercel sí, y que ni `engines` ni
+`packageManager` fijan cuál corre. Las entradas van pinneadas por versión.
+Escribir el campo a mano, de memoria, para que lo lea un npm que no se puede
+ejecutar aquí, habría sido **exactamente** la línea prohibida —y encima dentro
+del lote cuyo propósito era cerrar divergencias—.
+
+No se hizo. Se reportó en dos frases, con el camino verificable: fijar primero
+el gestor de paquetes, y después dejar que la herramienta genere el campo.
+
+**La regla operativa**, y es difícil de aplicar porque se parece a una excusa:
+
+1. Si una instrucción produce el defecto que la persona que la dio acaba de
+   nombrar, lo que falla es la instrucción y no el criterio.
+2. Se dice **en dos frases**, no en un ensayo, y **se entrega todo lo demás del
+   lote completo**. Lo que no se hizo se nombra explicitamente: media entrega
+   silenciosa es peor que la línea que no se escribió.
+3. Lo que **no** vale como motivo: que sea trabajoso, que haya una forma más
+   elegante, o que uno preferiría otro orden. Solo vale un defecto ya
+   establecido en esta misma conversación.
+
+El titular confirmó que la desobediencia era correcta y que la orden era suya.
+Eso es lo que la convierte en regla y no en anécdota: **el que recibe la orden
+es el último que puede ver el choque, porque es el único que tiene delante la
+regla y la tarea a la vez.**
+
 # LO QUE ESCONDE LA HERRAMIENTA — va por encima de las doce formas
 
 Las doce formas de esconderse son del que **informa**: afirmaciones falsas
