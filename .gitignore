@@ -45,3 +45,15 @@ yarn-error.log*
 
 .vercel
 .build-historial.json
+
+# Volcados de tablas con datos de terceros. NUNCA en el repositorio: la
+# historia de git es permanente y un volcado de egresos o ingresos lleva
+# nombres y NITs (Ley 1581/2012). Los respaldos viven FUERA del arbol, en
+# C:\sfr\respaldos-de-datos\
+#
+# Esto es la segunda linea de defensa. La primera es
+# scripts/verificar-volcados.mjs, que rompe el build si un volcado llega a
+# estar rastreado: un .gitignore solo protege de lo que nadie anade a mano.
+respaldos-de-datos/
+prisma/respaldos-de-datos/
+*.dump.json

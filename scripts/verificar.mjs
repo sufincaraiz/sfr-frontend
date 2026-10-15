@@ -28,6 +28,8 @@ import { spawnSync } from 'node:child_process'
 
 const GUARDAS = {
   antes: [
+    { nombre: 'volcados de tablas', guion: 'verificar-volcados.mjs',
+      vigila: 'que ningun archivo versionado sea un volcado de filas con datos de terceros' },
     { nombre: 'migraciones SQL', guion: 'verificar-migraciones-sql.mjs',
       vigila: 'que ninguna migración archivada traiga datos, solo estructura' },
     { nombre: 'portabilidad', guion: 'verificar-portabilidad.mjs',
