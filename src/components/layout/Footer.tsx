@@ -3,6 +3,7 @@ import { MapPin, Phone, Mail } from 'lucide-react';
 import { getMunicipiosVisibles } from '@/lib/municipios';
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales';
 import { horarioEnLineas } from '@/lib/horario';
+import { anioEnColombia } from '@/lib/dia-colombia';
 
 const PROPERTY_LINKS = [
   { href: '/propiedades?tipo=finca',                    label: 'Fincas en venta' },
@@ -243,7 +244,10 @@ export async function Footer() {
           className="mt-12 pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs"
           style={{ borderTop: '1px solid rgba(255,255,255,0.1)', color: 'rgba(255,255,255,0.45)' }}
         >
-          <p>© {new Date().getFullYear()} Su Finca Raíz. Todos los derechos reservados.</p>
+          {/* EL PUENTE: el año de Colombia. Este componente corre en el SERVIDOR
+              (no lleva 'use client'), que en Vercel es UTC: cinco horas al año
+              el pie decía el año siguiente. */}
+          <p>© {anioEnColombia()} Su Finca Raíz. Todos los derechos reservados.</p>
           <ul className="flex gap-4">
             {LEGAL_LINKS.map((l) => (
               <li key={l.href}>

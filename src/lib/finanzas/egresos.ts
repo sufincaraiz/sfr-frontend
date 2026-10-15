@@ -8,6 +8,7 @@ import {
 } from '@/lib/finanzas/captura'
 import { egresosDeResultado, gastoDeResultado } from '@/lib/finanzas/calculo'
 import { esPublicIdDeRecibo } from '@/lib/finanzas/recibos'
+import { hoyEnColombia } from '../dia-colombia.ts'
 
 /**
  * EGRESOS — captura rápida y listados.
@@ -266,8 +267,11 @@ export async function asumirComoGasto(id: string, motivo: string, por: string) {
  * lanzaría en lugar de sumarlo callado.
  */
 export async function resumenDelMes() {
-  const ahora = new Date()
-  const desde = new Date(ahora.getFullYear(), ahora.getMonth(), 1)
+  // EL PUENTE: «el mes en curso» es el de Colombia. Con componentes locales, las
+  // últimas cinco horas del último día del mes la lista arrancaba en el mes
+  // siguiente y los gastos de ese día no aparecían.
+  const hoy = hoyEnColombia()
+  const desde = new Date(`${hoy.slice(0, 7)}-01T00:00:00Z`)
   const [
     egresosMes, ingresosMes, ingresosSinFactura, ingresosSinRecaudo, ingresosSinCiiu,
     pendientes, sinRecibo, sinProveedor, sinFactura, cobrar,

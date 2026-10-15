@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { mesesAntesEnColombia } from './dia-colombia'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Retención del registro de visitas (Ley 1581 de 2012).
@@ -27,9 +28,11 @@ export function fechaCorte(): Date {
 
 /** Fecha desde la que una visita se considera "próxima a vencer" (~22 meses). */
 export function fechaAviso(): Date {
-  const d = new Date()
-  d.setMonth(d.getMonth() - MESES_AVISO)
-  return d
+  // RESTAR 365 DIAS NO ES DOCE MESES, y la aritmetica de calendario sobre
+  // componentes LOCALES daba un corte distinto en cada zona. El corte se
+  // calcula como calendario en Bogota y vuelve a instante, porque se compara
+  // contra una columna de INSTANTE: cuando ocurrio el acceso.
+  return mesesAntesEnColombia(MESES_AVISO)
 }
 
 /**

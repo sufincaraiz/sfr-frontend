@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { mesesAntesEnColombia } from './dia-colombia'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Retención de la bitácora de accesos al enlace del contador (Ley 1581 de 2012).
@@ -22,9 +23,11 @@ export const MESES_RETENCION_ACCESOS = 12
 
 /** Fecha límite: todo acceso anterior ya cumplió los 12 meses. */
 export function fechaCorteAccesos(): Date {
-  const d = new Date()
-  d.setMonth(d.getMonth() - MESES_RETENCION_ACCESOS)
-  return d
+  // RESTAR 365 DIAS NO ES DOCE MESES, y la aritmetica de calendario sobre
+  // componentes LOCALES daba un corte distinto en cada zona. El corte se
+  // calcula como calendario en Bogota y vuelve a instante, porque se compara
+  // contra una columna de INSTANTE: cuando ocurrio el acceso.
+  return mesesAntesEnColombia(MESES_RETENCION_ACCESOS)
 }
 
 /**

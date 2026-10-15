@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { egresosDeResultado, gastoDeResultado } from '@/lib/finanzas/calculo'
 import { exigirCustodiaCoherente } from '@/lib/finanzas/custodia'
 import { estadoDelAnio } from '@/lib/finanzas/ingresos'
+import { anioEnColombia, anioDelDia } from '../dia-colombia.ts'
 
 /**
  * LOS TRES REPORTES QUE NO DEPENDEN DE TARIFAS
@@ -27,13 +28,30 @@ import { estadoDelAnio } from '@/lib/finanzas/ingresos'
 
 export interface Periodo { desde: Date; hasta: Date }
 
-/** Periodo por defecto: el año en curso, que es la unidad de la declaración. */
-export function periodoDelAnio(anio = new Date().getFullYear()): Periodo {
-  return { desde: new Date(anio, 0, 1), hasta: new Date(anio, 11, 31, 23, 59, 59) }
+/**
+ * ⚠ ESTA FUNCIÓN ERA LAS DOS CLASES A LA VEZ, y por eso se partió.
+ *
+ * El **año por defecto** era un PUENTE —«el año en curso» depende de dónde
+ * estés— y los **límites** eran DÍA PURO. Mezcladas en una línea, las dos
+ * estaban mal: `new Date(anio, 0, 1)` construye el 1 de enero en hora LOCAL, así
+ * que con `TZ=America/Bogota` el periodo empezaba a las 05:00 UTC y un
+ * movimiento de esa madrugada entraba o salía del año.
+ *
+ * Ahora el año por defecto lo decide `anioEnColombia()` —el puente, una vez— y
+ * los límites se construyen en UTC, que es como se guarda una columna `DATE`.
+ */
+
+/** El año fiscal en curso EN COLOMBIA. El puente, separado de los límites. */
+export const anioFiscalEnCurso = (): number => anioEnColombia()
+
+/** Periodo de un año: días puros, en UTC, como los guarda una columna DATE. */
+export function periodoDelAnio(anio = anioFiscalEnCurso()): Periodo {
+  return { desde: new Date(Date.UTC(anio, 0, 1)), hasta: new Date(Date.UTC(anio, 11, 31)) }
 }
 
+/** Periodo de un mes. `Date.UTC(anio, mes, 0)` es el último día del mes `mes`. */
 export function periodoDelMes(anio: number, mes: number): Periodo {
-  return { desde: new Date(anio, mes - 1, 1), hasta: new Date(anio, mes, 0, 23, 59, 59) }
+  return { desde: new Date(Date.UTC(anio, mes - 1, 1)), hasta: new Date(Date.UTC(anio, mes, 0)) }
 }
 
 const pct = (parte: Prisma.Decimal, total: Prisma.Decimal): number =>
@@ -87,7 +105,7 @@ export async function ingresosPorLinea(p: Periodo) {
 
 /** GASTOS POR CATEGORÍA. Los reembolsables quedan fuera: no son gasto. */
 export async function gastosPorCategoria(p: Periodo) {
-  const responsableIva = (await estadoDelAnio(p.desde.getFullYear())).responsable_iva
+  const responsableIva = (await estadoDelAnio(anioDelDia(p.desde)!)).responsable_iva
 
   const filas = await prisma.egreso.findMany({
     where: { fecha: { gte: p.desde, lte: p.hasta } },

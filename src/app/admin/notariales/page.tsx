@@ -28,7 +28,11 @@ export default function NotarialesPage() {
   const [cargando, setCargando] = useState(true);
   const [error, setError] = useState('');
   const [creando, setCreando] = useState(false);
-  const [nuevo, setNuevo] = useState(new Date().getFullYear());
+  // EL AÑO LO DECIDE EL SERVIDOR y esta pantalla solo lo muestra: una fecha
+  // que es un hecho del NEGOCIO viene del servidor; solo una que es un hecho
+  // del VISITANTE puede venir del navegador. Hasta que llegue la respuesta no
+  // se propone ninguno, en vez de proponer el del reloj de quien mira.
+  const [nuevo, setNuevo] = useState<number | null>(null);
 
   const cargar = useCallback(async () => {
     setCargando(true);
@@ -36,6 +40,9 @@ export default function NotarialesPage() {
     if (res.status === 401) { window.location.href = '/admin/login'; return; }
     const j = await res.json();
     setAnios(j.anios ?? []);
+    // El ano sugerido viene del servidor. Solo se propone si el campo esta sin
+    // tocar, para no pisar lo que el titular haya escrito mientras cargaba.
+    setNuevo(n => (n === null ? (j.anio_sugerido ?? null) : n));
     setCargando(false);
   }, []);
 
@@ -136,12 +143,13 @@ export default function NotarialesPage() {
         </p>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
           <input
-            type="number" value={nuevo} min={2000} max={2100}
-            onChange={e => setNuevo(Number(e.target.value))}
+            type="number" value={nuevo ?? ''} min={2000} max={2100}
+            placeholder="…"
+            onChange={e => setNuevo(e.target.value === '' ? null : Number(e.target.value))}
             style={{ padding: '8px 11px', border: `1.5px solid ${C.line}`, borderRadius: 9, fontSize: '0.9rem', color: C.navy, fontWeight: 700, width: 110, fontFamily: 'inherit' }}
           />
           <button
-            onClick={sembrar} disabled={creando}
+            onClick={sembrar} disabled={creando || nuevo === null}
             style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 15px', borderRadius: 10, border: 'none', background: C.navy, color: '#fff', fontWeight: 700, fontSize: '0.88rem', cursor: creando ? 'wait' : 'pointer', fontFamily: 'inherit' }}
           >
             <Plus size={16} /> {creando ? 'Sembrando…' : 'Sembrar'}

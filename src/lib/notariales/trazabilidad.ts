@@ -19,6 +19,7 @@
  */
 
 import { ErrorEsquemaNotarial, VERSION_MOTOR } from './tipos.ts'
+import { diaEnColombia } from '../dia-colombia.ts'
 
 const dos = (n: number): string => String(n).padStart(2, '0')
 
@@ -35,7 +36,9 @@ export function codigoTrazabilidad(opciones: {
     throw new ErrorEsquemaNotarial(`Versión de parámetros inválida: ${version}.`, 'version')
   }
   const f = opciones.fecha ?? new Date()
-  const fecha = `${f.getFullYear()}-${dos(f.getMonth() + 1)}-${dos(f.getDate())}`
+  // EL PUENTE. El código va impreso en el PDF que lee una persona en Colombia:
+  // el día tiene que ser el suyo, no el del servidor que lo generó.
+  const fecha = diaEnColombia(f)
   return `SFR-N${anio}/P${dos(version)}/M${dos(VERSION_MOTOR)}/${fecha}`
 }
 

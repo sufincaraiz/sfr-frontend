@@ -262,11 +262,12 @@ const DECISIONES = [
     mutacion: null },
 
   /* ── calculo.ts ── */
-  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'la fecha del acto por defecto sale del reloj del servidor',
-    ancla: "`${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`",
-    invertida: 'en Vercel, que corre en UTC, una liquidacion de las 19:30 de Colombia del 1 de febrero ' +
-      'fecha el 2 de febrero, que es justo la frontera de vigencia registral',
-    mutacion: null },
+  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'la fecha del acto por defecto es el dia de COLOMBIA',
+    ancla: '? diaEnColombia(hoy)',
+    invertida: 'con el reloj del servidor, que en Vercel es UTC, una liquidacion de las 19:30 del ' +
+      '1 de febrero se fechaba el 2, que es justo la frontera de vigencia registral',
+    mutacion: null,
+    prueba: '1 feb 19:30 de Colombia es el 1 de febrero, no el 2', arnes: 'scripts/probar-fechas.mjs' },
   { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'el valor derivado gana al contexto del cliente',
     ancla: '{ ...(entrada.contexto ?? {}), ...(uvt ? { valor_en_uvt: base!.valor / uvt } : {}) },',
     invertida: 'el orden al reves deja que quien pregunta pise un valor que el motor deriva, ' +

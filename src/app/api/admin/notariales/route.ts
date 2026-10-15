@@ -3,6 +3,7 @@ import { requireRole } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { sembrarAnio, anioParaPantalla, asegurarFuentes } from '@/lib/notariales/panel'
 import { transcripcion, respuestaDeError } from '@/lib/notariales/api'
+import { hoyEnColombia } from '@/lib/dia-colombia'
 
 // Parámetros notariales: SOLO admin. El contador no carga tarifas de notaría.
 const ROLES = ['admin']
@@ -13,7 +14,13 @@ export async function GET() {
     orderBy: { anio: 'desc' },
     select: { anio: true, estado: true, cerrado: true, version: true, activado_en: true, updated_at: true },
   })
-  return NextResponse.json({ anios })
+  // EL AÑO SUGERIDO LO DECIDE EL SERVIDOR, no el navegador.
+  //
+  // La pantalla lo proponía con `new Date().getFullYear()` del cliente, o sea
+  // con la zona del visitante. El año tarifario de una resolución colombiana es
+  // un hecho sobre Colombia, no sobre dónde esté quien mira: si el titular abre
+  // el panel desde otra zona, el año propuesto no puede cambiar por eso.
+  return NextResponse.json({ anios, anio_sugerido: Number(hoyEnColombia().slice(0, 4)) })
 }
 
 export async function POST(req: NextRequest) {

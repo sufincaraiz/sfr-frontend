@@ -9,6 +9,7 @@ import {
 import { ordenarPorUso } from '@/lib/finanzas/captura'
 import { calcularRetefuente, compararRetencion, ParametroFiscalFaltante } from '@/lib/finanzas/calculo'
 import { leerAnio, parametrosDelAnio } from '@/lib/finanzas/parametros'
+import { diaPuro, hoyEnColombia, anioDelDia } from '../dia-colombia.ts'
 
 /**
  * INGRESOS — captura rápida, reparto de comisión y listado.
@@ -76,7 +77,7 @@ export async function tiposParaCaptura() {
  * captura entera: justo lo contrario de lo que se quiere, porque los ingresos
  * reales tienen que poder registrarse mientras el contador responde.
  */
-export async function estadoDelAnio(anio = new Date().getFullYear()) {
+export async function estadoDelAnio(anio = Number(hoyEnColombia().slice(0, 4))) {
   const p = await leerAnio(anio)
   return {
     anio,
@@ -94,8 +95,14 @@ export async function crearIngreso(e: EntradaIngreso, por: string) {
   const tipo = await prisma.tipoServicio.findUnique({ where: { id: e.tipo_servicio_id } })
   if (!tipo) throw new ErrorIngreso('Ese tipo de servicio no existe.', 404)
 
-  const fechaCausacion = e.fecha_causacion ? new Date(e.fecha_causacion) : new Date()
-  const anioFiscal = fechaCausacion.getFullYear()
+  // EL DÍA DE CAUSACIÓN ES UN DÍA PURO, no un instante. Si lo teclea la persona
+  // se lee como cadena; si no viene, el día por defecto es el de COLOMBIA —con
+  // el reloj del servidor, un ingreso de las 20:00 del 31 de diciembre caía en
+  // el año fiscal siguiente—.
+  const diaCausacion = diaPuro(e.fecha_causacion) ?? hoyEnColombia()
+  const anioFiscal = Number(diaCausacion.slice(0, 4))
+  // Medianoche UTC del día: la columna es DATE y guarda exactamente ese día.
+  const fechaCausacion = new Date(`${diaCausacion}T00:00:00Z`)
   const estado = await estadoDelAnio(anioFiscal)
 
   const errores = erroresDeIngreso(e, {

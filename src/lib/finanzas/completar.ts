@@ -7,6 +7,7 @@ import { erroresDeIngreso, faltantesDeIngreso } from '@/lib/finanzas/captura-ing
 import { calcularRetefuente, compararRetencion, ParametroFiscalFaltante } from '@/lib/finanzas/calculo'
 import { parametrosDelAnio } from '@/lib/finanzas/parametros'
 import { estadoDelAnio } from '@/lib/finanzas/ingresos'
+import { anioDelDia } from '../dia-colombia.ts'
 
 /**
  * COMPLETAR EN EL ESCRITORIO LO CAPTURADO EN LA CALLE
@@ -110,7 +111,7 @@ export async function detalleEgreso(id: string) {
   })
   if (!e) return null
 
-  const estado = await estadoDelAnio(e.fecha.getFullYear())
+  const estado = await estadoDelAnio(anioDelDia(e.fecha)!)
   // ESPEJO FIEL: cada campo sale con su valor REAL, y `null` viaja como null.
   // Así el formulario puede reenviar sin cambios lo que nadie tocó.
   return {
@@ -202,7 +203,7 @@ export async function actualizarEgreso(id: string, cambios: EdicionEgreso, por: 
 
   // El IVA pagado solo se captura si el año es responsable de IVA. Mientras no
   // lo sea, el IVA va dentro del valor como costo (ver costoEgreso).
-  const estadoAnio = await estadoDelAnio((enviado('fecha') ? fecha(cambios.fecha, 'Fecha') ?? actual.fecha : actual.fecha).getFullYear())
+  const estadoAnio = await estadoDelAnio(anioDelDia(enviado('fecha') ? fecha(cambios.fecha, 'Fecha') ?? actual.fecha : actual.fecha)!)
   let ivaPagado: Prisma.Decimal | undefined
   if (enviado('iva_pagado')) {
     ivaPagado = dinero(cambios.iva_pagado, 'IVA pagado')
@@ -293,7 +294,7 @@ export async function detalleIngreso(id: string) {
   })
   if (!i) return null
 
-  const estado = await estadoDelAnio(i.fecha_causacion.getFullYear())
+  const estado = await estadoDelAnio(anioDelDia(i.fecha_causacion)!)
   const d = compararRetencion(i.retefuente_practicada, i.retefuente_sugerida)
   return {
     id: i.id,
@@ -367,7 +368,7 @@ export async function actualizarIngreso(id: string, cambios: EdicionIngreso, por
   const tipo = await prisma.tipoServicio.findUnique({ where: { id: tipoId }, select: { id: true, slug: true, concepto_retencion_sugerido: true } })
   if (!tipo) throw new ErrorCompletar('Ese tipo de servicio no existe.', 404)
 
-  const estadoAnio = await estadoDelAnio(fechaCausacion.getFullYear())
+  const estadoAnio = await estadoDelAnio(anioDelDia(fechaCausacion)!)
   const comoCaptura = {
     valor: valor.toString(),
     tipo_servicio_id: tipo.id,
@@ -396,7 +397,7 @@ export async function actualizarIngreso(id: string, cambios: EdicionIngreso, por
   const cambioBase = !valor.eq(actual.valor_base) || terceroId !== actual.tercero_id || tipo.id !== actual.tipo_servicio_id
   if (estadoAnio.activo && tipo.concepto_retencion_sugerido) {
     try {
-      const parametros = await parametrosDelAnio(fechaCausacion.getFullYear())
+      const parametros = await parametrosDelAnio(anioDelDia(fechaCausacion)!)
       const tercero = terceroId
         ? await prisma.tercero.findUnique({ where: { id: terceroId }, select: { es_declarante_renta: true, es_autorretenedor: true } })
         : null
@@ -410,7 +411,7 @@ export async function actualizarIngreso(id: string, cambios: EdicionIngreso, por
       sugerida = r.valor
       const dif = compararRetencion(practicada, sugerida)
       if (dif.hay) {
-        nota = `El cliente retuvo $${practicada.toFixed(0)} y por los parámetros de ${fechaCausacion.getFullYear()} ` +
+        nota = `El cliente retuvo $${practicada.toFixed(0)} y por los parámetros de ${anioDelDia(fechaCausacion)} ` +
           `correspondían $${sugerida.toFixed(0)} (diferencia $${dif.diferencia?.toFixed(0)}). ` +
           `Se conserva lo practicado, que es lo que figura en su comprobante.`
       }
@@ -419,7 +420,7 @@ export async function actualizarIngreso(id: string, cambios: EdicionIngreso, por
       else throw err
     }
   } else {
-    nota = `Sin un año fiscal ${fechaCausacion.getFullYear()} ACTIVO no se calcula el sugerido de retención: se guarda solo lo practicado.`
+    nota = `Sin un año fiscal ${anioDelDia(fechaCausacion)} ACTIVO no se calcula el sugerido de retención: se guarda solo lo practicado.`
   }
 
   await prisma.ingreso.update({

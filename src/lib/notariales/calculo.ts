@@ -34,6 +34,7 @@ import {
 import { liquidarIva, type AporteIva } from './iva.ts'
 import { codigoTrazabilidad } from './trazabilidad.ts'
 import { divisorDe } from '../escala-tarifa.ts'
+import { diaEnColombia } from '../dia-colombia.ts'
 
 /** Multiplicador de una tarifa suelta (no de un tramo). */
 function multiplicador(c: Concepto): number {
@@ -209,8 +210,12 @@ export function liquidar(
   // El año es una etiqueta: ninguna de sus resoluciones empieza el 1 de enero.
   // Por defecto hoy, y la liquidación la devuelve para que el PDF la imprima.
   const hoy = opciones.fecha ?? new Date()
+  // EL PUENTE. Un acto se firma en Colombia, así que el día por defecto es el de
+  // Colombia y no el del servidor. Con componentes locales, una liquidación de
+  // las 19:30 del 1 de febrero se fechaba el 2 en Vercel —que corre en UTC—, y
+  // el 2 de febrero es justo la frontera de vigencia registral.
   const fechaActo = entrada.fecha_acto === null || entrada.fecha_acto === undefined || entrada.fecha_acto === ''
-    ? `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`
+    ? diaEnColombia(hoy)
     : exigirFechaIso(entrada.fecha_acto, 'la fecha del acto')
   // Los respaldos del AÑO (UVT, UVB, tarifa de IVA, su redondeo y las cinco
   // bases) entran siempre: no hay liquidación que no los use.

@@ -42,6 +42,8 @@ const GUARDAS = {
       vigila: 'que ninguna vulnerabilidad nueva entre sin clasificar quien la alcanza' },
     { nombre: 'fechas invariantes a la zona', guion: 'verificar-fechas-invariantes.mjs',
       vigila: 'que el arnes de fechas de la MISMA salida con TZ=UTC y con TZ=America/Bogota' },
+    { nombre: 'anio de las FAQ', guion: 'verificar-anio-faq.mjs',
+      vigila: 'que el anio citado en la portada no se quede atras ni vaya adelantado' },
     { nombre: 'fechas en la zona del servidor', guion: 'inventario-fechas.mjs',
       vigila: 'donde se lee un dia a partir de componentes locales de una fecha' },
     { nombre: 'decisiones repetidas', guion: 'decisiones-repetidas.mjs',

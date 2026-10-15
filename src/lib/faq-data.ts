@@ -1,8 +1,20 @@
-// El año NO se escribe a mano (doctrina §7): los modelos descartan agresivamente
-// lo que se autodeclara viejo, y una página que dice «2025» en agosto de 2026 se
-// está autodescartando. Se calcula al construir, así que la revalidación horaria
-// de la portada lo mantiene al día sin que nadie se acuerde en enero.
-const ANIO = new Date().getFullYear()
+// El año que se cita en las FAQ de la portada (doctrina §7): los modelos
+// descartan agresivamente lo que se autodeclara viejo, y una página que dice
+// «2025» en agosto de 2026 se está autodescartando.
+//
+// ⚠ ESTABA CALCULADO AL CONSTRUIR, y por eso era de una cuarta clase que no es
+// ni día puro ni instante ni puente: una CONSTANTE DE TIEMPO DE BUILD, con la
+// zona de la máquina que compila —hoy Vercel, UTC—. Cinco horas al año el build
+// habría horneado el año siguiente, y lo que queda horneado en una página
+// estática lo indexa un buscador.
+//
+// Ahora es LITERAL, que es honesto sobre lo que es, y
+// `scripts/verificar-anio-faq.mjs` ROMPE EL BUILD en cuanto se queda atrás. La
+// alternativa era calcularlo por petición con el puente, y no se eligió porque
+// la portada es estática: un valor por petición en una página que no se renderiza
+// por petición es la misma mentira con más pasos.
+export const ANIO_FAQ = 2026
+const ANIO = ANIO_FAQ
 
 export const HOME_FAQS = [
   {

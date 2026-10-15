@@ -47,65 +47,63 @@ import { readFileSync } from 'node:fs'
  * saber ANTES de moverlo, y por eso va por sitio y no en una frase general.
  */
 const SITIOS = [
-  /* ── Cambia QUÉ NORMA aplica ────────────────────────────────────────────── */
-  { archivo: 'src/lib/notariales/calculo.ts', peso: 'NORMA',
-    ancla: "`${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`",
-    que: 'la fecha del acto por defecto, cuando la simulacion no la trae',
-    efecto: 'MEJORA. Hoy, una liquidacion de las 19:30 de Colombia del 1 de febrero se fecha el 2, ' +
-      'que es justo la frontera de vigencia registral. Con Bogota se fecharia el 1, que es el dia real.' },
-
-  /* ── Cambia el AÑO FISCAL ───────────────────────────────────────────────── */
-  { archivo: 'src/lib/finanzas/ingresos.ts', peso: 'AÑO FISCAL',
-    ancla: 'const anioFiscal = fechaCausacion.getFullYear()',
-    que: 'el anio fiscal de un ingreso',
-    efecto: 'DEPENDE DEL ORIGEN. Si la fecha se teclea, hoy acierta y con Bogota se iria un dia atras; ' +
-      'si viene del reloj, hoy falla las ultimas cinco horas del dia y con Bogota acierta.' },
-  { archivo: 'src/lib/finanzas/completar.ts', peso: 'AÑO FISCAL',
-    ancla: 'const estado = await estadoDelAnio(e.fecha.getFullYear())',
-    que: 'contra que anio fiscal se valida un gasto al completarlo',
-    efecto: 'Igual que el anterior: el 1 de enero es el dia donde cambia de anio.' },
-  { archivo: 'src/lib/finanzas/parametros.ts', peso: 'AÑO FISCAL',
-    ancla: 'return fecha.getFullYear()',
-    que: 'de que anio son los parametros que aplican',
-    efecto: 'Igual. Un parametro del anio equivocado no es un redondeo: es otra tarifa.' },
-
-  /* ── Cambia el PERIODO de un reporte ────────────────────────────────────── */
-  { archivo: 'src/lib/finanzas/reportes.ts', peso: 'PERIODO',
-    ancla: 'export function periodoDelAnio(anio = new Date().getFullYear()): Periodo {',
-    que: 'el anio por defecto de un reporte',
-    efecto: 'Cinco horas al ano el reporte abre con el anio siguiente. Molesto, no grave: se elige a mano.' },
-  { archivo: 'src/lib/finanzas/egresos.ts', peso: 'PERIODO',
-    ancla: 'const desde = new Date(ahora.getFullYear(), ahora.getMonth(), 1)',
+  /* ══ EL PUENTE: un instante → el día de Colombia ═════════════════════ */
+  { archivo: 'src/lib/notariales/calculo.ts', clase: 'PUENTE',
+    ancla: '? diaEnColombia(hoy)',
+    que: 'la fecha del acto por defecto',
+    porque: 'un acto se firma en Colombia; con el reloj del servidor, las 19:30 del 1 de febrero se fechaban el 2' },
+  { archivo: 'src/lib/notariales/trazabilidad.ts', clase: 'PUENTE',
+    ancla: 'const fecha = diaEnColombia(f)',
+    que: 'la fecha del codigo impreso en el PDF',
+    porque: 'lo lee una persona en Colombia: el dia tiene que ser el suyo' },
+  { archivo: 'src/components/layout/Footer.tsx', clase: 'PUENTE',
+    ancla: '{anioEnColombia()} Su Finca',
+    que: 'el anio del pie',
+    porque: 'corre en el SERVIDOR, que en Vercel es UTC' },
+  { archivo: 'src/lib/finanzas/egresos.ts', clase: 'PUENTE',
+    ancla: 'const hoy = hoyEnColombia()',
     que: 'el primer dia del mes en curso, para listar',
-    efecto: 'Las ultimas cinco horas del ultimo dia del mes, la lista arranca en el mes siguiente ' +
-      'y los gastos de ese dia no aparecen.' },
+    porque: 'las ultimas cinco horas del mes la lista arrancaba en el siguiente' },
+  { archivo: 'src/lib/finanzas/reportes.ts', clase: 'PUENTE',
+    ancla: 'export const anioFiscalEnCurso = (): number => anioEnColombia()',
+    que: 'el anio fiscal en curso, separado de los limites del periodo',
+    porque: 'periodoDelAnio era las dos clases a la vez y se partio' },
+  { archivo: 'src/app/api/admin/notariales/route.ts', clase: 'PUENTE',
+    ancla: 'anio_sugerido: Number(hoyEnColombia().slice(0, 4))',
+    que: 'el anio propuesto al sembrar, decidido en el servidor',
+    porque: 'el anio tarifario es un hecho sobre Colombia, no sobre donde este el visitante' },
 
-  /* ── Cambia la RETENCIÓN de datos personales ────────────────────────────── */
-  { archivo: 'src/lib/retencion-accesos-contador.ts', peso: 'RETENCION',
-    ancla: 'd.setMonth(d.getMonth() - MESES_RETENCION_ACCESOS)',
+  /* ══ DÍA PURO: cadena AAAA-MM-DD, sin Date de por medio ═══════════════ */
+  { archivo: 'src/lib/finanzas/ingresos.ts', clase: 'DIA PURO',
+    ancla: 'const anioFiscal = Number(diaCausacion.slice(0, 4))',
+    que: 'el anio fiscal de un ingreso',
+    porque: 'sale de la cadena; con el Date de una columna DATE, .getFullYear() se mueve con TZ' },
+  { archivo: 'src/lib/finanzas/completar.ts', clase: 'DIA PURO',
+    ancla: 'await estadoDelAnio(anioDelDia(e.fecha)!)',
+    que: 'el anio contra el que se valida un gasto o un ingreso (4 sitios)',
+    porque: 'idem: la columna es DATE y se lee como cadena' },
+  { archivo: 'src/lib/finanzas/parametros.ts', clase: 'DIA PURO',
+    ancla: 'const a = anioDelDia(fecha)',
+    que: 'de que anio son los parametros que aplican',
+    porque: 'un parametro del anio equivocado no es un redondeo: es otra tarifa' },
+  { archivo: 'src/lib/finanzas/reportes.ts', clase: 'DIA PURO',
+    ancla: 'return { desde: new Date(Date.UTC(anio, 0, 1)), hasta: new Date(Date.UTC(anio, 11, 31)) }',
+    que: 'los limites de un periodo anual',
+    porque: 'en hora local el 1 de enero empezaba a las 05:00 UTC y la madrugada entraba o salia' },
+  { archivo: 'src/lib/faq-data.ts', clase: 'LITERAL',
+    ancla: 'export const ANIO_FAQ = 2026',
+    que: 'el anio citado en la portada',
+    porque: 'era una constante de tiempo de BUILD; ahora es literal y verificar-anio-faq rompe el build' },
+
+  /* ══ INSTANTE: duracion y calendario entre instantes ═════════════════ */
+  { archivo: 'src/lib/retencion-accesos-contador.ts', clase: 'INSTANTE',
+    ancla: 'return mesesAntesEnColombia(MESES_RETENCION_ACCESOS)',
     que: 'el corte de los doce meses para anonimizar accesos',
-    efecto: 'Un dia de diferencia en el corte. Hoy la tabla tiene 0 filas, asi que no mueve nada.' },
-  { archivo: 'src/lib/retencion-visitas.ts', peso: 'RETENCION',
-    ancla: 'd.setMonth(d.getMonth() - MESES_AVISO)',
+    porque: 'restar 365 dias no es doce meses, y setMonth sobre componentes locales daba otro corte por zona' },
+  { archivo: 'src/lib/retencion-visitas.ts', clase: 'INSTANTE',
+    ancla: 'return mesesAntesEnColombia(MESES_AVISO)',
     que: 'el corte del aviso de retencion de visitas',
-    efecto: 'Un dia de diferencia en el corte.' },
-
-  /* ── Cambia un IDENTIFICADOR impreso ───────────────────────────────────── */
-  { archivo: 'src/lib/notariales/trazabilidad.ts', peso: 'IMPRESO',
-    ancla: 'const fecha = `${f.getFullYear()}-${dos(f.getMonth() + 1)}-${dos(f.getDate())}`',
-    que: 'la fecha del codigo de trazabilidad que lleva el PDF',
-    efecto: 'El PDF diria el dia de Colombia en vez del del servidor. Es lo que el lector espera.' },
-
-  /* ── Solo cosmético: el año de un pie o un desplegable ──────────────────── */
-  { archivo: 'src/components/layout/Footer.tsx', peso: 'COSMETICO',
-    ancla: 'new Date().getFullYear()', que: 'el anio del pie de pagina',
-    efecto: 'Cinco horas al ano el pie diria el anio siguiente.' },
-  { archivo: 'src/lib/faq-data.ts', peso: 'COSMETICO',
-    ancla: 'const ANIO = new Date().getFullYear()', que: 'el anio que se cita en las FAQ',
-    efecto: 'Igual que el pie, pero esto lo lee un buscador.' },
-  { archivo: 'src/app/admin/notariales/page.tsx', peso: 'COSMETICO',
-    ancla: 'useState(new Date().getFullYear())', que: 'el anio propuesto al sembrar uno nuevo',
-    efecto: 'Cinco horas al ano propone el siguiente. Se escribe a mano.' },
+    porque: 'idem' },
 ]
 
 /* ── la comprobación ─────────────────────────────────────────────────────── */
@@ -131,21 +129,20 @@ for (const s of SITIOS) {
   }
 }
 
-const PESOS = ['NORMA', 'AÑO FISCAL', 'PERIODO', 'RETENCION', 'IMPRESO', 'COSMETICO']
+const CLASES = ['PUENTE', 'DIA PURO', 'LITERAL', 'INSTANTE']
 
-console.log('\n══ FECHAS EN LA ZONA DEL SERVIDOR ════════════════════════════')
-console.log('  Nada fija TZ. Esta maquina es UTC-5 y Vercel es UTC.')
-console.log(`  ${SITIOS.length} sitios leen componentes locales de una fecha:\n`)
-for (const p of PESOS) {
-  const suyos = SITIOS.filter(s => s.peso === p)
+console.log('\n══ LAS TRES CLASES DE FECHA, SITIO POR SITIO ══════════════════')
+console.log('  Nada fija TZ, y no hace falta: ninguno de estos sitios depende de ella.')
+console.log(`  ${SITIOS.length} sitios, clasificados:\n`)
+for (const c of CLASES) {
+  const suyos = SITIOS.filter(x => x.clase === c)
   if (!suyos.length) continue
-  console.log(`  ${p} — ${suyos.length}`)
-  for (const s of suyos) console.log(`     ${s.archivo}  ·  ${s.que}`)
+  console.log(`  ${c} — ${suyos.length}`)
+  for (const x of suyos) console.log(`     ${x.archivo}  ·  ${x.que}`)
 }
-const graves = SITIOS.filter(s => s.peso === 'NORMA' || s.peso === 'AÑO FISCAL').length
-console.log(`\n  ${graves} de los ${SITIOS.length} cambian qué norma aplica o de qué año fiscal es un movimiento.`)
-console.log('  TZ=America/Bogota NO es el arreglo: arregla las fechas del reloj y')
-console.log('  rompe las tecleadas. Ver la cabecera de este archivo.')
+console.log('\n  Quien comprueba que el resultado no depende de la zona es')
+console.log('  scripts/verificar-fechas-invariantes.mjs, sobre los DOS caminos:')
+console.log('  el puente en memoria y lo que sale de la base.')
 
 if (problemas.length) {
   console.log(`\n  ✗ el inventario no cuadra con el codigo (${problemas.length}):`)

@@ -24,51 +24,79 @@
 import { spawnSync } from 'node:child_process'
 
 const ZONAS = ['UTC', 'America/Bogota']
-const salidas = new Map()
+
+/**
+ * DOS CAMINOS, no uno.
+ *
+ * `probar-fechas` ejercita el puente en memoria. `probar-fechas-base` lee de
+ * PostgreSQL a través de Prisma, que es el otro camino y la otra superficie: una
+ * columna `DATE` llega a JavaScript como `Date` a medianoche UTC, así que migrar
+ * la columna era necesario y no suficiente. Comprobar solo el de memoria
+ * dejaría la mitad sin mirar.
+ */
+const ARNESES = [
+  { guion: 'scripts/probar-fechas.mjs', que: 'el puente, en memoria' },
+  { guion: 'scripts/probar-fechas-base.mjs', que: 'lo que sale de la base' },
+]
 
 console.log('\n══ LAS FECHAS NO DEPENDEN DE LA ZONA DEL PROCESO ═════════════')
 
-for (const tz of ZONAS) {
-  const r = spawnSync(process.execPath, ['scripts/probar-fechas.mjs'], {
-    encoding: 'utf8',
-    env: { ...process.env, TZ: tz },
-  })
-  if (r.error) {
-    console.log(`  ✗ no pude correr el arnés con TZ=${tz}: ${r.error.message}\n`)
-    process.exit(1)
+let malas = 0
+
+for (const arnes of ARNESES) {
+  const salidas = new Map()
+  console.log(`\n  ${arnes.que}  (${arnes.guion})`)
+
+  for (const tz of ZONAS) {
+    const r = spawnSync(process.execPath, [arnes.guion], {
+      encoding: 'utf8',
+      env: { ...process.env, TZ: tz },
+    })
+    if (r.error) {
+      console.log(`     ✗ no pude correrlo con TZ=${tz}: ${r.error.message}`)
+      malas++
+      continue
+    }
+    salidas.set(tz, { texto: `${r.stdout ?? ''}`, codigo: r.status })
+    const noPregunto = /NO PUDE PREGUNTAR/.test(`${r.stdout ?? ''}`)
+    console.log(`     TZ=${tz.padEnd(16)} ${noPregunto ? 'no pudo preguntar' : r.status === 0 ? 'en verde' : `con fallos (${r.status})`}`)
   }
-  /* Se junta stdout con el código de salida: un arnés que falla en una zona y
-   * pasa en la otra es justo lo que esto busca. */
-  salidas.set(tz, { texto: `${r.stdout ?? ''}`, codigo: r.status })
-  const n = (`${r.stdout ?? ''}`.match(/verificaciones/) ?? []).length
-  void n
-  console.log(`  TZ=${tz.padEnd(16)} salida ${r.status === 0 ? 'en verde' : `con fallos (${r.status})`}`)
+
+  const a = salidas.get(ZONAS[0])
+  const b = salidas.get(ZONAS[1])
+  if (!a || !b) { malas++; continue }
+
+  if (a.codigo !== 0 || b.codigo !== 0) {
+    console.log('     ✗ no pasa en al menos una de las dos zonas:')
+    for (const l of a.texto.split('\n').filter(l => l.includes('✗'))) console.log(`        ${l.trim()}`)
+    malas++
+    continue
+  }
+
+  if (a.texto !== b.texto) {
+    /* La primera línea que difiere es el dato: dice QUÉ cambió entre zonas. */
+    const la = a.texto.split('\n')
+    const lb = b.texto.split('\n')
+    let i = 0
+    while (i < Math.max(la.length, lb.length) && la[i] === lb[i]) i++
+    console.log('     ✗ pasa en las dos zonas pero NO da la misma salida.')
+    console.log('        Algo se está comparando distinto en cada una.')
+    console.log(`        primera línea que difiere (${i + 1}):`)
+    console.log(`          TZ=UTC            ${JSON.stringify(la[i] ?? '(fin)')}`)
+    console.log(`          TZ=America/Bogota ${JSON.stringify(lb[i] ?? '(fin)')}`)
+    malas++
+    continue
+  }
+
+  const cuenta = a.texto.match(/(\d+) verificaciones/)?.[1]
+  console.log(`     ✓ misma salida en las dos zonas${cuenta ? ` (${cuenta} verificaciones)` : ''}`)
 }
 
-const [a, b] = ZONAS.map(z => salidas.get(z))
-
-if (a.codigo !== 0 || b.codigo !== 0) {
-  console.log('\n  ✗ el arnés de fechas no pasa en al menos una de las dos zonas.')
-  console.log('    La salida completa, con TZ=UTC:\n')
-  console.log(a.texto.split('\n').filter(l => l.includes('✗')).map(l => `    ${l}`).join('\n'))
-  console.log('')
+if (malas) {
+  console.log(`\n  ✗ ${malas} de ${ARNESES.length} caminos dependen de la zona del proceso.`)
+  console.log('    Mientras la respuesta dependa de dónde corra, el arreglo no está hecho.\n')
   process.exit(1)
 }
 
-if (a.texto !== b.texto) {
-  /* La primera línea que difiere es el dato: dice qué verificación cambió. */
-  const la = a.texto.split('\n')
-  const lb = b.texto.split('\n')
-  let i = 0
-  while (i < Math.max(la.length, lb.length) && la[i] === lb[i]) i++
-  console.log('\n  ✗ el arnés pasa en las dos zonas pero NO da la misma salida.')
-  console.log('    Eso significa que algo se está comparando distinto en cada una.')
-  console.log(`\n    primera línea que difiere (${i + 1}):`)
-  console.log(`      TZ=UTC            ${JSON.stringify(la[i] ?? '(fin)')}`)
-  console.log(`      TZ=America/Bogota ${JSON.stringify(lb[i] ?? '(fin)')}\n`)
-  process.exit(1)
-}
-
-const cuenta = a.texto.match(/(\d+) verificaciones/)?.[1] ?? '?'
-console.log(`\n  ✓ las ${cuenta} verificaciones dan la MISMA salida en las dos zonas.`)
-console.log('    El resultado no depende de la zona del proceso.\n')
+console.log('\n  ✓ los dos caminos dan lo mismo con TZ=UTC y con TZ=America/Bogota.')
+console.log('    Si se quita TZ de la ecuación, el resultado sigue siendo el mismo.\n')

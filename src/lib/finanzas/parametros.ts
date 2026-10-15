@@ -17,6 +17,7 @@ import {
 } from '@/lib/finanzas/calculo'
 import { claveConcepto, type Origen, type Procedencia, type ProcedenciaEscalares } from '@/lib/finanzas/pendientes'
 import { leerNumero } from '@/lib/finanzas/numeros'
+import { anioDelDia } from '../dia-colombia.ts'
 
 export class ErrorParametros extends Error {
   // Campo explícito, no propiedad de parámetro: Node ejecuta estos módulos
@@ -385,6 +386,16 @@ export async function volverABorrador(anio: number): Promise<void> {
   await prisma.parametroFiscal.update({ where: { anio }, data: { estado: 'BORRADOR', activado_por: null, activado_en: null } })
 }
 
+/**
+ * El año fiscal de un DÍA PURO.
+ *
+ * ⚠ No usa `fecha.getFullYear()`. Prisma devuelve una columna `DATE` como
+ * `Date` a medianoche UTC, así que los componentes LOCALES de ese `Date`
+ * dependen de la zona del proceso: con `TZ=America/Bogota`, el 1 de enero de
+ * 2027 se leeía como 2026. `anioDelDia` lo saca de la cadena ISO, sin zona.
+ */
 export function anioFiscalDe(fecha: Date): number {
-  return fecha.getFullYear()
+  const a = anioDelDia(fecha)
+  if (a === null) throw new ErrorParametros('Fecha vacía: no tiene año fiscal.', 400)
+  return a
 }
