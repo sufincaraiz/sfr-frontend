@@ -332,7 +332,8 @@ model MacKnowledge {
   categoria     String    @default("General")
   activo        Boolean   @default(true)
   orden         Int       @default(0)
-  vigente_hasta DateTime? // opcional: se ignora automáticamente al vencer (promos)
+  /// DIA PURO: sale de un <input type="date">. Ver src/lib/dia-colombia.ts.
+  vigente_hasta DateTime? @db.Date // opcional: se ignora automáticamente al vencer (promos)
   created_at    DateTime  @default(now())
   updated_at    DateTime  @updatedAt
 
@@ -843,8 +844,10 @@ model Ingreso {
   tercero               Tercero       @relation(fields: [tercero_id], references: [id])
   /// Causación y recaudo son FECHAS DISTINTAS y ambas importan: la primera
   /// manda en renta e IVA, la segunda en el flujo de caja.
-  fecha_causacion       DateTime
-  fecha_recaudo         DateTime?
+  /// DIA PURO: el día que la persona declara. El instante está en created_at.
+  fecha_causacion       DateTime  @db.Date
+  /// DIA PURO.
+  fecha_recaudo         DateTime? @db.Date
   valor_base            Decimal       @db.Decimal(16, 2)
   /// HECHOS del documento, no cálculos: el IVA facturado y lo que el cliente
   /// retuvo según su comprobante. El sistema calcula un sugerido y AVISA si
@@ -904,7 +907,8 @@ model Egreso {
   /// toques y muchas veces sin tercero identificado. Se completa después.
   tercero_id               String?
   tercero                  Tercero?          @relation(fields: [tercero_id], references: [id], onDelete: SetNull)
-  fecha                    DateTime
+  /// DIA PURO: el día del gasto, tecleado. El instante está en created_at.
+  fecha                    DateTime @db.Date
   descripcion              String
   valor_base               Decimal           @db.Decimal(16, 2)
   /// IVA PAGADO al proveedor. Se llama así y no «descontable» a propósito: si
@@ -931,7 +935,8 @@ model Egreso {
   reembolsa_tercero_id     String?
   reembolsaTercero         Tercero?          @relation("EgresoReembolsa", fields: [reembolsa_tercero_id], references: [id], onDelete: SetNull)
   estado_reembolso         EstadoReembolso?
-  fecha_reembolso          DateTime?
+  /// DIA PURO.
+  fecha_reembolso          DateTime? @db.Date
   /// Rastro de la reclasificación: de qué naturaleza venía, quién y por qué.
   reclasificado_de         NaturalezaEgreso?
   reclasificado_por        String?
@@ -988,10 +993,12 @@ model MovimientoCustodia {
   tercero                Tercero            @relation("CustodiaOrigen", fields: [tercero_id], references: [id])
   property_id            String?
   property               Property?          @relation(fields: [property_id], references: [id], onDelete: SetNull)
-  fecha_recibido         DateTime
+  /// DIA PURO: el día que la persona declara. La hora era precisión falsa.
+  fecha_recibido         DateTime @db.Date
   valor                  Decimal            @db.Decimal(16, 2)
   estado                 EstadoCustodia     @default(RECIBIDO)
-  fecha_cierre           DateTime?
+  /// DIA PURO.
+  fecha_cierre           DateTime? @db.Date
   /// A quién se le entregó, si era dinero de terceros.
   entregado_a_tercero_id String?
   entregadoA             Tercero?           @relation("CustodiaDestino", fields: [entregado_a_tercero_id], references: [id], onDelete: SetNull)
@@ -1057,8 +1064,10 @@ model EnlaceContador {
   /// bcrypt del PIN. NUNCA en texto plano.
   pinHash          String
   /// Alcance del enlace. Fuera de este rango no devuelve nada.
-  periodo_desde    DateTime
-  periodo_hasta    DateTime
+  /// DIA PURO: el periodo de un reporte es un rango de días, no de instantes.
+  periodo_desde    DateTime @db.Date
+  /// DIA PURO.
+  periodo_hasta    DateTime @db.Date
   expiraAt         DateTime
   revocado         Boolean                @default(false)
   ultimoAcceso     DateTime?

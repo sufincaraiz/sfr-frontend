@@ -40,6 +40,8 @@ const GUARDAS = {
       vigila: 'que el inventario de decisiones criticas siga hablando del codigo real' },
     { nombre: 'vulnerabilidades', guion: 'inventario-vulnerabilidades.mjs',
       vigila: 'que ninguna vulnerabilidad nueva entre sin clasificar quien la alcanza' },
+    { nombre: 'fechas invariantes a la zona', guion: 'verificar-fechas-invariantes.mjs',
+      vigila: 'que el arnes de fechas de la MISMA salida con TZ=UTC y con TZ=America/Bogota' },
     { nombre: 'fechas en la zona del servidor', guion: 'inventario-fechas.mjs',
       vigila: 'donde se lee un dia a partir de componentes locales de una fecha' },
     { nombre: 'decisiones repetidas', guion: 'decisiones-repetidas.mjs',
