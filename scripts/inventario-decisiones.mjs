@@ -165,27 +165,18 @@ const DECISIONES = [
     invertida: 'un cero por caerse de la lista se leería como «no hay retención»', mutacion: null,
     prueba: 'ninguna regla aplica: jamás devuelve cero', arnes: ARNES_N },
 
-  /* ── LA SEGUNDA COPIA DE LA FRONTERA, encontrada el 2026-10-15 ─────────
+  /* ── LA SEGUNDA COPIA DE LA FRONTERA: cerrada el 2026-10-15 ───────────
    *
-   * `desgloseDe` reimplementa la frontera del tramo y la conversión UVT dentro
-   * de `calculo.ts`, para repartir el recaudo entre la SNR y el Fondo. Las dos
-   * mutaciones de la frontera vigilan la copia de `tramos.ts` y NO esta.
+   * Había dos filas aquí, para la frontera y la conversión UVT reescritas dentro
+   * de `desgloseDe`. Ya no existen: las dos decisiones viven en
+   * `tramos.ts/tramoQueAplica`, que usan la tarifa y el desglose. Las filas se
+   * BORRARON en vez de marcarse como resueltas, por la misma razón por la que se
+   * borraron las 29 cifras sembradas: lo que no existe no necesita guarda.
    *
-   * ⚠ Y LAS DOS COPIAS NO SE COMPORTAN IGUAL: con una tabla en UVT y el año sin
-   * UVT cargado, `tramos.ts/limite()` LANZA y esta multiplica por 1, tratando
-   * los límites en UVT como pesos, en silencio. No es solo duplicación: es una
-   * divergencia que falla hacia el lado cómodo.
-   *
-   * Está aquí para que se cuente. El arreglo —que las dos usen el mismo
-   * ayudante— toca el motor y lo decide el titular. */
-  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'qué tramo aplica al repartir el recaudo SNR/Fondo',
-    ancla: 'if (base > desde && (hasta === null || base <= hasta)) {',
-    invertida: 'el recaudo se reparte con el tramo equivocado entre dos entidades',
-    mutacion: null },
-  { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'convertir un límite en UVT dentro del desglose institucional',
-    ancla: 'Number(t.desde) * (t.en_uvt && uvt ? uvt : 1)',
-    invertida: 'sin UVT cargado trata los límites en UVT como pesos en vez de detenerse',
-    mutacion: null },
+   * La divergencia que tenían —la copia multiplicaba los límites en UVT por 1
+   * cuando no había UVT, en vez de detenerse— está probada en el arnés:
+   * «una tabla en UVT sin UVT cargado se detiene, no multiplica por 1». */
+
   { archivo: `${N}guardas.ts`, grado: 'CRITICA', decide: 'el orden en que se recorren los conceptos para las guardas',
     ancla: 'const orden = [...conceptos].sort((a, b) => a.orden - b.orden)',
     invertida: 'las guardas de derivados comprobarían el orden al revés',

@@ -12,7 +12,7 @@
  */
 import {
   evaluarTramos, evaluarTramosCrudo, verificarTramos, repartir, alPeso, redondear,
-  exigirCamposConocidosDelTramo,
+  exigirCamposConocidosDelTramo, tramoQueAplica,
 } from '../src/lib/notariales/tramos.ts'
 import { hashDeBytes, huellaDelBloque } from '../src/lib/notariales/huella.ts'
 import { DIVISOR, divisorDe } from '../src/lib/escala-tarifa.ts'
@@ -1962,6 +1962,54 @@ check('todas las guardas del módulo están en la lista',
 
 
 // ────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────
+console.log('\n══ QUÉ TRAMO APLICA: UNA SOLA FRONTERA ══')
+// ────────────────────────────────────────────────────────────────────────
+/*
+ * La frontera estaba escrita dos veces: en el bucle de la tarifa y otra vez en
+ * `desgloseDe`, que reparte el recaudo entre la Superintendencia y el Fondo. Las
+ * dos decían lo mismo, así que ninguna cifra salió mal —pero las dos mutaciones
+ * de la frontera vigilaban una sola, y corregir una sin la otra no habría roto
+ * nada—. Ahora hay una.
+ */
+const TQA = [
+  T(1, 0, 100_000_000, 'FIJO', 10, 'PESOS'),
+  T(2, 100_000_000, null, 'FIJO', 20, 'PESOS'),
+]
+check('el límite superior pertenece al tramo: 100 M exactos van al primero',
+  tramoQueAplica(TQA, 100_000_000, null, 'x')?.orden === 1)
+check('un peso más pasa al segundo',
+  tramoQueAplica(TQA, 100_000_001, null, 'x')?.orden === 2)
+check('el límite inferior NO pertenece: base 0 no cae en ninguno',
+  tramoQueAplica(TQA, 0, null, 'x') === null)
+check('no lanza cuando no hay tramo: devuelve null y el mensaje se queda en casa',
+  tramoQueAplica([], 500, null, 'x') === null)
+
+/* EL FILTRO, que es lo que deja al desglose conservar su comportamiento: allí
+ * solo cuentan los tramos que traen aporte_snr. */
+check('con filtro, se salta el tramo que no lo pasa y sigue buscando',
+  tramoQueAplica(TQA, 100_000_000, null, 'x', t => t.orden !== 1) === null)
+check('…y encuentra el que sí lo pasa',
+  tramoQueAplica(TQA, 100_000_001, null, 'x', t => t.orden === 2)?.orden === 2)
+
+/* LA DIVERGENCIA QUE SE CERRÓ, y es la razón de que esto exista.
+ *
+ * La copia de `calculo.ts` convertía los límites en UVT con
+ * `(t.en_uvt && uvt ? uvt : 1)`: sin UVT cargado multiplicaba por 1 y trataba
+ * los límites en UVT como pesos, EN SILENCIO. Ahora hay un solo camino y
+ * lanza. */
+const TQA_UVT = [
+  { ...T(1, 0, 1000, 'FIJO', 10, 'PESOS'), en_uvt: true },
+  { ...T(2, 1000, null, 'FIJO', 20, 'PESOS'), en_uvt: true },
+]
+lanza('una tabla en UVT sin UVT cargado se detiene, no multiplica por 1',
+  () => tramoQueAplica(TQA_UVT, 500, null, 'x'),
+  'ErrorEsquemaNotarial', 'UVT')
+check('con UVT cargado, los límites se convierten: 500 UVT × 100 = 50.000 cae en el primero',
+  tramoQueAplica(TQA_UVT, 50_000, 100, 'x')?.orden === 1)
+check('…y 150.000 cae en el segundo (1.000 UVT × 100 = 100.000)',
+  tramoQueAplica(TQA_UVT, 150_000, 100, 'x')?.orden === 2)
+
 // ────────────────────────────────────────────────────────────────────────
 console.log('\n══ LA ESCALA DE UNA TARIFA, EN UN SOLO SITIO ══')
 // ────────────────────────────────────────────────────────────────────────

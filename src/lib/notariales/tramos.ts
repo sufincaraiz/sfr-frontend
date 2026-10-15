@@ -162,13 +162,8 @@ export function evaluarTramosCrudo(
     return total
   }
 
-  for (const t of orden) {
-    const desde = limite(t.desde, !!t.en_uvt, uvt, etiqueta)
-    const hasta = t.hasta === null || t.hasta === undefined
-      ? null
-      : limite(t.hasta, !!t.en_uvt, uvt, etiqueta)
-    const dentro = base > desde && (hasta === null || base <= hasta)
-    if (!dentro) continue
+  const t = tramoQueAplica(orden, base, uvt, etiqueta)
+  if (t) {
     if (t.modo_calculo === 'FIJO') return pesos(t.valor, `${etiqueta} (tramo ${t.orden})`)
     return multiplicador(t, etiqueta) * base
   }
@@ -176,6 +171,52 @@ export function evaluarTramosCrudo(
     `${etiqueta}: la base ${base} no cae en ningún tramo. La tabla tiene un hueco.`,
     'tramos',
   )
+}
+
+/**
+ * QUÉ TRAMO APLICA A UNA BASE. **La frontera vive aquí y en ningún otro sitio.**
+ *
+ * Estaba escrita dos veces: en el bucle de arriba y otra vez dentro de
+ * `desgloseDe`, en `calculo.ts`, que reparte el recaudo entre la
+ * Superintendencia y el Fondo. Las dos decían lo mismo, así que ninguna cifra
+ * salió mal —pero las dos mutaciones de la frontera vigilaban solo la de aquí,
+ * y corregir una sin la otra no habría roto nada—.
+ *
+ * ⚠ Y NO SE COMPORTABAN IGUAL. La copia de `calculo.ts` convertía los límites
+ * en UVT con `Number(t.desde) * (t.en_uvt && uvt ? uvt : 1)`: con una tabla en
+ * UVT y el año sin UVT cargado multiplicaba por 1 y trataba los límites como
+ * pesos, mientras `limite()` LANZA. Esa divergencia estaba **sombreada por el
+ * orden de las llamadas** —la tarifa se calcula antes y ya había lanzado—, o
+ * sea que no produjo una cifra mala. Una divergencia protegida solo por el
+ * orden en que se llaman dos funciones está a un refactor de estar viva.
+ *
+ * `filtro` existe para que `desgloseDe` conserve su comportamiento: allí solo
+ * cuentan los tramos que traen `aporte_snr`. Lo que se comparte es la FRONTERA
+ * y la conversión de límites; a quién se le pregunta lo decide quien llama,
+ * igual que los mensajes de error en `escala-tarifa.ts`.
+ *
+ * Devuelve `null` en vez de lanzar: una tabla con un hueco es un error para la
+ * tarifa y una ausencia legítima para el desglose. El mensaje se queda en casa.
+ */
+export function tramoQueAplica(
+  tramos: Tramo[],
+  base: number,
+  uvt: number | null,
+  etiqueta: string,
+  filtro: (t: Tramo) => boolean = () => true,
+): Tramo | null {
+  const orden = [...tramos].sort((a, b) => a.orden - b.orden)
+  for (const t of orden) {
+    if (!filtro(t)) continue
+    const desde = limite(t.desde, !!t.en_uvt, uvt, etiqueta)
+    const hasta = t.hasta === null || t.hasta === undefined
+      ? null
+      : limite(t.hasta, !!t.en_uvt, uvt, etiqueta)
+    /* El intervalo es `desde < base ≤ hasta`. Ver la cabecera de este archivo:
+     * NO LO CORRIJAS sin leer la cita de la resolución. */
+    if (base > desde && (hasta === null || base <= hasta)) return t
+  }
+  return null
 }
 
 /** El valor de la tarifa, redondeado como diga su resolución. */

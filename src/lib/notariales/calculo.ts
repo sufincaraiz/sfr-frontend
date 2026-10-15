@@ -25,7 +25,7 @@ import {
   type Grupo, type Linea, type Liquidacion, type Modo,
 } from './tipos.ts'
 import { Prisma } from '@prisma/client'
-import { evaluarTramos, pesos, redondear, repartir, tasa } from './tramos.ts'
+import { evaluarTramos, pesos, redondear, repartir, tasa, tramoQueAplica} from './tramos.ts'
 import { calcularBase, type Base } from './bases.ts'
 import { calcularRetencion } from './retencion.ts'
 import {
@@ -185,17 +185,14 @@ function desgloseDe(c: Concepto, base: number | null, uvt: number | null): { snr
     if (!unico || unico.aporte_snr === null || unico.aporte_snr === undefined) return null
     return { snr: Number(unico.aporte_snr), fondo: Number(unico.aporte_fondo ?? 0) }
   }
-  for (const t of tramos) {
-    if (t.aporte_snr === null || t.aporte_snr === undefined) continue
-    const desde = Number(t.desde) * (t.en_uvt && uvt ? uvt : 1)
-    const hasta = t.hasta === null || t.hasta === undefined
-      ? null
-      : Number(t.hasta) * (t.en_uvt && uvt ? uvt : 1)
-    if (base > desde && (hasta === null || base <= hasta)) {
-      return { snr: Number(t.aporte_snr), fondo: Number(t.aporte_fondo ?? 0) }
-    }
-  }
-  return null
+  /* LA FRONTERA NO SE REESCRIBE AQUÍ. Estaba copiada —y la copia convertiía los
+   * límites en UVT multiplicando por 1 cuando no había UVT, en vez de
+   * detenerse—. Ahora la decide `tramoQueAplica`, que es la misma que usa la
+   * tarifa: si alguien cambia el convenio del intervalo, cambia para los dos. */
+  const t = tramoQueAplica(tramos, base, uvt, `${c.label} (desglose institucional)`,
+    x => x.aporte_snr !== null && x.aporte_snr !== undefined)
+  if (!t) return null
+  return { snr: Number(t.aporte_snr), fondo: Number(t.aporte_fondo ?? 0) }
 }
 
 export function liquidar(
@@ -395,6 +392,11 @@ export function liquidar(
     // no para las copias. Lo específico va en la ayuda de cada concepto.
     if (c.cantidad_variable_por_operacion) avisos.push('La cantidad depende de la operación.')
 
+    /* UNA sola vez. Estaba llamado dos veces en la misma linea —una para
+     * preguntar si habia desglose y otra para ponerlo—, y dos llamadas a lo
+     * que deberia ser un solo dato es como empiezan las divergencias. */
+    const desglose = desgloseDe(c, base?.valor ?? null, uvt)
+
     lineas.push({
       clave: c.clave,
       label: c.label,
@@ -403,7 +405,7 @@ export function liquidar(
       valor,
       iva_exacto: ivaExacto.toString(),
       ...(c.precio_incluye_iva ? { iva_incluido_exacto: ivaIncluido.toString() } : {}),
-      ...(desgloseDe(c, base?.valor ?? null, uvt) ? { desglose_institucional: desgloseDe(c, base?.valor ?? null, uvt) } : {}),
+      ...(desglose ? { desglose_institucional: desglose } : {}),
       total: valor,
       comprador: rv.comprador,
       vendedor: rv.vendedor,

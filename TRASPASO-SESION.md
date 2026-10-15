@@ -2460,6 +2460,130 @@ proceso sale con 1 al final con el listado completo. Cada una en su propio
 proceso, para que un cuelgue no se lleve a las que faltan, y un cuelgue cuenta
 como fallo —el criterio es «no terminó en verde», no «imprimió una ✗»—.
 
+## La divergencia del UVT: qué cifra habría dado distinto y a quién
+
+2026-10-15. La frontera del tramo estaba escrita dos veces y las dos copias no
+convertían los límites en UVT igual:
+
+| | tabla en UVT y año sin UVT cargado |
+|---|---|
+| `tramos.ts/limite()` | **lanza** «tiene tramos en UVT y el año no tiene UVT cargado» |
+| la copia en `calculo.ts/desgloseDe` | `(t.en_uvt && uvt ? uvt : 1)` → **multiplica por 1** |
+
+**La cifra concreta.** Una tabla con límites de 0 a 1.000 **UVT** y una base de
+$50.000. Con el UVT de 2026 cargado (52.374), el primer tramo llega hasta
+$52.374.000 y la base cae en él. Sin UVT cargado, la copia trataría el límite
+como **$1.000** —mil pesos, no mil UVT— y la base de $50.000 caería en el
+**segundo** tramo. Elegiría el `aporte_snr` y el `aporte_fondo` de otra fila.
+
+**A quién afecta.** No al comprador ni al vendedor: el desglose institucional no
+cambia lo que se paga ni cómo se reparte entre las partes. Reparte lo ya cobrado
+entre **la Superintendencia de Notariado y Registro y el Fondo**, y se imprime en
+el PDF. O sea: una cifra equivocada en un documento que dice a qué entidad va el
+dinero recaudado.
+
+**Y por qué no se manifestó.** Estaba **sombreada por el orden de las
+llamadas**: `desgloseDe` corre después de calcular la tarifa, y la tarifa ya
+había lanzado por lo mismo. No produjo ninguna cifra mala.
+
+> **Una divergencia protegida solo por el orden en que se llaman dos funciones
+> está a un refactor de estar viva.** Eso no es una guarda: es una
+> coincidencia afortunada.
+
+Cerrada: las dos decisiones viven en `tramos.ts/tramoQueAplica`, que usan la
+tarifa y el desglose, y el arnés prueba que una tabla en UVT sin UVT **se
+detiene** en vez de multiplicar por 1.
+
+# LO QUE ESCONDE LA HERRAMIENTA — va por encima de las doce formas
+
+Las doce formas de esconderse son del que **informa**: afirmaciones falsas
+disfrazadas, o una verdad literal que deja en pie la creencia equivocada. Se
+cazan leyendo lo que se dijo.
+
+Estas cuatro son de la **herramienta**. No las comete nadie: las impone el
+instrumento, y por eso ninguna cantidad de honestidad al informar las evita.
+Van por encima porque limitan lo que se puede llegar a saber.
+
+## 1. El modelo de datos decide qué se puede ver
+
+> **Un inventario con una fila por decisión no puede reportar duplicación
+> aunque uno quiera. No es un descuido: es una imposibilidad.**
+
+2026-10-15. La escala de una tarifa estaba escrita en cuatro sitios y el
+inventario encontró tres. No por falta de atención: cuando la decisión quedó
+registrada desde `tramos.ts` y `retencion.ts`, **la segunda copia no tenía dónde
+ir**. La fila era la decisión y el riesgo era la ocurrencia, y el formato no
+admitía la pregunta «¿cuántas veces?».
+
+Lo mismo volvió a pasar el mismo día con la frontera del tramo: dos copias, una
+en la tarifa y otra en el desglose institucional, y las dos mutaciones vigilaban
+solo la primera.
+
+**La regla operativa:** antes de confiar en un informe, preguntar qué preguntas
+su formato **no puede** responder. Si la respuesta a una de ellas importa, hace
+falta otro instrumento, no más cuidado. De ahí salieron el contador de
+ocurrencias de `inventario-decisiones.mjs` y `scripts/decisiones-repetidas.mjs`.
+
+## 2. Un inventario guiado por grep solo contiene lo que ya se sospechaba
+
+> **Una pasada de confirmación disfrazada de descubrimiento.**
+
+Para inventariar las 48 decisiones no se leyeron los archivos de principio a
+fin: se grepearon los conceptos esperados —`119`, `precio_incluye_iva`,
+`OBLIGACIONES`, `ROUND_HALF_UP`— y se leyeron **esas regiones**. De
+`notariales/calculo.ts` se leyeron las líneas 344-375 y 444-460, y nunca las
+30-50, donde estaba el cuarto `multiplicador`.
+
+Un grep solo encuentra lo que se sabe nombrar. Sirve para acotar la **población
+candidata** —621 sitios— y nunca para la respuesta: hay que abrir las líneas.
+Es la misma regla que ya estaba escrita para las capas de mapeo, una capa más
+arriba.
+
+## 3. Una herramienta que mide no puede heredar su configuración del entorno
+
+> **Si el resultado depende de una variable que no pusimos nosotros, el
+> resultado no es un hecho.**
+
+2026-10-15. El guión que cuenta vulnerabilidades llamaba a `npm audit` sin
+banderas. Aquí cuenta 19; en Vercel contó **8**, porque allí `NODE_ENV=production`
+y npm omite las devDependencies del audit. El guión concluyó que once paquetes
+declarados «ya no aparecen» y rompió el despliegue.
+
+Es la misma forma que la huella sobre CRLF: **medir la superficie en vez del
+contenido**. El arreglo es el mismo, bandera explícita siempre —`--omit=dev` y
+`--include=dev`—, y de paso el informe pasó de un número a dos.
+
+**Y el corolario, que apareció al intentar declarar `allowScripts`:** el npm de
+esta máquina (11.13.0) y el de Vercel **no son el mismo**, y ni `engines` ni
+`packageManager` lo fijan. Una configuración que solo el npm del otro lado puede
+leer, escrita sin poder comprobarla, es la línea que aparenta configurar algo.
+Primero se fija el gestor, después se declara.
+
+## 4. Lo que decide no es si el código vulnerable se ejecuta, sino quién controla la entrada
+
+> **El reparto «desarrollo o producción» es más cómodo y peor. Lo que decide es
+> de quién viene lo que el código procesa.**
+
+2026-10-15. La primera clasificación de las 19 vulnerabilidades decía
+«dependencia de desarrollo» de seis paquetes que **sí** están en el árbol de
+producción y **sí** corren sirviendo peticiones:
+
+- `js-yaml` → `argparse` → `sprintf-js`, vía **`gray-matter`**, que parsea el
+  frontmatter del blog, y esas rutas leen el MDX en runtime;
+- `postcss` → `nanoid`, `source-map-js`, vía **`next`** y **`critters`** con
+  `optimizeCss` activo.
+
+Lo que los separa de la crítica no es que no corran: es que **procesan nuestro
+repositorio y nuestra configuración, no lo que mande un visitante**. De ahí las
+tres categorías de `scripts/inventario-vulnerabilidades.mjs` —VISITANTE,
+ENTRADA_NUESTRA, SOLO_DESARROLLO— y de ahí que la tercera **se compruebe**
+contra el audit en vez de afirmarse: la categoría que se afirmaba era justo la
+que estaba mal.
+
+Vale más allá de las dependencias: es el mismo criterio que decide si una
+inyección importa, si un límite de tamaño hace falta, o si un parseo lento es un
+problema.
+
 ## Cuarta superficie, y esta la causó el instrumento que medía las otras
 
 2026-10-15, el mismo día. El guión recién escrito para contar vulnerabilidades

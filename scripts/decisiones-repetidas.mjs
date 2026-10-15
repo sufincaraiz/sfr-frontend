@@ -107,6 +107,43 @@ function decide(l) {
   return comparacion || escala || redondeo || orden || ternario
 }
 
+/**
+ * EL NÚCLEO DE LA CONDICIÓN, SIN EL ENVOLTORIO.
+ *
+ * ⚠ Esto se añadió porque el guión falló en el caso para el que existía.
+ *
+ * La frontera del tramo está escrita dos veces: en `tramos.ts` como
+ * `const dentro = base > desde && (...)` y en `calculo.ts` como
+ * `if (base > desde && (...)) {`. **Es la misma decisión y el normalizador las
+ * daba por distintas**, porque compara la línea entera y el envoltorio difiere.
+ * El hallazgo llegó por el grupo vecino —la comprobación de `hasta`— y
+ * leyendo alrededor, o sea por la lectura y no por el instrumento.
+ *
+ * Así que cada línea se indexa DOS veces: por su forma completa y por el
+ * núcleo de su condición. `if (X) {`, `const · = X`, `return X` y `while (X)`
+ * comparten núcleo si X es el mismo.
+ */
+function nucleo(f) {
+  let x = f
+    .replace(/^(if|while)\s*\(/, '')
+    .replace(/^(const|let|var)\s+·\s*=\s*/, '')
+    .replace(/^return\s+/, '')
+    .replace(/\{\s*$/, '')
+    .trim()
+  /* EL RECORTE DEL PARÉNTESIS FINAL VA POR BALANCE, no por patrón.
+   *
+   * La primera versión quitaba un `)` final con una expresión regular, y eso
+   * se comía el paréntesis legítimo de `const · = · > · && (…)`, dejando el
+   * núcleo desbalanceado mientras el de `if (…) {` quedaba entero. Las dos
+   * líneas eran la misma decisión y seguían sin agruparse: el guión fallaba
+   * otra vez en el caso para el que se escribió. */
+  let sobran = (x.match(/\)/g) ?? []).length - (x.match(/\(/g) ?? []).length
+  while (sobran > 0 && x.endsWith(')')) { x = x.slice(0, -1).trim(); sobran-- }
+  /* Un núcleo sin ningún operador de decisión no distingue nada. */
+  if (!/[<>]=?|[!=]==|&&|\|\|/.test(x)) return null
+  return x.length >= 14 ? x : null
+}
+
 const porForma = new Map()
 
 for (const f of MODULOS) {
@@ -129,8 +166,12 @@ for (const f of MODULOS) {
     if (!decide(l)) continue
     const k = forma(l)
     if (!k || k.length < 14) continue
-    if (!porForma.has(k)) porForma.set(k, [])
-    porForma.get(k).push({ archivo: f.replace(/\\/g, '/'), linea: i + 1, texto: l.trim() })
+    const sitio = { archivo: f.replace(/\\/g, '/'), linea: i + 1, texto: l.trim() }
+    for (const clave of [k, nucleo(k)]) {
+      if (!clave) continue
+      if (!porForma.has(clave)) porForma.set(clave, [])
+      porForma.get(clave).push(sitio)
+    }
   }
 }
 
@@ -138,10 +179,21 @@ for (const f of MODULOS) {
  * legítimo —dos ramas de un switch, dos validaciones seguidas—. Lo que
  * interesa es la misma forma en archivos DISTINTOS: ahí es donde una se
  * corrige y la otra no. */
-const repetidas = [...porForma.entries()]
+let repetidas = [...porForma.entries()]
   .map(([k, sitios]) => ({ k, sitios, archivos: new Set(sitios.map(s => s.archivo)) }))
   .filter(r => r.archivos.size > 1)
-  .sort((a, b) => b.archivos.size - a.archivos.size || b.sitios.length - a.sitios.length)
+  .sort((a, b) => b.sitios.length - a.sitios.length || b.archivos.size - a.archivos.size)
+
+/* Indexar por forma Y por núcleo hace que un mismo hallazgo pueda salir dos
+ * veces. Se queda el grupo MÁS GRANDE que cubre cada conjunto de sitios: un
+ * informe que repite el mismo hallazgo con otro título se deja de leer. */
+const yaVistos = new Set()
+repetidas = repetidas.filter(r => {
+  const firma = r.sitios.map(s => `${s.archivo}:${s.linea}`).sort().join('|')
+  if (yaVistos.has(firma)) return false
+  yaVistos.add(firma)
+  return true
+})
 
 console.log('\n══ LA MISMA DECISIÓN EN MÁS DE UN ARCHIVO ════════════════════')
 console.log(`  ${porForma.size} formas de decisión en ${MODULOS.filter(f => !NO_MIRAR.test(f)).length} módulos.`)
