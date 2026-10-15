@@ -51,11 +51,37 @@ const GUARDAS = {
   ],
 }
 
+/**
+ * CON QUÉ SE ESTÁ CONSTRUYENDO ESTO.
+ *
+ * ⚠ Un build que no dice con qué se construyó no se puede comparar con otro.
+ *
+ * El 2026-10-15 el npm de la máquina de desarrollo y el de Vercel resultaron
+ * distintos —uno tiene `approve-scripts` y el otro no— y **nada lo declaraba**:
+ * ni `engines` ni `packageManager`. La diferencia se descubrió por casualidad,
+ * al intentar usar un comando que aquí no existía. Antes de fijar la versión
+ * hay que saber cuál corre del otro lado, y eso se mide, no se deduce de la
+ * documentación del proveedor.
+ *
+ * Esta línea se queda después de fijarla: es cómo se comprueba que el pin
+ * surtió efecto, y cómo se verá el día que el proveedor cambie de imagen.
+ */
+function quienConstruye() {
+  const npm = spawnSync('npm --version', { encoding: 'utf8', shell: true })
+  const v = `${npm.stdout ?? ''}`.trim() || '(no respondio)'
+  const fijado = process.env.npm_config_user_agent ?? ''
+  console.log(`\n══ CON QUÉ SE CONSTRUYE ════════════════════════════════════`)
+  console.log(`  node ${process.version} · npm ${v} · ${process.platform}/${process.arch}`)
+  if (fijado) console.log(`  agente: ${fijado.slice(0, 90)}`)
+}
+
 const fase = process.argv[2]
 if (!GUARDAS[fase]) {
   console.log('\n  Uso: node scripts/verificar.mjs antes|despues\n')
   process.exit(1)
 }
+
+if (fase === 'antes') quienConstruye()
 
 const caidas = []
 for (const g of GUARDAS[fase]) {
