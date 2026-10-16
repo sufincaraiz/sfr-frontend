@@ -17,6 +17,7 @@ import { formatPrice } from '@/lib/utils'
 import { tipoLabel } from '@/lib/property-types'
 import { getTipoLabels, getTipoPlurales } from '@/lib/property-types.server'
 import { tipoPlural } from '@/lib/property-types'
+import { diaEnColombia } from '@/lib/dia-colombia';
 import type { Property, PropertyMedia } from '@/types'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
@@ -443,7 +444,7 @@ export default async function MunicipioPage(
               fuente={medicion
                 ? 'Medición propia con Google Maps, y datos geográficos del municipio'
                 : 'Datos geográficos del municipio, aproximados'}
-              fechaCorte={medicion ? medicion.fecha : data.updated_at.toISOString().slice(0, 10)}
+              fechaCorte={medicion ? medicion.fecha : diaEnColombia(data.updated_at)}
               metodologia={procedenciaDistancia(data.slug)}
               filas={[
                 { etiqueta: 'Departamento',     valor: 'Cundinamarca' },

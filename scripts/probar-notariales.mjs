@@ -25,6 +25,7 @@ import { calcularRetencion, verificarReglas, exigirValorDeCondicion, CAMPOS_COND
 import {
   esFuenteOficial, exigirRespaldoOficial, verificarEsquema, verificarConcepto,
   pendientesParaActivar, resumenDePendientes, exigirAnioPublicable, divergenciaUvt, copiarAnio,
+  SIN_PANTALLA,
   exigirOrdenDeDerivados,
   esFechaIso, cubreLaFecha, exigirVigencia,
   esHashSha256, tipoDeEvidencia, fuenteDelRespaldo, citaPublica,
@@ -2108,6 +2109,52 @@ check('la huella de un documento de TEXTO sí ignora los saltos, que es lo contr
   === huellaDelBloque('<!-- COTEJO:INICIO -->\na\n<!-- COTEJO:FIN -->'))
 check('un byte distinto da una huella distinta',
   hashDeBytes(Buffer.from('%PDF-1.4\r\nlinea tres\r\n', 'latin1')) !== HUELLA_EXTERNA)
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * «TE TOCA Y PUEDES YA» FRENTE A «TE TOCA PERO FALTA LA PANTALLA»
+ *
+ * El panel decía «29 esperan la resolución oficial — tú, con la resolución».
+ * Esas 29 son tablas por tramos y el editor de tramos no existe: el titular
+ * podía tener la resolución en la mano y no tenía dónde escribirla.
+ *
+ *   > Un pendiente asignado a quien no tiene cómo resolverlo no es un
+ *   > pendiente: es una acusación.
+ *
+ * `SIN_PANTALLA` declara los campos que el panel todavía no sabe editar. Esto
+ * lo vigila EN LAS DOS DIRECCIONES, porque una advertencia que sobrevive a su
+ * causa es la siguiente mentira.
+ *
+ * LA SEÑAL SE MIDE, no se recuerda: la pantalla del año tiene una rama que se
+ * NIEGA a guardar tramos («todavía no se editan desde aquí»). Mientras ese
+ * rechazo exista, el editor no existe. */
+const PANTALLA_DEL_ANIO = 'src/app/admin/notariales/[anio]/page.tsx'
+const rechazo = readFileSync(PANTALLA_DEL_ANIO, 'utf8')
+  .includes('Los tramos todav\u00eda no se editan desde aqu\u00ed')
+const editorExiste = !rechazo
+
+check('el panel declara que los tramos no se pueden editar todav\u00eda, o que ya s\u00ed',
+  (SIN_PANTALLA.tramos !== undefined) === !editorExiste,
+  editorExiste
+    ? '(el editor YA existe: `tramos` tiene que salir de SIN_PANTALLA)'
+    : '(el editor NO existe: `tramos` tiene que estar en SIN_PANTALLA)')
+
+{
+  /* Y que el pendiente lo lleve puesto, no solo la tabla. */
+  const pend = pendientesParaActivar(ANIO_VACIO, FUENTES_OFICIALES)
+  const deTramos = pend.filter(p => p.campo === 'tramos')
+  check('todo pendiente de tramos sale marcado como bloqueado',
+    deTramos.length > 0 && deTramos.every(p => !!p.bloqueado),
+    `(${deTramos.filter(p => p.bloqueado).length} de ${deTramos.length})`)
+  check('…y ninguno dice «falta la tarifa», que era una cifra y es una escala',
+    deTramos.every(p => /tabla por tramos/.test(p.que)))
+  const r = resumenDePendientes(pend)
+  const titular = r.porDueno.find(d => d.dueno === 'titular')
+  check('el resumen separa lo que el titular puede hacer ya de lo que no',
+    !!titular && titular.bloqueados > 0 && titular.puedeYa + titular.bloqueados === titular.cantidad,
+    titular ? `(puede ya ${titular.puedeYa} · bloqueados ${titular.bloqueados})` : '(sin titular)')
+  check('…y el total de bloqueados del año es la suma, no una cifra aparte',
+    r.bloqueados === r.porDueno.reduce((a, d) => a + d.bloqueados, 0))
+}
 
 console.log(`\n${fail === 0 ? '✓ TODO EN VERDE' : '✗ HAY FALLOS'} — ${ok} verificaciones, ${fail} fallos\n`)
 process.exit(fail === 0 ? 0 : 1)

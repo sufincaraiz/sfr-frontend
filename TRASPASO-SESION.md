@@ -2926,6 +2926,193 @@ completa, no con grep**, por la razón exacta del fallo de hoy: la política no
 repetía la frase del comentario, **decía lo mismo con otras palabras**. El grep
 busca la frase; lo que hay que buscar es el tema.
 
+# EL SEXTO PUNTO CIEGO: EL DETECTOR VIGILABA LA EXPRESIÓN, NO EL USO
+
+2026-10-16. `inventario-fechas.mjs` reportaba **0 lecturas** y había **siete**
+sitios leyendo un día mal, seis de ellos publicando esa fecha.
+
+```ts
+const corte = new Date().toISOString().slice(0, 10);   //  /nosotros
+```
+
+`toISOString()` da el día **en UTC**: entre las 19:00 y la medianoche de
+Colombia, la página publicaba **la fecha de mañana**. Y dos de los seis los leen
+máquinas que no perdonan: `llms.txt` y el `datePublished` del marcado del blog.
+
+## Por qué el detector no podía verlo
+
+> **La misma expresión es correcta en un uso y falsa en el otro.**
+>
+> · sobre una columna de **DÍA PURO** —guardada a medianoche UTC— es la lectura
+>   correcta, y además invariante a la zona. Así se usa en todo el motor.
+> · sobre `new Date()` —un **instante**, el ahora— da el día de UTC, que no es
+>   el de Colombia cinco horas al día.
+
+El detector buscaba **componentes locales** (`getFullYear`, `getMonth`,
+`getDate`), que es una de las dos formas de equivocarse. La otra no tenía
+patrón porque **no está en la expresión: está en el origen del valor**.
+
+> **El detector vigilaba la expresión; el defecto estaba en el uso. No le
+> faltaba una regla: le faltaba saber de dónde viene el valor.**
+
+## Cómo se le enseñó el origen — la mitad automática y la mitad declarada
+
+Y esta es la parte que generaliza, porque la pregunta «¿se puede distinguir
+automáticamente?» tiene **dos respuestas**:
+
+| | qué hace la guarda |
+|---|---|
+| `new Date().toISOString()` | **SÍ se decide sola**: el origen está en la misma expresión. Rompe siempre. Los siete casos eran de esta forma. |
+| `algo.toISOString().slice(0,10)` | **No se puede decidir leyendo la línea.** La guarda **exige una marca**: `DIA PURO` en la línea o en las tres anteriores. Sin marca, rompe. |
+
+Exigir la marca no es burocracia: **es la única forma de que quien escribe
+declare el dato que la guarda no puede deducir.** Y es la regla general de esta
+sesión —no clasificar y seguir: el descarte entra en el artefacto medido—.
+
+## Lo que la regla nueva encontró al estrenarse
+
+Once sitios, que hubo que mirar uno por uno. **Cuatro eran defectos nuevos que
+nadie había visto**, todos de la misma clase —leer en UTC el día de una columna
+de **instante**, no de día puro—:
+
+| | qué fecha publicaba mal |
+|---|---|
+| `blog.ts:75` | `published_at ?? created_at ?? new Date()`: un artículo publicado a las 20:00 salía fechado al día siguiente, y esa fecha va al `datePublished` |
+| `cifras-derivadas.ts` ×2 | «fecha del registro más antiguo» de las cifras publicadas |
+| `municipios/[slug]:446` | la fecha de corte visible de la página de municipio |
+
+Y **siete eran correctos** y ahora lo dicen: las cuatro columnas `DATE` de
+`completar.ts`, los dos límites de `periodoDelMes`/`periodoDelAnio` —construidos
+con `Date.UTC`— y el ayudante de `notariales/datos.ts`.
+
+**Total del barrido: 10 fechas públicas corregidas** —las 6 del ahora más las 4
+de columnas de instante— y 7 marcadas. El detector queda en 0 de cuatro formas,
+con **una excepción declarada y con su razón escrita**: el nombre de un CSV que
+se descarga del panel.
+
+Provocado en las dos reglas nuevas: `new Date().toISOString()` lo pone rojo, un
+día sin marca lo pone rojo, y con la marca vuelve a verde.
+
+# EL TEXTO QUE CALMA ES EL QUE NADIE CONTRASTA
+
+2026-10-16, la primera de las siete divergencias de los textos públicos, y la
+que tenía forma propia.
+
+En `/registro-visita` conviven **tres** textos sobre los mismos datos:
+
+| texto | qué decía | ¿cierto? |
+|---|---|---|
+| la casilla de consentimiento | «incluido que mi nombre y número de documento puedan compartirse con el propietario del inmueble» | **sí**, y es el que tiene valor legal |
+| la política §3 | separa nombre+documento —al propietario— de correo+celular —internos— | **sí**, campo por campo |
+| el aviso azul de la pantalla | «no se publican ni **se comparten con terceros**» | **NO.** `visitantesDe()` entrega nombre y cédula al propietario |
+
+> **El único que mentía era el tranquilizador.** Los textos operativos se
+> revisan —dicen qué pasa, y alguien comprueba que pasa—. Los que calman no:
+> **no parecen prometer nada concreto**, así que nadie los contrasta con el
+> sistema. Y son los que el lector cree.
+
+Y el segundo rasgo, que es el que lo hace fácil de volver a romper:
+
+> **Es el único de los tres que se edita desde el panel sin desplegar.** Vive en
+> una fila de `PageContent`, así que **ninguna guarda del build puede verlo**: el
+> build no tiene la base con esa fila delante.
+
+Hecho: el valor por **defecto** corregido en `lib/registro-visita.ts`, y la
+vigilancia del texto **real** añadida al cron diario —que es la única superficie
+que ve la base entre despliegues, y existe exactamente para eso—.
+
+La regla de la guarda también tiene su lección. El primer intento buscaba la
+negación («no se comparten con terceros») y **no encontraba el texto real**
+—«no se publican NI SE comparten con terceros»— mientras marcaba como falsa una
+redacción correcta. Enumerar las formas de negar es **la misma trampa que buscar
+la frase en vez del tema**. La regla al revés sí aguanta: *si el texto habla de
+terceros y no nombra al propietario, está describiendo la circulación de los
+datos omitiendo la única cesión que ocurre.*
+
+# EL P2024: NO SE ENVOLVIÓ `next build`, Y POR QUÉ
+
+2026-10-16. Decisión tomada con la pregunta planteada bien: «¿sirve la fase
+*después*?»
+
+**No sirve, por dos razones independientes:**
+
+1. La fase «después» **corre dentro de `npm run build`** —el script es
+   `verificar antes && next build && verificar despues`—, así que lanzar ahí un
+   guion que lanza `npm run build` sigue siendo recursión.
+2. Y la definitiva: **en esa fase el log ya no existe.** Trazas y enlaces pueden
+   correr ahi porque miran **artefactos en disco**; el P2024 solo aparece en
+   texto que ya pasó, y Next no deja los errores de prerender en ningún archivo.
+
+La recursión **no era esencial** —viene de invocar `npm run build` en vez de
+`next build`—, así que envolver era posible. **Se descartó a propósito:**
+
+> Envolver el comando de build es **la línea de más riesgo del proyecto**: un
+> fallo del envoltorio son **cero despliegues**. Y compra detección en tiempo de
+> **build** de un problema que se manifiesta sobre todo en **ejecución**. No vale
+> el precio. Si alguna vez vuelve a aparecer un P2024 en producción, se reabre
+> **con evidencia**; hoy no la hay.
+
+## Lo que sí se hizo, que es la mitad que el build no podía dar
+
+**1. El tamaño del pool, declarado en ejecución.** Y aquí hay una corrección de
+lo que esta sesión afirmó: «el 5 es un valor por defecto que nadie eligió» era
+**falso a medias**. El `connection_limit=5` SÍ estaba elegido y razonado —pero
+**solo durante `next build`**, porque la condición es
+`NEXT_PHASE === 'phase-production-build'`—. En **ejecución** no se declaraba
+nada, y el defecto de Prisma es `num_cpus * 2 + 1`: un número que depende de la
+máquina que toque, multiplicado por cada lambda concurrente. Ahora se declara
+`connection_limit=3&pool_timeout=20`, y **se respeta lo que venga en la URL**:
+declarar no es imponer.
+
+**2. El contador de P2024, que puede ponerse rojo solo.** Una extensión
+`$allOperations` de Prisma envuelve toda operación, deja pasar el error intacto
+y **solo cuenta por el camino**. El cron de vigilancia lo lee cada día y avisa
+por WhatsApp si hay alguno.
+
+> **⚠ Y EL CONTADOR NO PUEDE VIVIR EN POSTGRES.** Es el mismo razonamiento que
+> el candado del aviso de `redis-salud.ts`, al revés y por eso mismo: ese
+> candado vive en Postgres porque existe para cuando **Redis** no responde. Este
+> vive en Redis porque existe para cuando **Postgres** se queda sin conexiones.
+> Guardarlo en la base que acaba de agotar su pool sería pedirle la hora al
+> reloj que se paró.
+
+Y con la distinción de siempre: el resultado lleva `consultado`, porque
+«0 porque no hubo» y «0 porque no pude preguntar» no son lo mismo.
+
+# UN PENDIENTE QUE SU DUEÑO NO PUEDE RESOLVER ES UNA ACUSACIÓN
+
+2026-10-16. El panel de `/admin/notariales/2026` decía:
+
+> **29 esperan la resolución oficial** — *tú, con la resolución*
+
+Esas 29 son **tablas por tramos**, y el editor de tramos **no existe**: la propia
+pantalla tiene una rama que se niega a guardarlos. El titular podía tener la
+resolución en la mano y **no tenía dónde escribirla**, así que se quedó mirando
+una pantalla que le pedía algo imposible.
+
+> **Un pendiente asignado a quien no tiene cómo resolverlo no es un pendiente:
+> es una acusación.**
+
+El contador ya estaba partido por **dueño** —porque «7 pendientes» mezclaba
+tres acciones y tres tiempos distintos—. Le faltaba el eje que decide si hay
+algo que hacer **hoy**:
+
+| | |
+|---|---|
+| «te toca **y puedes ya**» | falta traer un dato |
+| «te toca **pero falta que construyamos la pantalla**» | no falta nada que traer |
+
+Hecho: `SIN_PANTALLA` —tabla declarada, no un `if` por pantalla—, `bloqueado` en
+cada `Pendiente` rellenado en **un solo sitio** (`conBloqueo`, y el tipo lo
+fuerza: añadir un `push` sin él no compila), y el resumen partido en
+`puedeYa` / `bloqueados`. De paso, otro mensaje que engañaba: un tramo faltante
+decía «falta la tarifa», y no falta **una cifra**, falta **la escala entera**.
+
+Vigilado en las dos direcciones por `probar-notariales.mjs`, con la señal
+**medida y no recordada** —mientras la pantalla contenga el rechazo «los tramos
+todavía no se editan desde aquí», el editor no existe—: si el editor aparece y
+`tramos` sigue en `SIN_PANTALLA`, rompe. Provocado en ambas.
+
 # CUATRO INSTRUMENTOS, CUATRO PUNTOS CIEGOS, LA MISMA FORMA
 
 2026-10-15. En un día, cuatro instrumentos distintos dejaron pasar algo, y los

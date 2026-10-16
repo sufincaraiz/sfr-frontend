@@ -52,9 +52,12 @@ export interface ClienteNotarial {
 
 const texto = (v: unknown): string | null => (v === null || v === undefined ? null : String(v))
 const numero = (v: unknown): string | null => (v === null || v === undefined ? null : String(v))
+/* DIA PURO: este ayudante solo recibe columnas de fecha del esquema notarial
+ * (vigencias y fechas de respaldo), que son DATE. Nunca un `now()`. */
 const fecha = (v: unknown): string | null => {
   if (!v) return null
   if (typeof v === 'string') return v.slice(0, 10)
+  /* DIA PURO */
   return (v as Date).toISOString().slice(0, 10)
 }
 

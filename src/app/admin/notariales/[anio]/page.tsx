@@ -67,7 +67,11 @@ interface Pantalla {
   campos: Campo[];
   conceptos: { clave: string; label: string; tipo: string; grupo: string; exigidos: string[]; dueno: string;
     respaldos: { campo: string; norma: string; articulo: string | null; tipo_evidencia: string }[] }[];
-  pendientes: { total: number; porDueno: { dueno: string; etiqueta: string; cantidad: number; items: string[] }[] };
+  pendientes: {
+    total: number; bloqueados: number;
+    porDueno: { dueno: string; etiqueta: string; cantidad: number; items: string[];
+      puedeYa: number; bloqueados: number; porQueBloqueado: string | null }[];
+  };
   incoherencia: string | null;
   veredicto: VeredictoSeccion[];
   avance: { cargadas: number; total: number; porcentaje: number };
@@ -84,6 +88,17 @@ const DUENO: Record<string, string> = {
   contador: 'el contador',
   entidad: 'la entidad que lo expide',
 };
+
+/* ⚠ «29 esperan la resolución oficial — tú, con la resolución»: esas 29 son
+ * tablas por tramos y el editor de tramos NO EXISTE. El titular podía tener la
+ * resolución en la mano y no tenía dónde escribirla.
+ *
+ *   Un pendiente asignado a quien no tiene cómo resolverlo no es un pendiente:
+ *   es una acusación.
+ *
+ * Así que la tarjeta distingue ahora «te toca y puedes ya» de «te toca pero
+ * falta que construyamos la pantalla». La razón viene del servidor
+ * (`SIN_PANTALLA` en lib/notariales/guardas.ts), no se escribe aquí. */
 
 export default function CargaNotarialPage({ params }: { params: Promise<{ anio: string }> }) {
   const { anio } = use(params);
@@ -208,7 +223,8 @@ export default function CargaNotarialPage({ params }: { params: Promise<{ anio: 
           Para poder activar
         </div>
         <p style={{ color: C.muted, fontSize: '0.8rem', margin: '0 0 10px' }}>
-          Separado por de quién es la pelota. El total es solo la suma.
+          Separado por de quién es la pelota y por si <strong>se puede hacer ya</strong>.
+          El total es solo la suma.
         </p>
         {p.pendientes.porDueno.length === 0 ? (
           <div style={{ color: C.ok, fontSize: '0.88rem', fontWeight: 700 }}>No falta nada.</div>
@@ -217,8 +233,22 @@ export default function CargaNotarialPage({ params }: { params: Promise<{ anio: 
             {p.pendientes.porDueno.map(d => (
               <details key={d.dueno}>
                 <summary style={{ cursor: 'pointer', color: C.navy, fontSize: '0.87rem', fontWeight: 700 }}>
-                  {d.cantidad} {d.etiqueta} <span style={{ color: C.muted, fontWeight: 400 }}>— {DUENO[d.dueno] ?? d.dueno}</span>
+                  {d.cantidad} {d.etiqueta}{' '}
+                  <span style={{ color: C.muted, fontWeight: 400 }}>— {DUENO[d.dueno] ?? d.dueno}</span>
                 </summary>
+                {d.bloqueados > 0 && (
+                  <div style={{ margin: '6px 0 0 18px', fontSize: '0.79rem', lineHeight: 1.55 }}>
+                    <div style={{ color: C.navy, fontWeight: 700 }}>
+                      {d.puedeYa > 0
+                        ? <>{d.puedeYa} se pueden hacer ya · {d.bloqueados} no todavía</>
+                        : <>Ninguno se puede hacer todavía</>}
+                    </div>
+                    <div style={{ color: C.muted }}>
+                      {d.bloqueados === d.cantidad ? 'No es que falte traer nada: ' : 'De los otros, '}
+                      {d.porQueBloqueado}.
+                    </div>
+                  </div>
+                )}
                 <ul style={{ margin: '7px 0 0 18px', padding: 0, color: C.muted, fontSize: '0.81rem', lineHeight: 1.6 }}>
                   {d.items.map((i, n) => <li key={n}>{i}</li>)}
                 </ul>
@@ -226,6 +256,10 @@ export default function CargaNotarialPage({ params }: { params: Promise<{ anio: 
             ))}
             <div style={{ color: C.muted, fontSize: '0.78rem', borderTop: `1px solid ${C.line}`, paddingTop: 7 }}>
               {p.pendientes.total} en total
+              {p.pendientes.bloqueados > 0 && (
+                <> · <strong>{p.pendientes.bloqueados}</strong> esperan a que construyamos la pantalla,
+                  no a que alguien traiga un dato</>
+              )}
             </div>
           </div>
         )}

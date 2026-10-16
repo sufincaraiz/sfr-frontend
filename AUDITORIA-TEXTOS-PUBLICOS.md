@@ -1,5 +1,25 @@
 # Auditoría de los textos públicos — inventario, sin arreglar nada
 
+> ## ESTADO AL 2026-10-16, tarde
+>
+> Este documento es un inventario y **también es un texto que puede quedarse
+> viejo** — la ironía está a la vista, así que lleva su propio estado:
+>
+> | | estado |
+> |---|---|
+> | #1 «entrenar nuestros modelos» | **abierta** |
+> | #2 «chat de texto o voz» | **abierta** |
+> | #3 Google Analytics en la política de cookies | **abierta** |
+> | #4 el aviso de `/registro-visita` | **corregido el valor por defecto + vigilancia diaria del texto real**. Falta que el titular lo cambie en el panel: el texto que se publica vive en la base. |
+> | #5 conversaciones «almacenadas temporalmente» | **abierta** |
+> | #6 qué cookies son necesarias | **abierta** |
+> | #7 «se eliminará toda la información» sin herramienta | **abierta** |
+> | #8 la frase que nacía falsa (política §4) | **corregida**, y los tres requisitos quedaron escritos en el esquema |
+> | las fechas en UTC | **corregidas las 10**, y el detector aprendió el origen |
+>
+> Las seis abiertas **no se tocaron a propósito**: son redacción de documentos
+> legales y de la página de cookies, y van en su propio lote con el titular.
+
 **2026-10-16.** Tres días de auditoría de código con cuatro instrumentos, y los
 textos publicados no los había revisado nadie. El primero que se miró —la
 política de tratamiento de datos— **mentía**.

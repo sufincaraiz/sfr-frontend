@@ -3,6 +3,7 @@ import path from 'path'
 import matter from 'gray-matter'
 import readingTime from 'reading-time'
 import { prisma } from '@/lib/prisma'
+import { hoyEnColombia, diaEnColombia } from '@/lib/dia-colombia'
 import {
   BLOG_CATEGORIES,
   type BlogCategorySlug,
@@ -27,7 +28,9 @@ function parsePost(slug: string, raw: string): PostMeta {
     slug,
     title:        String(fm['title']       ?? slug),
     excerpt:      String(fm['excerpt']      ?? ''),
-    date:         String(fm['date']         ?? new Date().toISOString().slice(0, 10)),
+    /* UN POST SIN `date` HEREDA EL DÍA DE COLOMBIA, no el de UTC: este valor
+     * viaja al `datePublished` del marcado, que una máquina lee literalmente. */
+    date:         String(fm['date']         ?? hoyEnColombia()),
     updated:      fm['updated'] ? String(fm['updated']) : undefined,
     category,
     category_name: BLOG_CATEGORIES[category] ?? category,
@@ -69,7 +72,11 @@ function getMdxPosts(): PostMeta[] {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function dbArticleToMeta(a: any): PostMeta {
-  const date = (a.published_at ?? a.created_at ?? new Date()).toISOString().slice(0, 10)
+  /* ⚠ `published_at` y `created_at` son INSTANTES, no columnas de día: leerlos
+   * con toISOString() daba el día de UTC, así que un artículo publicado a las
+   * 20:00 de Colombia salía fechado al día siguiente —y esta fecha viaja al
+   * `datePublished` del marcado—. */
+  const date = diaEnColombia(a.published_at ?? a.created_at ?? new Date())
   const rt = readingTime(a.content ?? '')
   return {
     slug:          a.slug,

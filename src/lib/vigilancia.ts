@@ -179,6 +179,48 @@ export async function vigilarContenido(): Promise<ResultadoVigilancia> {
     sinComprobar.push(`conocimiento de Mac (${msg(e)})`)
   }
 
+  // ── Textos EDITABLES que afirman cómo se tratan los datos ────────────────
+  //
+  // ⚠ EL CASO QUE LO MOTIVA. El aviso de /registro-visita decía «no se publican
+  // ni se comparten con terceros», y es falso: el enlace del dueño entrega
+  // nombre y cédula al propietario del inmueble. Los otros dos textos de la
+  // misma pantalla —la casilla de consentimiento y la política §3— lo decían
+  // bien. El único que mentía era el tranquilizador.
+  //
+  // Y es editable desde el panel sin desplegar, así que **ninguna guarda del
+  // build puede verlo**: el texto vive en una fila de `PageContent`. Esta es la
+  // única superficie que lo alcanza, por la misma razón que existe este cron.
+  //
+  // No se compara con una redacción exacta —eso impediría mejorarla— sino con
+  // la afirmación que no puede hacerse mientras `visitantesDe()` exista.
+  try {
+    const fila = await prisma.pageContent.findUnique({ where: { key: 'registro-visita' } })
+    comprobado.push('textos editables de registro de visita')
+    const datos = (fila?.data ?? null) as { aviso?: unknown; notaLegal?: unknown } | null
+    for (const [campo, valor] of Object.entries(datos ?? {})) {
+      if (typeof valor !== 'string') continue
+      if (!/\bterceros\b/i.test(valor)) continue
+      /* SE EXIGE LA EXCEPCIÓN, NO SE PERSIGUE LA NEGACIÓN. El primer intento
+       * buscaba «no se comparten con terceros» y NO encontraba el texto real
+       * —«no se publican NI SE comparten con terceros»— mientras marcaba como
+       * falsa una redacción correcta. Enumerar las formas de negar es la misma
+       * trampa que buscar la frase en vez del tema.
+       *
+       * La regla al revés sí es robusta: si el texto habla de TERCEROS y no
+       * nombra al PROPIETARIO, describe la circulación de los datos omitiendo
+       * la única cesión que de verdad ocurre. */
+      if (!/propietario|dueñ[oa]|dueno/i.test(valor)) {
+        hallazgos.push({
+          clase: 'texto editable contradice al sistema',
+          detalle: `registro-visita.${campo}: habla de terceros sin nombrar al propietario del ` +
+            'inmueble, que SÍ recibe nombre y cédula por el enlace del dueño',
+        })
+      }
+    }
+  } catch (e) {
+    sinComprobar.push(`textos editables de registro de visita (${msg(e)})`)
+  }
+
   return { hallazgos, comprobado, sinComprobar, fecha: new Date().toISOString() }
 }
 

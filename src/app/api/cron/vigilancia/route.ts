@@ -3,6 +3,7 @@ import { vigilarContenido } from '@/lib/vigilancia'
 import { reconciliarHallazgos } from '@/lib/vigilancia-registro'
 import { enviarAlertaLeadWhatsApp } from '@/lib/whatsapp'
 import { latidoRedis, avisarRespaldoEnMemoria } from '@/lib/redis-salud'
+import { conteoPoolAgotado } from '@/lib/pool-agotado'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // VIGILANCIA DIARIA DEL CONTENIDO PUBLICADO
@@ -84,10 +85,38 @@ export async function GET(req: NextRequest) {
       await avisarRespaldoEnMemoria('el cron de vigilancia', latido.motivo)
     }
 
+    // P2024 EN PRODUCCIÓN — la señal que el build no puede dar.
+    //
+    // `verificar-build.mjs` cuenta los P2024 del log del build y no corre en
+    // Vercel: se lanzaría a sí mismo. Envolver `next build` se descartó por
+    // riesgo, así que el pool agotado se vigila donde de verdad ocurre —en
+    // ejecución— con un contador en Redis que una extensión de Prisma alimenta.
+    // Aquí es donde puede ponerse rojo solo, que es lo que el build no ofrece.
+    const pool = await conteoPoolAgotado(7)
+    if (!pool.consultado) {
+      console.warn('[cron/vigilancia] contador de P2024: no se pudo consultar (Redis). ' +
+        'Esto NO es un cero: es un «no sé».')
+    } else if (pool.total === 0) {
+      console.log('[cron/vigilancia] contador de P2024: 0 en los últimos 7 días (consultado).')
+    } else {
+      console.error(
+        `[cron/vigilancia] ✗ ${pool.total} P2024 en 7 días: ` +
+        pool.porDia.map(d => `${d.dia}=${d.veces}`).join(', ') +
+        '. Pool de conexiones agotado EN PRODUCCIÓN — casi siempre consultas de ' +
+        'más por petición.',
+      )
+      await enviarAlertaLeadWhatsApp(
+        '⚠ POOL DE CONEXIONES AGOTADO',
+        'revisar consultas por página',
+        `${pool.total} errores P2024 en los últimos 7 días (${pool.porDia.map(d => `${d.dia}: ${d.veces}`).join(' · ')}). ` +
+        'Algo está consultando la base de más por petición.',
+      )
+    }
+
     // Que falten comprobaciones no es un fallo: es Railway. Pero se reporta,
     // porque un «0 hallazgos» que en realidad no comprobó nada es peor que un
     // hallazgo.
-    return NextResponse.json({ ok: true, ...r, dedup: rec, redis: latido })
+    return NextResponse.json({ ok: true, ...r, dedup: rec, redis: latido, p2024: pool })
   } catch (err) {
     console.error('[cron/vigilancia] error:', err)
     return NextResponse.json({ error: 'Error al vigilar.' }, { status: 500 })

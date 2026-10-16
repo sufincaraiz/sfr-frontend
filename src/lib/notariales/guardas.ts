@@ -496,14 +496,51 @@ export interface Pendiente {
   que: string
   quien: Dueno
   campo: string
+  /**
+   * POR QUÉ SU DUEÑO NO PUEDE RESOLVERLO TODAVÍA, o `null` si sí puede.
+   *
+   * ⚠ EL DÍA QUE ESTO FALTÓ: la pantalla decía «29 esperan la resolución
+   * oficial — tú, con la resolución». Esas 29 son tablas por tramos y **el
+   * editor de tramos no existe**: el titular podía tener la resolución en la
+   * mano y no tenía dónde escribirla.
+   *
+   * > Un pendiente asignado a quien no tiene cómo resolverlo no es un
+   * > pendiente: es una acusación.
+   *
+   * El contador ya se partía por DUEÑO —porque «7 pendientes» mezclaba tres
+   * acciones distintas—. Le faltaba el eje que decide si hay algo que hacer
+   * HOY: «te toca y puedes ya» frente a «te toca pero falta que construyamos
+   * la pantalla». Lo rellena `conBloqueo()`, en un solo sitio.
+   */
+  bloqueado: string | null
 }
+
+/**
+ * CAMPOS QUE EL PANEL TODAVÍA NO SABE EDITAR. Lista cerrada y declarada.
+ *
+ * No es una propiedad del concepto ni del dueño: es una propiedad de **lo que
+ * hemos construido**. Por eso vive en una tabla y no repartida en un `if`.
+ *
+ * `probar-notariales.mjs` la vigila EN LAS DOS DIRECCIONES: mientras la ruta
+ * del editor no exista, `tramos` tiene que estar aquí; el día que exista, tiene
+ * que salir. Una advertencia que sobrevive a su causa es la siguiente mentira.
+ */
+export const SIN_PANTALLA: Record<string, string> = {
+  tramos: 'falta construir el editor de tramos: hoy no hay dónde escribirlos',
+}
+
+/** Un solo sitio donde se decide el bloqueo, a partir del campo que falta. */
+const conBloqueo = (p: Omit<Pendiente, 'bloqueado'>): Pendiente =>
+  ({ ...p, bloqueado: SIN_PANTALLA[p.campo] ?? null })
 
 /**
  * Qué falta para que el año pueda activarse. El orden no es casual: primero la
  * cifra que falta, después el respaldo de la cifra que ya está.
  */
 export function pendientesParaActivar(anio: AnioNotarial, fuentes: Fuente[]): Pendiente[] {
-  const p: Pendiente[] = []
+  /* Sin `bloqueado`: lo pone conBloqueo() al salir, en un solo sitio. El
+   * tipo lo fuerza —añadirlo a mano aqui no compila—. */
+  const p: Omit<Pendiente, 'bloqueado'>[] = []
 
   for (const [campo, label, quien] of [
     ['uvt', 'el UVT del año', 'titular'],
@@ -540,7 +577,11 @@ export function pendientesParaActivar(anio: AnioNotarial, fuentes: Fuente[]): Pe
         p.push({
           que: campo === 'redondeo'
             ? `${c.label}: falta saber a qué unidad redondea la resolución`
-            : `${c.label}: falta la tarifa`,
+            /* «falta la tarifa» sobre una tabla por tramos también engañaba: no
+             * falta UNA cifra, falta la escala entera. */
+            : campo === 'tramos'
+              ? `${c.label}: falta la tabla por tramos`
+              : `${c.label}: falta la tarifa`,
           quien, campo,
         })
         continue
@@ -580,7 +621,9 @@ export function pendientesParaActivar(anio: AnioNotarial, fuentes: Fuente[]): Pe
     }
   }
 
-  return p
+  /* TODO pendiente sale por aquí, así que el bloqueo se decide una vez y no
+   * hay forma de añadir un `push` que lo olvide. */
+  return p.map(conBloqueo)
 }
 
 /**
@@ -594,17 +637,38 @@ export function pendientesParaActivar(anio: AnioNotarial, fuentes: Fuente[]): Pe
  */
 export function resumenDePendientes(pendientes: Pendiente[]): {
   total: number
-  porDueno: { dueno: Dueno; etiqueta: string; cantidad: number; items: string[] }[]
+  porDueno: {
+    dueno: Dueno; etiqueta: string; cantidad: number; items: string[]
+    /** De esos, los que su dueño PUEDE resolver hoy. */
+    puedeYa: number
+    /** Y los que no, con la razón única o «varias» si difieren. */
+    bloqueados: number
+    porQueBloqueado: string | null
+  }[]
+  /** Suma de los que nadie puede resolver todavía, en todo el año. */
+  bloqueados: number
 } {
   const porDueno = (Object.keys(DUENOS) as Dueno[])
-    .map(d => ({
-      dueno: d,
-      etiqueta: DUENOS[d],
-      cantidad: pendientes.filter(p => p.quien === d).length,
-      items: pendientes.filter(p => p.quien === d).map(p => p.que),
-    }))
+    .map(d => {
+      const mios = pendientes.filter(p => p.quien === d)
+      const trabados = mios.filter(p => p.bloqueado)
+      const razones = [...new Set(trabados.map(p => p.bloqueado!))]
+      return {
+        dueno: d,
+        etiqueta: DUENOS[d],
+        cantidad: mios.length,
+        items: mios.map(p => p.que),
+        puedeYa: mios.length - trabados.length,
+        bloqueados: trabados.length,
+        porQueBloqueado: razones.length === 1 ? razones[0]! : razones.length > 1 ? 'varias razones' : null,
+      }
+    })
     .filter(x => x.cantidad > 0)
-  return { total: pendientes.length, porDueno }
+  return {
+    total: pendientes.length,
+    porDueno,
+    bloqueados: pendientes.filter(p => p.bloqueado).length,
+  }
 }
 
 /** Puerta única: o el año está listo, o se dice exactamente qué falta. */

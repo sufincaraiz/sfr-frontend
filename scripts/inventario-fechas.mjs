@@ -145,15 +145,60 @@ function sinComentarios(src) {
   return fuera
 }
 
+/* ── LO QUE EL DETECTOR NO VEÍA, Y POR QUÉ ────────────────────────────────────
+ *
+ * 2026-10-16, SEXTO PUNTO CIEGO. El detector buscaba componentes locales
+ * (`getFullYear`, `getMonth`, `getDate`) y reportaba 0 lecturas. Pero había
+ * SIETE sitios leyendo un día con `.toISOString().slice(0, 10)`, seis de ellos
+ * publicando esa fecha —/nosotros, las cifras derivadas, los rangos de precio,
+ * las respuestas directas, llms.txt y el `datePublished` del blog—.
+ *
+ * ⚠ LA MISMA EXPRESIÓN ES CORRECTA EN UN USO Y FALSA EN EL OTRO:
+ *
+ *   · sobre una columna de DÍA PURO —guardada a medianoche UTC— es la lectura
+ *     correcta, y es invariante a la zona. Así se usa en todo el motor.
+ *   · sobre `new Date()` —un INSTANTE, el ahora— da el día de UTC, que NO es el
+ *     día de Colombia cinco horas al día.
+ *
+ * El detector vigilaba la EXPRESIÓN; el defecto estaba en el USO. No le faltaba
+ * una regla: le faltaba saber DE DÓNDE VIENE EL VALOR.
+ *
+ * ── Y SÍ SE PUEDE DISTINGUIR, LA MITAD AUTOMÁTICAMENTE ──
+ *
+ *   (a) `new Date().toISOString()` es sintáctico: el origen está en la misma
+ *       expresión. Rompe siempre —los siete casos eran de esta forma—.
+ *   (b) `algo.toISOString().slice(0,10)` donde `algo` es una variable NO se
+ *       puede decidir leyendo la línea: hay que saber de dónde salió `algo`.
+ *       Para esos la guarda EXIGE UNA MARCA: `DIA PURO` en la línea o en las
+ *       tres anteriores. Sin marca no se clasifica, y sin clasificar rompe.
+ *
+ * Exigir la marca no es burocracia: es la única forma de que el que escribe
+ * declare el origen, que es justo el dato que el detector no puede deducir. Y
+ * es la regla general de esta sesión —no clasificar y seguir: el descarte entra
+ * en el artefacto medido—. */
+
+/** Días leídos en UTC que están JUSTIFICADOS, con su razón. Lista cerrada. */
+const UTC_JUSTIFICADO = [
+  { archivo: 'src/app/admin/visibilidad-ia/page.tsx',
+    razon: 'solo el nombre de un CSV descargado desde el panel; no se publica ni se compara' },
+]
+
 function detectar() {
   const archivos = globSync('src/**/*.{ts,tsx}')
   const lecturas = []
   const escrituras = []
+  const sinOrigen = []
+  const ahoraEnUtc = []
   /* `: new Date()` que TERMINA ahi: `new Date().toISOString()` es una cadena y
    * no un instante escrito en una columna. */
   const reEscritura = new RegExp(
     `\\b(${COLUMNAS_DIA.join('|')})\\s*:\\s*new Date\\(\\)\\s*[,)}]`)
   const reLectura = /\.(getFullYear|getMonth|getDate|getHours|getMinutes|getDay)\(\)/
+  /* (a) el origen está en la expresión: es el AHORA, leído en UTC. */
+  const reAhoraUtc = /new Date\(\)\s*\.toISOString\(\)/
+  /* (b) cualquier otra lectura de DÍA a partir de un instante. */
+  const reDia = /\.toISOString\(\)\s*\.\s*(slice\(\s*0\s*,\s*10\s*\)|split\(\s*['"]T['"]\s*\)\s*\[\s*0\s*\])/
+  const MARCA = /DIA PURO|DÍA PURO/
 
   for (const f of archivos) {
     const norm = f.replace(/\\/g, '/')
@@ -165,14 +210,26 @@ function detectar() {
       continue
     }
     const lineas = sinComentarios(src)
+    const crudas = src.split('\n')
     for (let i = 0; i < lineas.length; i++) {
       const l = lineas[i]
       if (!l.trim()) continue
       if (reLectura.test(l)) lecturas.push({ archivo: norm, linea: i + 1, texto: l.trim().slice(0, 86) })
+      if (reDia.test(l)) {
+        const justificado = UTC_JUSTIFICADO.some(j => j.archivo === norm)
+        const caso = { archivo: norm, linea: i + 1, texto: l.trim().slice(0, 86) }
+        if (reAhoraUtc.test(l)) {
+          if (!justificado) ahoraEnUtc.push(caso)
+        } else {
+          /* La marca se busca en el ORIGINAL, con comentarios: es un comentario. */
+          const vecindad = crudas.slice(Math.max(0, i - 3), i + 1).join('\n')
+          if (!MARCA.test(vecindad) && !justificado) sinOrigen.push(caso)
+        }
+      }
       if (reEscritura.test(l)) escrituras.push({ archivo: norm, linea: i + 1, texto: l.trim().slice(0, 86) })
     }
   }
-  return { lecturas, escrituras }
+  return { lecturas, escrituras, sinOrigen, ahoraEnUtc }
 }
 
 /* ── la comprobación ─────────────────────────────────────────────────────── */
@@ -213,21 +270,42 @@ console.log('\n  Quien comprueba que el resultado no depende de la zona es')
 console.log('  scripts/verificar-fechas-invariantes.mjs, sobre los DOS caminos:')
 console.log('  el puente en memoria y lo que sale de la base.')
 
-const { lecturas, escrituras } = detectar()
+const { lecturas, escrituras, sinOrigen, ahoraEnUtc } = detectar()
 
 console.log('\n══ EL DETECTOR, EN LAS DOS DIRECCIONES ══════════════════════')
 console.log(`  LEE componentes locales de un Date:        ${lecturas.length}`)
 console.log(`  ESCRIBE un instante en columna de dia:     ${escrituras.length}`)
-for (const x of [...lecturas, ...escrituras]) {
+console.log(`  LEE EL AHORA como dia de UTC:              ${ahoraEnUtc.length}`)
+console.log(`  LEE un dia SIN DECLARAR DE DONDE VIENE:    ${sinOrigen.length}`)
+if (UTC_JUSTIFICADO.length) {
+  console.log(`  (${UTC_JUSTIFICADO.length} justificado(s), con su razon escrita en el guion)`)
+}
+for (const x of [...lecturas, ...escrituras, ...ahoraEnUtc, ...sinOrigen]) {
   console.log(`     ✗ ${x.archivo}:${x.linea}`)
   console.log(`        ${x.texto}`)
 }
-if (lecturas.length || escrituras.length) {
+if (ahoraEnUtc.length) {
+  console.log('\n  ✗ `new Date().toISOString()` da el dia de UTC, no el de Colombia:')
+  console.log('    entre las 19:00 y medianoche publica la fecha de MANANA.')
+  console.log('    Usa hoyEnColombia() de src/lib/dia-colombia.ts.')
+}
+if (sinOrigen.length) {
+  console.log('\n  ✗ un dia leido de un instante SIN declarar su origen.')
+  console.log('    Sobre una columna de DIA PURO es correcto; sobre el ahora, no.')
+  console.log('    El detector no puede deducirlo: escribe `DIA PURO` en un')
+  console.log('    comentario en la linea o en las tres anteriores, o usa el puente.')
+}
+if (lecturas.length || escrituras.length || ahoraEnUtc.length || sinOrigen.length) {
   console.log('\n  El dia de Colombia se nombra en src/lib/dia-colombia.ts y en ningun otro')
   console.log('  sitio. Si esto es legitimo, no lo declares aqui: usa el puente.')
-  problemas.push(`${lecturas.length + escrituras.length} sitio(s) nuevos con componentes locales`)
+  const partes = []
+  if (lecturas.length) partes.push(`${lecturas.length} con componentes locales`)
+  if (escrituras.length) partes.push(`${escrituras.length} escribiendo un instante en columna de dia`)
+  if (ahoraEnUtc.length) partes.push(`${ahoraEnUtc.length} leyendo el ahora como dia de UTC`)
+  if (sinOrigen.length) partes.push(`${sinOrigen.length} sin declarar el origen del valor`)
+  problemas.push(`sitios por resolver: ${partes.join(' · ')}`)
 } else {
-  console.log('  ✓ ninguna de las dos formas queda en el codigo.')
+  console.log('  ✓ ninguna de las CUATRO formas queda en el codigo.')
 }
 
 if (problemas.length) {

@@ -15,6 +15,7 @@ import { respuestaNosotros } from '@/lib/respuestas-directas';
 import { cargarCifras, textoReputacion } from '@/lib/cifras-publicas';
 import { FAQS_NOSOTROS } from '@/lib/faqs';
 import { horarioEnProsa } from '@/lib/horario';
+import { hoyEnColombia } from '@/lib/dia-colombia';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // /nosotros — REESCRITA ENTERA el 19/08/2026.
@@ -83,7 +84,9 @@ export default async function NosotrosPage() {
   const hrefContacto   = enlaces.fija('/contacto');
 
   // Todo derivado. La fecha de corte es la de la consulta, no una escrita.
-  const corte = new Date().toISOString().slice(0, 10);
+  /* LA FECHA DE CORTE, EN EL DÍA DE COLOMBIA. `toISOString()` da el día de
+   * UTC y esta fecha se publica a la vista del lector. */
+  const corte = hoyEnColombia();
   const filas = [
     { etiqueta: 'Matrícula mercantil', valor: '199483', nota: 'Cámara de Comercio, Colombia' },
     { etiqueta: 'En operación desde', valor: String(DATOS_OFICIALES.anioFundacion) },

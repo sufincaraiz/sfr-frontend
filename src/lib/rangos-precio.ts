@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { hoyEnColombia } from '@/lib/dia-colombia'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RANGOS DE PRECIO OBSERVADOS EN EL INVENTARIO PROPIO.
@@ -62,7 +63,11 @@ export interface RangosPrecio {
   metodologia:  string
 }
 
-const hoy = () => new Date().toISOString().slice(0, 10)
+/* EL DÍA DE COLOMBIA, NO EL DE UTC. `new Date().toISOString()` da el día en
+ * UTC: entre las 19:00 y la medianoche de Colombia esto publicaba la fecha
+ * de MAÑANA, y va a la vista junto a la cifra. Ver TRASPASO, sexto punto
+ * ciego: la misma expresión es correcta sobre una columna de DÍA PURO. */
+const hoy = hoyEnColombia
 
 function mediana(valores: number[]): number {
   const s = [...valores].sort((a, b) => a - b)

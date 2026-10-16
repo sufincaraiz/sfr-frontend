@@ -24,6 +24,8 @@ export async function GET(req: NextRequest) {
   try {
     return NextResponse.json({
       anio, mes,
+      /* DIA PURO: `periodoDelMes`/`periodoDelAnio` construyen con Date.UTC,
+       * así que estos dos son días a medianoche UTC y no instantes. */
       desde: periodo.desde.toISOString().slice(0, 10),
       hasta: periodo.hasta.toISOString().slice(0, 10),
       ...(await estadoDeResultados(periodo)),

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { hoyEnColombia } from '@/lib/dia-colombia'
 import { DATOS_OFICIALES } from '@/lib/datos-oficiales'
 import { cargarCifras, textoReputacion } from '@/lib/cifras-publicas'
 import { getTiposOfrecibles, getTipoPlurales } from '@/lib/property-types.server'
@@ -25,7 +26,11 @@ import type { RespuestaDirectaProps } from '@/components/aeo/RespuestaDirecta'
 
 const FUENTE = 'Datos propios de Su Finca Raíz'
 
-const hoy = () => new Date().toISOString().slice(0, 10)
+/* EL DÍA DE COLOMBIA, NO EL DE UTC. `new Date().toISOString()` da el día en
+ * UTC: entre las 19:00 y la medianoche de Colombia esto publicaba la fecha
+ * de MAÑANA, y va a la vista junto a la cifra. Ver TRASPASO, sexto punto
+ * ciego: la misma expresión es correcta sobre una columna de DÍA PURO. */
+const hoy = hoyEnColombia
 const cop = (n: number) => `$${n.toLocaleString('es-CO')}`
 
 async function seguro<T>(fn: () => Promise<T>, porDefecto: T): Promise<T> {

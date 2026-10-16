@@ -59,8 +59,22 @@ export const DEFAULT_REGISTRO_VISITA: RegistroVisitaContent = {
     subtitulo:
       'Completa este registro antes de ingresar al inmueble. Nos permite llevar el control de ingreso y acompañarte mejor durante la visita.',
   },
+  /* ⚠ ESTE TEXTO DECÍA «no se publican ni se comparten con terceros» Y ERA
+   * FALSO: el enlace del dueño entrega NOMBRE y CÉDULA de cada visitante al
+   * propietario del inmueble —`visitantesDe()`—, y el propietario es un
+   * tercero. Los otros dos textos de la MISMA pantalla lo decían bien: la
+   * casilla de consentimiento y la política §3.
+   *
+   * > El único que mentía era el TRANQUILIZADOR, y es el único editable sin
+   * > desplegar. Un texto que existe para calmar es el que nadie contrasta,
+   * > porque no parece prometer nada concreto.
+   *
+   * Corregido el 2026-10-16. Éste es el valor por DEFECTO: si ya hay fila en
+   * `PageContent`, manda la fila, así que hay que cambiarlo también desde
+   * /admin/registro-visita. Lo vigila el cron de vigilancia, que es el único
+   * que ve la base entre despliegues. */
   aviso:
-    'Todos los campos son obligatorios. Tus datos se usan únicamente para el control de ingreso y la seguridad de la visita — no se publican ni se comparten con terceros.',
+    'Todos los campos son obligatorios. Tus datos se usan únicamente para el control de ingreso y la seguridad de la visita: no se publican ni se usan para publicidad. Tu nombre y número de documento pueden compartirse con el propietario del inmueble que visitas; tu correo y tu celular no salen de Su Finca Raíz.',
   campos: {
     nombresCompletos:   { label: 'Nombres y apellidos completos', placeholder: 'Ej. María Fernanda Rodríguez Gómez' },
     cedula:             { label: 'Número de cédula',              placeholder: 'Solo números, sin puntos ni espacios' },

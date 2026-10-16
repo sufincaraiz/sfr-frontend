@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma'
+import { hoyEnColombia, diaEnColombia } from '@/lib/dia-colombia'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CIFRAS DERIVADAS DE LA BASE — con su metodología, que se publica al lado.
@@ -33,7 +34,11 @@ export interface CifraDerivada {
   corte: string
 }
 
-const hoy = () => new Date().toISOString().slice(0, 10)
+/* EL DÍA DE COLOMBIA, NO EL DE UTC. `new Date().toISOString()` da el día en
+ * UTC: entre las 19:00 y la medianoche de Colombia esto publicaba la fecha
+ * de MAÑANA, y va a la vista junto a la cifra. Ver TRASPASO, sexto punto
+ * ciego: la misma expresión es correcta sobre una columna de DÍA PURO. */
+const hoy = hoyEnColombia
 
 // ─────────────────────────────────────────────────────────────────────────────
 // INVENTARIO EN PRESENTE — la única familia de cifras segura por definición.
@@ -133,7 +138,8 @@ export async function propiedadesEnCatalogo(): Promise<CifraDerivada> {
         'Propiedades registradas en el catálogo digital de Su Finca Raíz, en cualquier ' +
         'estado (disponibles y vendidas). No incluye operaciones anteriores a la puesta ' +
         'en marcha del catálogo.',
-      desde: primera?.published_at?.toISOString().slice(0, 10) ?? null,
+      /* INSTANTE, no día puro: `published_at` es un `now()`. */
+      desde: primera?.published_at ? diaEnColombia(primera.published_at) : null,
       corte: hoy(),
     }
   }, { valor: 0, metodologia: 'No disponible.', desde: null, corte: hoy() })
@@ -178,7 +184,8 @@ export async function contactosDigitales(): Promise<CifraDerivada> {
         'Personas que dejaron sus datos de contacto por los formularios del sitio o el ' +
         'agente de IA. No incluye clientes atendidos por teléfono, referido o de forma ' +
         'presencial.',
-      desde: primero?.created_at?.toISOString().slice(0, 10) ?? null,
+      /* INSTANTE, no día puro: `created_at` es un `now()`. */
+      desde: primero?.created_at ? diaEnColombia(primero.created_at) : null,
       corte: hoy(),
     }
   }, { valor: 0, metodologia: 'No disponible.', desde: null, corte: hoy() })

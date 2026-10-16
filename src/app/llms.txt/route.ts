@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
+import { hoyEnColombia } from '@/lib/dia-colombia'
 import { DATOS_OFICIALES, MUNICIPIOS_PROVINCIA, CAPITAL_PROVINCIA } from '@/lib/datos-oficiales'
 import { formatPrice } from '@/lib/utils'
 import { horarioEnProsa, contrasteConMac } from '@/lib/horario'
@@ -70,7 +71,9 @@ export async function GET() {
     console.warn('[llms.txt] BD no disponible; se omite el inventario:', err instanceof Error ? err.message : err)
   }
 
-  const hoy = new Date().toISOString().slice(0, 10)
+  /* EL DÍA DE COLOMBIA. Este archivo lo leen los modelos y la fecha va en
+   * su cabecera: cinco horas al día declaraba datos «de mañana». */
+  const hoy = hoyEnColombia()
 
   const lineas: string[] = [
     `# Su Finca Raíz — La Vega, Cundinamarca (Provincia del Gualivá), Colombia`,

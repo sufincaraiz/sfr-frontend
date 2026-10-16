@@ -116,6 +116,7 @@ export async function detalleEgreso(id: string) {
   // Así el formulario puede reenviar sin cambios lo que nadie tocó.
   return {
     id: e.id,
+    /* DIA PURO: columna DATE (migrada el 2026-10-15), medianoche UTC. */
     fecha: e.fecha.toISOString().slice(0, 10),
     descripcion: e.descripcion,
     valor_base: e.valor_base.toString(),
@@ -127,6 +128,7 @@ export async function detalleEgreso(id: string) {
     es_deducible: e.es_deducible,
     naturaleza: e.naturaleza,
     estado_reembolso: e.estado_reembolso,
+    /* DIA PURO: columna DATE (migrada el 2026-10-15), medianoche UTC. */
     fecha_reembolso: e.fecha_reembolso?.toISOString().slice(0, 10) ?? null,
     motivo_reclasificacion: e.motivo_reclasificacion,
     reclasificado_de: e.reclasificado_de,
@@ -298,7 +300,9 @@ export async function detalleIngreso(id: string) {
   const d = compararRetencion(i.retefuente_practicada, i.retefuente_sugerida)
   return {
     id: i.id,
+    /* DIA PURO: columna DATE (migrada el 2026-10-15), medianoche UTC. */
     fecha_causacion: i.fecha_causacion.toISOString().slice(0, 10),
+    /* DIA PURO: columna DATE (migrada el 2026-10-15), medianoche UTC. */
     fecha_recaudo: i.fecha_recaudo?.toISOString().slice(0, 10) ?? null,
     valor_base: i.valor_base.toString(),
     iva_generado: i.iva_generado.toString(),
