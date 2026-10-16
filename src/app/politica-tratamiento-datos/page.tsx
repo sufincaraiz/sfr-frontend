@@ -23,7 +23,7 @@ export default function PoliticaDatosPage() {
       <JsonLd data={breadcrumbs} />
       <LegalLayout
         title="Política de Tratamiento de Datos Personales"
-        updated="21 de septiembre de 2026"
+        updated="16 de octubre de 2026"
         breadcrumbLabel="Política de Datos"
       >
         <p className="intro">
@@ -95,24 +95,45 @@ export default function PoliticaDatosPage() {
           desde la fecha de la visita, tras lo cual son eliminados de forma automática.
         </p>
 
-        <h2>4. Enlace de Consulta Contable</h2>
+        <h2>4. Enlace de Consulta Contable (previsto, no disponible)</h2>
         <p>
-          Para la preparación de declaraciones tributarias, Su Finca Raíz puede generar enlaces de
-          consulta de <strong>solo lectura</strong> dirigidos a su contador o asesor tributario.
-          Estos enlaces exponen información financiera del negocio —ingresos, egresos y retenciones
-          de un periodo determinado— y no contienen datos personales de clientes ni de visitantes.
+          <strong>Esta función todavía no está en funcionamiento.</strong> Se describe aquí porque
+          está prevista y porque, cuando se habilite, estas serán sus condiciones; a la fecha de
+          actualización de esta política <strong>no se ha generado ningún enlace de consulta
+          contable y no se ha registrado ningún acceso</strong>. Ningún dato se trata hoy por este
+          medio.
         </p>
         <p>
-          El acceso exige un enlace privado y un PIN, compartidos por canales distintos. El enlace
-          tiene fecha de expiración, queda limitado a un periodo contable concreto —fuera de ese
-          rango no muestra información— y puede revocarse en cualquier momento desde el panel
+          Lo previsto: para la preparación de declaraciones tributarias, Su Finca Raíz podrá generar
+          enlaces de consulta de <strong>solo lectura</strong> dirigidos a su contador o asesor
+          tributario. Esos enlaces expondrán información financiera del negocio —ingresos, egresos y
+          retenciones de un periodo determinado—, que incluye la{' '}
+          <strong>identificación de los terceros con los que se facturó o se contrató</strong>:
+          nombre o razón social y número de documento o NIT de clientes y proveedores. Ese dato es
+          indispensable para elaborar una declaración tributaria, de modo que el enlace no puede
+          omitirlo. <strong>No</strong> expondrá, en cambio, los datos del registro de visitas a
+          inmuebles ni las conversaciones con el agente Mac, que pertenecen a otra finalidad.
+        </p>
+        <p>
+          El contador o asesor que reciba el enlace actuará como <strong>encargado del
+          tratamiento</strong> de esos datos en los términos de la Ley 1581 de 2012: podrá usarlos
+          únicamente para la finalidad tributaria, está obligado a guardar reserva y no puede
+          cederlos a terceros.
+        </p>
+        <p>
+          El acceso exigirá un enlace privado y un PIN, compartidos por canales distintos. El enlace
+          tendrá fecha de expiración, quedará limitado a un periodo contable concreto —fuera de ese
+          rango no mostrará información— y podrá revocarse en cualquier momento desde el panel
           administrativo.
         </p>
         <p>
-          Cada apertura del enlace queda registrada. La dirección IP y el navegador desde los que se
-          accede se conservan por un máximo de <strong>doce (12) meses</strong>; cumplido ese plazo
-          se eliminan de forma automática y se conserva únicamente la fecha del acceso y el enlace
+          Cada apertura quedará registrada. La dirección IP y el navegador desde los que se acceda se
+          conservarán por un máximo de <strong>doce (12) meses</strong>; cumplido ese plazo se
+          eliminarán de forma automática y se conservará únicamente la fecha del acceso y el enlace
           consultado, como registro de auditoría.
+        </p>
+        <p>
+          Esta sección se actualizará el día en que la función se habilite.
         </p>
 
         <h2>5. Soportes Contables y Fotografías de Recibos</h2>

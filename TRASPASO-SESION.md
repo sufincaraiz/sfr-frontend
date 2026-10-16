@@ -2624,6 +2624,308 @@ días.
 > que una guarda sin llamar se encuentra leyendo el código, y un arnés sin
 > correr no deja rastro de su ausencia. Por eso el rastro hay que fabricarlo.
 
+## Lo que implica HACIA ATRÁS, que es la mitad incómoda
+
+No basta con escribir la regla en futuro. **Cada vez que esta sesión reportó
+«36 del panel en verde» estaba citando un guion que no podía decir que no.**
+
+> El 36 era **decoración**. Y lo peor no es que estuviera mal: es que **nadie
+> podía distinguirlo de un 36 real**, ni quien lo escribió ni quien lo leyó. Un
+> número que solo puede subir no mide nada.
+
+Así que todo informe de este arnés anterior al 2026-10-15 **se retira**, no se
+reinterpreta. No hay forma de saber cuántas de las cinco llevaban rojas.
+
+## El segundo piso: un verde falso que alimenta a otro instrumento
+
+Y esto es lo que lo convierte de error en algo peor. `apto: true` sobre un año
+vacío no se quedaba en la pantalla del panel: **`cotejar-notariales.mjs` salía
+con 0 basándose en él.**
+
+> **Un indicador falso que alimenta a otro instrumento no es un error: es un
+> sistema de errores.** El segundo hereda la mentira del primero y le añade
+> autoridad propia —ya no es «lo dice el panel», es «lo confirma el cotejo»—, y
+> a esa altura nadie recuerda que las dos frases tienen la misma fuente.
+
+Regla que queda: **cuando una guarda consume el resultado de otra, hereda su
+defecto y lo lava.** Antes de encadenar dos instrumentos hay que poder decir qué
+significa exactamente el indicador del primero —`apto` era *consistencia*, no
+*completitud*— y comprobar que el segundo exige lo que de verdad necesita.
+
+# UN INSTRUMENTO SOLO SE VERIFICA DONDE NO VIVE
+
+2026-10-16. Extensión directa de lo anterior y la pregunta que lo cierra: **¿qué
+instrumentos siguen corriendo en una sola superficie?**
+
+El caso que lo motiva es el de ayer: `probar-notariales.mjs` corrió meses en
+verde en esta máquina, y su verde era **un hecho sobre esta máquina**. En cuanto
+tocó otra —Linux, UTC— apareció su propio defecto, un fixture con componentes
+locales. No hubo que buscarlo: bastó cambiarlo de sitio.
+
+> **El verde de un instrumento que solo ha corrido donde fue escrito no es un
+> hecho sobre el proyecto: es un hecho sobre el equipo.** Y los dos se escriben
+> igual en la pantalla.
+
+## El censo, medido (no recordado)
+
+| | cuántos |
+|---|---|
+| guardas declaradas en la cadena | **19 antes + 2 después** |
+| arneses que la cadena lanza por dentro (comparador de invariancia) | 4 × 2 zonas |
+| instrumentos que siguen corriendo SOLO aquí | **4** |
+| actos de una sola vez (corregir·, fusionar·, sanear·, migrar·, sembrar·, dump·) | ~40 |
+
+**Entraron hoy tres, y el coste vuelve a ser ridículo:**
+
+| instrumento | medido | qué vigila |
+|---|---|---|
+| `probar-slug.ts` | **162 ms** | 7 casos del generador de slugs |
+| `probar-vigilancia.ts` | **109 ms** | 19 casos del detector de valor futuro |
+| `mutar.mjs` | **3,0 s** | las 14 mutaciones |
+
+**El que más importa de los tres es `mutar.mjs`**, y conviene decir por qué:
+hasta hoy, la frase «las 14 afirmaciones del motor están respaldadas por una
+mutación real» era **un hecho sobre esta máquina a una hora concreta**. El
+instrumento con el que comprobamos que los demás instrumentos sirven era el
+menos verificado de todos. Ahora corre en cada despliegue.
+
+## Los cuatro que siguen en una sola superficie, y qué es cada resultado
+
+1. **`verificar-build.mjs` — el más grave, y es deliberado.** Detecta P2024
+   (pool agotado) y errores de prerender dentro del log del build, que es
+   exactamente el defecto de «build verde engañoso»: `npm run build` devolvió 0
+   con siete P2024 dentro. **No corre en Vercel**, porque lanza él mismo
+   `npm run build` —sería recursión— y porque su valor está en comparar contra
+   `.build-historial.json`, que es local. Consecuencia que hay que tener escrita:
+   > **Un build de Vercel con pool agotado sale verde y nadie se enteraría.** La
+   > detección de P2024 es, hoy, un hecho sobre esta máquina. Se compensa con
+   > disciplina (`npm run build:verificado` antes de empujar), y la disciplina es
+   > justo lo que esta sesión aprendió a no considerar una guarda.
+2. **`estado-del-deploy.mjs`** — pregunta a Vercel desde fuera. Su resultado es
+   un hecho sobre **el despliegue**, y dentro del build no tendría sentido: se
+   preguntaría por sí mismo. Correctamente fuera.
+3. **`auditar-404.mjs`** — pide URLs a producción. Hecho sobre **producción en
+   un momento**, no sobre el commit: durante un despliegue producción todavía es
+   el commit anterior, y un fallo de red pondría roja una guarda de código por
+   una razón de entorno. Fuera por diseño, y por la misma distinción que hace
+   `verificar-enlaces` entre «los datos divergen» y «no llego a la base».
+4. **`cotejar-notariales.mjs` y `probar-panel-notarial.mjs`** — tocan la base y
+   escriben. El segundo crea y borra un año de prueba: en el build escribiría en
+   producción en cada despliegue. Para ellos el build comprueba otra cosa —la
+   frescura del último verde— y eso es lo mejor que se puede hacer sin una base
+   de pruebas aparte.
+
+Lo demás que está fuera **no son instrumentos**: son **actos**. `corregir-*`,
+`fusionar-*`, `sanear-*`, `migrar-*`, `publicar-*`, `sembrar-*`, `dump-*`
+corrieron una vez y su resultado es una fila cambiada, no un veredicto. Un acto
+no se vuelve a correr; un instrumento sí, y por eso solo los instrumentos tienen
+que vivir en las dos superficies.
+
+## La regla
+
+> **Un instrumento solo se verifica donde no vive.** Mientras un arnés solo haya
+> corrido en la máquina donde se escribió, su verde es un hecho sobre esa
+> máquina. Meterlo en la superficie que despliega no es higiene: es la única
+> forma de que su resultado hable del proyecto.
+
+Corolario práctico, que ya se cobró dos veces en dos días: **lo que se puede
+meter en la cadena sin tocar la base, se mete.** Los tres de hoy costaron 3,3 s
+y los tres de ayer menos de dos segundos; llevaban fuera **por nada**, y uno de
+ellos escondía un defecto real.
+
+# EL ENLACE DEL CONTADOR — LO QUE PARECÍA HECHO, Y LA MENTIRA ESTABA PUBLICADA
+
+2026-10-16. Se fue al dato a preguntar por qué `periodo_desde` y `periodo_hasta`
+estaban vacías —«ve al dato, no lo deduzcas del esquema»— y la respuesta no era
+la esperada:
+
+> **El enlace del contador no existe.** Ni ruta, ni verificación de token+PIN,
+> ni filtro de periodo. `enlaces_contador`: 0 filas.
+> `accesos_enlace_contador`: 0 filas.
+
+Y es **la razón por la que se pidió el módulo financiero**: mandarle al contador
+un enlace de solo lectura de un periodo, con descarga. Las tres piezas:
+
+| pieza | estado |
+|---|---|
+| ruta pública que acepte el token | ⬜ no existe |
+| token + PIN y sesión con scope propio | ⬜ no existe |
+| consulta ACOTADA a `periodo_desde`/`periodo_hasta` | ⬜ no existe |
+
+**NO CONFUNDIR con `/interno/datos-contador`, que sí existe** y va en la
+dirección contraria: es el formulario que el contador NOS llena con los
+parámetros fiscales del año. Tener uno de los dos hacía que el otro pareciera
+hecho.
+
+## Lo grave no era la columna vacía: era lo escrito alrededor
+
+Tres textos hablaban de ello **en presente**, y el tercero es el que convierte
+esto de deuda en defecto:
+
+1. El comentario del esquema: *«fuera de este rango no devuelve nada»*, sobre un
+   filtro inexistente.
+2. El módulo de retención, que decía ser *«lo que hace cierta esa frase»*.
+3. **La política de tratamiento de datos, PÚBLICA, en
+   `/politica-tratamiento-datos`, sección 4:** *«el acceso exige un enlace
+   privado y un PIN»*, *«queda limitado a un periodo contable concreto —fuera de
+   ese rango no muestra información—»*, *«la dirección IP y el navegador se
+   conservan por un máximo de doce (12) meses»*.
+
+> **Un documento legal describiendo un tratamiento que no se hace.** No es una
+> nota interna desactualizada: es lo que cualquier visitante de
+> sufincaraiz.com puede leer, firmado como política de la empresa.
+
+Y esta sesión lo reportó al titular como *«la frase vive solo en un comentario
+del código, no publicada»*. **Era falso**, y el error tiene una forma conocida:
+se buscó la frase exacta del comentario en vez de buscar el tema. La política no
+repetía la frase; decía lo mismo con otras palabras. **El punto ciego del grep
+otra vez, un piso más arriba** — y es exactamente la misma forma que el quinto
+punto ciego: lo vi, lo clasifiqué, y la clasificación lo enterró.
+
+## Qué se cambió, y qué NO
+
+Corregido el 2026-10-16: los tres textos dicen ahora lo que es verdad. La
+sección 4 de la política está **redactada en futuro**, encabezada por *«esta
+función todavía no está en funcionamiento»* y con la constancia explícita de que
+**no se ha generado ningún enlace ni se ha registrado ningún acceso**; se
+conservan las condiciones previstas, porque describirlas de antemano es correcto
+mientras se diga que no están en vigor. La numeración de la política **no se
+tocó** —la sección 3 remite al «numeral 6», y renumerar habría roto esa
+referencia en silencio—.
+
+**El cron también mentía por omisión.** Anonimizaba cada noche una tabla que
+nadie escribe y registraba «0 anonimizados»:
+
+> **Un verde que no puede ser rojo no es un verde.** Ese 0 decía «no hay nada»,
+> no «la retención funciona», y los dos se escriben igual en el log.
+
+Ahora `anonimizarAccesosVencidos()` devuelve además `filas` y `pendientes`, y el
+mensaje distingue las dos causas: con la bitácora vacía dice que **no demuestra
+nada**, y si quedaran vencidas sin anonimizar lo registra como error. El JSON de
+respuesta lleva `retencionContadorDemostrada`, que solo es `true` si había filas
+y no quedó ninguna pendiente.
+
+**NO se construyó el enlace**: va después del editor de tramos. Lo que se hizo
+es que **deje de parecer hecho**.
+
+## La guarda, y vigila las dos direcciones
+
+`scripts/verificar-enlace-contador.mjs`, en la cadena del build (19 antes):
+
+· **Mientras no exista** → los tres textos tienen que declararlo pendiente, y el
+  cron tiene que distinguir sus dos ceros.
+· **Cuando exista** → los tres tienen que dejar de llamarlo pendiente, y la ruta
+  tiene que filtrar de verdad por `periodo_desde`.
+
+La señal de que existe **se mide**: una ruta de `src/app` que consulte
+`prisma.enlaceContador`. No vale que alguien nombre el modelo —la retención lo
+nombra y no es el enlace—.
+
+> Una guarda que solo vigilara la primera dirección **convertiría la advertencia
+> en la siguiente mentira** el día que el enlace se construya. Es la cuarta vez
+> en dos días que la respuesta correcta es «las dos direcciones»: las escrituras
+> de fecha, las unidades escrita/declarada, el cotejo `apto`/`completo`, y esta.
+
+Provocada en las cinco: quitar cada una de las cuatro marcas la pone en rojo, y
+crear una ruta que consulte la tabla con los textos aún en «pendiente» también.
+Cada provocación comprueba que el archivo cambió y lo restaura byte a byte.
+
+Y el ⬜ queda impreso al lado de las ✅ en `estado-traspaso.mjs` (29 de 31), para
+que la pieza que falta **esté en la lista** en vez de faltar de ella.
+
+# UNA MEDICIÓN SIN LÍNEA BASE FECHADA NO ES UNA MEDICIÓN, ES UN NÚMERO
+
+2026-10-16, salido de medir el censo anterior. `verificar-build.mjs` avisó:
+
+```
+! 1293  consultas a la base         ▲ antes 1189
+```
+
+**+104 consultas.** La reacción natural —y la que el titular dijo que habría
+tenido— es buscar la regresión: algo pasó a consultar por página. No había
+ninguna.
+
+El historial guardaba **las cifras y nada más**: ni commit ni fecha. Así que ese
+1189 podía ser del commit anterior o de hacía una semana y quince commits, y no
+había forma de saberlo. **Un delta contra un punto desconocido en el tiempo no
+se puede atribuir a ningún cambio.**
+
+Y al comprobarlo salió lo otro, que es peor para el instrumento: **tres builds
+del mismo código contaron 1293, 1251 y 1250.** La cifra tiene **~3 % de varianza
+propia** entre corridas idénticas. El ▲104 era ruido.
+
+> **Una medición sin su línea base fechada no es una medición: es un número.** Y
+> un número que se compara con otro número sin fecha produce deltas que parecen
+> hallazgos. Esta clase de falso positivo es caro de un modo particular: no
+> rompe nada, manda a buscar un defecto que no existe.
+
+Corregido en el guion: el historial guarda ahora `commit` y `fecha`, y la salida
+dice **contra qué** compara (`comparado con e46555f · 2026-10-16T20:33Z`). Si el
+historial no los trae, lo dice en vez de callarlo. Y la varianza del ~3 % quedó
+escrita junto al umbral, con la razón de que el umbral sea alto: lo que se
+vigila es el **salto de magnitud** —una consulta nueva POR PÁGINA—, no el delta
+pequeño.
+
+Familia: es el mismo defecto que `apto` y que el arnés sin código de salida
+—**un indicador que no puede distinguir dos situaciones distintas**—, aquí en su
+versión temporal.
+
+# CORREGIRSE HACIA ARRIBA Y HACIA ABAJO CUESTA LO MISMO
+
+2026-10-15 y 16. Tres correcciones sobre reportes propios, ninguna pedida:
+
+| | lo reportado | lo cierto | dirección |
+|---|---|---|---|
+| deriva del `float` en `saldoEnCustodia` | «se separan en cinco puntos» | no hay pérdida demostrable a esta escala; comparé **cadenas**, no valores | **a la baja** |
+| «cuatro horas de trabajo» | cuatro horas | 2 h 40 min (12:03 → 14:43) | **a la baja** |
+| la frase del enlace del contador | «vive solo en un comentario, no publicada» | está **publicada** en la política, sección 4, en presente | **al alza** |
+
+Las dos primeras rebajaban una alarma propia; la tercera **agravaba** un reporte
+propio. Y es la que menos ganas dan de escribir, porque convierte «deuda
+pendiente» en «documento legal falso publicado».
+
+> **Corregirse hacia arriba y hacia abajo cuesta lo mismo, y las dos veces nadie
+> lo iba a reclamar.** Si solo se corrige a la baja, el efecto neto es un
+> historial que siempre acaba tranquilizando; si solo al alza, uno que siempre
+> alarma. La disciplina no es la dirección: es que la corrección no dependa de
+> si el resultado conviene.
+
+Y las tres tienen la misma causa de fondo, que es la que hay que vigilar: **medí
+la superficie en vez del fondo.** Cadenas en vez de valores; una impresión en
+vez del reloj; la frase literal en vez del tema.
+
+# UN TEXTO PÚBLICO ES CÓDIGO QUE NADIE COMPILA
+
+2026-10-16, la superficie que tres días de auditoría no habían tocado.
+
+Cuatro instrumentos, sesenta y nueve decisiones inventariadas, catorce
+mutaciones, diecinueve guardas — y **los textos publicados no los había revisado
+nadie**. El primero que se miró, la política de tratamiento de datos, **mentía**.
+
+> **Un texto público es código que nadie compila.** Afirma cosas sobre el
+> sistema, se lee literalmente —un cliente, un contador, una autoridad—, y
+> **ningún build lo contradice**. Un comentario desactualizado engaña a quien
+> programa; una frase publicada desactualizada es una declaración de la empresa.
+
+Tres rasgos que lo hacen peor que el código:
+
+1. **No tiene tipos.** Nada falla si la frase deja de ser cierta.
+2. **Se lee en presente por defecto.** «El acceso exige un PIN» no se entiende
+   como un plan, se entiende como una descripción. El tiempo verbal es la única
+   marca de estado que tiene, y es invisible al revisarlo por encima.
+3. **Envejece por el lado del sistema, no del texto.** Nadie lo toca y se vuelve
+   falso igual: lo que cambió fue el código. Es la misma forma que «cosmético»
+   dejando de ser cierto porque cambió el contexto.
+
+Por eso la guarda del enlace del contador vigila **la política**, no solo el
+esquema: es el único archivo del lote cuyo lector no es un programador.
+
+El inventario de lo publicado —qué afirma sobre lo que el negocio hace y sobre
+cómo trata los datos, y si el sistema lo cumple hoy— se hace con **lectura
+completa, no con grep**, por la razón exacta del fallo de hoy: la política no
+repetía la frase del comentario, **decía lo mismo con otras palabras**. El grep
+busca la frase; lo que hay que buscar es el tema.
+
 # CUATRO INSTRUMENTOS, CUATRO PUNTOS CIEGOS, LA MISMA FORMA
 
 2026-10-15. En un día, cuatro instrumentos distintos dejaron pasar algo, y los

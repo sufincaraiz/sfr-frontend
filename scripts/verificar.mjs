@@ -39,6 +39,21 @@ const GUARDAS = {
       vigila: '249 verificaciones: retefuente, IVA, ICA, custodia, numeros, NIT' },
     { nombre: 'promocion', guion: 'probar-promocion.mjs',
       vigila: 'lo que el sitio promete y como se calcula' },
+    /* LOS TRES DEL 2026-10-16, por la misma razon y con el mismo coste.
+     *
+     * Un instrumento solo se verifica donde NO vive: `probar-notariales` corrio
+     * meses en verde aqui y su propio defecto aparecio el dia que toco otra
+     * zona. Estos tres eran hechos sobre esta maquina: 162 ms, 109 ms y 3,0 s.
+     * `mutar` es el que mas pesa y el que mas vale: sin el, las 14 afirmaciones
+     * respaldadas por una mutacion son una medicion de ayer en un equipo. */
+    { nombre: 'slug base', guion: 'probar-slug.ts',
+      vigila: '7 casos del generador de slugs, con la trampa de «Casablanca»' },
+    { nombre: 'detector de valor futuro', guion: 'probar-vigilancia.ts',
+      vigila: '19 casos: las frases retiradas de verdad y los falsos positivos' },
+    { nombre: 'mutaciones', guion: 'mutar.mjs',
+      vigila: 'que las 14 afirmaciones del motor sigan respaldadas por una mutacion real' },
+    { nombre: 'enlace del contador', guion: 'verificar-enlace-contador.mjs',
+      vigila: 'que lo escrito —esquema, politica PUBLICA, retencion— y lo construido coincidan' },
     { nombre: 'arneses frescos', guion: 'verificar-arneses-frescos.mjs',
       vigila: 'cuando corrio en verde por ultima vez lo que NO puede correr aqui' },
     { nombre: 'volcados de tablas', guion: 'verificar-volcados.mjs',

@@ -54,7 +54,7 @@
  *     npm run build:verificado
  */
 
-import { spawn } from 'node:child_process'
+import { spawn, execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 
 // FUERA de .next: el propio build borra ese directorio, así que el historial
@@ -93,6 +93,15 @@ hijo.on('close', codigo => {
 
   console.log('\n══ VERIFICACIÓN DEL BUILD ═══════════════════════════════════')
   console.log(`  exit de next build: ${codigo}`)
+  /* ⚠ UNA COMPARACIÓN SIN FECHA NO DICE CONTRA QUÉ. El 2026-10-16 este guion
+   * avisó de «1293 consultas ▲ antes 1189» y no había forma de saber si ese
+   * 1189 era del commit anterior o de hacía una semana y quince commits: el
+   * historial guardaba las cifras y nada más. Un delta contra un punto
+   * desconocido en el tiempo no se puede atribuir a ningún cambio. */
+  if (previo?.commit) console.log(`  comparado con ${previo.commit} · ${previo.fecha ?? 'sin fecha'}`)
+  else if (previo) console.log('  ⚠ el build anterior no dejó fecha ni commit: el delta de abajo' +
+    '\n    no se puede atribuir a ningún cambio concreto.')
+  else console.log('  (sin build anterior con el que comparar)')
   for (const p of PATRONES) {
     const n = conteo[p.clave]
     const antes = previo ? previo[p.clave] : null
@@ -100,14 +109,24 @@ hijo.on('close', codigo => {
     const marca = n === 0 ? '·' : p.grave ? '✗' : '!'
     console.log(`  ${marca} ${String(n).padStart(3)}  ${p.label.padEnd(26)}${delta}`)
   }
-  if (!previo) console.log('  (sin build anterior con el que comparar)')
-
   try {
-    writeFileSync(HISTORIAL, JSON.stringify(conteo, null, 2))
+    /* Y se guarda CONTRA QUÉ, no solo cuánto: el commit y la fecha. Sin eso, el
+     * siguiente delta vuelve a ser un número sin punto de referencia. */
+    let commit = null
+    try { commit = execFileSync('git', ['rev-parse', '--short', 'HEAD'], { encoding: 'utf8' }).trim() }
+    catch { /* fuera de un repo o sin git: el historial sigue valiendo */ }
+    writeFileSync(HISTORIAL, JSON.stringify(
+      { ...conteo, commit, fecha: new Date().toISOString() }, null, 2))
   } catch { /* el historial es una ayuda, no un requisito */ }
 
   // Un salto de más del 50% en consultas no es un error, pero es la señal que
   // precedió a los dos P2024 anteriores. Se avisa fuerte.
+  //
+  // ⚠ Y EL UMBRAL ES ALTO A PROPÓSITO. El 2026-10-16 dos builds del MISMO
+  // código contaron 1293 y 1251 consultas: la cifra tiene varianza propia de
+  // ~3 % entre corridas idénticas (cachés de Next, orden de prerender). Un
+  // delta pequeño de esta línea NO es una señal; lo que se vigila es el salto
+  // de magnitud, que es lo que produce una consulta nueva POR PÁGINA.
   if (previo && previo.consultas > 0 && conteo.consultas > previo.consultas * 1.5) {
     console.log("")
     console.log(`  ATENCIÓN: las consultas subieron de ${previo.consultas} a ${conteo.consultas}.`)

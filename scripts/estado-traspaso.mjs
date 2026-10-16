@@ -72,6 +72,26 @@ const PIEZAS = [
   ['Guarda de enlaces internos',    () => hay('scripts/verificar-enlaces.mjs')],
   ['Build verificado (P2024 etc.)', () => hay('scripts/verificar-build.mjs')],
   ['Condición publicable unificada',() => hay('src/lib/publicable.ts')],
+
+  // ── Financiero: lo pedido y lo que falta ──────────────────────────────────
+  //
+  // ⚠ EL ENLACE DEL CONTADOR ES LA RAZÓN POR LA QUE SE PIDIÓ EL MÓDULO
+  // FINANCIERO —mandarle un enlace de solo lectura de un periodo, con
+  // descarga— y es la pieza que NO está. Tiene tabla (`enlaces_contador`,
+  // 0 filas) y tenía política publicada en presente; no tiene ninguna de sus
+  // tres piezas. Esta fila existe para que su ⬜ se vea al lado de las ✅ en
+  // vez de faltar de la lista: la señal es una ruta que consulte la tabla, no
+  // que alguien nombre el modelo. El detalle y la vigilancia de las dos
+  // direcciones están en scripts/verificar-enlace-contador.mjs, que SÍ corre
+  // en el build.
+  ['Formulario de datos al contador', () => hay('src/app/interno/datos-contador/route.ts')],
+  ['Enlace del contador (token+PIN)', () => {
+    if (!hay('src/app')) return false
+    const busca = dir => fs.readdirSync(dir, { withFileTypes: true }).some(e =>
+      e.isDirectory() ? busca(`${dir}/${e.name}`)
+        : /\.tsx?$/.test(e.name) && /prisma\.enlaceContador\b/.test(readFileSync(`${dir}/${e.name}`, 'utf8')))
+    return busca('src/app')
+  }],
 ]
 
 const filas = PIEZAS.map(([nombre, f]) => {

@@ -1046,15 +1046,49 @@ model DistribucionComision {
   @@map("distribuciones_comision")
 }
 
-/// ENLACE DE SOLO LECTURA PARA EL CONTADOR — token + PIN, como el del dueño.
+/// ENLACE DE SOLO LECTURA PARA EL CONTADOR — ⚠ NO CONSTRUIDO. SOLO ESTA TABLA.
 ///
-/// Mismo mecanismo probado de `EnlaceVisitantes` (token de 256 bits, PIN con
-/// bcrypt, bloqueo por intentos, sesión JWT con scope propio). Lo que añade es
-/// el ALCANCE POR PERIODO: el enlace solo ve el rango que tiene guardado aquí.
+/// ⚠⚠ LEE ESTO ANTES DE CREER NADA DE LO QUE SIGUE. Esta tabla existe y está
+/// vacía (0 filas, verificado 2026-10-16). De las tres piezas que necesita el
+/// enlace, **no hay ninguna**:
 ///
-/// ⚠ El periodo sale SIEMPRE de esta fila, nunca de la petición. El endpoint no
-/// acepta fechas, así que no hay parámetro que manipular. Es la misma garantía
-/// que el `select` de `visitantesDe()`: la promesa se cumple en el servidor.
+///   1. Ruta pública que acepte el token           — NO EXISTE
+///   2. Verificación token + PIN y sesión con scope — NO EXISTE
+///   3. Consulta que ACOTE al periodo de la fila    — NO EXISTE
+///
+/// Por eso `periodo_desde` y `periodo_hasta` no las llena nadie: no porque se
+/// olvidaran, sino porque no hay código que las lea. **Ningún filtro de periodo
+/// está implementado en ninguna parte del proyecto.**
+///
+/// NO CONFUNDIR con `/interno/datos-contador`, que sí existe: ese es el
+/// formulario que el contador NOS llena (parámetros fiscales del año, sin
+/// escritura al servidor). Va en la dirección contraria y no lee esta tabla.
+///
+/// CUÁNDO SE CONSTRUYA, el diseño previsto es el de `EnlaceVisitantes` —token de
+/// 256 bits, PIN con bcrypt, bloqueo por intentos, sesión JWT con scope propio—
+/// más lo único que añade: el alcance por periodo. Y la regla que habrá que
+/// cumplir, hoy incumplible porque no hay endpoint: el periodo sale SIEMPRE de
+/// esta fila y el endpoint no acepta fechas, así que no hay parámetro que
+/// manipular —la misma garantía que el `select` de `visitantesDe()`—.
+///
+/// REQUISITOS QUE LA POLÍTICA PÚBLICA YA LE IMPONE (2026-10-16). No son una
+/// aspiración: están escritos en /politica-tratamiento-datos §4, así que el día
+/// que esto se construya tiene que cumplirlos o la política vuelve a mentir.
+///
+///   a. El extracto SÍ lleva identificación de terceros —nombre o razón social
+///      y documento o NIT de clientes y proveedores—, porque sin eso no se
+///      elabora una declaración. La política lo dice así a propósito: la
+///      redacción anterior prometía lo contrario y habría nacido falsa.
+///   b. El extracto NO puede exponer el registro de visitas a inmuebles ni las
+///      conversaciones con Mac. Son otra finalidad y la política lo excluye.
+///      ⇒ la consulta del enlace no debe tocar `visita` ni `conversation`.
+///   c. El contador es ENCARGADO DEL TRATAMIENTO (Ley 1581): finalidad
+///      tributaria, reserva, y prohibición de cederlo.
+///
+/// `scripts/verificar-enlace-contador.mjs` comprueba (b) el día que la ruta
+/// exista, porque es el único de los tres que se puede leer en el código.
+///
+/// Mientras eso no exista, **esto es un esquema, no una promesa cumplida.**
 model EnlaceContador {
   id               String                 @id @default(uuid())
   createdAt        DateTime               @default(now())
@@ -1063,7 +1097,8 @@ model EnlaceContador {
   token            String                 @unique
   /// bcrypt del PIN. NUNCA en texto plano.
   pinHash          String
-  /// Alcance del enlace. Fuera de este rango no devuelve nada.
+  /// Alcance PREVISTO del enlace. ⚠ Hoy no lo lee nadie: no hay consulta que
+  /// filtre por este rango, así que la columna no restringe nada todavía.
   /// DIA PURO: el periodo de un reporte es un rango de días, no de instantes.
   periodo_desde    DateTime @db.Date
   /// DIA PURO.
@@ -1078,9 +1113,13 @@ model EnlaceContador {
   @@map("enlaces_contador")
 }
 
-/// Bitácora de accesos al enlace del contador.
+/// Bitácora de accesos al enlace del contador. ⚠ VACÍA Y SIN ESCRITOR: no hay
+/// ruta que registre un acceso, porque el enlace no existe (ver arriba). El cron
+/// de retención SÍ corre cada noche sobre ella y por eso reporta siempre cero:
+/// ese cero dice «no hay nada», no «la retención funciona», y el mensaje del
+/// cron está obligado a distinguir las dos cosas.
 ///
-/// RETENCIÓN (Ley 1581, minimización): a los 12 meses el cron ANONIMIZA la
+/// RETENCIÓN PREVISTA (Ley 1581, minimización): a los 12 meses el cron ANONIMIZA la
 /// fila — pone `ip` y `userAgent` en null — y CONSERVA `fecha` y `enlace_id`.
 /// Así queda el rastro de que el enlace se usó y cuándo, que es lo que tiene
 /// valor de auditoría, sin retener el dato personal más de lo necesario.

@@ -36,16 +36,40 @@ export async function GET(req: NextRequest) {
     // enlace. Va aquí y no en un cron propio porque el plan Hobby limita los
     // crons y el disparador es el mismo: una pasada diaria de retención.
     const accesos = await anonimizarAccesosVencidos()
-    console.log(
-      `[cron/purge-visitas] Anonimizados ${accesos.anonimizados} accesos de contador anteriores a ` +
-      `${accesos.corte.toISOString()} (ip y userAgent a null; fecha y enlace conservados).`,
-    )
+    /* ⚠ EL CERO DE AQUÍ TIENE DOS CAUSAS DISTINTAS Y EL MENSAJE LAS SEPARA.
+     * Mientras el enlace del contador no exista, nadie escribe en esa bitácora:
+     * «0 anonimizados» significa que no hay NADA, no que la retención funcione.
+     * Un verde que no puede ser rojo no es un verde, así que se registra además
+     * cuántas filas hay y cuántas quedaron vencidas sin anonimizar. */
+    if (accesos.filas === 0) {
+      console.log(
+        '[cron/purge-visitas] Bitácora del enlace del contador VACÍA: nada que anonimizar. ' +
+        'Este cero NO demuestra que la retención funcione — el enlace del contador todavía no ' +
+        'existe, así que nadie escribe en esa tabla.',
+      )
+    } else {
+      console.log(
+        `[cron/purge-visitas] Anonimizados ${accesos.anonimizados} de ${accesos.filas} accesos de ` +
+        `contador, anteriores a ${accesos.corte.toISOString()} (ip y userAgent a null; fecha y ` +
+        `enlace conservados).`,
+      )
+      if (accesos.pendientes > 0) {
+        console.error(
+          `[cron/purge-visitas] ✗ ${accesos.pendientes} accesos VENCIDOS siguen con ip/userAgent ` +
+          'después de la pasada. La retención NO se está cumpliendo.',
+        )
+      }
+    }
 
     return NextResponse.json({
       ok: true,
       eliminadas,
       corte: corte.toISOString(),
       accesosContadorAnonimizados: accesos.anonimizados,
+      accesosContadorEnBitacora: accesos.filas,
+      accesosContadorVencidosSinAnonimizar: accesos.pendientes,
+      /** Con la bitácora vacía, el 0 de arriba no es evidencia de retención. */
+      retencionContadorDemostrada: accesos.filas > 0 && accesos.pendientes === 0,
     })
   } catch (err) {
     console.error('[cron/purge-visitas] error purgando:', err)
