@@ -3113,6 +3113,114 @@ Vigilado en las dos direcciones por `probar-notariales.mjs`, con la señal
 todavía no se editan desde aquí», el editor no existe—: si el editor aparece y
 `tramos` sigue en `SIN_PANTALLA`, rompe. Provocado en ambas.
 
+# LA ESCALERA DE UN INSTRUMENTO APRENDIENDO A NO MENTIR
+
+Tres defectos, tres días, **el mismo instrumento** —el arnés de mutaciones y el
+contador que lo acompaña— y cada uno estaba un piso por encima del anterior.
+Escritos juntos porque separados parecen anecdotas y juntos son una escalera.
+
+### Primer piso — el contador solo podía contar ✓
+
+`probar-panel-notarial.mjs` tenía un `ok()` que **solo imprimía**: sin contador,
+sin `process.exit`. Salía con 0 con la pantalla llena de ✗.
+
+> El número no podía bajar. **Un indicador que solo puede subir no mide nada**, y
+> nadie podía distinguirlo de uno real.
+
+Al ponerle código de salida: **cinco rojos de treinta y seis**.
+
+### Segundo piso — la mutación no mutaba
+
+Las provocaciones del arnés de mutaciones no provocaban: patrones que no
+existían en el archivo, y un guión de Python que truncó el archivo al abrirlo
+para escribir antes de leerlo. **El «SOBREVIVIÓ» era un «no cambié nada».**
+
+> **Una mutación no cuenta hasta que se prueba que el contenido cambió.** Si no
+> cambió, el resultado es `ERROR_DE_LA_PRUEBA`, no «sobrevivió». Y se restaura
+> byte a byte, verificado.
+
+### Tercer piso — la mutación mutó donde no cambia el comportamiento
+
+2026-10-19. La primera mutación escrita para el defecto de la casilla en blanco
+**sobrevivió**, y el arnés estaba bien: la mutación quitaba un `&& !enBlanco` de
+una condición que **en ese caso ya no se alcanzaba**. Cambió el archivo, pasó la
+comprobación del segundo piso, y no cambió nada.
+
+> **No basta probar que el archivo cambió: hay que elegir el sitio donde el
+> cambio altera el resultado.** Una mutación sintácticamente real sobre código
+> inalcanzable es una afirmación sin respaldo **que se ve respaldada**.
+
+Reemplazada por `enBlanco = false` en el origen del valor, y detectada.
+
+### Lo que la escalera ensaña
+
+Los tres pisos son la misma pregunta hecha cada vez más abajo:
+
+| piso | lo que se daba por hecho | cómo se cayó |
+|---|---|---|
+| 1 | que el informe podía decir que no | no tenía código de salida |
+| 2 | que la mutación tocaba el archivo | el patrón no existía |
+| 3 | que tocar el archivo cambiaba el comportamiento | la línea era inalcanzable |
+
+> **Cada piso se descubre solo después de arreglar el anterior**, porque hasta
+> entonces el fallo de abajo tapa al de arriba. Lo único que los encontró fue
+> **hacer que el instrumento se mida a sí mismo**, cada vez con una pregunta más
+> esceptíca. No hay razón para creer que el tercero es el último.
+
+Y el cuarto piso, por si aparece: **nada comprueba que la mutación represente un
+error PLAUSIBLE.** Hoy las catorce son errores que alguien podría cometer de
+verdad —porque se escribieron a mano pensando en eso—, pero no hay nada que lo
+exija ni que lo mida.
+
+# EL PRIMER ESTADO NO ES UN EXTREMO
+
+2026-10-19, la pregunta que salió del editor de tramos y vale para todo
+formulario: **«¿qué hay en la casilla justo después de pulsar añadir?»**
+
+> Un extremo degenerado es un caso límite **del funcionamiento**. El primer
+> estado es **lo que existe antes de que haya funcionamiento**, así que ninguna
+> lista derivada de cómo funciona algo lo contiene. Y es **el único estado por
+> el que pasan todos los registros**.
+
+El barrido está en `AUDITORIA-TEXTOS-PUBLICOS.md` §5.d: **nueve sitios con el
+patrón —un vacío que significa «todavía no» y que el código lee como un valor
+legítimo—, cuatro de ellos públicos, y uno donde «no se sabe» no es
+representable.**
+
+Los dos que hay que recordar sin abrir el informe:
+
+**1. El esquema se contradice a sí mismo en la misma línea.**
+
+```prisma
+// ── Banderas del RUT. NO se infieren: se capturan del RUT del tercero. ──
+es_declarante_renta   Boolean @default(false)
+```
+
+Un `Boolean` no tiene tercer estado, así que un tercero creado sin esos datos
+**nace afirmando que no declara renta**, y eso **elige la tarifa de retención**.
+El comentario dice «no se infieren» y la línea siguiente infiere.
+
+**2. La página esconde el cero y el marcado lo afirma.** Un inmueble nace con
+`bedrooms: '0'`. La ficha y el catálogo filtran `> 0` —tratan el 0 como «no se
+sabe», que es lo correcto— y `JsonLd.tsx:614` emite `numberOfRooms: 0` sin
+condición.
+
+> **El mismo valor, dos lecturas, y solo la de la máquina afirma.** En la página
+> no hay nada que la contradiga, porque ahi no se muestra.
+
+## La regla, y lo que distingue a los nueve de los que están bien
+
+> **Un formulario no empieza vacío: empieza con lo que alguien eligió poner en
+> él**, y esa elección se lee después como si la hubiera hecho el usuario.
+
+Y la diferencia con los cinco casos bien resueltos **no es cuidado**: es si
+existe una forma de decir «todavía no». Donde el tipo admite `null` o hay un
+estado «por completar», el vacío sobrevive —la descripción vacía de un egreso
+se guarda como el nombre de la categoría **y marca el egreso POR COMPLETAR**—.
+Donde el campo es un `Boolean`, un `'0'` o un enum con valor inicial, **el vacío
+se pierde en el primer renderizado** y ya nadie puede distinguirlo de una
+respuesta.
+
 # EL EDITOR DE TRAMOS: `desde` NO SE TECLEA
 
 2026-10-19. La decisión la tomó el titular y es la que decide todo lo demás.
@@ -3274,7 +3382,22 @@ Las cuatro sin vigilancia y con fecha, para que no se pierdan aquí:
 | el **0,27 %** de derechos notariales del glosario, y su ejemplo en pesos | 2027-01-01 |
 | el **1 %** de impuesto de registro | 2027-01-01 |
 | el **1 %** del tributo departamental | 2027-01-01 |
-| los «**421 años** de La Vega» — título, tags, cuerpo **y el slug de la URL** | 2027-06-12 |
+
+⚠ Y una que **saló del inventario al comprobarla**: los «421 años de La Vega».
+El titular lo puso en duda antes de que se tocara nada, y la pregunta que lo
+decide es si el título aparece en algún sitio **sin su fecha al lado**.
+Comprobadas las siete superficies —listado, destacados, relacionados, la propia
+página, `BlogPosting`, Open Graph, `llms.txt`—: **nunca viaja desnudo**. Un
+artículo fechado que dice «hoy celebramos 421 años» no se vuelve falso en 2027:
+se vuelve **histórico**.
+
+> Es mi propia distinción aplicada a un caso que yo había clasificado mal:
+> **caducar es volverse falso; enfriarse es seguir siendo cierto y comunicar
+> otra cosa.** Lo metí en la columna equivocada porque vi una cifra que
+> incrementa y me detuve ahí, sin preguntar dónde se lee.
+
+Y el slug **no se toca**: una URL publicada no se cambia por una cifra del
+título, ni siquiera si caducara.
 
 ⚠ **Y la ironía que hay que leer dos veces:** la calculadora notarial existe
 **precisamente porque esas tarifas cambian cada año**. El módulo entero está
