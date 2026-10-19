@@ -65,6 +65,22 @@ const LOS_DOS = `${H_NOTARIAL} && ${H_FINANZAS}`
  */
 const MUTACIONES = [
   {
+    nombre: 'firma: «admin» vuelve a poder firmar un acto',
+    porque: 'era el valor por defecto. Una cifra equivocada se recalcula; quien la cargo, no.',
+    archivo: 'src/lib/notariales/firma.ts',
+    de: "  if (f.valor?.toLowerCase() === 'admin') throw new SinIdentidadParaFirmar(acto)",
+    a: "  if (false) throw new SinIdentidadParaFirmar(acto)",
+    comando: H_NOTARIAL,
+  },
+  {
+    nombre: 'firma: un marcador vuelve a contar como persona identificable',
+    porque: '«precarga» y «titular» son ciertos y no acreditan a nadie; leerlos igual que un correo es el defecto.',
+    archivo: 'src/lib/notariales/firma.ts',
+    de: "    return { clase: 'MARCADOR', valor: v, etiqueta: `${v} — ${marcador}`, acredita: false }",
+    a: "    return { clase: 'PERSONA', valor: v, etiqueta: `${v} — ${marcador}`, acredita: true }",
+    comando: H_NOTARIAL,
+  },
+  {
     nombre: 'vigencias: la lista que no se cargo vuelve a contar como «ninguna»',
     porque: 'un `select` incompleto desarmaria la comprobacion de vigencias y se liquidaria con tarifas vencidas.',
     archivo: 'src/lib/notariales/guardas.ts',

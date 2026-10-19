@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
     // así que la respuesta dijo «no se pudo crear» de algo que SÍ se creó. Si
     // algo va a faltar, que falte antes de tocar la base.
     const transcrita = transcripcion()
-    await sembrarAnio(prisma, Number(anio), s.email ?? 'admin')
+    await sembrarAnio(prisma, Number(anio), s.email)
     await asegurarFuentes(prisma)
     return NextResponse.json(await anioParaPantalla(prisma, Number(anio), transcrita))
   } catch (e) {

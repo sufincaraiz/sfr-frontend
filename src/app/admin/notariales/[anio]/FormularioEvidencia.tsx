@@ -33,6 +33,9 @@ const C = {
 
 export interface FuentePantalla {
   dominio: string; entidad: string; es_compilacion: boolean; advertencia: string | null;
+  agregada_por: string;
+  /** Clasificada en el módulo hoja: la pantalla no decide qué es una firma. */
+  firma: { clase: 'PERSONA' | 'MARCADOR' | 'AUSENTE'; valor: string | null; etiqueta: string; acredita: boolean };
 }
 
 export interface RespaldoVisible {
@@ -226,11 +229,27 @@ export default function FormularioEvidencia({
                 {fuentes.map(x => (
                   <option key={x.dominio} value={x.dominio}>
                     {x.entidad} ({x.dominio}){x.es_compilacion ? ' — compilación' : ''}
+                    {x.firma.acredita ? '' : ' — sin firma de persona'}
                   </option>
                 ))}
               </select>
             </Campo>
           </Rejilla>
+
+          {/* ⚠ QUIÉN DIO DE ALTA LA AUTORIDAD, a la vista. Una fuente dada de alta
+            * por la siembra —`precarga`— es legítima y es cierta, pero **nadie
+            * respondió por ella**; y eso se leía igual que si la hubiera añadido
+            * una persona, porque el campo no llegaba a la pantalla.
+            *
+            * El texto sale de `clasificarFirma`, no de aquí: la pantalla no
+            * decide qué cuenta como firma. */}
+          {fuente && !fuente.firma.acredita && (
+            <Aviso>
+              Esta autoridad la dio de alta <strong>{fuente.firma.etiqueta}</strong>. No hay una
+              persona identificable que responda por ella: si vas a respaldar una cifra con esta
+              fuente, conviéne confirmarla antes.
+            </Aviso>
+          )}
 
           {fuente?.es_compilacion && (
             <Aviso>

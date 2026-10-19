@@ -32,6 +32,7 @@ import { leerAnio, leerFuentes, exigirEditable, subirVersion, valoresDesdeAnio, 
 import {
   compararCotejo, resumirCotejo, veredictoPorSeccion, avance, type FilaTranscrita,
 } from './cotejo.ts'
+import { exigirFirma, clasificarFirma } from './firma.ts'
 
 export const MODOS_REDONDEO = ['CERCANO', 'ARRIBA', 'ABAJO', 'PUBLICADO'] as const
 export const UNIDADES = ['PESOS', 'PORCENTAJE', 'POR_MIL'] as const
@@ -92,6 +93,9 @@ export async function asegurarFuentes(db: ClienteNotarial) {
 }
 
 export async function sembrarAnio(db: ClienteNotarial, anio: number, por: string) {
+  /* LA FIRMA SE EXIGE, NO SE SUSTITUYE. Ver lib/notariales/firma.ts: una cifra
+   * equivocada se recalcula, quién la cargó no. */
+  const firmante = exigirFirma(por, 'sembrar un año tarifario')
   if (!Number.isInteger(anio) || anio < 2000 || anio > 2100) {
     throw new ErrorEsquemaNotarial(`Año inválido: ${anio}.`, 'anio')
   }
@@ -105,7 +109,7 @@ export async function sembrarAnio(db: ClienteNotarial, anio: number, por: string
     data: {
       anio,
       estado: 'BORRADOR',
-      notas: `Sembrado por ${por}.`,
+      notas: `Sembrado por ${firmante}.`,
       conceptos: {
         create: ordenados.map(c => ({
           clave: c.clave,
@@ -393,6 +397,9 @@ function filaDeRespaldo(
 // ─────────────────────────────────────────────────────────────────────────────
 
 export async function activarAnio(db: ClienteNotarial, anio: number, por: string) {
+  /* LA FIRMA SE EXIGE, NO SE SUSTITUYE. Ver lib/notariales/firma.ts: una cifra
+   * equivocada se recalcula, quién la cargó no. */
+  const firmante = exigirFirma(por, 'activar un año tarifario')
   const fila = await anioEditable(db, anio)
   const cargado = await leerAnio(db, anio)
   if (!cargado) throw new ErrorEsquemaNotarial(`El año ${anio} no existe.`, 'anio')
@@ -402,17 +409,20 @@ export async function activarAnio(db: ClienteNotarial, anio: number, por: string
   exigirAnioPublicable({ ...cargado, estado: 'ACTIVO' }, fuentes)
   await db.anioNotarial.update({
     where: { id: fila.id },
-    data: { estado: 'ACTIVO', activado_por: por, activado_en: new Date(), ...subirVersion() },
+    data: { estado: 'ACTIVO', activado_por: firmante, activado_en: new Date(), ...subirVersion() },
   })
 }
 
 export async function volverABorrador(db: ClienteNotarial, anio: number, por: string) {
+  /* LA FIRMA SE EXIGE, NO SE SUSTITUYE. Ver lib/notariales/firma.ts: una cifra
+   * equivocada se recalcula, quién la cargó no. */
+  const firmante = exigirFirma(por, 'devolver un año a borrador')
   const fila = await db.anioNotarial.findUnique({ where: { anio } })
   if (!fila) throw new ErrorEsquemaNotarial(`El año ${anio} no existe.`, 'anio')
   if (fila.cerrado) throw new ErrorEsquemaNotarial(`El año ${anio} está cerrado.`, 'cerrado')
   await db.anioNotarial.update({
     where: { id: fila.id },
-    data: { estado: 'BORRADOR', notas: `Devuelto a borrador por ${por}.`, ...subirVersion() },
+    data: { estado: 'BORRADOR', notas: `Devuelto a borrador por ${firmante}.`, ...subirVersion() },
   })
 }
 
@@ -557,6 +567,16 @@ export async function anioParaPantalla(
     cotejo,
     aviso_uvt: divergenciaUvt(cargado.uvt, uvtFiscal),
     criterios_adoptados: CRITERIOS_ADOPTADOS,
-    fuentes: fuentes.map(f => ({ dominio: f.dominio, entidad: f.entidad, es_compilacion: f.es_compilacion, advertencia: f.advertencia })),
+    /* LA FIRMA VIAJA CLASIFICADA, no cruda. Hoy hay 8 fuentes: 7 con
+     * `agregada_por: "precarga"` —las puso la siembra— y 1 con `"titular"`.
+     * Las dos cosas son ciertas y **ninguna de las dos es una persona
+     * identificable**, que es lo que la pantalla no podía distinguir: el campo
+     * no llegaba siquiera al cliente. Ver lib/notariales/firma.ts. */
+    fuentes: fuentes.map(f => ({
+      dominio: f.dominio, entidad: f.entidad, es_compilacion: f.es_compilacion,
+      advertencia: f.advertencia,
+      agregada_por: f.agregada_por,
+      firma: clasificarFirma(f.agregada_por),
+    })),
   }
 }

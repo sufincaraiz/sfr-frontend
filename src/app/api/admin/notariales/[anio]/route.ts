@@ -79,7 +79,7 @@ export async function PATCH(req: NextRequest, ctx: { params: Promise<{ anio: str
         await guardarRespaldo(
           prisma, anio,
           { ambito: cuerpo.ambito, clave: cuerpo.clave },
-          { ...(cuerpo.respaldo as Respaldo), verificado_por: s.email ?? 'admin' },
+          { ...(cuerpo.respaldo as Respaldo), verificado_por: s.email },
         )
         break
       default:
@@ -99,8 +99,8 @@ export async function POST(req: NextRequest, ctx: { params: Promise<{ anio: stri
   try {
     const anio = anioDe(await ctx.params)
     const { accion } = await req.json()
-    if (accion === 'activar') await activarAnio(prisma, anio, s.email ?? 'admin')
-    else if (accion === 'borrador') await volverABorrador(prisma, anio, s.email ?? 'admin')
+    if (accion === 'activar') await activarAnio(prisma, anio, s.email)
+    else if (accion === 'borrador') await volverABorrador(prisma, anio, s.email)
     else throw new ErrorEsquemaNotarial(`Acción desconocida: ${String(accion)}.`, 'accion')
     const pantalla = await anioParaPantalla(prisma, anio, transcripcion(), await uvtFiscal(anio))
     return NextResponse.json(pantalla)

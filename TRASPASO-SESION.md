@@ -2870,6 +2870,30 @@ Familia: es el mismo defecto que `apto` y que el arnés sin código de salida
 —**un indicador que no puede distinguir dos situaciones distintas**—, aquí en su
 versión temporal.
 
+# LA MISMA DISCIPLINA, DESDE EL OTRO LADO DE LA CONVERSACIÓN
+
+2026-10-19. El titular escaló la gravedad de un hallazgo —`domicilios ?? false`,
+que yo había descrito como «publica *no hace domicilios* sobre el negocio de un
+tercero»— y la escalada era **correcta si la premisa lo fuera**. No lo era: el
+distintivo solo se pinta con `true`, así que con `false` el sitio **omite una
+afirmación positiva** en vez de publicar una negativa.
+
+Lo registró él mismo así:
+
+> **«Subí la gravedad de un hallazgo leyendo tu resumen en vez de la pantalla.
+> El que pide ir al dato también escala desde prosa.»**
+
+Va con el par de correcciones al alza y a la baja porque **es la misma
+disciplina vista desde el otro lado**: la cadena fue «yo clasifico desde la
+expresión → él escala desde mi clasificación», y ninguno de los dos pasos tocó
+el componente. Dos lecturas de prosa seguidas, sin dato en medio.
+
+> **Un informe es un dato de segunda mano.** Quien lo escribe sabe de dónde
+> sale; quien lo lee, no, y una tabla resumida se lee con la misma confianza que
+> una consulta. La forma de romper la cadena es que el informe diga **de dónde
+> sale cada fila** —consulta, lectura de código o inferencia—, y esas tres no
+> valen lo mismo.
+
 # CORREGIRSE HACIA ARRIBA Y HACIA ABAJO CUESTA LO MISMO
 
 2026-10-15 y 16. Tres correcciones sobre reportes propios, ninguna pedida:
@@ -3171,6 +3195,139 @@ Y el cuarto piso, por si aparece: **nada comprueba que la mutación represente u
 error PLAUSIBLE.** Hoy las catorce son errores que alguien podría cometer de
 verdad —porque se escribieron a mano pensando en eso—, pero no hay nada que lo
 exija ni que lo mida.
+
+# LA CUARTA GUARDA DEL MOTOR NOTARIAL, Y ES LA MÁS GRAVE
+
+`exigirVigencia(anio.respaldos ?? [], fechaActo)`, en sus cuatro llamadores.
+
+Una lista **vacía** pasa, y debe: «sin ningún respaldo» lo detiene otra guarda
+—`pendientesParaActivar` no deja activar un año sin respaldo por cifra—. Pero
+`respaldos` es **opcional en el tipo**, así que una consulta que no los incluya
+devuelve `undefined`, el `??` lo vuelve «ninguno», y entonces:
+
+> **La comprobación deja de comprobar mientras aparenta funcionar.** Se
+> liquidaría con **tarifas vencidas** y ninguna guarda chistaría. Su código se
+> lee bien, sus pruebas pasan, su mensaje existe. Lo único que falta es que
+> alguna vez se dispare.
+
+Es la más grave del motor porque las demás guardas notariales impiden
+**publicar** una cifra sin respaldo; esta impide **usar** una cifra cuyo
+respaldo ya venció, que es el caso que de verdad llega a una notaría.
+
+## Lo que la une al `?? false` no es el `??`
+
+Y esto es el hallazgo, no la anécdota:
+
+> **No los une el `??`: los une que el dato llega transformado y la guarda no
+> puede saberlo.** En un caso lo transforma un valor por defecto; en el otro, un
+> `select` incompleto. La misma guarda, desarmada por dos vías que no se
+> parecen en nada al leerlas.
+
+De ahi la regla general:
+
+> **Una guarda no puede validar su propia entrada.** Puede validar el VALOR que
+> recibe, nunca la **fidelidad** de ese valor respecto de lo que hay en la base.
+> Esa fidelidad la decide el llamador, y la guarda no tiene forma de
+> comprobarla.
+
+Corolario operativo: cuando una guarda acepte un «vacío» como caso legítimo,
+hay que preguntarse si el tipo distingue **«vacío» de «no cargado»**. Si no los
+distingue, la guarda está aceptando los dos y solo uno es legítimo.
+
+Arreglada: `[]` pasa, `undefined` **detiene** con un mensaje que dice la
+diferencia. 5 verificaciones y una mutación.
+
+# LAS TRES FORMAS DE DESARMAR UNA GUARDA
+
+Se separan porque **se encuentran de maneras distintas**, y mezclarlas hace que
+se busque solo la primera.
+
+| | qué falsea | dónde se ve |
+|---|---|---|
+| **1. Falsear el dato** — `?? false`, `?? []` | el valor que la guarda recibe | **leyendo al llamador**. Desde la guarda no se ve nada raro: recibe un valor del tipo correcto |
+| **2. Falsear la comprobación de que el dato existe** — el `!` de TypeScript | nada del dato: la obligación de preguntar | **leyendo el llamador Y conociendo el tipo**. No deja rastro en tiempo de ejecución hasta que revienta |
+| **3. Falsear quién actúa** — `?? 'admin'` | la identidad que firma | en la columna de firma, **meses después**, cuando ya no hay forma de saber quién fue |
+
+Sobre la segunda, la distinción que la hace reconocible:
+
+> **El `!` no convence a la guarda: convence al compilador de que no hace falta
+> preguntar.** Las otras dos formas engañan a una comprobación en tiempo de
+> ejecución; esta borra una comprobación que habría ocurrido **antes de
+> ejecutar nada**.
+
+Y sobre la tercera, lo que la hace la más cara aunque no mueva ninguna cifra:
+
+> **Una cifra equivocada se recalcula; quién la cargó, no.** La firma es el
+> único dato del sistema que **no se puede derivar de ningún otro**. Las demás
+> columnas son reconstruibles con suficiente trabajo; esta, no: o se guardó bien
+> o se perdió.
+
+# LA FIRMA QUE NO PUEDE SUSTITUIRSE — y una corrección más, otra vez mía
+
+2026-10-19, lote A. El titular lo puso **antes** del editor y con la razón
+correcta: el editor va a firmar 29 actos.
+
+## ⚠ Lo primero: la amenaza que reporté no existía
+
+Reporté `s.email ?? 'admin'` en cinco llamadas como «falsean quién actúa».
+Medido después:
+
+| | |
+|---|---|
+| `AdminSessionUser.email` | `string` — **no opcional** |
+| `Admin.email` en el esquema | `String @unique` — NOT NULL |
+| ⇒ el `??` | **nunca se alcanza: es código muerto** |
+| actos firmados por `'admin'` en producción | **0** |
+| años notariales | 1, en BORRADOR, `activado_por = null` |
+| respaldos normativos | 0 |
+| fuentes normativas | 8 — 7 `"precarga"`, 1 `"titular"` |
+
+> **Clasifiqué desde la expresión sin comprobar si la rama es alcanzable.** Es
+> el mismo error que la mutación no-op, un nivel más arriba: un cambio
+> sintácticamente real sobre código que no se ejecuta. Y es la segunda vez en
+> dos lotes —la otra fue `domicilios`—, así que no es mala suerte: es un
+> hábito que hay que vigilar. **Leer una expresión no es leer un camino.**
+
+## Y aun así el lote se hizo, por dos razones que la medición no cancela
+
+1. **La protección no puede depender de que un tipo siga siendo obligatorio.**
+   El día que `email` sea opcional —SSO, un usuario de servicio, una
+   migración— los cinco `?? 'admin'` volverían a estar vivos **sin que nada
+   avise**. Quitarlos convierte ese futuro en un **error de compilación**.
+2. **La columna de firma guarda TRES clases de valor y nada las distinguía.**
+   Hoy hay marcadores donde mañana habrá correos:
+
+| clase | ejemplo | ¿acredita? |
+|---|---|---|
+| `PERSONA` | un correo de `admins.email` | **sí** |
+| `MARCADOR` | `precarga` —la puso la siembra—, `titular`, `admin` | **no** |
+| `AUSENTE` | vacío o nulo | no |
+
+`precarga` **no es un defecto**: dice la verdad, y es mejor que un correo
+inventado. Lo que no valía es que se leyera igual que si alguien hubiera
+respondido por ella —y de hecho **no se leía en absoluto**: el campo no llegaba
+a la pantalla—.
+
+Hecho: `lib/notariales/firma.ts` —hoja— con `clasificarFirma` y `exigirFirma`,
+que **detiene y no sustituye**; los cinco `?? 'admin'` fuera; las tres funciones
+que firman un año pasan por la puerta; y el panel muestra la clase, con aviso
+cuando la autoridad la dio de alta un marcador. 11 verificaciones (573
+notariales) y 2 mutaciones (22).
+
+`admin` se queda en la tabla de marcadores **para poder LEER** los actos que lo
+tuvieran —hoy cero— y **se rechaza al escribir**. Es la distinción de siempre:
+lo que ya pasó se lee tal cual; lo que va a pasar, se exige.
+
+## Y el arnés cobró su cuota en el primer intento
+
+`SinIdentidadParaFirmar` se escribió con una *parameter property*
+—`constructor(public acto: string)`— y Node no la soporta en modo
+**strip-only**. El arnés no compiló.
+
+> Es la regla de los módulos hoja defendiéndose sola: **tienen que poder correr
+> con `node` directo**, y eso es lo que permite que el arnés ejercite el código
+> REAL y no una copia transpilada. Una comodidad de TypeScript que rompa eso se
+> nota en el primer segundo, no en producción.
 
 # UNA GUARDA DESARMADA POR SU LLAMADOR
 

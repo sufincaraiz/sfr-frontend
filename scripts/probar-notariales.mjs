@@ -15,6 +15,7 @@ import {
   exigirCamposConocidosDelTramo, tramoQueAplica,
 } from '../src/lib/notariales/tramos.ts'
 import { hashDeBytes, huellaDelBloque } from '../src/lib/notariales/huella.ts'
+import { clasificarFirma, exigirFirma } from '../src/lib/notariales/firma.ts'
 import { DIVISOR, divisorDe } from '../src/lib/escala-tarifa.ts'
 import {
   calcularBaseNotarial, calcularBaseRetencion, calcularBaseTimbre, BASES,
@@ -2109,6 +2110,42 @@ check('la huella de un documento de TEXTO sí ignora los saltos, que es lo contr
   === huellaDelBloque('<!-- COTEJO:INICIO -->\na\n<!-- COTEJO:FIN -->'))
 check('un byte distinto da una huella distinta',
   hashDeBytes(Buffer.from('%PDF-1.4\r\nlinea tres\r\n', 'latin1')) !== HUELLA_EXTERNA)
+
+/* ──────────────────────────────────────────────────────────────────────────
+ * LA FIRMA: DETIENE, NO SUSTITUYE
+ *
+ * Una cifra equivocada se recalcula; quién la cargó, no. Y la columna de firma
+ * guarda TRES clases de valor —persona, marcador, nada— que hasta el
+ * 2026-10-19 se leían igual porque ni siquiera llegaban a la pantalla. */
+{
+  check('un correo acredita a una persona',
+    clasificarFirma('leonel@sufincaraiz.com').clase === 'PERSONA' &&
+    clasificarFirma('leonel@sufincaraiz.com').acredita)
+  check('«precarga» es un MARCADOR legítimo y NO acredita a nadie',
+    clasificarFirma('precarga').clase === 'MARCADOR' && !clasificarFirma('precarga').acredita)
+  check('…y dice qué significa, en vez de solo mostrarlo',
+    /la siembra/.test(clasificarFirma('precarga').etiqueta))
+  check('«titular» también es marcador: es cierto y no es identificable',
+    clasificarFirma('titular').clase === 'MARCADOR' && !clasificarFirma('titular').acredita)
+  check('vacío es AUSENTE, no un marcador',
+    clasificarFirma('').clase === 'AUSENTE' && clasificarFirma(null).clase === 'AUSENTE' &&
+    clasificarFirma('   ').clase === 'AUSENTE')
+  check('un valor que no es correo ni marcador conocido NO acredita',
+    !clasificarFirma('pepito').acredita &&
+    /no es un correo ni un marcador conocido/.test(clasificarFirma('pepito').etiqueta))
+
+  const noFirma = v => { try { exigirFirma(v, 'activar un año'); return false } catch { return true } }
+  check('firmar sin identidad DETIENE', noFirma('') && noFirma(null) && noFirma(undefined))
+  check('…y «admin» —el valor por defecto de antes— también DETIENE al escribir',
+    noFirma('admin') && noFirma('ADMIN'))
+  check('…pero «admin» sí se puede LEER, para los actos que ya lo tuvieran',
+    clasificarFirma('admin').clase === 'MARCADOR' &&
+    /valor por defecto/.test(clasificarFirma('admin').etiqueta))
+  check('un correo pasa la puerta y vuelve tal cual',
+    exigirFirma(' leonel@sufincaraiz.com ', 'activar un año') === 'leonel@sufincaraiz.com')
+  check('«precarga» pasa la puerta: es verdadera, aunque no acredite',
+    exigirFirma('precarga', 'sembrar un año') === 'precarga')
+}
 
 /* ──────────────────────────────────────────────────────────────────────────
  * UNA GUARDA QUE LLEGA CON EL DATO YA FALSEADO

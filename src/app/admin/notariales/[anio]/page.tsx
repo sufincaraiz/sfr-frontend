@@ -79,7 +79,14 @@ interface Pantalla {
   criterios_adoptados: { clave: string; criterio: string; porque: string; adoptado_por: string }[];
   /* Las fuentes dadas de alta: el respaldo de un documento archivado tiene que
    * nombrar su autoridad, porque un papel no trae dominio del que deducirla. */
-  fuentes: { dominio: string; entidad: string; es_compilacion: boolean; advertencia: string | null }[];
+  fuentes: {
+    dominio: string; entidad: string; es_compilacion: boolean; advertencia: string | null;
+    agregada_por: string;
+    /* ⚠ «FIRMADO POR EL TITULAR» Y «FIRMADO POR UN VALOR POR DEFECTO» SE LEÍAN
+     * IGUAL, y de hecho no se leían: el campo no llegaba a la pantalla. La
+     * clase la decide el módulo hoja, no el componente. */
+    firma: { clase: 'PERSONA' | 'MARCADOR' | 'AUSENTE'; valor: string | null; etiqueta: string; acredita: boolean };
+  }[];
   respaldos_anio: { campo: string; norma: string; articulo: string | null; tipo_evidencia: string }[];
 }
 

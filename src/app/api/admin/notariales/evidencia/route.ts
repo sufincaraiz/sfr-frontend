@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
       ruta: archivado.ruta,
       hash: archivado.hash,
       bytes: archivado.bytes,
-      archivado_por: s.email ?? 'admin',
+      archivado_por: s.email,
     })
   } catch (e) {
     console.error('[notariales/evidencia] POST', e)
