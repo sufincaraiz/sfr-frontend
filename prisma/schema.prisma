@@ -663,12 +663,25 @@ model Tercero {
   /// Nombre completo o razón social.
   nombre                String
   tipo_persona          TipoPersona
-  // ── Banderas del RUT. NO se infieren: se capturan del RUT del tercero. ──
-  es_responsable_iva    Boolean       @default(false)
-  es_autorretenedor     Boolean       @default(false)
-  es_gran_contribuyente Boolean       @default(false)
+  // ── BANDERAS DEL RUT. NO se infieren: se capturan del RUT del tercero. ──
+  //
+  // ⚠ Y HASTA EL 2026-10-19 LA LÍNEA SIGUIENTE INCUMPLÍA ESE COMENTARIO. Eran
+  // `Boolean @default(false)`, y un `Boolean` no tiene tercer estado: un
+  // tercero creado sin estos datos nacía AFIRMANDO que no declara renta, y
+  // `es_declarante_renta` elige la tarifa de retención. Un dato que nadie
+  // capturó decidía una cifra fiscal. Una línea de distancia entre la regla y
+  // su incumplimiento.
+  //
+  // Ahora son NULLABLE y sin default: `null` es «no se sabe», y el motor se
+  // detiene en vez de elegir —mismo principio que `calcularIva`, que no asume
+  // que un año no es responsable de IVA solo porque nadie lo haya decidido—.
+  // Migración: 2026-10-19-banderas-rut-admiten-no-se-sabe.sql, con 0 filas.
+  es_responsable_iva    Boolean?
+  es_autorretenedor     Boolean?
+  es_gran_contribuyente Boolean?
   /// Determina si se aplica la tarifa de declarante o de no declarante.
-  es_declarante_renta   Boolean       @default(false)
+  /// `null` NO es «no declara»: es «falta el RUT», y detiene el sugerido.
+  es_declarante_renta   Boolean?
   regimen               String?
   direccion             String?
   /// Texto libre: el domicilio fiscal puede ser cualquier municipio del país,

@@ -82,7 +82,7 @@ check('responsable → costo = 100.000 (el IVA es crédito)', costoEgreso(eg, tr
 lanza('costo sin decidir la bandera', () => costoEgreso(eg, null))
 
 console.log('\n══ 5. BASE MÍNIMA EN UVT (la regla que más se olvida) ══')
-const bajo = calcularRetefuente({ base: 150000, concepto: 'servicios', esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA })
+const bajo = calcularRetefuente({ base: 150000, concepto: 'servicios', esAutorretenedor: false, esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA })
 check('base bajo el mínimo → NO retiene', bajo.retuvo === false && bajo.valor.toString() === '0')
 check('…y explica por qué', /no supera la base mínima/i.test(bajo.motivo ?? ''))
 /* EL BORDE EXACTO, que no tenía prueba y es dinero vivo.
@@ -96,21 +96,73 @@ check('…y explica por qué', /no supera la base mínima/i.test(bajo.motivo ?? 
  * verificación, cambiar uno por otro no rompía nada y la retención de un pago
  * de exactamente la base mínima se dejaba de practicar en silencio. */
 const MINIMO_SERVICIOS = 4 * 49799   // 199.196
-const enElBorde = calcularRetefuente({ base: MINIMO_SERVICIOS, concepto: 'servicios', esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA })
+const enElBorde = calcularRetefuente({ base: MINIMO_SERVICIOS, concepto: 'servicios', esAutorretenedor: false, esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA })
 check('base EXACTAMENTE igual al mínimo → SÍ retiene (el mínimo está incluido)',
   enElBorde.retuvo === true, `(retuvo ${enElBorde.retuvo}, valor ${enElBorde.valor})`)
 check('…y retiene el 4 % de los 199.196 = 7.967,84',
   enElBorde.valor.toString() === '7967.84', `(dio ${enElBorde.valor})`)
-const unPesoDebajo = calcularRetefuente({ base: MINIMO_SERVICIOS - 1, concepto: 'servicios', esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA })
+const unPesoDebajo = calcularRetefuente({ base: MINIMO_SERVICIOS - 1, concepto: 'servicios', esAutorretenedor: false, esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA })
 check('un peso por debajo del mínimo → NO retiene',
   unPesoDebajo.retuvo === false && unPesoDebajo.valor.toString() === '0')
-const alto = calcularRetefuente({ base: 1000000, concepto: 'servicios', esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA })
+const alto = calcularRetefuente({ base: 1000000, concepto: 'servicios', esAutorretenedor: false, esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA })
 check('base sobre el mínimo → retiene 4% = 40.000', alto.retuvo && alto.valor.toString() === '40000')
-check('declarante 11%', calcularRetefuente({ base: 1000000, concepto: 'comisiones', esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA }).valor.toString() === '110000')
-check('no declarante 10%', calcularRetefuente({ base: 1000000, concepto: 'comisiones', esDeclaranteRenta: false, parametros: ACTIVO_NO_IVA }).valor.toString() === '100000')
+check('declarante 11%', calcularRetefuente({ base: 1000000, concepto: 'comisiones', esAutorretenedor: false, esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA }).valor.toString() === '110000')
+check('no declarante 10%', calcularRetefuente({ base: 1000000, concepto: 'comisiones', esAutorretenedor: false, esDeclaranteRenta: false, parametros: ACTIVO_NO_IVA }).valor.toString() === '100000')
 const auto = calcularRetefuente({ base: 5000000, concepto: 'comisiones', esDeclaranteRenta: true, esAutorretenedor: true, parametros: ACTIVO_NO_IVA })
 check('autorretenedor → no se le retiene', auto.retuvo === false && auto.valor.toString() === '0')
-lanza('concepto no configurado', () => calcularRetefuente({ base: 1000000, concepto: 'arrendamiento', esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA }))
+
+// ══ TRES ESTADOS, NO DOS: declara · no declara · NO SE SABE ══
+//
+// ⚠ Hasta el 2026-10-19 las banderas del RUT eran `Boolean @default(false)` y
+// los dos llamadores pasaban `tercero?.es_declarante_renta ?? false`: un
+// tercero sin RUT capturado entraba como «no declara» y se le aplicaba
+// `tarifa_no_declarante` sin que nadie lo hubiera afirmado. El comentario del
+// esquema decía «NO se infieren» una línea más arriba.
+lanza('no saber si DECLARA RENTA detiene el cálculo en vez de elegir tarifa',
+  () => calcularRetefuente({
+    base: 5000000, concepto: 'servicios', esDeclaranteRenta: null,
+    esAutorretenedor: false, parametros: ACTIVO_NO_IVA,
+  }))
+lanza('no saber si es AUTORRETENEDOR también detiene',
+  () => calcularRetefuente({
+    base: 5000000, concepto: 'servicios', esDeclaranteRenta: true,
+    esAutorretenedor: null, parametros: ACTIVO_NO_IVA,
+  }))
+// Omitir el campo es lo mismo que no saberlo: antes `undefined` era falsy y
+// significaba «no es autorretenedor», que es una afirmación que nadie hizo.
+lanza('OMITIR el campo no es decir «no»: también detiene',
+  () => calcularRetefuente({
+    base: 5000000, concepto: 'servicios', esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA,
+  }))
+{
+  let mensaje = ''
+  try {
+    calcularRetefuente({
+      base: 5000000, concepto: 'servicios', esDeclaranteRenta: null,
+      esAutorretenedor: false, parametros: ACTIVO_NO_IVA,
+    })
+  } catch (e) { mensaje = e.message }
+  check('el mensaje dice de dónde sale el dato y que no se asume',
+    /se captura de su RUT/.test(mensaje) && /no se asume que no declara/.test(mensaje),
+    `(${mensaje})`)
+
+  // Y `false` sigue siendo una afirmación válida: la tarifa de no declarante.
+  const noDeclara = calcularRetefuente({
+    base: 5000000, concepto: 'servicios', esDeclaranteRenta: false,
+    esAutorretenedor: false, parametros: ACTIVO_NO_IVA,
+  })
+  const siDeclara = calcularRetefuente({
+    base: 5000000, concepto: 'servicios', esDeclaranteRenta: true,
+    esAutorretenedor: false, parametros: ACTIVO_NO_IVA,
+  })
+  check('`false` sigue siendo una afirmación y da una tarifa distinta de `true`',
+    noDeclara.retuvo && siDeclara.retuvo && !noDeclara.valor.eq(siDeclara.valor),
+    `(no declara ${noDeclara.valor.toString()} · declara ${siDeclara.valor.toString()})`)
+  check('…y en «servicios» la de NO declarante es la más alta: suponerla cuesta dinero',
+    noDeclara.valor.gt(siDeclara.valor),
+    `(${noDeclara.valor.toString()} vs ${siDeclara.valor.toString()})`)
+}
+lanza('concepto no configurado', () => calcularRetefuente({ base: 1000000, concepto: 'arrendamiento', esAutorretenedor: false, esDeclaranteRenta: true, parametros: ACTIVO_NO_IVA }))
 
 console.log('\n══ 6. PENDIENTES PARA ACTIVAR (única fuente) ══')
 check('año completo → sin pendientes', pendientesParaActivar(ACTIVO_NO_IVA).length === 0)

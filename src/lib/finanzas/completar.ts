@@ -408,8 +408,9 @@ export async function actualizarIngreso(id: string, cambios: EdicionIngreso, por
       const r = calcularRetefuente({
         base: valor,
         concepto: tipo.concepto_retencion_sugerido,
-        esDeclaranteRenta: tercero?.es_declarante_renta ?? false,
-        esAutorretenedor: tercero?.es_autorretenedor ?? false,
+        /* El valor real, `null` incluido: ver la nota de `calcularRetefuente`. */
+        esDeclaranteRenta: tercero?.es_declarante_renta ?? null,
+        esAutorretenedor: tercero?.es_autorretenedor ?? null,
         parametros,
       })
       sugerida = r.valor

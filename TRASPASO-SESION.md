@@ -3172,6 +3172,129 @@ error PLAUSIBLE.** Hoy las catorce son errores que alguien podría cometer de
 verdad —porque se escribieron a mano pensando en eso—, pero no hay nada que lo
 exija ni que lo mida.
 
+# EL TIPO DECIDE SI EL « NO SÉ » PUEDE EXISTIR
+
+2026-10-19. Hermana de **«el modelo de datos decide qué se puede ver»**, y la
+relación es exacta: aquella limita lo que se puede **inspeccionar**, esta limita
+lo que se puede **decir**.
+
+> **Un `Boolean` no tiene tercer estado.** Si el dato admite «no se sabe» y el
+> tipo no, el «no se sabe» **no se pierde en la interfaz: no existe nunca**. Y
+> entonces alguien tiene que elegir qué significa su ausencia, y lo elige el que
+> escribió el `@default`, no el que conoce el caso.
+
+## Caso 1 — las banderas del RUT, y es «la lección ya estaba escrita» en su forma más pura
+
+```prisma
+// ── Banderas del RUT. NO se infieren: se capturan del RUT del tercero. ──
+es_declarante_renta   Boolean @default(false)
+```
+
+**Una línea de distancia entre la regla y su incumplimiento.** El comentario
+prohíbe inferir; la línea siguiente infiere. Y no es una inferencia inocua:
+`es_declarante_renta` **elige la tarifa de retención** (`calculo.ts`:
+`esDeclaranteRenta ? tarifa_declarante : tarifa_no_declarante`), y en el
+concepto «servicios» la de **no declarante es la más alta**, así que suponerla
+cuesta dinero en la dirección de retener de más.
+
+Lo que lo cierra es que **el principio ya estaba implementado dos funciones más
+abajo, en el mismo archivo**:
+
+```ts
+// calcularIva
+if (vacio(parametros.responsable_iva)) {
+  throw new ParametroFiscalFaltante('No se ha decidido si … El cálculo se detiene: no se asume que no lo es.')
+}
+```
+
+> El mismo autor, el mismo archivo, el mismo día probablemente — y en una
+> función el «no decidido» detiene el cálculo y en la de al lado el «no
+> capturado» elige una tarifa. **El rigor no se contagia ni dentro de un
+> archivo.**
+
+Corregido: las cuatro banderas son `Boolean?` **sin default** —migración
+aditiva, archivada, con **0 filas en producción**, que es el momento más barato
+posible— y `calcularRetefuente` distingue **tres** estados. El `null` no elige:
+**lanza**, y el llamador ya tenía el camino hecho —deja el sugerido en `null` y
+escribe la nota—, que es exactamente «movimiento anotado como incompleto».
+
+Y el alta rápida deja ahora un marcador **que algo lee**: las cuatro banderas en
+`null` explícito. Antes dejaba un `SIN-DOC-…` que **nadie leía** y una nota que
+remitía a `/admin/finanzas/terceros`, **una ruta que no existe** —el patrón del
+enlace del contador, esta vez dentro del código—.
+
+## Caso 2 — el `'0'` de las habitaciones
+
+`bedrooms` nace en `'0'` y **el 0 es a la vez «no lo he puesto» y «no tiene»**.
+Aquí el tipo es `Int` y sí admite `null`, pero el **formulario** no ofrece la
+forma de decirlo: nace con un cero escrito.
+
+Y las dos superficies lo leían distinto:
+
+| | cómo trataba el 0 |
+|---|---|
+| ficha, catálogo, meta descripción | **ausencia** — `p.bedrooms > 0 ? …` |
+| `JsonLd.propertySchema` | **afirmación** — `numberOfRooms: property.bedrooms` |
+
+> **El mismo valor, dos lecturas, y solo la de la máquina afirma.** Medido en
+> producción: **15 inmuebles públicos con `bedrooms: 0`** y **14 con
+> `bathrooms: 0`** le estaban declarando «cero habitaciones» a Google y a los
+> modelos sobre un tercio del catálogo, **sin nada en la página que lo
+> contradijera porque ahí no se muestra**.
+
+Lo más revelador: en el **mismo objeto**, `floorSize` y `lotSize` **ya eran
+condicionales**. La regla estaba aplicada a las áreas y no a los conteos, tres
+líneas más arriba.
+
+Corregido: `numberOfRooms`, `numberOfBathroomsTotal` y el bloque `offers`
+completo —un precio de 0 afirmaría «gratis»— se omiten cuando valen 0. Un
+campo **ausente** en schema.org es «no lo digo»; un campo **en 0** es «es
+cero». Y el payload de Mac manda `null` en vez de 0, porque a un modelo
+hay que decirle «no lo sé» con un null.
+
+## Y lo encontró un barrido dirigido, no la lectura completa
+
+`JsonLd.tsx` —787 líneas— tiene la lectura completa **aplazada** y sigue
+apazada. Esto apareció preguntando por **el primer estado de un formulario** y
+siguiendo el dato hasta donde se publica.
+
+> **Un barrido dirigido encontró en un archivo caro lo que la lectura cara
+> todavía no ha mirado. Las dos sirven, y no se sustituyen:** la lectura
+> completa encuentra lo que no se sospechaba; un barrido con una pregunta buena
+> atraviesa archivos que la lectura no ha alcanzado. Lo que no sirve es creer
+> que haber aplazado una deja el archivo sin mirar.
+
+## Lo que la fecha invisible enseñó de paso
+
+La captura de un gasto **no tenía campo de fecha**: el servidor resolvía
+`?? hoyComoDiaPuro()`. Que el valor por defecto sea hoy está bien; que sea
+invisible, no.
+
+> **Si la casilla muestra 19/10/2026, la persona lo ve y lo corrige. Si está en
+> blanco, no sabe a qué está diciendo que sí.** Un valor silencioso no se puede
+> contradecir.
+
+⚠ Y hay una consecuencia que no se había visto: la captura funciona **sin
+conexión** y encola el gasto. Con la fecha resuelta al guardar, **un gasto
+capturado el 31 de diciembre y sincronizado el 1 de enero se fechaba en enero**
+—cambio de AÑO FISCAL—. Ahora la fecha viaja dentro del elemento de la cola,
+así que es la del día en que se capturó.
+
+# EL CUARTO PISO DE LA ESCALERA, PENDIENTE Y NO RESUELTO
+
+Queda escrito como **deuda conocida**, no como algo cerrado:
+
+> **Nada comprueba que una mutación represente un error PLAUSIBLE.** Las
+> diecinueve de hoy lo son porque se escribieron a mano pensando en errores que
+> alguien podría cometer de verdad —invertir un `≤`, cambiar el sentido de un
+> redondeo, tratar un `null` como `false`—, pero **no hay nada que lo exija ni
+> que lo mida**. Una batería de mutaciones absurdas daría el mismo «19
+> detectadas» y la misma sensación de respaldo.
+
+Los tres pisos anteriores están en «LA ESCALERA DE UN INSTRUMENTO APRENDIENDO A
+NO MENTIR». Este es el siguiente, y se nombra ahora para que no haya que
+descubrirlo con un defecto.
+
 # EL PRIMER ESTADO NO ES UN EXTREMO
 
 2026-10-19, la pregunta que salió del editor de tramos y vale para todo

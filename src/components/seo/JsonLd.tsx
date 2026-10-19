@@ -600,19 +600,40 @@ export function propertySchema(property: {
     ...(property.geo_lat && property.geo_lng
       ? { geo: { '@type': 'GeoCoordinates', latitude: property.geo_lat, longitude: property.geo_lng } }
       : {}),
-    offers: {
-      '@type':       'Offer',
-      price:          property.price_cop,
-      priceCurrency: 'COP',
-      availability:
-        property.status === 'available'
-          ? 'https://schema.org/InStock'
-          : property.status === 'reserved'
-            ? 'https://schema.org/LimitedAvailability'
-            : 'https://schema.org/SoldOut',
-    },
-    numberOfRooms:          property.bedrooms,
-    numberOfBathroomsTotal: property.bathrooms,
+    /* ⚠ EL 0 ES AUSENCIA EN TODO ESTE BLOQUE, y hasta el 2026-10-19 solo las
+     * áreas lo sabían.
+     *
+     * Un inmueble nace con `bedrooms: '0'`, `bathrooms: '0'` y
+     * `price_cop: BigInt(data.price_cop || 0)`, así que el 0 significa «nadie lo
+     * ha puesto» tanto como «no tiene». La ficha y el catálogo ya lo trataban
+     * como ausencia —`p.bedrooms > 0 ? …`— y la meta también; **este bloque lo
+     * afirmaba**, y con 15 inmuebles públicos en `bedrooms: 0` y 14 en
+     * `bathrooms: 0` (medido en producción el 2026-10-19) le estaba declarando
+     * a Google y a los modelos «cero habitaciones» sobre un tercio del
+     * catálogo, sin nada en la página que lo contradijera porque ahí no se
+     * muestra.
+     *
+     * > El mismo valor, dos lecturas, y solo la de la máquina afirma.
+     *
+     * Un campo ausente en schema.org es «no lo digo»; un campo en 0 es «es
+     * cero». Lo primero es verdad y lo segundo no, así que se omite. */
+    ...(property.price_cop > 0
+      ? {
+          offers: {
+            '@type':       'Offer',
+            price:          property.price_cop,
+            priceCurrency: 'COP',
+            availability:
+              property.status === 'available'
+                ? 'https://schema.org/InStock'
+                : property.status === 'reserved'
+                  ? 'https://schema.org/LimitedAvailability'
+                  : 'https://schema.org/SoldOut',
+          },
+        }
+      : {}),
+    ...(property.bedrooms  > 0 ? { numberOfRooms:          property.bedrooms }  : {}),
+    ...(property.bathrooms > 0 ? { numberOfBathroomsTotal: property.bathrooms } : {}),
     ...(property.area_built_m2
       ? { floorSize: { '@type': 'QuantitativeValue', value: property.area_built_m2, unitCode: 'MTK' } }
       : {}),

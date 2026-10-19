@@ -70,8 +70,19 @@ export async function destinosRecientes(q: string) {
 
 /**
  * Alta rápida de tercero desde la captura: solo el nombre. El documento real
- * llega después, así que se guarda un marcador y el tercero queda incompleto
- * a la vista en /admin/finanzas/terceros.
+ * llega después.
+ *
+ * ⚠ LO QUE ESTO DEJABA ANTES ERA UN MARCADOR QUE NADIE LEÍA. Guardaba
+ * `SIN-DOC-…` en `numero_documento` y una nota de texto libre que remitía a
+ * «/admin/finanzas/terceros» —una ruta que NO EXISTE—. Mismo patrón que el
+ * enlace del contador: un texto que señala algo que no está construido, esta
+ * vez dentro del código.
+ *
+ * Ahora lo que marca el tercero como incompleto **lo lee el motor**: las cuatro
+ * banderas del RUT quedan en `null` —«no se sabe», posible desde la migración
+ * del 2026-10-19— y `calcularRetefuente` se DETIENE con ellas en vez de
+ * suponer. El movimiento se registra con el sugerido en null y su nota, y eso
+ * sí se ve: está en el ingreso, no en un campo de texto que nadie abre.
  */
 export async function crearTerceroRapido(nombre: string, rol: 'CLIENTE' | 'PROVEEDOR') {
   const limpio = nombre.trim()
@@ -84,7 +95,16 @@ export async function crearTerceroRapido(nombre: string, rol: 'CLIENTE' | 'PROVE
       numero_documento: marcador,
       tipo_persona: 'NATURAL',
       rol,
-      notas: 'Creado desde la captura rápida: faltan los datos del RUT (documento, régimen, declarante de renta).',
+      /* Las cuatro banderas se dejan en NULL explícito: es el «no se sabe» que
+       * detiene el sugerido de retención. Escritas a mano y no omitidas, para
+       * que se vea que es una decisión y no un olvido. */
+      es_responsable_iva: null,
+      es_autorretenedor: null,
+      es_gran_contribuyente: null,
+      es_declarante_renta: null,
+      notas: 'Creado desde la captura rápida: faltan los datos del RUT (documento, régimen, ' +
+        'declarante de renta). Mientras falten, cualquier retención sugerida sobre este tercero ' +
+        'se detiene y el movimiento queda anotado sin sugerido.',
     },
     select: { id: true, nombre: true, numero_documento: true },
   })

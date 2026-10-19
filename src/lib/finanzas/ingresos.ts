@@ -153,8 +153,12 @@ export async function crearIngreso(e: EntradaIngreso, por: string) {
         const r = calcularRetefuente({
           base: valorBase,
           concepto: tipo.concepto_retencion_sugerido,
-          esDeclaranteRenta: tercero?.es_declarante_renta ?? false,
-          esAutorretenedor: tercero?.es_autorretenedor ?? false,
+          /* SE PASA EL VALOR REAL, `null` incluido. El `?? false` de antes
+           * convertía «falta el RUT» en «no declara». Si viene null, el motor
+           * lanza y el catch de abajo deja el sugerido en null con su nota,
+           * que es exactamente «movimiento incompleto». */
+          esDeclaranteRenta: tercero?.es_declarante_renta ?? null,
+          esAutorretenedor: tercero?.es_autorretenedor ?? null,
           parametros,
         })
         retefuenteSugerida = r.valor

@@ -473,8 +473,11 @@ async function detallePropiedad(input: DetalleInput) {
     precioFormateado: `$${Number(p.price_cop).toLocaleString('es-CO')}`,
     areaLote:     p.area_lot_m2,
     areaConstruida: p.area_built_m2,
-    habitaciones: p.bedrooms,
-    banos:        p.bathrooms,
+    /* MISMA REGLA QUE EL MARCADO Y QUE LA FICHA: el 0 es ausencia, y a un
+     * modelo hay que decirle «no lo sé» con un null, no con un cero —que
+     * repetiría «cero habitaciones» como si fuera un dato medido—. */
+    habitaciones: p.bedrooms  > 0 ? p.bedrooms  : null,
+    banos:        p.bathrooms > 0 ? p.bathrooms : null,
     descripcion:  p.description ?? p.short_description ?? '',
     caracteristicas: p.features.map(f => ({ key: f.feature_key, value: f.feature_value })),
     fotos:        p.media.filter(m => m.type === 'image').map(m => m.url),

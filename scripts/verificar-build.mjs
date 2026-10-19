@@ -122,9 +122,12 @@ hijo.on('close', codigo => {
   // Un salto de más del 50% en consultas no es un error, pero es la señal que
   // precedió a los dos P2024 anteriores. Se avisa fuerte.
   //
-  // ⚠ Y EL UMBRAL ES ALTO A PROPÓSITO. El 2026-10-16 dos builds del MISMO
-  // código contaron 1293 y 1251 consultas: la cifra tiene varianza propia de
-  // ~3 % entre corridas idénticas (cachés de Next, orden de prerender). Un
+  // ⚠ Y EL UMBRAL ES ALTO A PROPÓSITO. Builds del MISMO código han contado
+  // 1250, 1251, 1289, 1293 y 1311 consultas: la cifra tiene varianza propia de
+  // hasta ~5 % entre corridas idénticas (cachés de Next, orden de prerender).
+  // La banda se midió primero en ~3 % y el 2026-10-19 un 1311 la ensanchó; se
+  // comprobó reconstruyendo sin tocar nada —volvió a 1251— en vez de suponer.
+  // Un
   // delta pequeño de esta línea NO es una señal; lo que se vigila es el salto
   // de magnitud, que es lo que produce una consulta nueva POR PÁGINA.
   if (previo && previo.consultas > 0 && conteo.consultas > previo.consultas * 1.5) {

@@ -147,13 +147,43 @@ export interface ResultadoRetencion {
 export function calcularRetefuente(args: {
   base: Num
   concepto: string
-  esDeclaranteRenta: boolean
-  esAutorretenedor?: boolean
+  /**
+   * TRES ESTADOS, no dos. `null` es «no se sabe» y **no elige tarifa**.
+   *
+   * ⚠ Antes era `boolean` y los dos llamadores pasaban
+   * `tercero?.es_declarante_renta ?? false`: un tercero sin RUT capturado
+   * entraba como «no declara» y se le aplicaba `tarifa_no_declarante` sin que
+   * nadie lo hubiera afirmado. Es el mismo defecto que `calcularIva` ya
+   * evitaba dos funciones más abajo —«no se asume que no lo es»—.
+   */
+  esDeclaranteRenta: boolean | null
+  /** Igual: `null` detiene. Retenerle a un autorretenedor es un error propio. */
+  esAutorretenedor?: boolean | null
   parametros: ParametrosAnioLike
 }): ResultadoRetencion {
   const { concepto, esDeclaranteRenta, esAutorretenedor, parametros } = args
   const base = dec(args.base)
   const cero = new Prisma.Decimal(0)
+
+  /* LO QUE NO SE SABE NO ELIGE. Se detiene ANTES de cualquier otra cosa: si el
+   * RUT no está capturado, ni la tarifa ni el atajo del autorretenedor se
+   * pueden decidir, y las dos equivocaciones cuestan dinero en direcciones
+   * opuestas —retenerle a quien se autorretiene, o aplicar la tarifa alta a
+   * quien declara—. El llamador ya sabe qué hacer con esto: anota el
+   * movimiento sin sugerido. */
+  if (esAutorretenedor === null || esAutorretenedor === undefined) {
+    throw new ParametroFiscalFaltante(
+      'No se sabe si el tercero es autorretenedor: ese dato se captura de su RUT. ' +
+      'El cálculo se detiene; no se asume que no lo es.',
+    )
+  }
+  if (esDeclaranteRenta === null) {
+    throw new ParametroFiscalFaltante(
+      'No se sabe si el tercero declara renta: ese dato se captura de su RUT y ' +
+      'decide cuál de las dos tarifas aplica. El cálculo se detiene; no se asume ' +
+      'que no declara.',
+    )
+  }
 
   if (esAutorretenedor) {
     return { valor: cero, retuvo: false, motivo: 'El tercero es autorretenedor: no se le practica retención.' }

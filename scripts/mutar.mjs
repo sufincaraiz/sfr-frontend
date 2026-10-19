@@ -64,6 +64,25 @@ const LOS_DOS = `${H_NOTARIAL} && ${H_FINANZAS}`
  * una mutación sobrevive, lo que se cae es esa frase.
  */
 const MUTACIONES = [
+  /* ── LAS BANDERAS DEL RUT: TRES ESTADOS ────────────────────────────────────
+   * Si cualquiera de las dos puertas vuelve a tratar `null` como `false`, un
+   * tercero sin RUT capturado vuelve a elegir tarifa de retención solo. */
+  {
+    nombre: 'retefuente: no saber si declara renta vuelve a contar como «no declara»',
+    porque: 'la tarifa de no declarante es la más alta en servicios: suponerla cuesta dinero.',
+    archivo: 'src/lib/finanzas/calculo.ts',
+    de: "  if (esDeclaranteRenta === null) {",
+    a: "  if (false) {",
+    comando: H_FINANZAS,
+  },
+  {
+    nombre: 'retefuente: omitir «autorretenedor» vuelve a significar que no lo es',
+    porque: 'retenerle a quien se autorretiene es un error propio, y el dato sale del RUT.',
+    archivo: 'src/lib/finanzas/calculo.ts',
+    de: "  if (esAutorretenedor === null || esAutorretenedor === undefined) {",
+    a: "  if (esAutorretenedor === null) {",
+    comando: H_FINANZAS,
+  },
   /* ── EL EDITOR DE TRAMOS ───────────────────────────────────────────────────
    * Las tres decisiones que sostienen la forma: si `desde` deja de ser el
    * `hasta` anterior, vuelven el hueco y el solape; si la casilla en blanco

@@ -11,6 +11,7 @@ import {
   almacenNavegador, encolar, leerCola, avisoDeCola, encolarRecibo,
   type PendienteEnCola,
 } from '@/lib/finanzas/cola-egresos';
+import { hoyEnColombia } from '@/lib/dia-colombia';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CAPTURA DE UN GASTO — pensada para el teléfono, en la calle, con el recibo
@@ -69,6 +70,19 @@ export default function NuevoEgresoPage() {
   const router = useRouter();
   const [paso, setPaso] = useState(1);
   const [valor, setValor] = useState('');
+  /* LA FECHA, PRERRELLENADA Y A LA VISTA.
+   *
+   * ⚠ Antes este formulario NO tenía campo de fecha: el servidor resolvía
+   * `diaComoFecha(e.fecha) ?? hoyComoDiaPuro()`, así que siempre quedaba HOY y
+   * la persona nunca lo veía. Que el valor por defecto sea hoy está bien; lo
+   * que estaba mal es que fuera invisible:
+   *
+   *   > Si la casilla muestra 19/10/2026, la persona lo ve y lo corrige. Si
+   *   > está en blanco, no sabe a qué está diciendo que sí.
+   *
+   * Y es el día de COLOMBIA, no el del navegador ni el de UTC: quien registra
+   * un gasto a las 8 de la noche del 31 de diciembre decide un AÑO FISCAL. */
+  const [fecha, setFecha] = useState(() => hoyEnColombia());
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [categoria, setCategoria] = useState<Categoria | null>(null);
   const [naturaleza, setNaturaleza] = useState<Naturaleza | null>(null);
@@ -102,6 +116,9 @@ export default function NuevoEgresoPage() {
     naturaleza: naturaleza ?? 'DEL_NEGOCIO',
     property_id: naturaleza === 'DE_OPERACION' ? destino?.id ?? null : null,
     reembolsa_tercero_id: naturaleza === 'REEMBOLSABLE' ? destino?.id ?? null : null,
+    /* Se manda SIEMPRE: el servidor deja de caer en su valor por defecto, y
+     * eso convierte un valor silencioso en uno que se puede contradecir. */
+    fecha,
   });
 
   /**
@@ -344,6 +361,16 @@ export default function NuevoEgresoPage() {
           <div style={{ background: '#F8FAFC', border: `1px solid ${C.line}`, borderRadius: 12, padding: '0.8rem 1rem', fontSize: '0.85rem', color: C.muted }}>
             <div><strong style={{ color: C.navy }}>${valor}</strong> · {categoria?.nombre}</div>
             <div>{NATURALEZAS.find(n => n.valor === naturaleza)?.titulo}{destino ? ` · ${destino.etiqueta}` : ''}</div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 8 }}>
+              <span style={{ color: C.navy, fontWeight: 700 }}>Fecha del gasto</span>
+              <input type="date" value={fecha} onChange={e => setFecha(e.target.value)}
+                style={{ font: 'inherit', padding: '6px 8px', border: `1.5px solid ${C.line}`, borderRadius: 8 }} />
+            </label>
+            {fecha !== hoyEnColombia() && (
+              <div style={{ color: C.navy, fontWeight: 700, marginTop: 4 }}>
+                ⚠ No es hoy: se registrará con fecha {fecha}.
+              </div>
+            )}
             <div style={{ marginTop: 4 }}>Proveedor, factura y descripción se completan después.</div>
           </div>
 
