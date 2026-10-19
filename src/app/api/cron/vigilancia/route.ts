@@ -56,16 +56,32 @@ export async function GET(req: NextRequest) {
       `[cron/vigilancia] nuevos: ${rec.nuevos.length}, re-aviso (+3d): ${rec.vencidos.length}, ` +
       `abiertos: ${rec.abiertos}, resueltos ahora: ${rec.resueltosAhora}`,
     )
+    for (const v of rec.vencidos) {
+      console.log(`[cron/vigilancia]   · ${v.noches} noche(s) desde el ${v.desde}: ${v.detalle}`)
+    }
 
     if (rec.aNotificar) {
       // WhatsApp ahora es un PUNTERO, no el contenido: el detalle vive en
       // /admin/vigilancia. Reutiliza la plantilla `nuevo_lead_sfr` (sin trámite
       // con Meta), pero como solo dispara ante cambios, deja de ahogar los leads.
+      /* EL MENSAJE TIENE QUE ENVEJECER CON EL PENDIENTE. Antes decía «N sin
+       * corregir hace +3 días», idéntico la primera vez y la quinta: un
+       * recordatorio que no envejece se vuelve paisaje. Ahora nombra el más
+       * viejo, desde cuándo está y cuántas noches lleva —lo único que cambia
+       * entre un aviso y el siguiente—. */
       const partes: string[] = []
       if (rec.nuevos.length) partes.push(`${rec.nuevos.length} nuevo${rec.nuevos.length > 1 ? 's' : ''}`)
-      if (rec.vencidos.length) partes.push(`${rec.vencidos.length} sin corregir hace +3 días`)
+      const masViejo = [...rec.vencidos].sort((a, b) => b.noches - a.noches)[0]
+      if (masViejo) {
+        partes.push(
+          `${rec.vencidos.length} sin corregir — el más viejo lleva ${masViejo.noches} ` +
+          `noche${masViejo.noches === 1 ? '' : 's'}, desde el ${masViejo.desde}: ${masViejo.detalle}`,
+        )
+      }
       await enviarAlertaLeadWhatsApp(
-        '⚠ VIGILANCIA DE CONTENIDO',
+        masViejo && masViejo.noches >= 7
+          ? `⚠ VIGILANCIA — ${masViejo.noches} NOCHES SIN CORREGIR`
+          : '⚠ VIGILANCIA DE CONTENIDO',
         'revisar /admin/vigilancia',
         `${partes.join(' y ')}. Revísalos en el panel /admin/vigilancia.`,
       )

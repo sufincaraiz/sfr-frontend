@@ -23,27 +23,50 @@ export default function PoliticaCookiesPage() {
       <JsonLd data={breadcrumbs} />
       <LegalLayout
         title="Política de Cookies"
-        updated="12 de junio de 2026"
+        updated="19 de octubre de 2026"
         breadcrumbLabel="Política de Cookies"
       >
         <p className="intro">
-          En sufincaraiz.com utilizamos cookies propias y de terceros para garantizar el correcto
-          funcionamiento del portal, ofrecerte recorridos inmersivos y analizar el tráfico de
-          nuestra web.
+          En sufincaraiz.com usamos <strong>muy pocas cookies</strong>: las estrictamente necesarias
+          para mantener abierta una sesión cuando alguien entra con clave, y las que colocan por su
+          cuenta los servicios externos que incrustamos —mapas, recorridos 360° y vídeos—. No
+          usamos cookies de publicidad, de seguimiento ni de analítica.
         </p>
 
         <h2>1. ¿Qué son las Cookies?</h2>
         <p>
-          Son pequeños archivos de texto que se descargan y almacenan en el navegador de tu
-          dispositivo (computador o celular) cuando visitas nuestra página, permitiendo recordar
-          tus preferencias de búsqueda y comportamiento.
+          Son pequeños archivos de texto que un sitio puede guardar en el navegador de tu
+          dispositivo (computador o celular). Sirven, en general, para recordar entre una página y
+          otra quién eres o qué elegiste. En este sitio solo se usan para lo del numeral
+          siguiente: mantener abierta una sesión con clave.
         </p>
 
         <h2>2. ¿Qué tipos de Cookies utilizamos?</h2>
         <ul>
-          <li><strong>Cookies Estrictamente Necesarias:</strong> Son esenciales para que puedas navegar por la página, usar el buscador de inmuebles y comunicarte con el Agente Mac. Sin estas cookies, la plataforma no funcionaría correctamente.</li>
-          <li><strong>Cookies de Rendimiento y Análisis:</strong> Nos ayudan a entender cómo interactúan los visitantes con la web (qué fincas visitan más, de dónde provienen), utilizando herramientas como Google Analytics para mejorar nuestra oferta.</li>
-          <li><strong>Cookies de Funcionalidad y Multimedia:</strong> Son necesarias para cargar de manera eficiente los recorridos 360°, mapas interactivos y videos incrustados de plataformas como YouTube o TikTok.</li>
+          <li>
+            <strong>Cookies propias, estrictamente necesarias:</strong> una sola finalidad, mantener
+            la sesión de quien <strong>entra con usuario y clave</strong> —el panel administrativo,
+            el acceso de quien escribe en el blog de la comunidad y el enlace privado con PIN que se
+            comparte con el propietario de un inmueble—. Se borran al cerrar sesión o al
+            caducar.{' '}
+            <strong>
+              Navegar por el sitio, usar el buscador de inmuebles y escribirle al Agente Mac no
+              requieren ninguna cookie
+            </strong>{' '}
+            y no colocan ninguna.
+          </li>
+          <li>
+            <strong>Cookies de terceros, por el contenido incrustado:</strong> cuando una página
+            carga un mapa de Google, un recorrido 360° o un vídeo de YouTube o TikTok, esos
+            servicios pueden colocar sus propias cookies desde sus dominios. No las controlamos ni
+            accedemos a ellas; se rigen por las políticas de cada proveedor.
+          </li>
+          <li>
+            <strong>Lo que NO usamos:</strong> no hay cookies de publicidad, de perfilado ni de
+            analítica. En particular,{' '}
+            <strong>este sitio no tiene instalado Google Analytics</strong> ni ninguna otra
+            herramienta de medición de tráfico basada en cookies.
+          </li>
         </ul>
 
         <h2>3. Contacto</h2>

@@ -3113,6 +3113,182 @@ Vigilado en las dos direcciones por `probar-notariales.mjs`, con la señal
 todavía no se editan desde aquí», el editor no existe—: si el editor aparece y
 `tramos` sigue en `SIN_PANTALLA`, rompe. Provocado en ambas.
 
+# LA SEGUNDA FORMA DE ESCONDERSE DICIENDO LA VERDAD
+
+2026-10-19. Hay ya **dos** maneras de que una afirmación verdadera deje intacta
+una creencia equivocada, y conviene tenerlas juntas porque la segunda se
+descubrió cayendo en ella el mismo día que se escribió la primera.
+
+| | la frase | qué esconde |
+|---|---|---|
+| **1. La respuesta literal verdadera** | contesta exactamente lo que se preguntó | **lo que no se preguntó** |
+| **2. La lista incompleta** | enumera destinatarios reales | **lo que no se enumeró** |
+
+> **Nombrar a un destinatario y detenerse es peor que no nombrar a ninguno: una
+> lista incompleta se lee como completa.**
+
+Sin la lista, el lector sabe que no sabe. Con una lista de uno, **cree que sabe**
+—y la creencia la produjo una frase cierta—.
+
+## El caso, que es mío
+
+Al corregir «entrenar nuestros modelos» en la §2 de la política, añadí por
+iniciativa propia el párrafo que faltaba: que el contenido **se transmite a
+Anthropic**, encargado del tratamiento. Era verdad, era necesario y nadie lo
+había pedido.
+
+Y me quedé ahí.
+
+> **Nombré al proveedor que ve el texto y no me pregunté por dónde LLEGA el
+> texto.** El canal de WhatsApp *es* la API de WhatsApp Business: todo mensaje
+> de ese canal entra desde Meta y sale por Meta. **45 de las 116 conversaciones
+> de producción** son de ese canal, así que Meta ve el texto completo y el
+> número de teléfono de casi la mitad de la gente que ha hablado con Mac.
+
+Lo encontró el titular preguntando «¿hay más de un proveedor en el camino?».
+Igual que la cuarta ocurrencia de la escala de tarifas apareció porque preguntó
+si la escala debería existir una sola vez: **las dos veces, la pregunta que
+abrió el hallazgo no era sobre el defecto, era sobre la FORMA de lo que yo había
+afirmado.**
+
+## Por qué el instrumento no podía verlo
+
+Ninguna guarda compara una lista publicada con la lista real de terceros que ven
+un dato: **no existe la lista real en ninguna parte del código**. Se deduce
+mirando a dónde sale cada `fetch`, y eso no es una afirmación que se pueda
+verificar —es un inventario que hay que construir—. Por eso queda escrito en
+`AUDITORIA-TEXTOS-PUBLICOS.md` el **inventario de dominios externos** con quién
+pone cookies y quién solo recibe la IP: es el artefacto que la frase necesitaba
+para ser contrastable.
+
+## La regla práctica
+
+> Cuando un texto nombre **a quién** le llega un dato, la pregunta obligatoria
+> no es «¿es cierto?» sino **«¿están todos?»**. Y se responde siguiendo el dato
+> por el camino entero —quién lo recibe, quién lo transporta, quién lo guarda,
+> quién lo procesa—, no listando los que uno recuerda.
+
+Y el corolario, porque esto se repetirá: **un párrafo que yo añado por
+iniciativa propia no viene revisado por nadie.** El titular pidió corregir tres
+frases falsas; la cuarta la escribí yo, y la incompleta fue justo esa.
+
+# LA PURGA QUE HACÍA FALTA PARA QUE UNA FRASE FUERA CIERTA
+
+2026-10-19. De las siete divergencias de los textos públicos, **una no se podía
+cerrar escribiendo**: la política decía que el contenido de las consultas se
+almacena «temporalmente» y `conversations`/`messages` **no tenían purga, ni
+plazo, ni anonimización**. Se guardaban para siempre.
+
+Dos salidas, y el criterio para elegir:
+
+| salida | por qué no / por qué sí |
+|---|---|
+| cambiar el texto a «indefinidamente» | **cierto y peor.** Y habría que cambiarlo igual el día que se implementara |
+| implementar la purga | **elegida** |
+
+Tres razones, en orden de peso:
+
+1. **La minimización no es una frase de la política: es la obligación de la Ley
+   1581.** La finalidad declarada es «que un asesor pueda devolver el
+   contacto»; pasado un año esa finalidad ya se cumplió o ya no se va a
+   cumplir, y el contenido pierde la razón de estar.
+2. **La maquinaria estaba escrita dos veces** —visitas a dos años, accesos del
+   contador a doce meses— y el disparador diario ya existía. El coste marginal
+   era una función.
+3. Doce meses, **el mismo plazo que la bitácora de accesos**. Dos plazos
+   distintos para dos datos de la misma familia son dos fechas que alguien tiene
+   que recordar, y la política tendría que explicar por qué.
+
+Anonimiza en vez de borrar, igual que los accesos: la fila del mensaje se queda
+con su `role` y su `createdAt`, y se vacía el **contenido**. Sobrevive lo que
+tiene valor —cuántos turnos, cuándo, si escaló a una persona, cuánto costó— y
+desaparece el dato personal. La marca es la propia cadena vacía, que es también
+el filtro que hace la pasada idempotente: ninguna columna nueva.
+
+## ⚠ Y LA PURGA ROMPÍA A MAC PARA QUIEN YA HABÍA HABLADO CON ÉL
+
+Esto no se vio al diseñarla, se vio al buscar quién lee esos mensajes:
+
+> `runMac` arma el historial con **los últimos 30 mensajes de la conversación**,
+> y un bloque de contenido vacío hace que la API de Anthropic **rechace la
+> petición entera**. En WhatsApp la conversación se identifica por el **número
+> de teléfono**: alguien que vuelve a escribir al año siguiente cae exactamente
+> en ese caso.
+
+Sin el filtro, la purga habría dejado a Mac mudo **precisamente para las
+personas que ya habían hablado con él**, y el síntoma habría aparecido meses
+después de desplegarla, sin relación aparente con la causa. Filtrado en los dos
+sitios que leen contenido: el historial y el transcript del resumen del lead
+—donde un transcript de líneas vacías daría un resumen **inventado**, que es
+peor que no tenerlo—.
+
+> **Una retención no es solo «qué se borra»: es «quién lee eso después».** La
+> pregunta no es si el dato sobra, es qué código cuenta con que esté.
+
+# UN RECORDATORIO QUE NO ENVEJECE SE VUELVE PAISAJE
+
+2026-10-19. El cron de vigilancia avisa del aviso falso de `/registro-visita`
+hasta que el titular lo cambie en el panel. Está bien que se queje —un pendiente
+que se queja solo es lo que queremos— pero el mensaje decía **lo mismo cada
+vez**:
+
+```
+⚠ VIGILANCIA DE CONTENIDO — 1 sin corregir hace +3 días
+```
+
+> A la tercera repetición idéntica el aviso deja de leerse: el lector ya sabe
+> qué dice sin abrirlo. **Un recordatorio que no envejece se vuelve paisaje**, y
+> entonces el instrumento sigue funcionando y la señal ya no llega —que es la
+> misma familia que un arnés sin código de salida: funciona y no comunica—.
+
+La edad es **lo único que cambia** entre un aviso y el siguiente, así que es lo
+único que puede hacer que el texto no sea el mismo texto. Ahora el mensaje
+nombra el más viejo, **desde cuándo** está y **cuántas noches** lleva, y a partir
+de siete noches el título cambia. Sin columna nueva: `primero_visto` ya estaba.
+
+# POR QUÉ SE APLAZA LA LECTURA COMPLETA, Y CÓMO SE APLAZA SIN PERDERLA
+
+2026-10-19. Quedan **siete archivos** por leer, lista cerrada, y **no se leen
+ahora**. El criterio:
+
+> La lectura completa va **4 de 4**: cuatro veces de cuatro encontró lo que
+> ningún instrumento podía, y el defecto resultó **peor** que el reporte previo.
+> Por eso mismo **encontraría cosas para siempre**. Un método que nunca falla no
+> se detiene solo, y **sin un final declarado no se construye nunca.**
+
+Lo que hace que aplazarlo no sea olvidarlo es que **está medido y se imprime en
+cada build**: `inventario-decisiones.mjs` enumera los siete por nombre, con su
+exposición, y dice que están aplazados a propósito y desde cuándo. *Lo medido se
+puede aplazar; lo invisible no.*
+
+## La lista cerrada creció, y eso lleva firma
+
+`JsonLd.tsx` **no estaba** en los seis: entró el 2026-10-16 por decisión del
+titular, sobre una lista declarada cerrada. Queda escrito **quién la reabrió y
+cuándo**, porque *una lista cerrada que crece sin firma deja de ser un final y
+vuelve a ser una cola*. La razón es buena: son las afirmaciones **estructuradas**
+—`areaServed`, `priceRange`, `openingHours`, `knowsAbout`, `offers`— que Google
+y los modelos leen **literalmente, sin matiz**, y son de la mitad del sitio que
+no tiene instrumentos: la que habla **sobre nosotros mismos**.
+
+## ⚠ Y DOS CIFRAS QUE ESTABAN MAL, LAS DOS MÍAS
+
+Al tocar este contador aparecieron dos errores propios, en direcciones opuestas:
+
+1. **El instrumento decía 10 lecturas completas y eran 12.** `numeros.ts` y
+   `custodia.ts` se leyeron el 15 de octubre —lo prueba el código que salió de
+   ahi: la unidad escrita frente a la declarada, y la medición de la deriva del
+   `float` con su trampa de `toFixed`— y **nunca se subieron a la lista**. El
+   hallazgo se escribió en el traspaso y **la lectura se quedó en mi cabeza**.
+   Es el quinto punto ciego otra vez, dentro del instrumento que lo nombró.
+2. **Y yo escribí «los cuatro archivos vivos» en un informe.** Son **seis**, y
+   siempre fueron seis: resté `numeros` y `custodia` de una lista en la que
+   nunca estuvieron —son de la tanda anterior—, o sea que los resté dos veces.
+
+> La cifra sale del array, no de la prosa del informe. **Un contador que alguien
+> tiene que acordarse de subir no mide: recuerda.** Y se descubrió porque el
+> titular contó por su cuenta y su número no cuadraba con el mío.
+
 # CUATRO INSTRUMENTOS, CUATRO PUNTOS CIEGOS, LA MISMA FORMA
 
 2026-10-15. En un día, cuatro instrumentos distintos dejaron pasar algo, y los

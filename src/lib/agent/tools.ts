@@ -505,9 +505,13 @@ async function generarResumenLead(leadId: string, conversationId: string): Promi
       take:    50,
       select:  { role: true, content: true },
     })
-    if (mensajes.length === 0) return null
+    /* Igual que el historial: los mensajes vaciados por retención no van. Un
+     * transcript de líneas vacías da un resumen inventado, que es peor que no
+     * tenerlo. */
+    const conTexto = mensajes.filter((m) => m.content.trim() !== '')
+    if (conTexto.length === 0) return null
 
-    const transcript = mensajes
+    const transcript = conTexto
       .map((m) => `${m.role === 'USER' ? 'Cliente' : 'Mac'}: ${m.content}`)
       .join('\n')
 

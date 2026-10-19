@@ -467,6 +467,19 @@ const LECTURA_COMPLETA = [
   { archivo: 'src/app/api/admin/mac/route.ts', cuando: '2026-10-15' },
   { archivo: 'src/lib/agent/knowledge.ts', cuando: '2026-10-15' },
   { archivo: 'src/app/admin/mac/page.tsx', cuando: '2026-10-15' },
+  /* ⚠ ESTAS DOS SE LEYERON EL 2026-10-15 Y EL INSTRUMENTO NO SE ACTUALIZÓ.
+   *
+   * Se descubrió el 2026-10-19 porque el titular contó «cuatro archivos vivos
+   * sin leer» y el instrumento imprimía OCHO. Ganó él: faltaban estas dos, y lo
+   * que prueba que se leyeron es el código que salió de esas lecturas —la unidad
+   * ESCRITA frente a la declarada en `numeros.ts`, y la medición de la deriva
+   * del `float` en `saldoEnCustodia`, con su trampa de `toFixed`—.
+   *
+   * Es el quinto punto ciego otra vez, en el instrumento que lo nombró: el
+   * hallazgo se escribió en el traspaso y la LECTURA se quedó en mi cabeza. Un
+   * contador que alguien tiene que acordarse de subir no mide: recuerda. */
+  { archivo: 'src/lib/finanzas/numeros.ts', cuando: '2026-10-15' },
+  { archivo: 'src/lib/finanzas/custodia.ts', cuando: '2026-10-15' },
 ]
 
 /**
@@ -502,11 +515,28 @@ const AUDITORIA_TERMINA_CON = [
   'src/lib/finanzas/completar.ts',
   'src/lib/finanzas/reportes.ts',
   'src/lib/finanzas/recibos.ts',
+  /* AÑADIDO EL 2026-10-16, por decisión del titular, sobre una lista que estaba
+   * declarada cerrada en SEIS. Queda escrito QUIÉN la reabrió y CUÁNDO, porque
+   * una lista cerrada que crece sin firma deja de ser un final y vuelve a ser
+   * una cola. Razón: son las afirmaciones que leen las máquinas, literalmente.
+   *
+   * ⚠ Y DE PASO, UNA CIFRA MÍA QUE ERA FALSA: el 2026-10-18 escribí «los cuatro
+   * archivos vivos» en un informe. Son SEIS y siempre fueron seis: `numeros.ts`
+   * y `custodia.ts` sí se leyeron, pero nunca estuvieron en esta lista —son de
+   * la tanda anterior—, así que restarlos de aquí fue restar dos veces. La cifra
+   * sale de este array, no de la prosa del informe. */
+  'src/components/seo/JsonLd.tsx',
 ]
 
 const SIN_LECTURA_COMPLETA = [
-  { archivo: 'src/lib/finanzas/numeros.ts', expuesto: 'VIVO, convierte texto en plata' },
-  { archivo: 'src/lib/finanzas/custodia.ts', expuesto: 'VIVO, maneja dinero de terceros' },
+  /* ⚠ LAS AFIRMACIONES QUE LEEN LAS MÁQUINAS. No es un módulo de dinero, y por
+   * eso no estaba en esta lista; es lo que el sitio le declara a Google y a los
+   * modelos en schema.org —areaServed, priceRange, openingHours, knowsAbout,
+   * offers— y se lee LITERALMENTE, sin matiz. La auditoría de textos públicos
+   * del 2026-10-16 lo dejó señalado como el siguiente y se APLAZÓ a propósito
+   * (ver AUDITORIA-TEXTOS-PUBLICOS.md y el traspaso): lo medido se puede
+   * aplazar. Esta fila es la medición. */
+  { archivo: 'src/components/seo/JsonLd.tsx', expuesto: 'AFIRMACIONES ESTRUCTURADAS que leen Google y los modelos' },
   { archivo: 'src/lib/finanzas/parametros.ts', expuesto: 'VIVO, decide tarifas del año' },
   { archivo: 'src/lib/finanzas/ingresos.ts', expuesto: 'VIVO, causa ingresos' },
   { archivo: 'src/lib/finanzas/egresos.ts', expuesto: 'VIVO, causa gastos' },
@@ -535,7 +565,12 @@ console.log(`    lectura completa:      ${LECTURA_COMPLETA.length} archivos`)
 console.log(`    tocados sin leer:      ${TOCADOS_SIN_LECTURA.length}`)
 console.log(`    SIN lectura completa:  ${SIN_LECTURA_COMPLETA.length}, de los cuales ${vivos.length} están vivos y tocan dinero:`)
 for (const v of vivos) console.log(`       ${v.archivo.padEnd(34)} ${v.expuesto}`)
-console.log(`    La auditoria TERMINA con ${AUDITORIA_TERMINA_CON.length} archivos, lista cerrada.`)
+console.log(`    La auditoria TERMINA con ${AUDITORIA_TERMINA_CON.length} archivos, lista cerrada:`)
+for (const a of AUDITORIA_TERMINA_CON) console.log(`       · ${a}`)
+console.log('    APLAZADOS A PROPOSITO el 2026-10-19: lo siguiente es construir el editor')
+console.log('    de tramos. Una lectura completa encontraria cosas para siempre, y sin un')
+console.log('    final declarado no se construye nunca. Lo medido se puede aplazar; por eso')
+console.log('    esta lista se imprime en cada build en vez de quedarse en una conversacion.')
 console.log(`    Cuatro de cuatro veces, una lectura completa encontro lo que ningun`)
 console.log(`    instrumento podía, y el defecto resultó peor que el reporte previo.\n`)
 

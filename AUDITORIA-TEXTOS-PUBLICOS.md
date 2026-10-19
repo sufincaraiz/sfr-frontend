@@ -7,18 +7,22 @@
 >
 > | | estado |
 > |---|---|
-> | #1 «entrenar nuestros modelos» | **abierta** |
-> | #2 «chat de texto o voz» | **abierta** |
-> | #3 Google Analytics en la política de cookies | **abierta** |
+> | #1 «entrenar nuestros modelos» | **cerrada** 19-oct: la viñeta dice ahora solo «mejorar la experiencia de navegación», y §2 declara que **no se entrena ningún modelo** y que el contenido se transmite a Anthropic como encargado |
+> | #2 «chat de texto o voz» | **cerrada** 19-oct: «por escrito, en el sitio web o por WhatsApp» |
+> | #3 Google Analytics en la política de cookies | **cerrada** 19-oct: la política dice qué cookies hay —solo sesión con clave— y declara explícitamente que **no hay GA ni analítica** |
 > | #4 el aviso de `/registro-visita` | **corregido el valor por defecto + vigilancia diaria del texto real**. Falta que el titular lo cambie en el panel: el texto que se publica vive en la base. |
-> | #5 conversaciones «almacenadas temporalmente» | **abierta** |
-> | #6 qué cookies son necesarias | **abierta** |
-> | #7 «se eliminará toda la información» sin herramienta | **abierta** |
+> | #5 conversaciones «almacenadas temporalmente» | **cerrada** 19-oct **con código**: purga a 12 meses implementada (`retencion-conversaciones.ts`) y el texto dice el plazo real |
+> | #6 qué cookies son necesarias | **cerrada** 19-oct: nombra las tres sesiones reales y dice que el buscador y Mac no ponen ninguna |
+> | #7 «se eliminará toda la información» sin herramienta | **cerrada** 19-oct: el texto dice que **lo hace una persona, registro por registro**, nombra los tres registros y promete constancia escrita con la fecha y dónde se buscó |
 > | #8 la frase que nacía falsa (política §4) | **corregida**, y los tres requisitos quedaron escritos en el esquema |
 > | las fechas en UTC | **corregidas las 10**, y el detector aprendió el origen |
 >
-> Las seis abiertas **no se tocaron a propósito**: son redacción de documentos
-> legales y de la página de cookies, y van en su propio lote con el titular.
+> **Las siete están cerradas.** Seis eran redacción; la de las conversaciones
+> pidió código —una purga a doce meses— porque publicar «se conservan
+> indefinidamente» habría sido cierto y peor.
+>
+> Lo que queda **medido y aplazado**, no cerrado: `JsonLd.tsx` y los seis
+> archivos vivos de finanzas. Se imprimen por nombre en cada build.
 
 **2026-10-16.** Tres días de auditoría de código con cuatro instrumentos, y los
 textos publicados no los había revisado nadie. El primero que se miró —la
@@ -220,6 +224,108 @@ hechos adversos— **sí tiene instrumentos** (`probar-vigilancia.ts`,
 en el prompt de Mac). Lo que **no** tiene instrumento es la otra mitad: lo que el
 sitio afirma **sobre sí mismo y sobre cómo trata los datos**. Las siete
 divergencias de hoy son todas de esa mitad, y no es casualidad.
+
+## 5.b · Las dos comprobaciones del 2026-10-19, al código y no de memoria
+
+Antes de publicar el lote, el titular pidió verificar dos afirmaciones que los
+textos nuevos hacen. Queda escrito **qué se buscó y dónde**, porque una
+comprobación que no deja rastro hay que repetirla.
+
+### ¿A qué proveedor llama Mac? — **Anthropic, confirmado**
+
+| dónde | línea |
+|---|---|
+| `src/lib/agent/runMac.ts:19` | `const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })` |
+| `src/lib/agent/expert.ts:6` | idéntica —el modelo experto— |
+| `src/lib/agent/tools.ts:12` | idéntica —el resumen del lead— |
+
+Cliente `@anthropic-ai/sdk`, variable `ANTHROPIC_API_KEY`, **sin `baseURL`**, así
+que el destino es el de la librería (`api.anthropic.com`): no hay pasarela ni
+proxy. Y no hay ningún otro proveedor de modelo en el proyecto.
+
+### ¿Hay más de un proveedor en el camino? — **SÍ: Meta, y faltaba**
+
+El párrafo nombraba solo a Anthropic. **El canal de WhatsApp es la API de
+WhatsApp Business de Meta**:
+
+```
+src/app/api/whatsapp/webhook/route.ts:88   graph.facebook.com/v21.0/{phoneId}/messages
+src/lib/whatsapp.ts:56                     graph.facebook.com/v21.0/{phoneId}/messages
+```
+
+Todo mensaje de ese canal **entra desde Meta y sale por Meta**, así que Meta ve
+el texto completo y el número de teléfono. Y no es teórico —medido contra
+producción el 2026-10-19—:
+
+| canal | conversaciones |
+|---|---|
+| WEB | 71 |
+| WHATSAPP | **45** |
+
+Añadido a la §2 un párrafo propio para Meta. **Lo encontró la pregunta del
+titular, no la auditoría:** al corregir «entrenar modelos» nombré al proveedor
+que sí ve el texto y me quedé ahí, sin preguntarme **por dónde llega** el texto.
+
+> **Nombrar a un destinatario y detenerse es peor que no nombrar a ninguno:**
+> una lista incompleta se lee como completa.
+
+Lo que **no** ve el texto, comprobado: Upstash Redis guarda solo claves de
+límite de tasa y una marca de tiempo (`redis-salud.ts:64`); no hay transcripción
+de voz —Mac no tiene voz—; y Telegram aparece en el `enum` del canal y en un
+enlace de contacto, pero **no hay ninguna ruta ni llamada a su API**: 0 filas.
+
+### ¿La afirmación de cookies cubre a Meta? — **limpio**
+
+Buscado en `src/` y `public/`: `connect.facebook.net`, `fbq(`, `fbevents`,
+`facebook-jssdk`, `FB_PIXEL`, `dataLayer`, `gtag`, GTM. **Cero resultados.**
+No hay píxel de Meta ni SDK de Facebook ni capá de analítica.
+
+Y el inventario completo de dominios externos referenciados, para que la frase
+del §2 se pueda contrastar con algo y no con un recuerdo:
+
+| tercero | qué es | ¿pone cookies? |
+|---|---|---|
+| `www.youtube.com` | vídeos incrustados | sí — **nombrado** |
+| `www.google.com` / `maps.google.com` | mapa incrustado | sí — **nombrado** |
+| `tour.panoee.net`, `app.panoee.com` | recorridos 360° | sí — **nombrado** («recorridos 360°») |
+| `www.tiktok.com` | vídeos | sí — **nombrado** |
+| `fonts.googleapis.com`, `fonts.gstatic.com` | tipografías | no pone cookies (sí transmite la IP) |
+| `cdn.jsdelivr.net` | `model-viewer` y `pannellum` | no pone cookies |
+| `res.cloudinary.com`, `api.cloudinary.com` | imágenes | no pone cookies |
+| `graph.facebook.com` | WhatsApp Business, **servidor** | no toca el navegador |
+| `www.facebook.com`, `instagram.com`, `wa.me`, `t.me` | enlaces salientes del pie | no, hasta que se pulsan |
+
+Así que la frase del §2 se queda tal cual: **es cierta**. Lo que queda anotado
+es que las tipografías y los CDN **transmiten la IP** a un tercero sin poner
+cookies, que es otra cosa y no es lo que ese numeral promete.
+
+## 6 · Las deudas al tablero — anotadas, no construidas
+
+2026-10-19, por decisión del titular: **se anotan y no se hacen**.
+
+1. **TRANSFERENCIA INTERNACIONAL DE DATOS — pregunta para un abogado, no para
+   nosotros.** La §2 dice ahora **a quién** se transmite el contenido (Anthropic,
+   Meta) y **no dice que sale del país**, que bajo la Ley 1581 y el Decreto 1377
+   es una obligación **aparte** de declarar al encargado. Ni el titular ni quien
+   escribe esto son abogados, así que **no se redacta de oído**: la pregunta es
+   qué exige declarar y con qué base de legitimación. Alcance real medido: 45
+   conversaciones por WhatsApp y 116 en total.
+2. **CONSTANCIA DEL LADO DEL RESPONSABLE.** El principio de *responsabilidad
+   demostrada* no se cumple cumpliendo: hay que **poder probarlo**. Hoy la única
+   constancia de una eliminación la tiene **el solicitante**. Es una tabla
+   —fecha, qué se buscó, quién lo ejecutó— y no existe.
+3. **EL VALOR DE MERCADO DE LAS PREGUNTAS, Y LA FORMA CORRECTA DE QUEDARSE CON
+   ÉL.** Borrar el texto a los doce meses es la decisión correcta de privacidad,
+   pero saber qué preguntan los compradores del Gulivá vale dinero y eso se
+   pierde. La forma correcta **no es conservar el texto un año**: es extraer el
+   **agregado en el momento en que llega** —tema, municipio, rango de precio— y
+   guardar eso, que no identifica a nadie y **no caduca**.
+
+   > Y la razón por la que el agregado al llegar es mejor que separar el texto
+   > después la dio el titular corrigiendo su propia propuesta: **el texto de una
+   > conversación identifica a su autor por sí solo** —«soy Juan, el de la finca
+   > de la vereda»— y separarlo de forma fiable no se puede. Un «corpus
+   > anónimo» de texto libre no es anónimo: es el mismo dato en otra tabla.
 
 ## 6 · La regla
 

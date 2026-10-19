@@ -32,7 +32,7 @@ export default function EliminacionDatosPage() {
       <JsonLd data={breadcrumbs} />
       <LegalLayout
         title="Eliminación de Datos Personales"
-        updated="1 de julio de 2026"
+        updated="19 de octubre de 2026"
         breadcrumbLabel="Eliminación de Datos"
       >
         <p className="intro">
@@ -43,7 +43,7 @@ export default function EliminacionDatosPage() {
         <h2>Qué datos almacenamos</h2>
         <p>
           Cuando interactúas con nosotros a través de nuestro sitio web, formularios o nuestro
-          asistente virtual por WhatsApp (Mac), podemos almacenar datos como tu nombre, número de
+          asistente virtual Mac (en el sitio web o por WhatsApp), podemos almacenar datos como tu nombre, número de
           teléfono, correo electrónico y el contenido de tu conversación, con el fin de atender tu
           solicitud inmobiliaria.
         </p>
@@ -66,16 +66,32 @@ export default function EliminacionDatosPage() {
             contactaste, para poder identificar tus datos.
           </li>
           <li>
-            Recibirás una confirmación y procesaremos tu solicitud en un plazo máximo de 15 días
-            hábiles.
+            Recibirás <strong>acuse de recibo</strong> y resolveremos tu solicitud en un plazo
+            máximo de <strong>quince (15) días hábiles</strong>, que es el plazo del artículo 15 de
+            la Ley 1581 de 2012.
+          </li>
+          <li>
+            Al terminar recibirás una <strong>constancia escrita</strong> que indica la fecha en que
+            se ejecutó y <strong>en qué registros se buscó</strong> —solicitudes de contacto,
+            conversaciones con el agente Mac y registros de visita a inmuebles—. Guárdala: es el
+            comprobante de que la solicitud se cumplió.
           </li>
         </ol>
 
-        <h2>Qué se elimina</h2>
+        <h2>Qué se elimina, y cómo</h2>
         <p>
-          Se eliminará toda la información personal asociada a ti en nuestros sistemas: datos de
-          contacto, historial de conversaciones con nuestro asistente virtual y registros en nuestra
-          base de datos, salvo aquella información que la ley nos obligue a conservar.
+          Se eliminan tus <strong>datos de contacto</strong> (nombre, teléfono, correo), el{' '}
+          <strong>texto de tus conversaciones</strong> con el asistente virtual y tus{' '}
+          <strong>registros de visita a inmuebles</strong>, salvo aquella información que la ley nos
+          obligue a conservar —en particular los soportes contables de una operación ya realizada,
+          que se conservan diez (10) años por el artículo 28 de la Ley 962 de 2005—.
+        </p>
+        <p>
+          La búsqueda y el borrado los hace <strong>una persona</strong>, registro por registro: Su
+          Finca Raíz es una empresa pequeña y no tiene un proceso automatizado para esto. Eso no
+          cambia el plazo ni el resultado, y es la razón por la que te pedimos el dato con el que nos
+          contactaste: sin él no podemos encontrarte. Si una búsqueda no encuentra nada a tu nombre,
+          la constancia también lo dice.
         </p>
 
         <h2>Contacto</h2>

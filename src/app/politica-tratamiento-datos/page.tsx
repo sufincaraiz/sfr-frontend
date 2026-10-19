@@ -23,7 +23,7 @@ export default function PoliticaDatosPage() {
       <JsonLd data={breadcrumbs} />
       <LegalLayout
         title="Política de Tratamiento de Datos Personales"
-        updated="16 de octubre de 2026"
+        updated="19 de octubre de 2026"
         breadcrumbLabel="Política de Datos"
       >
         <p className="intro">
@@ -41,7 +41,7 @@ export default function PoliticaDatosPage() {
           <li>Atender solicitudes de venta, compra, arriendo o asesoría inmobiliaria.</li>
           <li>Compartir información sobre nuevos proyectos, lotes, condominios y oportunidades de inversión en la región.</li>
           <li>Formalizar procesos legales, redacción de contratos y promesas de compraventa.</li>
-          <li>Mejorar la experiencia de navegación y entrenar nuestros modelos de atención al cliente.</li>
+          <li>Mejorar la experiencia de navegación del sitio.</li>
           <li>
             Control de ingreso y seguridad en las visitas a inmuebles: registrar la identidad de
             las personas que visitan propiedades gestionadas por Su Finca Raíz, con fines de
@@ -52,11 +52,34 @@ export default function PoliticaDatosPage() {
 
         <h2>2. Tratamiento de Datos por Inteligencia Artificial</h2>
         <p>
-          Al interactuar con el &ldquo;Agente Inmobiliario Mac&rdquo; (ya sea vía chat de texto o
-          voz), el usuario acepta que el contenido de sus consultas sea procesado y almacenado
-          temporalmente con el único fin de dar respuesta a su solicitud y optimizar el sistema. Se
-          prohíbe expresamente a los usuarios suministrar información financiera, contraseñas o
-          datos sensibles a través del chat automatizado.
+          Al interactuar por escrito con el &ldquo;Agente Inmobiliario Mac&rdquo;, en el sitio web o
+          por WhatsApp, el usuario acepta que el contenido de sus consultas sea procesado y
+          almacenado con el único fin de dar respuesta a su solicitud y de que un asesor pueda
+          retomar el contacto. Se prohíbe expresamente a los usuarios suministrar información
+          financiera, contraseñas o datos sensibles a través del chat automatizado.
+        </p>
+        <p>
+          El contenido de las conversaciones se conserva por un máximo de{' '}
+          <strong>doce (12) meses</strong> contados desde el último mensaje. Cumplido ese plazo se
+          elimina de forma automática el texto de los mensajes y se conserva únicamente el registro
+          de que la conversación existió —su fecha y el número de turnos—, como dato de uso del
+          servicio.
+        </p>
+        <p>
+          Para responder, el contenido de la consulta se transmite a{' '}
+          <strong>Anthropic</strong>, proveedor del modelo de lenguaje que opera el agente, que
+          actúa como encargado del tratamiento.
+        </p>
+        <p>
+          Cuando la conversación ocurre <strong>por WhatsApp</strong>, el canal es la plataforma de{' '}
+          <strong>Meta</strong> (WhatsApp Business): los mensajes de ese canal, y el número de
+          teléfono desde el que se escriben, pasan necesariamente por los servidores de Meta, que
+          actúa igualmente como encargado y aplica además sus propias políticas. En el chat del
+          sitio web no interviene Meta.
+        </p>
+        <p>
+          Su Finca Raíz <strong>no entrena ningún modelo de inteligencia artificial</strong> con las
+          conversaciones ni con los datos de los usuarios.
         </p>
 
         <h2>3. Registro de Visitas a Inmuebles</h2>

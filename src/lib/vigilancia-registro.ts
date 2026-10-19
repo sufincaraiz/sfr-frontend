@@ -13,6 +13,7 @@
  * nuevos, pero no se cierra a ciegas.
  */
 import { createHash } from 'node:crypto'
+import { diaEnColombia } from '@/lib/dia-colombia'
 import { prisma } from '@/lib/prisma'
 import type { Hallazgo } from '@/lib/vigilancia'
 
@@ -23,9 +24,27 @@ export function hashHallazgo(h: Hallazgo): string {
   return createHash('sha1').update(`${h.clase}\u0000${h.detalle}`).digest('hex')
 }
 
+/**
+ * Un hallazgo CON SU EDAD.
+ *
+ * ⚠ UN RECORDATORIO QUE NO ENVEJECE SE VUELVE PAISAJE. El aviso decía lo
+ * mismo cada vez —«1 sin corregir hace +3 días»— y a la tercera repetición
+ * idéntica deja de leerse: el lector ya sabe qué dice sin abrirlo. La edad es
+ * lo único que cambia entre un aviso y el siguiente, así que es lo único que
+ * puede hacer que el texto no sea el mismo texto.
+ *
+ * No hace falta columna nueva: `primero_visto` ya está en la tabla.
+ */
+export interface HallazgoConEdad extends Hallazgo {
+  /** Cuándo se vio por primera vez, en día de Colombia. */
+  desde: string
+  /** Noches que lleva abierto. 0 la primera noche. */
+  noches: number
+}
+
 export interface Reconciliacion {
   nuevos: Hallazgo[]        // primera vez que se ven (o reaparecidos tras resolverse)
-  vencidos: Hallazgo[]      // abiertos hace ≥ N días y toca re-avisar
+  vencidos: HallazgoConEdad[]  // abiertos hace ≥ N días y toca re-avisar
   abiertos: number          // total de hallazgos activos ahora
   resueltosAhora: number    // dejaron de verse en esta corrida
   aNotificar: boolean       // hay algo que justifique un WhatsApp
@@ -52,7 +71,7 @@ export async function reconciliarHallazgos(
   const porHash = new Map(almacenados.map(a => [a.hash, a]))
 
   const nuevos: Hallazgo[] = []
-  const vencidos: Hallazgo[] = []
+  const vencidos: HallazgoConEdad[] = []
 
   for (const h of conHash) {
     const prev = porHash.get(h.hash)
@@ -78,7 +97,13 @@ export async function reconciliarHallazgos(
       where: { hash: h.hash },
       data: { ultimo_visto: ahora, ...(reavisar ? { notificado_en: ahora } : {}) },
     })
-    if (reavisar) vencidos.push(h)
+    if (reavisar) {
+      vencidos.push({
+        ...h,
+        desde: diaEnColombia(prev.primero_visto),
+        noches: Math.floor((ahora.getTime() - prev.primero_visto.getTime()) / DIA_MS),
+      })
+    }
   }
 
   let resueltosAhora = 0

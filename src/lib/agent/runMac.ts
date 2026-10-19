@@ -96,10 +96,20 @@ export async function runMac(
   }
 
   // 3. Historial para Anthropic
-  const history: MessageParam[] = conversation.messages.map((m) => ({
-    role:    m.role === 'USER' ? 'user' : 'assistant',
-    content: m.content,
-  }))
+  //
+  // ⚠ SE FILTRAN LOS MENSAJES VACIADOS POR RETENCIÓN. A los doce meses el cron
+  // vacía el CONTENIDO de los mensajes y deja la fila (ver
+  // lib/retencion-conversaciones.ts). Un bloque de contenido vacío hace que la
+  // API de Anthropic rechace la petición entera, y en WhatsApp la conversación
+  // se identifica por el número: alguien que vuelve a escribir al año siguiente
+  // cae justo en este caso. Sin este filtro, la purga rompería a Mac para
+  // exactamente las personas que ya habían hablado con él.
+  const history: MessageParam[] = conversation.messages
+    .filter((m) => m.content.trim() !== '')
+    .map((m) => ({
+      role:    m.role === 'USER' ? 'user' : 'assistant',
+      content: m.content,
+    }))
   history.push({ role: 'user', content: message })
 
   // 4. System prompt dinámico
