@@ -555,6 +555,85 @@ uno de los dos no se guarda— pero es el mismo patrón.
 > pregunta «¿qué hay en la casilla justo después de pulsar añadir?» no busca un
 > caso raro: busca **el único estado por el que pasan todos los registros**.
 
+## 5.e · ¿DÓNDE MÁS «NO DECIDIDO» SE LEE COMO «NO»? — BARRIDO DE TODO EL PROYECTO
+
+2026-10-19. Aplicación del principio recién establecido, y buscado **lejos a
+propósito**: la cercanía es donde ya se demostró que no viaja —el defecto del
+RUT estaba a una línea de su propia regla y a dos funciones de su propia
+solución—.
+
+Buscado en todo `src/`: `?? false`, `?? true`, `?? 0`, `|| 0`, defaults de enum
+y `@default` del esquema sobre campos que **eligen** tarifa, régimen, categoría
+o visibilidad.
+
+### La cifra
+
+| | |
+|---|---|
+| sitios con el patrón | **11** |
+| de ellos, **eligen una cifra o una tarifa** | **4** |
+| arreglados en este lote | **1** — el que desarmaba una guarda existente |
+| con ventana de **0 filas** hoy | **3** |
+| eligen visibilidad, no cifra — contados, no arreglados | **4** |
+| falsos positivos (contadores, tokens, índices) | el resto |
+
+### A. ARREGLADO — el `?? false` que desarmaba una guarda que ya existía
+
+`reportes.ts:122`, en `gastosPorCategoria`:
+
+```ts
+const costo = gastoDeResultado({ …f }, responsableIva ?? false)   // ← antes
+```
+
+Y `costoEgreso`, al final de la cadena, está escrita para **detenerse**:
+
+```ts
+if (vacio(responsableIva)) throw new ParametroFiscalFaltante(
+  'No se ha decidido si el año es responsable de IVA: no se puede saber si el IVA pagado es costo o crédito.')
+```
+
+> **La guarda existía, era correcta, y el llamador la anulaba una línea antes de
+> entregarle el dato.** No faltaba el principio: faltaba no desactivarlo al
+> usarlo.
+
+Y elegía una cifra de las que importan: con «no responsable» el IVA pagado **se
+suma al costo**, así que el gasto del **estado de resultados** —lo que declara
+el contador— salía más alto, sobre un año del que nadie había dicho nada.
+Quitado el `?? false`, y añadida la rama de la ruta para que el reporte **diga
+qué falta** en vez de devolver un 500: eran dos guardas con voz y ahora son
+tres.
+
+### B. ELIGEN UNA CIFRA Y NO SE ARREGLAN AQUÍ — con su razón
+
+| | dónde | qué elige | por qué no aquí |
+|---|---|---|---|
+| `en_uvt Boolean @default(false)` | `schema.prisma:1419` (tramos) | si un límite está en **pesos o en UVT** — leer en pesos una tabla en UVT desplaza la frontera unas **50.000 veces** | va con **el lote del editor**: lo correcto no es que la columna admita `null`, es que el editor **exija** declararlo por tabla, porque quien transcribe lo sabe —la resolución dice «$» o «UVT»—. **0 tramos en producción** |
+| `numero(p.valor) \|\| 0` | `captura-ingreso.ts:164,166` | la **vista previa** del reparto de una comisión: una parte ilegible cuenta como 0 y la explicación subestima la parte ajena | es una cifra **mostrada**, no guardada —el escritor filtra las partes vacías antes—. Pero la vista previa existe para que alguien compruebe, así que un 0 por ilegible le quita su función. Pendiente, anotado |
+| `geo_lat ?? 0`, `geo_lng ?? 0` | `municipios.ts:50-51` | la **latitud publicada** de un municipio. 0,0 es el golfo de Guinea, y `geo_lat` **no está entre los seis campos de `PUBLICABLE`** | medido: **0 de 8 municipios publicables sin geo**. Latente, no activo |
+
+### C. ELIGEN VISIBILIDAD, NO CIFRA — contados
+
+| | qué pasa si nadie lo toca |
+|---|---|
+| `activo: d.activo ?? true` (`api/admin/mac`) | una entrada de conocimiento nace **ACTIVA**: entra al prompt de Mac sin que nadie la publique |
+| `oculto: d.oculto ?? false` (municipios, tipos de propiedad) | nacen **visibles** |
+| `domicilios: d.domicilios ?? false` (directorio) | se publica «no hace domicilios» de un negocio ajeno que no lo dijo |
+| `status: 'available'` al crear una propiedad | ver §5.d: nace publicable. **Va con el lote del editor** |
+
+> Los cuatro comparten la dirección: **el valor por defecto publica.** Ninguno
+> es una afirmación que alguien hizo; los cuatro son afirmaciones que nadie hizo.
+
+### La regla operativa, que es lo que vale
+
+> **Al establecer un principio hay que buscar la misma pregunta en TODO el
+> proyecto, nunca en lo cercano** —porque lo cercano es donde uno deja de
+> buscar, y por eso donde el defecto sobrevive más—.
+
+Prueba de que la regla es necesaria: el defecto del RUT estaba **a una línea**
+de la regla que lo prohibía y **a dos funciones** de la solución ya
+implementada, en el mismo archivo. Y el `?? false` del reporte estaba **en otro
+archivo**, llamando a esa misma solución para anularla.
+
 ## 6 · Las deudas al tablero — anotadas, no construidas
 
 2026-10-19, por decisión del titular: **se anotan y no se hacen**.

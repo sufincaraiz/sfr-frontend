@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { requireRole } from '@/lib/auth'
 import { estadoDeResultados, periodoDelAnio, periodoDelMes } from '@/lib/finanzas/reportes'
 import { CustodiaSinIngreso } from '@/lib/finanzas/custodia'
+import { ParametroFiscalFaltante } from '@/lib/finanzas/calculo'
 import { ErrorNaturalezaEgreso } from '@/lib/finanzas/calculo'
 import { anioEnColombia } from '@/lib/dia-colombia'
 
@@ -33,7 +34,12 @@ export async function GET(req: NextRequest) {
   } catch (e) {
     // Las dos guardas hablan con el usuario: el reporte NO se emite y se dice
     // exactamente qué hay que resolver antes.
-    if (e instanceof CustodiaSinIngreso || e instanceof ErrorNaturalezaEgreso) {
+    /* TRES guardas, no dos: `ParametroFiscalFaltante` se añade el 2026-10-19,
+     * cuando se quitó el `?? false` que la anulaba en `gastosPorCategoria`. Sin
+     * esta rama, quitar el `?? false` habría cambiado un número silenciosamente
+     * equivocado por un 500 sin explicación —otra forma de no decir qué falta—. */
+    if (e instanceof CustodiaSinIngreso || e instanceof ErrorNaturalezaEgreso ||
+        e instanceof ParametroFiscalFaltante) {
       return NextResponse.json({ error: e.message, guarda: e.name }, { status: 409 })
     }
     console.error('[reportes] GET', e)

@@ -3172,6 +3172,94 @@ error PLAUSIBLE.** Hoy las catorce son errores que alguien podría cometer de
 verdad —porque se escribieron a mano pensando en eso—, pero no hay nada que lo
 exija ni que lo mida.
 
+# LA DISTANCIA QUE SE ENCOGE
+
+Cuatro veces ha pasado lo mismo: **una regla escrita y su incumplimiento cerca.**
+Y la distancia se ha ido acortando cada vez, hasta volverse absurda.
+
+| | la regla | el incumplimiento | distancia |
+|---|---|---|---|
+| 1 | el comentario de `next.config.ts` sobre no desactivar comprobaciones | la opción desactivada más abajo en el mismo archivo | **~30 líneas** |
+| 2 | los días puros, resueltos en un archivo | `respaldos_normativos` con la misma clase de fecha sin tocar | **el archivo vecino** |
+| 3 | «**NO se infieren**: se capturan del RUT del tercero» | `es_declarante_renta Boolean @default(false)` | **UNA LÍNEA** |
+| 4 | `calcularIva`: «no se asume que no lo es» y lanza | `calcularRetefuente` eligiendo tarifa sobre un dato no capturado | **dos funciones, mismo archivo** |
+
+Y hay un quinto que no es distancia sino **dirección**, y por eso cierra la
+serie: el `?? false` de `reportes.ts` llamaba a `costoEgreso` —la función
+escrita para detenerse ante lo no decidido— **para anularla**, desde otro
+archivo.
+
+> **La guarda existía, era correcta, y el llamador la desarmaba una línea antes
+> de entregarle el dato.** No faltaba el principio: faltaba no desactivarlo al
+> usarlo. Un principio implementado no protege a quien lo llama con un valor por
+> defecto.
+
+## La regla operativa, que es lo único que de verdad sirve de esto
+
+> **Al establecer un principio hay que buscar la misma pregunta en TODO el
+> proyecto, nunca en lo cercano.** Lo cercano es donde uno deja de buscar
+> —«esto ya lo acabo de revisar»— y por eso es donde el defecto sobrevive más.
+
+La prueba está en la tabla: el caso 3 estaba a **una línea** de su regla y el 4
+a **dos funciones** de su solución. Si la cercanía protegiera, esos dos serían
+imposibles.
+
+Corolario práctico: **el barrido se hace con la pregunta, no con la ruta.** La
+del 2026-10-19 fue «¿dónde más un *no decidido* se lee como un *no*?», buscada
+en `src/` entero: once sitios, cuatro que eligen una cifra. Está en
+`AUDITORIA-TEXTOS-PUBLICOS.md` §5.e.
+
+# LA CUARTA FECHA DE LA FAMILIA, Y APARECIÓ SIN BUSCARLA
+
+La familia de las fechas lleva cuatro casos, y el cuarto es el más revelador por
+**cómo** apareció:
+
+| | el caso |
+|---|---|
+| 1 | el año del pie, con `new Date()` en el servidor —UTC—: cinco horas al año decía el año siguiente |
+| 2 | los nueve días puros guardados en columnas de instante |
+| 3 | las diez fechas leídas en UTC y publicadas —`toISOString()` sobre el ahora— |
+| 4 | **la cola sin conexión** |
+
+El cuarto: la captura de un gasto funciona **sin señal** y encola el gasto en el
+teléfono. La fecha no viajaba en el elemento de la cola —el servidor la
+resolvía como «hoy» al recibirlo—, así que **un gasto capturado el 31 de
+diciembre y sincronizado el 1 de enero se fechaba en enero: cambio de AÑO
+FISCAL.**
+
+> **Y no apareció buscándolo.** Apareció al prerrellenar la casilla de la fecha
+> —una tarea de ergonomía—: al meter `fecha` en el cuerpo de la petición hubo
+> que mirar qué más manda ese cuerpo, y lo que manda también es lo que se
+> encola.
+>
+> **Hacer visible un valor silencioso obliga a seguirlo**, y seguirlo es lo que
+> encuentra el defecto. Las tres fechas anteriores salieron de barridos
+> dirigidos; esta salió de tocar la interfaz.
+
+# LA CUARTA CORRECCIÓN DE LA SERIE, Y ES AL ALZA SOBRE MÍ MISMO
+
+A la tabla de «corregirse hacia arriba y hacia abajo cuesta lo mismo» se añade
+la cuarta, y es de una clase nueva: **corregir una cifra que yo mismo
+documenté.**
+
+El 2026-10-16 escribí en `verificar-build.mjs` que el contador de consultas
+tiene «~3 % de varianza propia», medido con dos corridas (1293 y 1251). El
+2026-10-19 marcó **1311 ▲** sobre 1250 —fuera de mi propia banda—.
+
+Lo honesto habría sido fácil de evitar: el delta cabía en «ruido» con solo no
+mirar la banda que yo mismo había escrito. En vez de eso se reconstruyó **sin
+tocar nada** y volvió a **1251**.
+
+> **La banda real es 1250–1311, ~5 %**, no el ~3 % documentado. Corregido en el
+> guion, con las cinco mediciones y con la frase de que se comprobó
+> reconstruyendo en vez de suponer.
+
+Las cuatro juntas: dos a la baja —la deriva del `float`, las «cuatro horas»—,
+una al alza sobre un reporte propio —la frase publicada— y esta, al alza sobre
+**una medición propia ya escrita en el código**. La última es la más fácil de
+no hacer, porque el único que iba a notar la contradicción era quien escribió
+las dos cosas.
+
 # EL TIPO DECIDE SI EL « NO SÉ » PUEDE EXISTIR
 
 2026-10-19. Hermana de **«el modelo de datos decide qué se puede ver»**, y la

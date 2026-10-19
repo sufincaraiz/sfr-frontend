@@ -118,8 +118,21 @@ export async function gastosPorCategoria(p: Periodo) {
   const porCategoria = new Map<string, { nombre: string; total: Prisma.Decimal; cantidad: number; noDeducible: Prisma.Decimal }>()
   let total = new Prisma.Decimal(0)
   for (const f of egresosDeResultado(filas)) {
-    // Lanza si se colara un reembolsable: la guarda, no un filtro silencioso.
-    const costo = gastoDeResultado({ ...f, naturaleza: f.naturaleza }, responsableIva ?? false)
+    /* Lanza si se colara un reembolsable: la guarda, no un filtro silencioso.
+     *
+     * ⚠ Y AQUÍ HABÍA UN `?? false` QUE DESARMABA LA OTRA GUARDA. `costoEgreso`
+     * está escrita para DETENERSE si no se ha decidido si el año es responsable
+     * de IVA —«no se puede saber si el IVA pagado es costo o crédito»— y este
+     * llamador convertía el «no decidido» en un «no» decidido, una línea antes
+     * de entregarlo.
+     *
+     * > La guarda existía, era correcta, y el llamador la anulaba. No faltaba
+     * > el principio: faltaba no desactivarlo al usarlo.
+     *
+     * Y elegía una cifra: con «no responsable» el IVA pagado se SUMA al costo,
+     * así que el gasto del estado de resultados —lo que declara el contador—
+     * salía más alto, sobre un año del que nadie había dicho nada. */
+    const costo = gastoDeResultado({ ...f, naturaleza: f.naturaleza }, responsableIva)
     const k = f.categoria.id
     const e = porCategoria.get(k) ?? { nombre: f.categoria.nombre, total: new Prisma.Decimal(0), cantidad: 0, noDeducible: new Prisma.Decimal(0) }
     e.total = e.total.plus(costo)
