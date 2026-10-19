@@ -51,6 +51,7 @@ const H_NOTARIAL = 'node scripts/probar-notariales.mjs'
 const G_TRANSCRIPCION = 'node scripts/verificar-transcripcion.mjs'
 const G_ESCRITURAS = 'node scripts/verificar-escrituras.mjs'
 const H_FINANZAS = 'node scripts/probar-finanzas.mjs'
+const H_EDITOR = 'node scripts/probar-editor-tramos.mjs'
 /* La escala vive en un modulo que usan los DOS motores, asi que su mutacion
  * tiene que correr los dos arneses: si solo corriera uno, media cobertura
  * seria una suposicion. */
@@ -63,6 +64,36 @@ const LOS_DOS = `${H_NOTARIAL} && ${H_FINANZAS}`
  * una mutación sobrevive, lo que se cae es esa frase.
  */
 const MUTACIONES = [
+  /* ── EL EDITOR DE TRAMOS ───────────────────────────────────────────────────
+   * Las tres decisiones que sostienen la forma: si `desde` deja de ser el
+   * `hasta` anterior, vuelven el hueco y el solape; si la casilla en blanco
+   * vuelve a contar como tramo abierto, vuelve la tabla con dos infinitos
+   * declarada liquidable; y si el límite ilegible vuelve a lanzar, el editor
+   * se cae mientras alguien teclea. */
+  {
+    nombre: 'editor: `desde` deja de ser el `hasta` anterior y pasa a +1',
+    porque: 'los límites son CONTIGUOS. Con +1 vuelve el hueco que se come a $100.000.000,50.',
+    archivo: 'src/lib/notariales/editor-tramos.ts',
+    de: '      desde: anterior,',
+    a: '      desde: anterior === 0 ? 0 : anterior + 1,',
+    comando: H_EDITOR,
+  },
+  {
+    nombre: 'editor: la casilla en blanco deja de distinguirse del tramo abierto',
+    porque: 'producía DOS tramos con `hasta: null` y `desde: 0`, y la tabla se declaraba LIQUIDABLE.',
+    archivo: 'src/lib/notariales/editor-tramos.ts',
+    de: "const enBlanco = f.hasta !== null && String(f.hasta).trim() === ''",
+    a: 'const enBlanco = false',
+    comando: H_EDITOR,
+  },
+  {
+    nombre: 'editor: un límite incompleto vuelve a ser una excepción',
+    porque: 'quien teclea pasa por estados ilegibles todo el rato; una excepción tumba la pantalla.',
+    archivo: 'src/lib/notariales/editor-tramos.ts',
+    de: '  } catch {\n    return { hasta: null, ilegible: true }\n  }',
+    a: '  } catch (e) {\n    throw e\n  }',
+    comando: H_EDITOR,
+  },
   {
     nombre: 'frontera del tramo: ≤ pasa a <',
     porque: 'el límite superior del tramo PERTENECE al tramo. 100.000.000 exactos van al primero.',

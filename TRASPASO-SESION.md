@@ -3113,6 +3113,222 @@ Vigilado en las dos direcciones por `probar-notariales.mjs`, con la señal
 todavía no se editan desde aquí», el editor no existe—: si el editor aparece y
 `tramos` sigue en `SIN_PANTALLA`, rompe. Provocado en ambas.
 
+# EL EDITOR DE TRAMOS: `desde` NO SE TECLEA
+
+2026-10-19. La decisión la tomó el titular y es la que decide todo lo demás.
+
+Se teclea **`hasta` y el valor**. `desde` se deriva del `hasta` de la fila
+anterior —literal, **sin `+1`**, porque el intervalo es `desde < base ≤ hasta` y
+los límites son contiguos; eso ya estaba escrito en `tipos.ts` por el caso de
+$100.000.000,50—.
+
+> **Lo que eso compra no es comodidad: el hueco y el solape dejan de poder
+> escribirse.** No es una validación que los caza: es una forma donde no
+> existen.
+
+Es el primer nivel de la jerarquía —que no pueda ocurrir— y hasta ahora se
+había aplicado poco: casi todas las guardas del proyecto son del tercer nivel
+—que se note—. Y de paso, 29 filas pasan de **58 campos a 29**.
+
+## Lo que deja de ser posible, y lo que queda por verificar
+
+| imposible por construcción | sigue posible, y se verifica |
+|---|---|
+| un hueco entre dos tramos | dos `hasta` iguales → tramo de anchura cero |
+| un solape | más de un tramo abierto |
+| un `desde` que no case con el `hasta` anterior | ninguno abierto → la tabla no cubre el infinito |
+| dos tramos con el mismo `orden` | la tabla vacía, un solo tramo, borrar la última fila |
+
+Las verificaciones **dejaron de comprobar continuidad** —ya no hace falta— y
+pasaron a comprobar lo que sí sigue siendo posible. 52 en
+`scripts/probar-editor-tramos.mjs`, en la cadena del build (20 guardas).
+
+## EL ORDEN CANÓNICO: «insertar una fila en medio» deja de ser una operación
+
+Las filas se ordenan por `hasta` creciente y el abierto va siempre al final. Da
+igual dónde se inserte una fila: **el resultado es idéntico**, y está probado
+comparando los tres órdenes posibles. La pantalla no tiene que saber colocar
+nada y no hay forma de dejar la tabla desordenada.
+
+## UNA TABLA A MEDIAS NO ESTÁ ROTA, ESTÁ A MEDIAS
+
+El diagnóstico tiene **dos severidades**, y esa es la parte que la pantalla
+hereda sin decidir nada:
+
+| | qué significa |
+|---|---|
+| `INCOMPLETA` | todavía no has terminado. No hay nada que corregir: faltan filas |
+| `ERROR` | lo escrito se contradice. Hay algo que arreglar |
+
+> **Si el editor grita desde la primera fila, en la fila 14 nadie lo lee.**
+
+Así que la tabla vacía —cómo nace **todo** concepto sembrado— es `INCOMPLETA` y
+no error; borrar la fila abierta deja la tabla `INCOMPLETA` y no la rompe; y una
+fila recén añadida sin valor es `INCOMPLETA`. El tono de la pantalla lo decide
+`resumenParaPantalla()`, en el módulo hoja: *OK / A_MEDIAS / MAL*.
+
+## ⚠ EL PEOR DEFECTO QUE HA TENIDO ESTE MÓDULO, Y NO ESTABA EN LA LISTA DE CINCO
+
+Al probar un estado que **nadie había listado** —la casilla del límite **en
+blanco**, que es el estado en el que NACE toda fila— salió esto:
+
+```
+tramosDesdeFilas([{hasta: ''}, {hasta: null}])
+  → DOS tramos con hasta: null y desde: 0
+  → liquidable: true
+```
+
+**Dos infinitos y la tabla declarada apta para liquidar.** El segundo tramo no
+se alcanza nunca, y la cifra habría salido plausible.
+
+La causa: confundir «no hay límite» con «todavía no se ha escrito el límite».
+Son el mismo valor para el código —`null`— y cosas opuestas para la persona.
+
+> **Los cinco extremos degenerados eran una lista, y una lista tiene el punto
+> ciego de toda lista: lo que no está en ella.** Los cinco venían del inventario
+> de decisiones; este sexto solo aparece si se pregunta «¿qué contiene la
+> casilla justo después de pulsar ‹añadir fila›?», y eso no es un extremo: es el
+> **primer** estado.
+
+Y el arnés encontró además que `leerNumero` **lanza** ante «-5», que es correcto
+en el motor y **inaceptable en un editor**: quien teclea pasa por estados
+ilegibles todo el rato —«-», «1.», «»— y una excepción ahí tumba la pantalla
+en vez de señalar la fila.
+
+> **Un número a medio teclear no es una excepción**, igual que una tabla a
+> medias no está rota. El motor y el editor necesitan severidades distintas
+> ante el **mismo** dato ilegible.
+
+## Y una mutación que sobrevivió porque no mutaba nada
+
+La primera mutación escrita para el defecto de la casilla en blanco
+**sobrevivió**. No porque el arnés fuera flojo: porque la mutación era un
+**no-op** —quitaba un `&& !enBlanco` de una condición que ya no se alcanzaba en
+ese caso—. Reemplazada por la que sí cambia el comportamiento (`enBlanco = false`
+en el origen), y detectada.
+
+> Es la regla 1 del arnés de mutaciones aplicándose a sí misma un nivel más
+> arriba: **no basta con probar que el ARCHIVO cambió; hay que elegir el sitio
+> donde el cambio altera el comportamiento.** Una mutación sintácticamente real
+> sobre código inalcanzable es una afirmación sin respaldo que se ve respaldada.
+
+## La frontera entre los dos módulos, escrita y probada
+
+El editor vigila la **FORMA**; el motor vigila la **TARIFA**. Una tabla donde un
+inmueble más caro paga menos es **coherente para el editor** —no hay hueco, no
+hay solape, los límites crecen— y la rechaza `verificarTramos` por no monótona.
+Hay una verificación dedicada a que esa frontera no se mueva sin que se note.
+
+## El viaje redondo, que se comprobó ANTES de construir la pantalla
+
+`tramosDesdeFilas(filasDesdeTramos(t)) === t` para tablas de los tres modos, con
+aportes institucionales, UVT y equivalencia en UVB. **Si una tabla válida no se
+pudiera expresar en esta forma, la forma estaría mal**, y eso hay que saberlo
+antes de dibujar nada.
+
+# LA AFIRMACIÓN CON FECHA DE CADUCIDAD
+
+2026-10-19. **Categoría propia, por encima de las doce formas de esconderse y de
+los puntos ciegos del instrumento**, porque no es una forma de ocultar ni un
+límite de una herramienta: es una propiedad del **tiempo** que ninguna de las
+dos contempla.
+
+> **Todas nuestras guardas comparan el texto con el estado de HOY, y hoy
+> coinciden.** Una frase que deja de ser cierta **por el mero paso del tiempo**
+> no la ve ninguna guarda, porque en el instante en que se comprueba **todavía
+> es verdad**.
+
+No es una hipótesis. Las guardas de este proyecto están construidas todas sobre
+la misma pregunta —«¿lo escrito y lo construido coinciden?»— y la respuesta es
+sí en el momento de preguntar. El 31 de diciembre siguen coincidiendo. El 1 de
+enero una de las dos cambió sola, y **nadie tocó nada**: por eso ninguna guarda
+se dispara.
+
+## El caso que la descubrió fue uno que yo mismo creé
+
+La §2 de la política dice que el contenido de las conversaciones se elimina a
+los **doce meses**. Es cierta hoy porque **nada ha llegado a doce meses**: la
+conversación más antigua de producción es del 2026-06-11. Consultado, no
+supuesto: la fecha en que esa frase pasa de gratis a tener consecuencias es el
+**2027-06-11**, y esa noche se vacían 3 conversaciones y 22 mensajes.
+
+> **Escribí una afirmación pública verdadera con fecha de activación de su
+> propia falsedad.** Si ese día la purga está apagada, la política publicada es
+> falsa esa misma noche, y nada en el código cambió.
+
+Se cerró con una alarma —el cron avisa por WhatsApp si algo vence con la purga
+apagada—, que es lo correcto, pero conviene no maquillarlo: **la alarma es deuda
+medida, no solución.** La solución de verdad está en «E», más abajo.
+
+## El inventario, en `AUDITORIA-TEXTOS-PUBLICOS.md` §5.c
+
+Siete afirmaciones caducan en **fecha conocida** —y solo tres están vigiladas—;
+seis grupos caducan **sin fecha**, por un hecho ajeno; tres **se enfrían** sin
+volverse falsas; cuatro sitios **parecen** caducar y no caducan porque la cifra
+se deriva en cada renderizado.
+
+Las cuatro sin vigilancia y con fecha, para que no se pierdan aquí:
+
+| | caduca |
+|---|---|
+| el **0,27 %** de derechos notariales del glosario, y su ejemplo en pesos | 2027-01-01 |
+| el **1 %** de impuesto de registro | 2027-01-01 |
+| el **1 %** del tributo departamental | 2027-01-01 |
+| los «**421 años** de La Vega» — título, tags, cuerpo **y el slug de la URL** | 2027-06-12 |
+
+⚠ **Y la ironía que hay que leer dos veces:** la calculadora notarial existe
+**precisamente porque esas tarifas cambian cada año**. El módulo entero está
+construido sobre «ninguna cifra sin su resolución y su vigencia» —con tabla de
+respaldos, dominios autorizados y fechas de vigencia— y a treinta metros de ahí
+el glosario publica un 0,27 % como si fuera una constante de la física.
+
+> **El rigor no se contagia entre módulos.** Haber construido la maquinaria de
+> la vigencia no protege al texto que está al lado y no la usa.
+
+## Tres distinciones que el inventario obligó a hacer
+
+1. **Caducar no es enfriarse.** «Última actualización: agosto de 2026» no se
+   vuelve falsa nunca —era cierta al escribirse—; lo que cambia es **lo que
+   comunica**: leída en 2028 dice «nadie ha mirado esto en dos años». *Una
+   afirmación que caduca necesita una guarda; una que se enfría necesita una
+   revisión.* Confundirlas pone alarmas donde hacía falta un calendario.
+2. **Lo derivado no caduca.** «Hoy hay N municipios con página» es cierto **por
+   construcción**. Es «lo que se puede derivar no se escribe» haciendo su
+   trabajo, visto desde el otro lado.
+3. **Hay caducidades cuya fecha no se puede calcular.** `aniosOperacion: 8`
+   caduca cuando la empresa cumpla nueve, en 2027, y **el día exacto no se puede
+   saber con el dato que tenemos**: solo está registrado el AÑO de fundación.
+   Para vigilarla primero hay que capturar un dato que no existe.
+
+## E. La solución buena ya está escrita en el proyecto, una vez
+
+`src/components/eventos/EventoPopup.tsx` —la ventana del evento de los 421
+años— es la **única** afirmación con caducidad que **lleva su caducidad
+consigo**: ventana declarada con offset de Colombia, y si la fecha pasó **el
+componente no se monta**. Nadie tiene que acordarse de retirarla y no necesita
+guarda.
+
+> **La mejor guarda contra una afirmación que caduca es que la afirmación sepa
+> cuándo caduca.** Es el primer nivel de la jerarquía —que no pueda ocurrir—
+> aplicado al tiempo: en vez de vigilar que alguien actualice la frase, **la
+> frase se retira sola**.
+
+Y el segundo nivel, cuando la frase tiene que seguir ahí: el literal con guarda,
+como `ANIO_FAQ`. Lo que no vale es el literal a secas, que es lo que son hoy el
+0,27 % y los 421 años.
+
+## El corolario que me tocó
+
+El párrafo que caduca en junio de 2027 **lo escribí yo**, no estaba en ninguna
+lista de correcciones. Y el párrafo incompleto de Anthropic —el que nombraba a
+un destinatario y se detuvo— también.
+
+> **Un párrafo que uno añade por iniciativa propia no viene revisado por
+> nadie.** El titular pidió corregir tres frases falsas; la cuarta la escribí
+> yo, y fue la incompleta. La quinta también la escribí yo, y fue la que caduca.
+> Las correcciones pedidas pasan por dos pares de ojos; **las añadidas de oficio,
+> por uno**, y es el del que ya demostró que se le escapan cosas.
+
 # LA SEGUNDA FORMA DE ESCONDERSE DICIENDO LA VERDAD
 
 2026-10-19. Hay ya **dos** maneras de que una afirmación verdadera deje intacta

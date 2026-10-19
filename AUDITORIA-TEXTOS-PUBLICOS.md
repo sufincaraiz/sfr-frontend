@@ -299,6 +299,101 @@ Así que la frase del §2 se queda tal cual: **es cierta**. Lo que queda anotado
 es que las tipografías y los CDN **transmiten la IP** a un tercero sin poner
 cookies, que es otra cosa y no es lo que ese numeral promete.
 
+## 5.c · INVENTARIO DE AFIRMACIONES CON FECHA DE CADUCIDAD
+
+2026-10-19. Categoría nueva, y el punto ciego es estructural:
+
+> **Todas nuestras guardas comparan el texto con el estado de HOY, y hoy
+> coinciden.** Una frase que deja de ser cierta **por el mero paso del tiempo**
+> no la ve ninguna, porque en el momento de comprobarla todavía es verdad.
+
+Esto es un inventario con fechas. **No se arregló nada.** Y la forma de
+arreglarlo ya existe y está probada —`verificar-anio-faq.mjs` rompe el build en
+cuanto el año citado se queda atrás—: lo que falta no es el mecanismo, es la
+lista.
+
+### A. Caducan en una FECHA CONOCIDA
+
+| afirmación | dónde | caduca | ¿vigilada? |
+|---|---|---|---|
+| `ANIO_FAQ = 2026`, el año citado en las FAQ de la portada | `src/lib/faq-data.ts:16` | **2027-01-01** | **SÍ** — `verificar-anio-faq.mjs` rompe el build |
+| «**0,27 %** de derechos notariales» y su ejemplo «$1.350.000 por cada parte» | `glosario-data.ts:106` | **2027-01-01** — la tarifa la fija una resolución ANUAL de la SNR | **NO** |
+| «impuesto del **1 %**» sobre el valor de la escritura | `glosario-data.ts:85` | **2027-01-01** — ordenanza departamental, se revisa cada año | **NO** |
+| «tributo departamental del **1 %**» que se paga a la Gobernación | `glosario-data.ts:95` | idéntico | **NO** |
+| «**421 años** de La Vega» — título, excerpt, tags, `cover_alt`, cuerpo **y el slug de la URL** | `content/blog/421-anos-la-vega-cundinamarca.mdx` | **2027-06-12** (pasa a 422) | **NO** |
+| «Ningún dato se trata **hoy** por este medio» (enlace del contador) | política §4 | el día que se construya el enlace | **SÍ** — `verificar-enlace-contador.mjs`, en las dos direcciones |
+| «el texto se elimina a los 12 meses» | política §2 | **2027-06-11**: ese día la promesa pasa de gratis a tener consecuencias | **SÍ** — alarma en el cron si vence con la purga apagada |
+
+⚠ **Las tres cifras normativas del glosario son el caso grave**, y por una
+razón irónica: **la calculadora notarial existe precisamente porque esas
+tarifas cambian cada año.** El módulo entero está construido sobre «ninguna
+cifra sin su resolución y su vigencia», y a treinta metros de ahí el glosario
+publica un 0,27 % como si fuera una constante de la física. El ejemplo con
+cifras («$500 millones → $1.350.000») lo empeora: una cifra derivada de otra
+caduca, escrita a mano al lado de la que caduca.
+
+### B. Caducan SIN FECHA — depende de un hecho ajeno
+
+| afirmación | dónde | qué la haría caducar |
+|---|---|---|
+| `aniosOperacion: 8` — publicado como «**8** años en el territorio» y en `llms.txt` | `datos-oficiales.ts:24`, `StatsSection.tsx:21` | **cumplir el 9.º, en 2027.** ⚠ Y el día exacto **no se puede calcular con el dato que tenemos**: solo está registrado el AÑO de fundación (2018), no la fecha |
+| «calificación **5,0** con **38** opiniones» | `cifras-publicas` (fuente viva) + respaldo en `datos-oficiales.ts` | que alguien deje una reseña. Se edita desde el panel, así que **ninguna guarda del build la ve** |
+| «**Actualmente** Colombia adelanta el Catastro Multipropósito» | `glosario-data.ts:220` | que el programa termine o cambie de nombre |
+| «certificado con máximo **30 días** de expedición», «cadena de **20 años**», «**3 a 10 días hábiles**», «arras del **10 %**», «hasta el **50 %** de plusvalía» | `glosario-data.ts` | cambio normativo o de práctica. Riesgo bajo, pero **sin fecha de revisión ninguna de las cinco** |
+| «entre el **40 %** y el **70 %** del valor comercial» (avalúo catastral) | `glosario-data.ts:117` | una actualización catastral. Es una estimación, no una tarifa |
+| «**12** municipios del Gualivá» | `datos-oficiales.ts:44` | una ordenanza de división territorial. Constante geográfica: riesgo mínimo, pero no es eterna |
+
+### C. No caducan: **se enfrían** — y es otra cosa
+
+Una fecha de corte no se vuelve falsa nunca: era cierta cuando se escribió y lo
+sigue siendo. Lo que cambia es **lo que comunica**.
+
+| | dónde | qué dice al pasar el tiempo |
+|---|---|---|
+| «Última actualización: 13 de agosto de 2026» | `/mac`, `/preguntas-frecuentes` | leído en 2028: «nadie ha mirado esto en dos años» |
+| `fechaCorteReputacion: '2026-08'`, `actualizado: '2026-08-10'` | `datos-oficiales.ts` | la cifra es cierta **a esa fecha**, y cada mes vale menos |
+| `featured: true` en el artículo de los 421 años | el `.mdx` | un post conmemorativo destacado **como actual**. El «Hoy, 12 de junio» del cuerpo está anclado por la fecha del artículo; destacarlo en 2027 es lo que lo vuelve falso |
+
+> Y la distinción importa para el arreglo: **una afirmación que caduca necesita
+> una guarda; una que se enfría necesita una revisión.** Confundirlas lleva a
+> poner alarmas donde hacía falta un calendario.
+
+### D. Lo que NO caduca aunque lo parezca — y por qué
+
+«**Hoy** hay N municipios con página» (`/nosotros`), «N propiedades publicadas
+**hoy**» (`/preguntas-frecuentes`, `faq-municipios`, `faq-veredas`): el «hoy» es
+cierto **por construcción**, porque la cifra se deriva en cada renderizado. Es
+la regla «lo que se puede derivar no se escribe» haciendo su trabajo.
+
+### E. El ejemplo bien hecho, que es el modelo a copiar
+
+`src/components/eventos/EventoPopup.tsx` es la **única** afirmación con fecha de
+caducidad del proyecto que **lleva su caducidad consigo**:
+
+```ts
+const START = new Date('2026-06-12T00:00:00-05:00').getTime();
+const END   = new Date('2026-06-16T00:00:00-05:00').getTime();
+if (now < START || now >= END) return;   // fuera de fechas → no se monta
+```
+
+Ventana declarada, a prueba de zona horaria, y **se retira sola**. Nadie tiene
+que acordarse de quitarla; no hay guarda que la vigile porque no la necesita.
+
+> **La mejor guarda contra una afirmación que caduca es que la afirmación sepa
+> cuándo caduca.** Es el primer nivel de la jerarquía —que no pueda ocurrir—
+> aplicado al tiempo: en vez de vigilar que alguien actualice la frase, la frase
+> desaparece sola.
+
+### Las cifras
+
+| | |
+|---|---|
+| afirmaciones que caducan en fecha conocida | **7** · 3 vigiladas, **4 no** |
+| caducan sin fecha, por un hecho ajeno | **6 grupos** · ninguna vigilada |
+| se enfrían (no caducan) | **3** |
+| parecen caducar y no caducan, por derivadas | 4 sitios |
+| llevan su propia caducidad en el código | **1** |
+
 ## 6 · Las deudas al tablero — anotadas, no construidas
 
 2026-10-19, por decisión del titular: **se anotan y no se hacen**.
