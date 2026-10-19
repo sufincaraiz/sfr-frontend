@@ -2111,6 +2111,37 @@ check('un byte distinto da una huella distinta',
   hashDeBytes(Buffer.from('%PDF-1.4\r\nlinea tres\r\n', 'latin1')) !== HUELLA_EXTERNA)
 
 /* ──────────────────────────────────────────────────────────────────────────
+ * UNA GUARDA QUE LLEGA CON EL DATO YA FALSEADO
+ *
+ * `exigirVigencia` pasa en silencio ante una lista VACÍA —y debe, porque «sin
+ * ningún respaldo» lo detiene otra guarda—. Pero los cuatro llamadores
+ * escribían `anio.respaldos ?? []`, y `respaldos` es OPCIONAL en el tipo: una
+ * consulta que olvide incluirlos devuelve `undefined`, el `??` lo convierte en
+ * «ninguno», y la comprobación de vigencias no comprueba nada mientras
+ * aparenta funcionar. Se liquidaría con tarifas vencidas.
+ *
+ * La integridad de una guarda depende de lo que le LLEGA, no solo de lo que
+ * hace. */
+{
+  const DENTRO = [{ campo: 'tarifa', norma: 'R-1', vigencia_desde: '2026-01-01', vigencia_hasta: null }]
+  const VENCIDO = [{ campo: 'tarifa', norma: 'R-0', vigencia_desde: '2025-01-01', vigencia_hasta: '2025-12-31' }]
+
+  check('una lista VACÍA de respaldos pasa: «sin ninguno» lo detiene otra guarda',
+    (() => { try { exigirVigencia([], '2026-06-15'); return true } catch { return false } })())
+  check('un respaldo vigente pasa',
+    (() => { try { exigirVigencia(DENTRO, '2026-06-15'); return true } catch { return false } })())
+  check('un respaldo vencido DETIENE',
+    (() => { try { exigirVigencia(VENCIDO, '2026-06-15'); return false } catch { return true } })())
+  check('y `undefined` —la lista que no se cargó— también DETIENE, en vez de pasar',
+    (() => { try { exigirVigencia(undefined, '2026-06-15'); return false } catch { return true } })())
+  check('…y el mensaje distingue «no hay» de «no me los trajeron»',
+    (() => {
+      try { exigirVigencia(undefined, '2026-06-15'); return false }
+      catch (e) { return /no se carg/.test(e.message) && /lista vac/.test(e.message) }
+    })())
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
  * «TE TOCA Y PUEDES YA» FRENTE A «TE TOCA PERO FALTA LA PANTALLA»
  *
  * El panel decía «29 esperan la resolución oficial — tú, con la resolución».

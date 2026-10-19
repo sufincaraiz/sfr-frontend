@@ -617,11 +617,46 @@ tres.
 |---|---|
 | `activo: d.activo ?? true` (`api/admin/mac`) | una entrada de conocimiento nace **ACTIVA**: entra al prompt de Mac sin que nadie la publique |
 | `oculto: d.oculto ?? false` (municipios, tipos de propiedad) | nacen **visibles** |
-| `domicilios: d.domicilios ?? false` (directorio) | se publica «no hace domicilios» de un negocio ajeno que no lo dijo |
+| `domicilios: d.domicilios ?? false` (directorio) | **nada.** Ver la corrección de abajo: el distintivo solo se pinta con `true` |
 | `status: 'available'` al crear una propiedad | ver §5.d: nace publicable. **Va con el lote del editor** |
 
 > Los cuatro comparten la dirección: **el valor por defecto publica.** Ninguno
 > es una afirmación que alguien hizo; los cuatro son afirmaciones que nadie hizo.
+
+#### ⚠ CORRECCIÓN: lo que escribí sobre `domicilios` no se sostiene
+
+En la primera versión de este § escribí que `domicilios ?? false` **publica «no
+hace domicilios» sobre el negocio de un tercero que nunca lo dijo**, y el
+titular —con razón, SI eso fuera cierto— lo subió de categoría: afirmar algo
+falso sobre alguien que no puede corregirlo no es un valor por defecto
+desafortunado.
+
+Fui a medirlo y **la premisa era mía y es falsa**:
+
+```tsx
+// DirectorioClient.tsx:112
+{b.domicilios && (
+  <span>🛵 Domicilios Disponibles</span>
+)}
+```
+
+El distintivo **solo se pinta cuando es `true`**. Con `false` el sitio no dice
+nada: **omite una afirmación positiva en vez de publicar una negativa.** Y no
+aparece en el marcado: cero referencias en `JsonLd.tsx`.
+
+Medido igualmente, porque la cifra se pedía: **9 negocios en el directorio, 6
+con `true` y 3 con `false`.** De esos 3 no se publica nada.
+
+> Es exactamente el patrón **correcto**, el mismo que acabo de aplicarle a
+> `bedrooms`. Lo clasifiqué con los otros tres porque **supuse** la
+> renderización a partir del valor por defecto, en vez de abrir el componente.
+> Es el punto ciego del inventario otra vez: una fila de una tabla puede ser
+> falsa aunque el dato que la originó sea cierto.
+
+**No va al lote del editor.** Lo único que queda es de otra naturaleza y no
+tiene arreglo en código: esos 3 negocios **podrían** hacer domicilios y nunca se
+les preguntó, así que el directorio **sub-anuncia** un servicio ajeno. Se
+arregla preguntando, no programando.
 
 ### La regla operativa, que es lo que vale
 
@@ -633,6 +668,73 @@ Prueba de que la regla es necesaria: el defecto del RUT estaba **a una línea**
 de la regla que lo prohibía y **a dos funciones** de la solución ya
 implementada, en el mismo archivo. Y el `?? false` del reporte estaba **en otro
 archivo**, llamando a esa misma solución para anularla.
+
+## 5.f · ¿QUÉ GUARDA LLEGA CON EL DATO YA FALSEADO? — BARRIDO MECÁNICO
+
+2026-10-19. De los cinco casos de «la regla y su incumplimiento», este es **el
+único que se puede buscar a máquina**, y por eso se buscó a máquina:
+
+1. Qué funciones exportadas **lanzan** uno de los errores de guarda del
+   proyecto —`ParametroFiscalFaltante`, `ErrorEsquemaNotarial`,
+   `FueraDeVigencia`, `ErrorCustodia`, y las diez restantes—.
+2. Para cada una, **todos** sus llamadores, y si el argumento llega
+   **coercionado**: `??`, `||`, `Boolean(`, `Number(`, un default en la firma.
+
+| | |
+|---|---|
+| guardas (funciones exportadas que lanzan) | **61** |
+| llamadas que coercionan un argumento | **25** |
+| de ellas, que **falsean la decisión** de la guarda | **2** |
+| arregladas | **2** |
+| coerciones benignas, con su razón | 23 |
+
+> **Una guarda desarmada en el llamador no se ve leyendo la guarda** —y leyendo
+> la guarda es donde todo el mundo mira—. Por eso este barrido no se podía
+> hacer «revisando las guardas»: hay que recorrerlo al revés.
+
+### Las dos que falseaban
+
+**1. `exigirVigencia(anio.respaldos ?? [], fechaActo)`** — y sus otros tres
+llamadores idénticos. `respaldos` es **opcional en el tipo**, así que:
+
+```ts
+export function exigirVigencia(respaldos: Respaldo[], fecha: string): void {
+  const fuera = respaldos.filter(r => !cubreLaFecha(r, fecha))
+  if (!fuera.length) return      // ← una lista vacía no tiene nada vencido
+```
+
+Una consulta que olvide incluir los respaldos devuelve `undefined`, el `?? []`
+lo convierte en «ninguno», y la comprobación de vigencias **pasa en silencio
+mientras aparenta funcionar**. Se liquidaría con **tarifas vencidas** y ninguna
+guarda chistaría.
+
+Y la vía es distinta a la del `?? false`: ahí la falseaba un valor por defecto,
+aquí la falsea **un `select` incompleto**. Arreglado distinguiendo los dos
+estados —`[]` es legítimo y pasa; `undefined` **detiene** con un mensaje que
+dice la diferencia—, con 5 verificaciones (562 notariales) y una mutación (20).
+
+**2. El `?? false` de `gastosPorCategoria`**, arreglado en el lote anterior
+(§5.e.A). Es el que puso la pregunta.
+
+### Las 23 benignas, y por qué lo son — que es la mitad útil del barrido
+
+| forma | ejemplo | por qué no falsea |
+|---|---|---|
+| cadena vacía que la guarda rechaza | `crearTerceroRapido(String(body.nombre ?? ''), rol)` | `''` hace que la guarda **sí** salte («demasiado corto»). La coerción alimenta la guarda, no la desarma |
+| `?? null` que **conserva** el desconocido | `exigirUnidadCoherente(leido.unidad, t.unidad ?? null, …)` | `null` es el estado que esa guarda sabe leer —«el silencio no es contradicción»— |
+| coerción **dentro** de una rama que ya comprobó el dato | `pesos(t.aporte_snr ?? 0, …)` dentro de `if (tieneAportes)` | al menos uno de los dos existe, y el `0` del otro hace que la suma **no cuadre** y la guarda salte. Declarar un aporte y no el otro queda cazado |
+| colección vacía que la guarda interpreta | `exigirContextoConocido(entrada.contexto ?? {})` | un contexto vacío es un caso válido; lo que detiene es una **clave desconocida** |
+
+### Y dos formas que el barrido encontró y NO son `??`
+
+| | dónde | qué hace |
+|---|---|---|
+| **el `!` de TypeScript** | `calcularRetencion(…, base!.valor, …)` (`notariales/calculo.ts:330`) | `base` es `null` cuando el concepto tiene `base: 'NINGUNA'` o `'UNIDADES'`. El `!` **silencia la comprobación del compilador**, así que un concepto mal configurado da un `TypeError` en vez de un `ErrorEsquemaNotarial` con su mensaje. No elige cifra: **degrada el diagnóstico a un cuelgue**. Va con el lote del editor, que toca ese archivo |
+| **la identidad por defecto** | `activarAnio(prisma, anio, s.email ?? 'admin')`, y 3 llamadas más | si la sesión no trae correo, la **firma** de quien activó un año tarifario o verificó un respaldo queda como `'admin'`. No falsea una cifra: **falsea la trazabilidad**, que es el único dato que no se puede recalcular después. Anotado |
+
+> El `!` merece su propia línea en la lista de formas de desarmar una guarda:
+> **las demás falsean el dato; esa falsea la comprobación de que el dato
+> existe.**
 
 ## 6 · Las deudas al tablero — anotadas, no construidas
 

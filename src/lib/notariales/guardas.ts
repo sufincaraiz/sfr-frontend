@@ -63,7 +63,33 @@ export function cubreLaFecha(r: Respaldo, fecha: string): boolean {
  * Detiene la liquidación si alguna norma en juego no regía el día del acto, y
  * las nombra TODAS: ver solo la primera haría creer que falta una sola cosa.
  */
-export function exigirVigencia(respaldos: Respaldo[], fecha: string): void {
+export function exigirVigencia(respaldos: Respaldo[] | undefined, fecha: string): void {
+  /* ⚠ «NO HAY NINGUNO» Y «NO ME LOS TRAJERON» NO SON LO MISMO, y hasta el
+   * 2026-10-19 los cuatro llamadores escribían `anio.respaldos ?? []`.
+   *
+   * `respaldos` es OPCIONAL en el tipo, así que una consulta que olvide
+   * incluirlos devuelve `undefined` —no `[]`—, el `?? []` lo convierte en
+   * «ninguno», y esta función **pasa en silencio**: una lista vacía no tiene
+   * nada fuera de vigencia. Resultado: se liquidaría con tarifas vencidas sin
+   * que ninguna guarda chistara, y la guarda estaría «funcionando».
+   *
+   * Es el mismo patrón que el `?? false` de `gastosPorCategoria` —una guarda
+   * desarmada por su llamador— pero por una vía distinta: ahí la falseaba un
+   * valor por defecto, aquí la falsea un `select` incompleto. La integridad de
+   * una guarda depende de lo que le llega, no solo de lo que hace.
+   *
+   * Que un año o un concepto no tenga NINGÚN respaldo lo detiene otra guarda
+   * —`pendientesParaActivar` no deja activar sin respaldo por cifra—, así que
+   * `[]` sigue siendo un caso legítimo y pasa. Lo que no puede pasar es
+   * `undefined`. */
+  if (respaldos === undefined) {
+    throw new ErrorEsquemaNotarial(
+      'No se pudieron comprobar las vigencias: la lista de respaldos no se cargó. ' +
+      'Esto no es «no hay respaldos» —eso sería una lista vacía—: es que la consulta ' +
+      'no los trajo, y sin ellos esta comprobación no puede afirmar nada.',
+      'respaldos',
+    )
+  }
   const fuera = respaldos.filter(r => !cubreLaFecha(r, fecha))
   if (!fuera.length) return
   throw new FueraDeVigencia(fecha, fuera.map(r => ({

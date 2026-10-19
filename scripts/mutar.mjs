@@ -64,6 +64,14 @@ const LOS_DOS = `${H_NOTARIAL} && ${H_FINANZAS}`
  * una mutación sobrevive, lo que se cae es esa frase.
  */
 const MUTACIONES = [
+  {
+    nombre: 'vigencias: la lista que no se cargo vuelve a contar como «ninguna»',
+    porque: 'un `select` incompleto desarmaria la comprobacion de vigencias y se liquidaria con tarifas vencidas.',
+    archivo: 'src/lib/notariales/guardas.ts',
+    de: '  if (respaldos === undefined) {',
+    a: '  if (false) {',
+    comando: H_NOTARIAL,
+  },
   /* ── LAS BANDERAS DEL RUT: TRES ESTADOS ────────────────────────────────────
    * Si cualquiera de las dos puertas vuelve a tratar `null` como `false`, un
    * tercero sin RUT capturado vuelve a elegir tarifa de retención solo. */

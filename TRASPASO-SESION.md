@@ -3172,6 +3172,111 @@ error PLAUSIBLE.** Hoy las catorce son errores que alguien podría cometer de
 verdad —porque se escribieron a mano pensando en eso—, pero no hay nada que lo
 exija ni que lo mida.
 
+# UNA GUARDA DESARMADA POR SU LLAMADOR
+
+Esto **no** es un caso de «la lección estaba cerca y no viajó», y por eso va
+aparte de los cuatro de distancia. Aquí:
+
+> El principio **estaba escrito**, era **correcto**, **se ejecutaba** —y el
+> llamador lo desarmaba.
+
+```ts
+// costoEgreso: escrita para detenerse
+if (vacio(responsableIva)) throw new ParametroFiscalFaltante(
+  'No se ha decidido si el año es responsable de IVA…')
+
+// gastosPorCategoria, una línea antes de entregárselo
+gastoDeResultado({ …f }, responsableIva ?? false)
+```
+
+## La consecuencia práctica
+
+> **La integridad de una guarda depende de lo que le LLEGA, no solo de lo que
+> hace.** Una guarda perfecta sobre un dato ya falseado no comprueba nada, y
+> además **parece estar comprobando**: su código se lee bien, sus pruebas pasan,
+> su mensaje existe. Lo único que falta es que alguna vez se dispare.
+
+## Lo que la distingue de «una guarda que nadie llama»
+
+Son parientes y se encuentran de maneras **opuestas**:
+
+| | cómo se encuentra |
+|---|---|
+| una guarda que **nadie llama** | **leyendo el código de la guarda** —o buscando sus referencias—: está ahi y no aparece en ningún sitio |
+| una guarda **desarmada por su llamador** | **solo leyendo a quien la llama.** Desde la guarda no se ve nada raro: recibe un `boolean` perfectamente válido |
+
+Y ese asimétrico es lo que la hace peligrosa: **leyendo la guarda es donde todo
+el mundo mira.**
+
+## Por eso se buscó al revés, y a máquina
+
+Es el único de los cinco casos que se puede buscar mecánicamente: qué funciones
+lanzan un error de guarda, y de ahí a **todos** sus llamadores, mirando si el
+argumento llega con `??`, `||`, `Boolean(`, `Number(` o un default.
+
+**61 guardas · 25 llamadas coercionan · 2 falseaban la decisión.** Detalle en
+`AUDITORIA-TEXTOS-PUBLICOS.md` §5.f.
+
+La segunda es la que vale como ejemplo, porque falsea **por otra vía**:
+`exigirVigencia(anio.respaldos ?? [], fechaActo)`. Una lista vacía pasa —y
+debe—; pero `respaldos` es **opcional en el tipo**, así que un `select` que no
+los incluya devuelve `undefined`, el `??` lo vuelve «ninguno» y **la
+comprobación de vigencias deja de comprobar mientras aparenta funcionar**: se
+liquidaría con tarifas vencidas.
+
+> **La misma guarda, desarmada por un valor por defecto en un caso y por una
+> consulta incompleta en el otro.** Lo que las une no es el `??`: es que el dato
+> llega transformado y la guarda no puede saberlo.
+
+Arreglada distinguiendo los dos estados: `[]` pasa, `undefined` **detiene** con
+un mensaje que dice la diferencia —«esto no es "no hay respaldos" —eso sería
+una lista vacía—: es que la consulta no los trajo»—.
+
+## Y dos formas de desarmar que no son `??`
+
+**El `!` de TypeScript** merece su propia línea: `calcularRetencion(…, base!.valor)`.
+
+> Las demás formas **falsean el dato**; el `!` **falsea la comprobación de que
+> el dato existe**. No convence a la guarda: convence al compilador de que no
+> hace falta preguntar.
+
+Y **la identidad por defecto**: `s.email ?? 'admin'` en las cuatro llamadas que
+firman un acto —activar un año tarifario, verificar un respaldo—. No falsea una
+cifra: falsea la **trazabilidad**, que es el único dato del sistema que **no se
+puede recalcular después**.
+
+# HACER VISIBLE UN VALOR SILENCIOSO, COMO TÉCNICA
+
+No es una anécdota de cómo apareció un defecto: es una técnica repetible, y
+conviene usarla a propósito.
+
+> **Cuando algo se resuelva solo y en silencio, hazlo visible aunque no haga
+> falta, y mira a dónde va.**
+
+El caso que la produjo: la captura de un gasto no tenía campo de fecha y el
+servidor la resolvía como «hoy». Prerrellenar la casilla era **ergonomía**, no
+una búsqueda de defectos. Pero para prerrellenarla hubo que **meter `fecha` en
+el cuerpo de la petición**, y para eso hubo que mirar qué más manda ese cuerpo
+—y lo que manda es también **lo que se encola sin conexión**—.
+
+Ahí estaba el defecto: un gasto capturado el **31 de diciembre** y sincronizado
+el **1 de enero** se fechaba en enero. **Cambio de año fiscal.**
+
+Por qué funciona, que es lo que la hace repetible:
+
+1. **Un valor silencioso no tiene llamadores visibles.** No se puede seguir lo
+   que no se pasa: el `?? hoy` del servidor era el final de un camino que no
+   empezaba en ninguna parte.
+2. **Hacerlo explícito le crea un camino**, y un camino se recorre. El dato pasa
+   a tener origen, tránsito y destino, y cada tramo se puede mirar.
+3. **Y obliga a decidir qué pasa en los bordes** —sin conexión, en cola, al
+   reintentar—, que es donde vivía el defecto.
+
+Es la pariente de «el primer estado no es un extremo»: aquella pregunta por el
+**origen** del dato, esta por su **recorrido**. Y las dos encuentran cosas que
+ningún barrido de patrones encuentra, porque lo que buscan no tiene forma
+léxica.
+
 # LA DISTANCIA QUE SE ENCOGE
 
 Cuatro veces ha pasado lo mismo: **una regla escrita y su incumplimiento cerca.**

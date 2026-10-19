@@ -219,7 +219,7 @@ export function liquidar(
     : exigirFechaIso(entrada.fecha_acto, 'la fecha del acto')
   // Los respaldos del AÑO (UVT, UVB, tarifa de IVA, su redondeo y las cinco
   // bases) entran siempre: no hay liquidación que no los use.
-  exigirVigencia(anio.respaldos ?? [], fechaActo)
+  exigirVigencia(anio.respaldos, fechaActo)
 
   const tarifaIva = tasa(anio.tarifa_iva, 'la tarifa de IVA')
   const uvt = anio.uvt === null || anio.uvt === undefined ? null : Number(anio.uvt)
@@ -237,7 +237,7 @@ export function liquidar(
   for (const c of participantes(anio, entrada, modo)) {
     // Solo los conceptos que PARTICIPAN: una tarifa opcional y apagada cuya
     // norma empieza más tarde no tiene por qué detener esta liquidación.
-    exigirVigencia(c.respaldos ?? [], fechaActo)
+    exigirVigencia(c.respaldos, fechaActo)
     // ── Base ────────────────────────────────────────────────────────────────
     let base: Linea['base'] = null
     if (c.base === 'TARIFA_REGISTRAL') {
@@ -321,7 +321,7 @@ export function liquidar(
       case 'REGLAS': {
         // Las reglas activas se evalúan todas, así que todas tienen que regir.
         for (const regla of anio.reglas_retencion) {
-          if (regla.activa) exigirVigencia(regla.respaldos ?? [], fechaActo)
+          if (regla.activa) exigirVigencia(regla.respaldos, fechaActo)
         }
         // Lo que llega de fuera se comprueba ANTES de mezclarse: una clave
         // desconocida detiene, y un campo que el motor deriva no se admite.
