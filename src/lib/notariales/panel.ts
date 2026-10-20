@@ -567,7 +567,19 @@ export async function anioParaPantalla(
     cotejo,
     aviso_uvt: divergenciaUvt(cargado.uvt, uvtFiscal),
     criterios_adoptados: CRITERIOS_ADOPTADOS,
-    /* LA FIRMA VIAJA CLASIFICADA, no cruda. Hoy hay 8 fuentes: 7 con
+    /* ⚠ SIETE DE OCHO FUENTES NO LAS HA VERIFICADO NINGUNA PERSONA.
+     *
+     * Medido el 2026-10-19: 8 fuentes normativas, 7 con `agregada_por:
+     * "precarga"` —las puso la siembra— y 1 con `"titular"`. Las dos cosas son
+     * ciertas y **ninguna de las dos es una persona identificable**.
+     *
+     * Ese número importa ahora y no antes porque **se va a ver al cargar las
+     * cifras**: cada respaldo elige una autoridad de esta lista, y si siete de
+     * las ocho no las verificó nadie, lo que respalda una tarifa es una fila
+     * que nadie firmó. El panel ya lo distingue —era lo que faltaba—; lo que
+     * no se puede perder es la cifra.
+     *
+     * LA FIRMA VIAJA CLASIFICADA, no cruda. Hoy hay 8 fuentes: 7 con
      * `agregada_por: "precarga"` —las puso la siembra— y 1 con `"titular"`.
      * Las dos cosas son ciertas y **ninguna de las dos es una persona
      * identificable**, que es lo que la pantalla no podía distinguir: el campo

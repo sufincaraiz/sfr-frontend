@@ -40,6 +40,7 @@ const N = 'src/lib/notariales/'
 const F = 'src/lib/finanzas/'
 const ARNES_N = 'scripts/probar-notariales.mjs'
 const ARNES_F = 'scripts/probar-finanzas.mjs'
+const ARNES_E = 'scripts/probar-editor-tramos.mjs'
 
 const DECISIONES = [
   /* ── notariales/tramos.ts ─────────────────────────────────────────────── */
@@ -269,7 +270,7 @@ const DECISIONES = [
     mutacion: null,
     prueba: '1 feb 19:30 de Colombia es el 1 de febrero, no el 2', arnes: 'scripts/probar-fechas.mjs' },
   { archivo: `${N}calculo.ts`, grado: 'CRITICA', decide: 'el valor derivado gana al contexto del cliente',
-    ancla: '{ ...(entrada.contexto ?? {}), ...(uvt ? { valor_en_uvt: base!.valor / uvt } : {}) },',
+    ancla: '{ ...(entrada.contexto ?? {}), ...(uvt ? { valor_en_uvt: base.valor / uvt } : {}) },',
     invertida: 'el orden al reves deja que quien pregunta pise un valor que el motor deriva, ' +
       'y basta con que una regla por umbral se convierta en una fila para que importe',
     mutacion: null,
@@ -385,13 +386,34 @@ const EXTREMOS = [
     prueba: 'un valor de venta en cero', arnes: ARNES_N },
   { caso: 'base igual a cero contra la tabla de tramos',
     prueba: 'una base de 0 no cae en ningún tramo', arnes: ARNES_N },
-  { caso: 'tabla con UN SOLO tramo', prueba: null, arnes: ARNES_N },
-  { caso: 'lista de tramos vacía', prueba: null, arnes: ARNES_N },
-  { caso: 'lista de aportes de IVA vacía', prueba: null, arnes: ARNES_N },
-  { caso: 'reparto 50/50 con IVA en empate exacto', prueba: null, arnes: ARNES_N },
+  /* ⚠ ESTOS CUATRO DECÍAN `prueba: null` Y TRES YA ESTABAN PROBADOS.
+   *
+   * El 2026-10-20, al ir a escribir «los extremos que faltan», resultó que dos
+   * los cubría el arnés del editor desde el 19 y uno estaba probado en el
+   * notarial desde antes —«cero copias en vez de desactivar el concepto»—.
+   * Lo que estaba viejo era este inventario, no el código.
+   *
+   * Es la segunda vez que este archivo miente por omisión: la primera fueron
+   * las dos lecturas completas que no se subieron. **Un contador que alguien
+   * tiene que acordarse de subir no mide: recuerda.** */
+  { caso: 'tabla con UN SOLO tramo',
+    prueba: 'un solo tramo ABIERTO es una tabla completa y válida', arnes: ARNES_E },
+  { caso: 'lista de tramos vacía',
+    prueba: 'NO es un error: es coherente', arnes: ARNES_E },
+  { caso: 'lista de aportes de IVA vacía',
+    prueba: 'sin ningún aporte, el IVA liquidado es CERO y no lanza', arnes: ARNES_N },
+  { caso: 'reparto 50/50 con IVA en empate exacto',
+    prueba: 'en el empate, la cifra del COMPRADOR es la residual: 50 y 51', arnes: ARNES_N },
   { caso: 'base exactamente igual a la base mínima en UVT',
     prueba: 'base EXACTAMENTE igual al mínimo', arnes: ARNES_F },
-  { caso: 'cantidad capturada igual a cero en un concepto por cantidad', prueba: null, arnes: ARNES_N },
+  { caso: 'cantidad capturada igual a cero en un concepto por cantidad',
+    prueba: 'cero copias en vez de desactivar el concepto', arnes: ARNES_N },
+  /* Y dos que el editor añadió a la lista, porque son extremos de verdad y no
+   * estaban: el primer estado de una fila y la unidad de los límites. */
+  { caso: 'la casilla del límite en BLANCO — el primer estado de toda fila',
+    prueba: 'una casilla de límite en blanco NO cuenta como tramo abierto', arnes: ARNES_E },
+  { caso: 'tabla guardada con unidades de límite MEZCLADAS',
+    prueba: 'una tabla GUARDADA con unidades mezcladas se denuncia, no se adivina', arnes: ARNES_E },
 ]
 
 /* ── la comprobación ───────────────────────────────────────────────────────── */
@@ -565,6 +587,9 @@ console.log(`    lectura completa:      ${LECTURA_COMPLETA.length} archivos`)
 console.log(`    tocados sin leer:      ${TOCADOS_SIN_LECTURA.length}`)
 console.log(`    SIN lectura completa:  ${SIN_LECTURA_COMPLETA.length}, de los cuales ${vivos.length} están vivos y tocan dinero:`)
 for (const v of vivos) console.log(`       ${v.archivo.padEnd(34)} ${v.expuesto}`)
+console.log('    PENDIENTE CON CIFRA: de las 8 fuentes normativas, 7 son "precarga" y 1')
+console.log('    "titular" —medido el 2026-10-19—, asi que SIETE DE OCHO no las ha verificado')
+console.log('    ninguna persona. Se vera al cargar las 53 cifras: cada respaldo elige una.')
 console.log(`    La auditoria TERMINA con ${AUDITORIA_TERMINA_CON.length} archivos, lista cerrada:`)
 for (const a of AUDITORIA_TERMINA_CON) console.log(`       · ${a}`)
 console.log('    APLAZADOS A PROPOSITO el 2026-10-19: lo siguiente es construir el editor')

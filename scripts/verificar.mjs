@@ -52,6 +52,8 @@ const GUARDAS = {
       vigila: '19 casos: las frases retiradas de verdad y los falsos positivos' },
     { nombre: 'editor de tramos', guion: 'probar-editor-tramos.mjs',
       vigila: 'la forma donde el hueco y el solape no se pueden escribir, y los cinco extremos' },
+    { nombre: 'puerta del catalogo publico', guion: 'probar-publicable-propiedad.mjs',
+      vigila: 'que pasar a available exija precio, foto y descripcion, y que diga QUE falta' },
     { nombre: 'mutaciones', guion: 'mutar.mjs',
       vigila: 'que las 14 afirmaciones del motor sigan respaldadas por una mutacion real' },
     { nombre: 'enlace del contador', guion: 'verificar-enlace-contador.mjs',

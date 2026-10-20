@@ -23,6 +23,12 @@ const check = (q, bien, extra = '') => {
 }
 const titulo = t => console.log(`\n── ${t} ${'─'.repeat(Math.max(0, 62 - t.length))}`)
 
+/* LA FORMA DE LA TABLA, declarada una vez. `enUvt` es OBLIGATORIO desde el
+ * 2026-10-20: era un campo por fila con valor por defecto `false`, y leer en
+ * pesos una tabla en UVT desplaza la frontera unas 50.000 veces. */
+const PESOS = { enUvt: false, etiqueta: 'concepto' }
+const UVT = { enUvt: true, etiqueta: 'timbre' }
+
 const fila = (hasta, valor, extra = {}) =>
   ({ hasta, valor, unidad: 'PESOS', modo_calculo: 'FIJO', en_uvt: false, ...extra })
 
@@ -33,7 +39,7 @@ const mediasDe  = r => r.avisos.filter(a => a.severidad === 'INCOMPLETA')
 titulo('LO QUE YA NO SE PUEDE ESCRIBIR')
 
 {
-  const r = tramosDesdeFilas([fila(1_000_000, 30_900), fila(5_000_000, 50_000), fila(null, 80_000)])
+  const r = tramosDesdeFilas([fila(1_000_000, 30_900), fila(5_000_000, 50_000), fila(null, 80_000)], PESOS)
   check('tres filas dan tres tramos', r.tramos.length === 3)
   check('el primer `desde` es 0', r.tramos[0].desde === 0, `(${r.tramos[0].desde})`)
   check('`desde` del 2.º ES el `hasta` del 1.º, sin +1',
@@ -51,7 +57,7 @@ titulo('LO QUE YA NO SE PUEDE ESCRIBIR')
     bordes.every(Boolean))
   check('…y el caso de $100.000.000,50 cae en un tramo, no en el hueco',
     tramoQueAplica(
-      tramosDesdeFilas([fila(100_000_000, 10), fila(null, 20)]).tramos,
+      tramosDesdeFilas([fila(100_000_000, 10), fila(null, 20)], PESOS).tramos,
       100_000_000.5, null, 'x',
     )?.orden === 2)
 }
@@ -59,7 +65,7 @@ titulo('LO QUE YA NO SE PUEDE ESCRIBIR')
 {
   /* No hay campo `desde`, así que un `desde` torcido no se puede teclear. Lo
    * único que queda por comprobar es que el módulo no lo acepte por otra vía. */
-  const r = tramosDesdeFilas([fila(1000, 1, { desde: 999_999 }), fila(null, 2)])
+  const r = tramosDesdeFilas([fila(1000, 1, { desde: 999_999 }), fila(null, 2)], PESOS)
   check('un `desde` colado en la fila se IGNORA: manda el derivado',
     r.tramos[0].desde === 0 && r.tramos[1].desde === 1000)
 }
@@ -68,9 +74,9 @@ titulo('LO QUE YA NO SE PUEDE ESCRIBIR')
 titulo('EL ORDEN: insertar en medio no es una operación')
 
 {
-  const a = tramosDesdeFilas([fila(1000, 1), fila(5000, 2), fila(null, 3)])
-  const enMedio = tramosDesdeFilas([fila(1000, 1), fila(null, 3), fila(5000, 2)])
-  const alReves = tramosDesdeFilas([fila(null, 3), fila(5000, 2), fila(1000, 1)])
+  const a = tramosDesdeFilas([fila(1000, 1), fila(5000, 2), fila(null, 3)], PESOS)
+  const enMedio = tramosDesdeFilas([fila(1000, 1), fila(null, 3), fila(5000, 2)], PESOS)
+  const alReves = tramosDesdeFilas([fila(null, 3), fila(5000, 2), fila(1000, 1)], PESOS)
   const j = r => JSON.stringify(r.tramos)
   check('da igual en qué posición se inserte la fila: el resultado es el mismo',
     j(a) === j(enMedio) && j(a) === j(alReves))
@@ -82,7 +88,7 @@ titulo('EL ORDEN: insertar en medio no es una operación')
 titulo('EXTREMO 1 — la tabla VACÍA: no está rota, no ha empezado')
 
 {
-  const r = tramosDesdeFilas([])
+  const r = tramosDesdeFilas([], PESOS)
   check('no produce ningún tramo', r.tramos.length === 0)
   check('NO es un error: es coherente', r.coherente)
   check('…pero no es liquidable', !r.liquidable)
@@ -97,7 +103,7 @@ titulo('EXTREMO 1 — la tabla VACÍA: no está rota, no ha empezado')
 titulo('EXTREMO 2 — UN SOLO tramo')
 
 {
-  const abierto = tramosDesdeFilas([fila(null, 30_900)])
+  const abierto = tramosDesdeFilas([fila(null, 30_900)], PESOS)
   check('un solo tramo ABIERTO es una tabla completa y válida',
     abierto.coherente && abierto.liquidable && abierto.tramos.length === 1)
   check('…cubre desde 0 hasta el infinito',
@@ -106,7 +112,7 @@ titulo('EXTREMO 2 — UN SOLO tramo')
     evaluarTramos(abierto.tramos, 1, null, 'x', { modo: 'PUBLICADO' })
     === evaluarTramos(abierto.tramos, 9_999_999_999, null, 'x', { modo: 'PUBLICADO' }))
 
-  const cerrado = tramosDesdeFilas([fila(5_000_000, 30_900)])
+  const cerrado = tramosDesdeFilas([fila(5_000_000, 30_900)], PESOS)
   check('un solo tramo CERRADO es coherente pero INCOMPLETO',
     cerrado.coherente && !cerrado.liquidable)
   check('…y lo dice nombrando el límite por encima del cual no dice nada',
@@ -119,13 +125,13 @@ titulo('EXTREMO 2 — UN SOLO tramo')
 titulo('EXTREMO 3 — el tramo superior abierto')
 
 {
-  const dos = tramosDesdeFilas([fila(null, 1), fila(null, 2)])
+  const dos = tramosDesdeFilas([fila(null, 1), fila(null, 2)], PESOS)
   check('DOS tramos abiertos sí es una contradicción', !dos.coherente)
   check('…y no devuelve tabla: una tabla contradictoria no se entrega a medias',
     dos.tramos.length === 0)
   check('el tono es MAL', resumenParaPantalla(dos).tono === 'MAL')
 
-  const sinAbrir = tramosDesdeFilas([fila(1000, 1), fila(5000, 2)])
+  const sinAbrir = tramosDesdeFilas([fila(1000, 1), fila(5000, 2)], PESOS)
   check('ninguno abierto: coherente pero incompleto',
     sinAbrir.coherente && !sinAbrir.liquidable)
 }
@@ -135,16 +141,16 @@ titulo('EXTREMO 4 — borrar la ÚLTIMA fila')
 
 {
   const completa = [fila(1000, 1), fila(5000, 2), fila(null, 3)]
-  const tras = tramosDesdeFilas(completa.slice(0, -1))
+  const tras = tramosDesdeFilas(completa.slice(0, -1), PESOS)
   check('al borrar la fila abierta la tabla NO se rompe', tras.coherente)
   check('…pasa a estar a medias, que es la verdad', !tras.liquidable)
   check('…y el aviso dice qué falta, no que algo esté mal',
     erroresDe(tras).length === 0 &&
     /Falta el tramo abierto/.test(mediasDe(tras).map(a => a.mensaje).join()))
-  const trasDos = tramosDesdeFilas(completa.slice(0, 1))
+  const trasDos = tramosDesdeFilas(completa.slice(0, 1), PESOS)
   check('borrando dos filas sigue siendo «a medias», no «mal»',
     trasDos.coherente && !trasDos.liquidable)
-  const vacia = tramosDesdeFilas([])
+  const vacia = tramosDesdeFilas([], PESOS)
   check('borrando todas, vuelve al estado inicial', vacia.coherente && vacia.tramos.length === 0)
 }
 
@@ -152,7 +158,7 @@ titulo('EXTREMO 4 — borrar la ÚLTIMA fila')
 titulo('EXTREMO 5 — una fila recién añadida, sin valor')
 
 {
-  const r = tramosDesdeFilas([fila(1000, 30_900), filaNueva('FIJO', 'PESOS')])
+  const r = tramosDesdeFilas([fila(1000, 30_900), filaNueva('FIJO', 'PESOS')], PESOS)
   check('una fila sin valor NO es un error: es una fila recién añadida', r.coherente)
   check('…es «a medias» y señala la fila', mediasDe(r).some(a => a.fila === 1))
   check('…y el tono no es de alarma', resumenParaPantalla(r).tono === 'A_MEDIAS')
@@ -164,18 +170,18 @@ titulo('EXTREMO 5 — una fila recién añadida, sin valor')
 titulo('LO QUE SIGUE SIENDO POSIBLE Y SÍ ES UN ERROR')
 
 {
-  const iguales = tramosDesdeFilas([fila(1000, 1), fila(1000, 2), fila(null, 3)])
+  const iguales = tramosDesdeFilas([fila(1000, 1), fila(1000, 2), fila(null, 3)], PESOS)
   check('dos `hasta` iguales: un tramo de anchura cero es un ERROR',
     !iguales.coherente)
   check('…y el mensaje dice qué fila y contra cuál',
     /termina en 1000 y el anterior ya terminaba en 1000/.test(erroresDe(iguales).map(a => a.mensaje).join()))
 
-  const cero = tramosDesdeFilas([fila(0, 1), fila(null, 2)])
+  const cero = tramosDesdeFilas([fila(0, 1), fila(null, 2)], PESOS)
   check('un `hasta` de 0 es un límite inválido', !cero.coherente)
   check('…y da UN solo aviso, no dos por el mismo hecho', erroresDe(cero).length === 1,
     `(dio ${erroresDe(cero).length})`)
 
-  const negativo = tramosDesdeFilas([fila(-5, 1), fila(null, 2)])
+  const negativo = tramosDesdeFilas([fila(-5, 1), fila(null, 2)], PESOS)
   check('un `hasta` negativo también', !negativo.coherente)
 }
 
@@ -189,7 +195,7 @@ titulo('LA CASILLA EN BLANCO — el peor defecto que ha tenido este módulo')
    * Antes de arreglarlo, `[{hasta:''}, {hasta:null}]` devolvía DOS tramos
    * abiertos, los dos con `desde: 0`, y declaraba la tabla LIQUIDABLE. El
    * segundo no se alcanza nunca y la cifra habría salido plausible. */
-  const r = tramosDesdeFilas([fila('', 100), fila(null, 200)])
+  const r = tramosDesdeFilas([fila('', 100), fila(null, 200)], PESOS)
   check('una casilla de límite en blanco NO cuenta como tramo abierto',
     !r.liquidable, `(liquidable=${r.liquidable})`)
   check('…y no es un error: es «a medias»', r.coherente)
@@ -198,10 +204,10 @@ titulo('LA CASILLA EN BLANCO — el peor defecto que ha tenido este módulo')
   check('…y jamás se declara liquidable una tabla con dos `hasta` nulos',
     !(r.liquidable && r.tramos.filter(t => t.hasta === null).length > 1))
 
-  const soloBlanco = tramosDesdeFilas([fila('   ', 100)])
+  const soloBlanco = tramosDesdeFilas([fila('   ', 100)], PESOS)
   check('solo espacios en el límite también cuenta como en blanco', !soloBlanco.liquidable)
 
-  const mediaTecla = tramosDesdeFilas([fila('1.', 100), fila(null, 200)])
+  const mediaTecla = tramosDesdeFilas([fila('1.', 100), fila(null, 200)], PESOS)
   check('un número a medio teclear no tumba el módulo y deja la tabla sin liquidar',
     !mediaTecla.liquidable, `(avisos: ${JSON.stringify(mediaTecla.avisos)})`)
 }
@@ -218,7 +224,7 @@ titulo('EL VIAJE REDONDO: lo ya guardado se puede editar y vuelve igual')
     { orden: 2, desde: 1_000_000, hasta: 5_000_000, en_uvt: false, modo_calculo: 'TASA_SOBRE_TOTAL', valor: '3', unidad: 'POR_MIL' },
     { orden: 3, desde: 5_000_000, hasta: null, en_uvt: false, modo_calculo: 'TASA_MARGINAL', valor: '1,5', unidad: 'PORCENTAJE' },
   ]
-  const vuelta = tramosDesdeFilas(filasDesdeTramos(original))
+  const vuelta = (() => { const v = filasDesdeTramos(original); return tramosDesdeFilas(v.filas, v.forma) })()
   check('una tabla de tres modos distintos sobrevive el viaje redondo',
     JSON.stringify(vuelta.tramos) === JSON.stringify(original),
     `\n      ida:    ${JSON.stringify(original)}\n      vuelta: ${JSON.stringify(vuelta.tramos)}`)
@@ -227,7 +233,7 @@ titulo('EL VIAJE REDONDO: lo ya guardado se puede editar y vuelve igual')
     { orden: 1, desde: 0, hasta: null, en_uvt: true, modo_calculo: 'FIJO', valor: '7000', unidad: 'PESOS',
       aporte_snr: '5000', aporte_fondo: '2000', valor_en_uvb: '0,25' },
   ]
-  const vuelta2 = tramosDesdeFilas(filasDesdeTramos(conAportes))
+  const vuelta2 = (() => { const v = filasDesdeTramos(conAportes); return tramosDesdeFilas(v.filas, v.forma) })()
   check('…y una con aportes, UVT y equivalencia UVB también',
     JSON.stringify(vuelta2.tramos) === JSON.stringify(conAportes),
     `\n      vuelta: ${JSON.stringify(vuelta2.tramos)}`)
@@ -241,12 +247,57 @@ titulo('LO QUE EL EDITOR NO DECIDE: la monotonía la sigue juzgando el motor')
    * —no hay hueco, no hay solape, los límites crecen— y la rechaza
    * `verificarTramos`. La frontera entre los dos módulos tiene que quedar
    * visible: el editor vigila la FORMA, el motor vigila la TARIFA. */
-  const r = tramosDesdeFilas([fila(1_000_000, 50_000), fila(null, 10_000)])
+  const r = tramosDesdeFilas([fila(1_000_000, 50_000), fila(null, 10_000)], PESOS)
   check('el editor la da por coherente: su forma está bien', r.coherente && r.liquidable)
   let rechazada = false
   try { verificarTramos(r.tramos, null, 'x', { monotonicidad: 'NO_DECRECIENTE', redondeo: { modo: 'PUBLICADO' } }) }
   catch { rechazada = true }
   check('…y el MOTOR la rechaza por no ser monótona', rechazada)
+}
+
+// ──────────────────────────────────────────────────────────────────────────────
+titulo('LA UNIDAD DE LOS LÍMITES SE DECLARA POR TABLA, NO POR FILA')
+
+{
+  /* ⚠ `en_uvt` era un campo de FILA con valor por defecto `false`, y es la forma
+   * más cara de equivocarse en todo el motor: leer en pesos una tabla en UVT
+   * desplaza la frontera unas 50.000 veces. «Hasta 20.000 UVT» pasaría a ser
+   * «hasta $20.000» y TODO caería en el tramo superior. */
+  const enPesos = tramosDesdeFilas([fila(1000, 1), fila(null, 2)], PESOS)
+  const enUvt = tramosDesdeFilas([fila(1000, 1), fila(null, 2)], UVT)
+
+  check('la tabla declara la unidad y TODAS sus filas la heredan',
+    enPesos.tramos.every(t => t.en_uvt === false) && enUvt.tramos.every(t => t.en_uvt === true))
+  check('…así que una tabla con unidades MEZCLADAS ya no se puede escribir',
+    new Set(enUvt.tramos.map(t => t.en_uvt)).size === 1)
+  check('la misma tabla en UVT y en pesos da límites iguales y unidades distintas',
+    enPesos.tramos[0].hasta === enUvt.tramos[0].hasta && enPesos.tramos[0].en_uvt !== enUvt.tramos[0].en_uvt)
+
+  /* Y la consecuencia de que importe: el MISMO límite significa dos cosas
+   * distintas según la unidad, y la diferencia la decide el UVT del año. */
+  const UVT_2026 = 49799
+  check('una base de $2.000.000 cae en el SEGUNDO tramo si los límites son pesos…',
+    tramoQueAplica(enPesos.tramos, 2_000_000, UVT_2026, 'x')?.orden === 2)
+  check('…y en el primero si son UVT, porque 1000 UVT son casi 50 millones',
+    tramoQueAplica(enUvt.tramos, 2_000_000, UVT_2026, 'x')?.orden === 1)
+
+  /* Un campo `en_uvt` colado en una fila se ignora: manda la tabla. */
+  const colado = tramosDesdeFilas([fila(1000, 1, { en_uvt: true }), fila(null, 2)], PESOS)
+  check('un `en_uvt` colado en una fila se IGNORA: manda la tabla',
+    colado.tramos.every(t => t.en_uvt === false))
+
+  /* El viaje de vuelta trae la forma, y denuncia una tabla antigua mezclada. */
+  const mezclada = filasDesdeTramos([
+    { orden: 1, desde: 0, hasta: 1000, en_uvt: true, modo_calculo: 'FIJO', valor: '1', unidad: 'PESOS' },
+    { orden: 2, desde: 1000, hasta: null, en_uvt: false, modo_calculo: 'FIJO', valor: '2', unidad: 'PESOS' },
+  ])
+  check('una tabla GUARDADA con unidades mezcladas se denuncia, no se adivina',
+    mezclada.mezclada !== null && /1 tramo\(s\) en UVT/.test(mezclada.mezclada))
+  const limpia = filasDesdeTramos([
+    { orden: 1, desde: 0, hasta: null, en_uvt: true, modo_calculo: 'FIJO', valor: '1', unidad: 'PESOS' },
+  ])
+  check('…y una tabla coherente devuelve su forma sin denuncia',
+    limpia.mezclada === null && limpia.forma.enUvt === true)
 }
 
 console.log(`\n${fail === 0 ? '✓ TODO EN VERDE' : '✗ HAY FALLOS'} — ${ok} verificaciones, ${fail} fallos\n`)

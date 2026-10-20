@@ -7,6 +7,7 @@ import { requireRole } from '@/lib/auth'
 import { resolveMunicipality } from '@/lib/municipality-resolve'
 import { resolveTipoPropiedad } from '@/lib/property-types.server'
 import { notificarIndexNow, urlsDePropiedad } from '@/lib/indexnow'
+import { exigirPublicable, InmuebleNoPublicable } from '@/lib/publicable-propiedad'
 
 export async function GET(
   _req: NextRequest,
@@ -70,6 +71,41 @@ export async function PUT(
       muniCreated = muni.created
       muniSlug = muni.slug
       muniName = muni.name
+    }
+
+    /* ⚠ LA PUERTA DEL CATÁLOGO PÚBLICO, en la transición y no en el filtro.
+     *
+     * Aquí hay que mirar el estado RESULTANTE, no el payload: una edición
+     * parcial que solo manda `status: 'available'` dejaría precio, descripción
+     * y fotos como están, y hay que comprobar CÓMO QUEDA el inmueble, no qué
+     * trae la petición. Comprobar el payload sería la misma clase de error que
+     * una guarda validando su propia entrada. */
+    if (data.status === 'available') {
+      const actual = await prisma.property.findUnique({
+        where: { id },
+        select: {
+          price_cop: true, description: true, short_description: true,
+          _count: { select: { media: true } },
+        },
+      })
+      if (!actual) return NextResponse.json({ error: 'No encontrada' }, { status: 404 })
+      try {
+        exigirPublicable('available', {
+          price_cop: data.price_cop !== undefined ? data.price_cop : actual.price_cop,
+          description: rest.description !== undefined ? rest.description : actual.description,
+          short_description: rest.short_description !== undefined
+            ? rest.short_description : actual.short_description,
+          /* Si la edición manda `media`, las reemplaza TODAS (se borran y se
+           * crean), así que lo que cuenta es lo que viene; si no la manda, lo
+           * que ya hay. */
+          fotos: media ? (Array.isArray(media) ? media.length : 0) : actual._count.media,
+        })
+      } catch (e) {
+        if (e instanceof InmuebleNoPublicable) {
+          return NextResponse.json({ error: e.message, falta: e.falta }, { status: 409 })
+        }
+        throw e
+      }
     }
 
     // Actualizar media si se envía

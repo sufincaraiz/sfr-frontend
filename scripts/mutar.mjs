@@ -65,6 +65,22 @@ const LOS_DOS = `${H_NOTARIAL} && ${H_FINANZAS}`
  */
 const MUTACIONES = [
   {
+    nombre: 'catalogo: publicar vuelve a admitir precio cero',
+    porque: 'cero no es un precio, y un 0 en una oferta de schema.org afirma «gratis».',
+    archivo: 'src/lib/publicable-propiedad.ts',
+    de: "  if (!Number.isFinite(precio) || precio <= 0) falta.push('el precio (no puede ser cero)')",
+    a: "  if (false) falta.push('el precio (no puede ser cero)')",
+    comando: 'node scripts/probar-publicable-propiedad.mjs',
+  },
+  {
+    nombre: 'catalogo: la puerta vuelve a mirar cualquier estado, no solo available',
+    porque: 'lo que no es publico no tiene por que estar completo; exigirselo bloquearia guardar un borrador.',
+    archivo: 'src/lib/publicable-propiedad.ts',
+    de: "  if (estado !== 'available') return",
+    a: "  if (false) return",
+    comando: 'node scripts/probar-publicable-propiedad.mjs',
+  },
+  {
     nombre: 'firma: «admin» vuelve a poder firmar un acto',
     porque: 'era el valor por defecto. Una cifra equivocada se recalcula; quien la cargo, no.',
     archivo: 'src/lib/notariales/firma.ts',

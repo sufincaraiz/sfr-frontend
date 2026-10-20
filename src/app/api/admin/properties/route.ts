@@ -8,6 +8,7 @@ import { slugify, slugBasePropiedad } from '@/lib/utils'
 import { resolveMunicipality } from '@/lib/municipality-resolve'
 import { resolveTipoPropiedad } from '@/lib/property-types.server'
 import { notificarIndexNow, urlsDePropiedad } from '@/lib/indexnow'
+import { exigirPublicable, InmuebleNoPublicable } from '@/lib/publicable-propiedad'
 
 export async function GET(request: NextRequest) {
   const session = await requireRole(['admin'])
@@ -115,6 +116,29 @@ export async function POST(request: NextRequest) {
     const { datos, descartados } = filtrarCampos(rest)
     if (descartados.length) {
       console.warn(`[POST propiedad] campos ignorados por la lista blanca: ${descartados.join(', ')}`)
+    }
+
+    /* ⚠ LA PUERTA DEL CATÁLOGO PÚBLICO. El filtro de `fetchPropiedades` es
+     * `{ status: 'available' }` y nada más, así que lo que nazca «available» es
+     * visible al instante —y este formulario nace así, con
+     * `price_cop: BigInt(data.price_cop || 0)`—.
+     *
+     * En vez de añadir condiciones al catálogo, se bloquea la TRANSICIÓN: un
+     * filtro más dejaría el estado malo escrito en la base, invisible y
+     * esperando a que alguien lo quite. Y bloquear sin decir qué falta es un
+     * botón muerto, así que el mensaje enumera. */
+    try {
+      exigirPublicable(data.status, {
+        price_cop: data.price_cop,
+        description: data.description,
+        short_description: data.short_description,
+        fotos: Array.isArray(media) ? media.length : 0,
+      })
+    } catch (e) {
+      if (e instanceof InmuebleNoPublicable) {
+        return NextResponse.json({ error: e.message, falta: e.falta }, { status: 409 })
+      }
+      throw e
     }
 
     const property = await prisma.property.create({

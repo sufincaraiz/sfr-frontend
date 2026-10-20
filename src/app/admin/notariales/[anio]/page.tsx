@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { use } from 'react';
 import Link from 'next/link';
 import FormularioEvidencia from './FormularioEvidencia';
+import { EditorTramos } from './EditorTramos';
 import {
   AlertTriangle, ArrowLeft, Check, FileUp, Loader2, Lock, ShieldCheck, Unlock, X,
 } from 'lucide-react';
@@ -66,6 +67,11 @@ interface Pantalla {
   uvt: string | null; uvb: string | null; tarifa_iva: string | null;
   campos: Campo[];
   conceptos: { clave: string; label: string; tipo: string; grupo: string; exigidos: string[]; dueno: string;
+    /** La tabla guardada, para que el editor pueda ABRIRLA. */
+    tramos?: { orden: number; desde: string | number; hasta?: string | number | null; en_uvt?: boolean;
+      modo_calculo: string; valor: string | number; unidad: string;
+      aporte_snr?: string | number | null; aporte_fondo?: string | number | null;
+      valor_en_uvb?: string | number | null }[];
     respaldos: { campo: string; norma: string; articulo: string | null; tipo_evidencia: string }[] }[];
   pendientes: {
     total: number; bloqueados: number;
@@ -289,15 +295,28 @@ export default function CargaNotarialPage({ params }: { params: Promise<{ anio: 
             {campos[0]?.ayuda && (
               <p style={{ color: C.muted, fontSize: '0.8rem', margin: '0 0 10px', lineHeight: 1.5 }}>{campos[0].ayuda}</p>
             )}
+            {/* ⚠ AQUÍ HABÍA UN RECHAZO: «los tramos todavía no se editan desde
+              * aquí». Eran 29 de las 53 cifras, y la pantalla le pedía al titular
+              * algo que el sistema no le dejaba hacer. Un pendiente asignado a
+              * quien no tiene cómo resolverlo no es un pendiente: es una
+              * acusación.
+              *
+              * La corrección entera vive en lib/notariales/editor-tramos.ts con
+              * sus 60 verificaciones. Este componente solo puede ser incómodo. */}
             {esTramos && (
-              <p style={{ color: C.muted, fontSize: '0.78rem', margin: '0 0 10px' }}>
-                Los tramos se guardan como tabla completa: una tabla a medias tendría un hueco, y un
-                hueco da una cifra plausible y equivocada.
-              </p>
+              <EditorTramos
+                clave={concepto}
+                label={label}
+                tramosGuardados={(p.conceptos.find(c => c.clave === concepto)?.tramos ?? []) as never}
+                guardando={guardando === marca}
+                guardar={tramos => guardarSeccion({ seccion: 'tramos', clave: concepto, tramos }, marca)}
+              />
             )}
 
+            {/* Los campos `tramo.*` los gestiona el editor como tabla: editarlos
+              * de uno en uno es justo lo que producía tablas a medias. */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {campos.map(c => {
+              {(esTramos ? [] : campos).map(c => {
                 const llave = `${marca}·${c.campo}`;
                 const vc = v?.campos.find(x => x.campo === c.campo);
                 return (
@@ -340,11 +359,6 @@ export default function CargaNotarialPage({ params }: { params: Promise<{ anio: 
                   // El año tiene sus propios campos; los conceptos van por clave.
                   if (concepto === '(anio)') {
                     guardarSeccion({ seccion: 'anio', campos: campos2 }, marca);
-                  } else if (esTramos) {
-                    setError(
-                      'Los tramos todavía no se editan desde aquí: se cargan con el script de siembra ' +
-                      'o se añade el editor de tabla. No se guarda una tabla a medias.',
-                    );
                   } else {
                     guardarSeccion({ seccion: 'concepto', clave: concepto, campos: campos2 }, marca);
                   }

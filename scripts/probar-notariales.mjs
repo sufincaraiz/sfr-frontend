@@ -2210,18 +2210,108 @@ check('el panel declara que los tramos no se pueden editar todav\u00eda, o que y
   /* Y que el pendiente lo lleve puesto, no solo la tabla. */
   const pend = pendientesParaActivar(ANIO_VACIO, FUENTES_OFICIALES)
   const deTramos = pend.filter(p => p.campo === 'tramos')
-  check('todo pendiente de tramos sale marcado como bloqueado',
-    deTramos.length > 0 && deTramos.every(p => !!p.bloqueado),
-    `(${deTramos.filter(p => p.bloqueado).length} de ${deTramos.length})`)
+  /* ⚠ ESTA AFIRMACIÓN DECÍA LO CONTRARIO HASTA EL 2026-10-20: «todo pendiente
+   * de tramos sale marcado como bloqueado». Era cierta mientras el editor no
+   * existía, y al construirlo **sobrevivió a su premisa** —la tercera vez en
+   * cinco días, después de las cuatro del panel y de la lista de extremos—.
+   *
+   * > Una afirmación que codifica una LIMITACIÓN tiene que morir con la
+   * > limitación. Y no se acuerda nadie: lo que la mató fue que el arnés se
+   * > puso rojo al quitar el rechazo de la pantalla.
+   *
+   * Ahora afirma lo verdadero, que es justo lo contrario. */
+  check('NINGÚN pendiente de tramos sigue bloqueado: el editor existe',
+    deTramos.length > 0 && deTramos.every(p => !p.bloqueado),
+    `(bloqueados: ${deTramos.filter(p => p.bloqueado).length} de ${deTramos.length})`)
   check('…y ninguno dice «falta la tarifa», que era una cifra y es una escala',
     deTramos.every(p => /tabla por tramos/.test(p.que)))
   const r = resumenDePendientes(pend)
   const titular = r.porDueno.find(d => d.dueno === 'titular')
-  check('el resumen separa lo que el titular puede hacer ya de lo que no',
-    !!titular && titular.bloqueados > 0 && titular.puedeYa + titular.bloqueados === titular.cantidad,
+  check('el resumen sigue partiendo en «puede ya» y «bloqueados», y la suma cuadra',
+    !!titular && titular.puedeYa + titular.bloqueados === titular.cantidad,
     titular ? `(puede ya ${titular.puedeYa} · bloqueados ${titular.bloqueados})` : '(sin titular)')
+  check('…y hoy el titular puede hacerlos TODOS: no queda ninguno esperando pantalla',
+    !!titular && titular.bloqueados === 0 && titular.puedeYa === titular.cantidad,
+    titular ? `(puede ya ${titular.puedeYa} de ${titular.cantidad})` : '(sin titular)')
+  /* El mecanismo se queda vivo aunque hoy no bloquee nada: SIN_PANTALLA sigue
+   * existiendo vacía, y estas dos verificaciones lo prueban por los dos lados
+   * —la suma cuadra, y el total bloqueado es cero—. */
   check('…y el total de bloqueados del año es la suma, no una cifra aparte',
     r.bloqueados === r.porDueno.reduce((a, d) => a + d.bloqueados, 0))
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+ * LOS DOS EXTREMOS QUE FALTABAN
+ *
+ * Eran DOS, y la cuenta del titular era la correcta: yo la «corregí» a tres y
+ * la corrección estaba mal. De los cinco que el inventario marca sin prueba,
+ * dos los cubre el arnés del editor y uno ya estaba probado aquí —«cero copias
+ * en vez de desactivar el concepto»—. Lo que estaba desactualizado era el
+ * inventario, no el código. Ir al dato valia también para contar extremos.
+ *
+ * Encuadre: no son bordes raros. Una lista de aportes vacía es el año REAL de
+ * Su Finca Raíz —hoy no es responsable de IVA— y un empate 50/50 es el reparto
+ * por defecto de la mitad de los conceptos. */
+
+// ── EXTREMO 1: lista de aportes de IVA VACÍA ───────────────────────
+{
+  const REGLA = { unidad: 1, modo: 'CERCANO' }
+  const v = liquidarIva([], 19, REGLA)
+  check('sin ningún aporte, el IVA liquidado es CERO y no lanza',
+    v.liquidado === 0, `(dio ${v.liquidado})`)
+  check('…y el reparto es cero por los dos lados',
+    v.comprador === 0 && v.vendedor === 0)
+  check('…sin dividir por cero: con base cero la proporción se corta antes',
+    Number(v.comprador_exacto) === 0 && Number(v.vendedor_exacto) === 0,
+    `(exactos: ${v.comprador_exacto} / ${v.vendedor_exacto})`)
+  check('la regla de redondeo sigue siendo OBLIGATORIA aunque no haya aportes',
+    (() => { try { liquidarIva([], 19, null); return false } catch { return true } })())
+  check('…y una unidad de redondeo inválida también se rechaza con la lista vacía',
+    (() => { try { liquidarIva([], 19, { unidad: 0, modo: 'CERCANO' }); return false } catch { return true } })())
+}
+
+// ── EXTREMO 2: reparto 50/50 con IVA en empate exacto ───────────────
+{
+  const REGLA = { unidad: 1, modo: 'CERCANO' }
+
+  /* Total PAR: 19 % de 53.157,894736842105 = 10.100, mitad exacta de 5.050. */
+  const par = liquidarIva([{ clave: 'x', base: '53157.894736842105', pct_comprador: 50 }], 19, REGLA)
+  check('empate con total PAR: las dos mitades son iguales…',
+    par.comprador === par.vendedor, `(${par.comprador} / ${par.vendedor})`)
+  check('…y suman exactamente el liquidado',
+    par.comprador + par.vendedor === par.liquidado,
+    `(${par.comprador} + ${par.vendedor} = ${par.liquidado})`)
+
+  /* Total IMPAR: 101, con las dos mitades exactas en 50,5. Es el caso que de
+   * verdad decide algo, porque un peso no se parte en dos. */
+  const impar = liquidarIva([{ clave: 'x', base: '531.5789473684211', pct_comprador: 50 }], 19, REGLA)
+  check('empate con total IMPAR: la suma sigue siendo exacta, sin peso perdido',
+    impar.comprador + impar.vendedor === impar.liquidado,
+    `(${impar.comprador} + ${impar.vendedor} = ${impar.liquidado})`)
+
+  /* ⚠ MEDIDO, NO SUPUESTO: comprador 50, vendedor 51.
+   *
+   * El código dice «se redondea la MENOR; la mayor es el residual. Empate → el
+   * residual es del comprador», y esto es exactamente eso: la cifra del
+   * COMPRADOR es la residual —la que sale por resta—, así que el peso que no
+   * parte en dos se queda del lado del vendedor.
+   *
+   * Leí ese comentario de dos maneras y estuve a punto de «arreglar» código
+   * correcto. Esta verificación fija la lectura buena, que es lo que un
+   * comentario ambiguo no puede hacer. */
+  check('en el empate, la cifra del COMPRADOR es la residual: 50 y 51',
+    impar.comprador === 50 && impar.vendedor === 51,
+    `(comprador ${impar.comprador} · vendedor ${impar.vendedor})`)
+  check('el reparto se hace sobre el LIQUIDADO, no sobre el bruto',
+    impar.liquidado === 101, `(liquidado ${impar.liquidado})`)
+
+  /* Y el empate con reparto desigual NO es empate: control negativo, para que
+   * la verificación de arriba no pase por casualidad. */
+  const desigual = liquidarIva([{ clave: 'x', base: '531.5789473684211', pct_comprador: 70 }], 19, REGLA)
+  check('con 70/30 ya no hay empate y la menor es la del vendedor',
+    desigual.comprador > desigual.vendedor &&
+    desigual.comprador + desigual.vendedor === desigual.liquidado,
+    `(${desigual.comprador} / ${desigual.vendedor})`)
 }
 
 console.log(`\n${fail === 0 ? '✓ TODO EN VERDE' : '✗ HAY FALLOS'} — ${ok} verificaciones, ${fail} fallos\n`)

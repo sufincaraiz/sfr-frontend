@@ -3237,6 +3237,112 @@ distingue, la guarda está aceptando los dos y solo uno es legítimo.
 Arreglada: `[]` pasa, `undefined` **detiene** con un mensaje que dice la
 diferencia. 5 verificaciones y una mutación.
 
+# LEER UNA EXPRESIÓN NO ES LEER UN CAMINO
+
+**Tres defectos de la misma familia**, y los tres parecen sustancia cuando son
+decoración:
+
+| | qué parece | qué es |
+|---|---|---|
+| **la guarda que nadie llama** | una comprobación | código que no se ejecuta |
+| **la mutación en un punto sin efecto** | una afirmación respaldada | un cambio que no altera el resultado |
+| **el `??` en una rama inalcanzable** | una amenaza | código muerto |
+
+> **Las tres se cazan con la misma pregunta, y no es «¿está escrito?» sino
+> «¿SE LLEGA AHÍ?».** Lo escrito se lee; lo alcanzable hay que recorrerlo, y son
+> dos trabajos distintos.
+
+## Los dos casos de esta semana, con quién falló en cada paso
+
+**1. `domicilios ?? false`.** Reporté que publica «no hace domicilios» sobre el
+negocio de un tercero. El componente dice `{b.domicilios && (…)}`: **con
+`false` no se publica nada**.
+
+| paso | quién | qué hizo |
+|---|---|---|
+| 1 | yo | clasifiqué la fila **suponiendo la renderización** desde el valor por defecto, sin abrir el componente |
+| 2 | el titular | **escaló** la gravedad leyendo mi resumen, no la pantalla |
+| 3 | yo | fui al dato y la premisa era mía y falsa |
+
+**2. `s.email ?? 'admin'`.** Lo reporté como «falsea quién actúa» en cinco
+llamadas. `AdminSessionUser.email` es `string` y `Admin.email` es NOT NULL:
+**el `??` nunca se alcanza**. 0 actos firmados por `'admin'` en producción.
+
+| paso | quién | qué hizo |
+|---|---|---|
+| 1 | yo | leí la expresión y no el tipo |
+| 2 | el titular | lo priorizo como prerrequisito del editor —razón correcta: el editor firma 29 actos— |
+| 3 | yo | medí antes de arreglar, y el lote cambió de motivo |
+
+Y el lote **se hizo igual**, por una razón que la medición no cancela: la
+protección no podía depender de que un tipo siguiera siendo obligatorio. Eso
+también es parte de la lección: **«código muerto» no es «no hay nada que
+hacer»** —es «la amenaza no es la que dije»—.
+
+## El tercer caso, el más antiguo, por si hace falta el recordatorio
+
+La mutación no-op del 19 de octubre: quitaba un `&& !enBlanco` de una condición
+**que en ese caso ya no se alcanzaba**. Cambió el archivo, pasó la comprobación
+de que el contenido cambió, y no cambió nada. Es el mismo error en el
+instrumento que mide a los instrumentos.
+
+> Tres veces en cinco días, con tres formas distintas. **Lo que las une no es un
+> descuido: es un atajo que se siente como lectura.** Mirar una expresión da la
+> sensación de haber comprobado algo, y lo único que se ha comprobado es que
+> está escrita.
+
+# LA PROCEDENCIA POR FILA, Y EN LOS DOS SENTIDOS
+
+De la cadena de `domicilios` sale una regla que **no es solo para mí**:
+
+> **Cada fila de un informe dice de dónde sale: CONSULTA · LECTURA DE CÓDIGO ·
+> INFERENCIA.** Las tres se leen con la misma confianza y no valen lo mismo.
+
+Y aplica en los dos sentidos, que es lo que la hace útil:
+
+| | |
+|---|---|
+| **mis informes** | una tabla resumida se lee como si cada fila fuera una consulta. La de `domicilios` era una **inferencia** y no lo decía |
+| **los prompts que escalan algo** | «esto sube de categoría» apoyado en una fila de mi informe es una inferencia **sobre una inferencia** |
+
+> La cadena de `domicilios` fueron **dos lecturas de prosa seguidas sin un dato
+> en medio**, y la rompe cualquiera de los dos declarando su fuente. No hace
+> falta que la rompan los dos: basta uno.
+
+Es la versión operativa de «un informe es un dato de segunda mano». Lo escribo
+aquí porque es lo único de esta semana que cambia **cómo se conversa**, no solo
+cómo se programa.
+
+# POR QUÉ LOS MÓDULOS HOJA NO PUEDEN USAR TODO TYPESCRIPT
+
+Esto estaba escrito como **preferencia** —«módulos hoja con imports relativos,
+sin alias»— y es una **restricción con motivo**:
+
+> Los módulos hoja tienen que poder correr con **`node` directo**, en modo
+> *strip-only*. Y eso no es comodidad: es lo que permite que el arnés ejercite
+> **el código real** y no una copia transpilada. Un arnés que prueba el
+> resultado de un compilador prueba el compilador también, y cuando algo falla
+> no se sabe cuál de los dos fue.
+
+El 2026-10-19 la restricción se defendió sola: `SinIdentidadParaFirmar` se
+escribió con una *parameter property* —`constructor(public acto: string)`— y el
+arnés **no compiló**:
+
+```
+SyntaxError [ERR_UNSUPPORTED_TYPESCRIPT_SYNTAX]:
+TypeScript parameter property is not supported in strip-only mode
+```
+
+Lo que importa es **cuándo** se notó: en el primer segundo, no en producción.
+Una comodidad de TypeScript que rompa el modo strip-only rompe la cadena entera
+—arnés → mutaciones → cadena del build—, porque los tres corren el módulo con
+`node`.
+
+**La lista de lo que no se puede usar en un módulo hoja** —sabida a base de
+tropezar, no de leer la documentación—: *parameter properties*, `enum`,
+`namespace`, decoradores, y los alias de ruta (`@/`). Nada de eso cambia lo que
+el código hace; todo eso cambia **quién puede ejecutarlo**.
+
 # LAS TRES FORMAS DE DESARMAR UNA GUARDA
 
 Se separan porque **se encuentran de maneras distintas**, y mezclarlas hace que

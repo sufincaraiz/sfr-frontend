@@ -326,9 +326,27 @@ export function liquidar(
         // Lo que llega de fuera se comprueba ANTES de mezclarse: una clave
         // desconocida detiene, y un campo que el motor deriva no se admite.
         exigirContextoConocido(entrada.contexto ?? {})
+        /* ⚠ ESTO ERA `base!.valor`, y el `!` es la tercera forma de desarmar una
+         * guarda: no falsea el dato, falsea la COMPROBACIÓN de que el dato
+         * existe. No convence a la guarda —convence al compilador de que no
+         * hace falta preguntar—.
+         *
+         * `base` se queda en `null` cuando el concepto declara `base: 'NINGUNA'`
+         * o `'UNIDADES'`. Un concepto de tipo REGLAS con una de esas dos bases
+         * está mal configurado, y con el `!` eso daba un TypeError —«Cannot read
+         * properties of null»— en vez de un mensaje que dijera qué arreglar y
+         * dónde. Un cuelgue no es un diagnóstico. */
+        if (base === null) {
+          throw new ErrorEsquemaNotarial(
+            `${c.label} se liquida por reglas de retención, que necesitan una base, y el concepto ` +
+            `declara base «${c.base}». Corrige la base del concepto en el catálogo: con ` +
+            'NINGUNA o UNIDADES no hay sobre qué aplicar una regla.',
+            'base',
+          )
+        }
         const r = calcularRetencion(
           anio.reglas_retencion,
-          base!.valor,
+          base.valor,
           // El valor en UVT se deriva aquí: así una regla futura que dependa de
           // él es de verdad una fila, sin preguntar nada nuevo.
           //
@@ -336,7 +354,7 @@ export function liquidar(
           // lo pisaba. Con el orden al revés, lo que el motor calcula gana
           // siempre; `exigirContextoConocido` además lo rechaza en la puerta,
           // así que hacen falta las dos cosas para que no dependa del orden.
-          { ...(entrada.contexto ?? {}), ...(uvt ? { valor_en_uvt: base!.valor / uvt } : {}) },
+          { ...(entrada.contexto ?? {}), ...(uvt ? { valor_en_uvt: base.valor / uvt } : {}) },
         )
         valor = r.valor
         normas.push(r.detalle)

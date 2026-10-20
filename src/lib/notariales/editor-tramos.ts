@@ -67,11 +67,39 @@ export interface FilaEditor {
   valor: string | number
   unidad: UnidadValor
   modo_calculo: ModoTramo
-  /** Los límites van en UVT en vez de pesos (timbre). */
-  en_uvt?: boolean
   aporte_snr?: string | number | null
   aporte_fondo?: string | number | null
   valor_en_uvb?: string | number | null
+}
+
+/**
+ * LO QUE SE DECLARA UNA VEZ POR TABLA, NO POR FILA.
+ *
+ * ⚠ `en_uvt` ERA UN CAMPO DE FILA CON VALOR POR DEFECTO `false`, y eso es la
+ * forma más cara de equivocarse en todo el motor: si los límites de una
+ * resolución están en UVT y se leen como pesos, **la frontera se desplaza unas
+ * 50.000 veces**. Una tabla cuyo primer tramo iba «hasta 20.000 UVT» pasaría a
+ * ser «hasta $20.000», y absolutamente todo caería en el tramo superior.
+ *
+ * Tres razones para subirlo al nivel de la tabla:
+ *
+ *   1. **No es una propiedad de la fila: es de la tabla.** `verificarTramos` ya
+ *      rechaza una tabla con filas mezcladas, así que el campo por fila
+ *      permitía escribir algo que otra guarda tenía que cazar después. Aquí no
+ *      se puede escribir.
+ *   2. **No admite valor por defecto, porque quien transcribe lo SABE**: la
+ *      resolución dice «$» o dice «UVT». No es un dato que pueda faltar, y por
+ *      eso el campo es obligatorio y sin default.
+ *   3. 0 tramos en producción el 2026-10-19: el cambio no cuesta migración.
+ */
+export interface FormaDeLaTabla {
+  /** Para los mensajes. */
+  etiqueta?: string
+  /**
+   * `true` si los LÍMITES de esta tabla están en UVT; `false` si en pesos.
+   * Obligatorio a propósito: ver arriba.
+   */
+  enUvt: boolean
 }
 
 export type Severidad = 'INCOMPLETA' | 'ERROR'
@@ -173,19 +201,29 @@ function ordenCanonico(filas: FilaEditor[], etiqueta: string): FilaLeida[] {
   })
 }
 
-/** La fila vacía con la que nace un tramo nuevo en la pantalla. */
-export function filaNueva(modo: ModoTramo, unidad: UnidadValor, en_uvt = false): FilaEditor {
-  return { hasta: null, valor: '', unidad, modo_calculo: modo, en_uvt }
+/**
+ * La fila vacía con la que nace un tramo nuevo en la pantalla.
+ *
+ * Ya no recibe `en_uvt`: eso lo declara la TABLA. Una fila no puede estar en
+ * una unidad distinta de la tabla a la que pertenece.
+ */
+export function filaNueva(modo: ModoTramo, unidad: UnidadValor): FilaEditor {
+  return { hasta: null, valor: '', unidad, modo_calculo: modo }
 }
 
 /**
  * LA FUNCIÓN DEL MÓDULO: filas tecleadas → tabla canónica + diagnóstico.
  *
+ * `forma.enUvt` es OBLIGATORIO: ver `FormaDeLaTabla`. No hay valor por defecto
+ * porque leer en pesos una tabla en UVT desplaza la frontera unas 50.000 veces,
+ * y quien transcribe la resolución sabe cuál de las dos es.
+ *
  * No lanza por lo que el usuario puede estar escribiendo a medias: devuelve
  * avisos. Lanza solo si un dato es ilegible como número, que es lo mismo que
  * hace el resto del motor.
  */
-export function tramosDesdeFilas(filas: FilaEditor[], etiqueta = 'concepto'): Resultado {
+export function tramosDesdeFilas(filas: FilaEditor[], forma: FormaDeLaTabla): Resultado {
+  const etiqueta = forma.etiqueta ?? 'concepto'
   const avisos: Aviso[] = []
 
   /* LA TABLA VACÍA NO ES UN ERROR. Es el estado en el que nace todo concepto
@@ -283,7 +321,9 @@ export function tramosDesdeFilas(filas: FilaEditor[], etiqueta = 'concepto'): Re
        * primer tramo arranca en 0. No hay forma de que no case. */
       desde: anterior,
       hasta: hasta,
-      en_uvt: f.en_uvt ?? false,
+      /* DE LA TABLA, no de la fila, y sin valor por defecto. Mezclar unidades
+       * entre filas deja de ser escribible. */
+      en_uvt: forma.enUvt,
       modo_calculo: f.modo_calculo,
       valor: f.valor,
       unidad: f.unidad,
@@ -316,26 +356,44 @@ export function tramosDesdeFilas(filas: FilaEditor[], etiqueta = 'concepto'): Re
 }
 
 /**
- * EL CAMINO DE VUELTA: una tabla ya guardada → filas para editar.
+ * EL CAMINO DE VUELTA: una tabla ya guardada → filas + la forma de la tabla.
  *
  * Existe para que el editor pueda ABRIR lo que sembró el script, y su prueba de
- * fuego es el viaje redondo: `tramosDesdeFilas(filasDesdeTramos(t))` tiene que
- * devolver `t`. Si una tabla válida no se puede expresar en esta forma, la forma
- * está mal y hay que saberlo antes de construir la pantalla.
+ * fuego es el viaje redondo: `tramosDesdeFilas(...filasDesdeTramos(t))` tiene
+ * que devolver `t`. Si una tabla válida no se puede expresar en esta forma, la
+ * forma está mal y hay que saberlo antes de construir la pantalla.
+ *
+ * Devuelve TAMBIÉN `forma`, porque desde que `enUvt` es de la tabla el viaje de
+ * vuelta tiene dos piezas. Si una tabla guardada trae filas con `en_uvt`
+ * mezclado —algo que el editor ya no puede escribir, pero que una siembra
+ * antigua sí pudo— se dice en vez de elegir la primera en silencio.
  */
-export function filasDesdeTramos(tramos: Tramo[]): FilaEditor[] {
-  return [...tramos]
-    .sort((a, b) => a.orden - b.orden)
-    .map(t => ({
+export function filasDesdeTramos(tramos: Tramo[]): {
+  filas: FilaEditor[]
+  forma: FormaDeLaTabla
+  /** `null` salvo que la tabla guardada venga con unidades mezcladas. */
+  mezclada: string | null
+} {
+  const orden = [...tramos].sort((a, b) => a.orden - b.orden)
+  const unidades = [...new Set(orden.map(t => !!t.en_uvt))]
+  const mezclada = unidades.length > 1
+    ? `La tabla guardada tiene ${orden.filter(t => t.en_uvt).length} tramo(s) en UVT y ` +
+      `${orden.filter(t => !t.en_uvt).length} en pesos. Eso ya no se puede escribir, y no se ` +
+      'adivina cuál es la correcta: revísala contra la resolución.'
+    : null
+  return {
+    filas: orden.map(t => ({
       hasta: t.hasta ?? null,
       valor: t.valor,
       unidad: t.unidad,
       modo_calculo: t.modo_calculo,
-      en_uvt: t.en_uvt ?? false,
       ...(t.aporte_snr !== undefined ? { aporte_snr: t.aporte_snr } : {}),
       ...(t.aporte_fondo !== undefined ? { aporte_fondo: t.aporte_fondo } : {}),
       ...(t.valor_en_uvb !== undefined ? { valor_en_uvb: t.valor_en_uvb } : {}),
-    }))
+    })),
+    forma: { enUvt: unidades.length === 1 ? unidades[0]! : false },
+    mezclada,
+  }
 }
 
 /**

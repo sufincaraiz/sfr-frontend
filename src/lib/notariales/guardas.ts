@@ -552,7 +552,16 @@ export interface Pendiente {
  * que salir. Una advertencia que sobrevive a su causa es la siguiente mentira.
  */
 export const SIN_PANTALLA: Record<string, string> = {
-  tramos: 'falta construir el editor de tramos: hoy no hay dónde escribirlos',
+  /* VACÍA desde el 2026-10-20: el editor de tramos existe.
+   *
+   * ⚠ Y no lo recordé yo: lo exigió  en cuanto se quitó
+   * el rechazo de la pantalla. La guarda vigila las DOS direcciones —mientras
+   * no exista, que los textos lo digan; cuando exista, que dejen de decirlo— y
+   * la segunda dirección es la que casi nadie escribe, porque el día que se
+   * construye la pieza nadie se acuerda de la advertencia que sobra.
+   *
+   * Se deja el objeto, no se borra: el día que otro campo no tenga pantalla,
+   * la mitad del trabajo está hecha. */
 }
 
 /** Un solo sitio donde se decide el bloqueo, a partir del campo que falta. */

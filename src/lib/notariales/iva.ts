@@ -157,10 +157,21 @@ export function liquidarIva(
   const compradorExacto = liquidado.mul(proporcion)
   const vendedorExacto = liquidado.sub(compradorExacto)
 
-  // (4) Se redondea la MENOR; la mayor es el residual. Empate → el residual es
-  // del comprador. El reparto es un pacto entre las partes, no una norma, así
-  // que su unidad es el peso: la del múltiplo normativo solo manda sobre el
-  // total liquidado.
+  // (4) Se redondea la MENOR; la mayor sale por RESTA, para que las dos sumen
+  // exactamente el liquidado. En el EMPATE exacto —mitades de 50,5— la que sale
+  // por resta es la del COMPRADOR, así que el peso que no parte en dos se queda
+  // del lado del vendedor.
+  //
+  // ⚠ ESTA FRASE DECÍA «empate → el residual es del comprador», y se podía leer
+  // de dos maneras: «el comprador se queda el peso de más» o «la cifra del
+  // comprador es la que sale por resta». Son opuestas, y el 2026-10-20 estuve a
+  // punto de «arreglar» código correcto por la lectura equivocada. Lo que fija
+  // la lectura buena no es este comentario: es la verificación
+  // «en el empate, la cifra del COMPRADOR es la residual: 50 y 51», medida
+  // contra el código y no deducida de aquí.
+  //
+  // El reparto es un pacto entre las partes, no una norma, así que su unidad es
+  // el peso: la del múltiplo normativo solo manda sobre el total liquidado.
   const compradorEsMenor = compradorExacto.lessThan(vendedorExacto)
   let comprador: Dec
   let vendedor: Dec
