@@ -51,20 +51,20 @@ const ALCANCE = {
   /* ── El visitante alcanza la ruta y controla la entrada ───────────────── */
   next: {
     alcance: 'VISITANTE', por: 'el marco sirve cada peticion: cualquier fallo suyo esta en el camino caliente',
-    /* Las CUATRO alertas que npm pliega bajo este paquete, una por una. Ninguna
-     * aplica a ESTE despliegue, y las dos primeras se comprobaron: */
+    /* Desde 15.5.28 ya no trae alertas propias: las cuatro de antes (RCE en
+     * Windows, RCE en Image Optimization con AVIF, dos de cache SSG/ISR
+     * autoalojado) quedaron cerradas con la actualizacion. Lo que npm sigue
+     * plegando bajo next es solo su postcss interno (8.4.31). */
     comprobado:
-      'RCE en servidores Windows: Vercel construye y sirve en Linux (iad1, en el log del build). ' +
-      'RCE en la Image Optimization API con AVIF: /_next/image devuelve 404 en produccion ' +
-      '-comprobado con curl, tres variantes- porque next.config usa loader custom de Cloudinary. ' +
-      'Las dos de envenenamiento de cache de SSG/ISR dicen «in self-hosted applications» y esto ' +
-      'no es autoalojado. El salto que las cierra es a 15.5.24, dentro de la misma mayor.',
+      'sin alertas propias desde 15.5.28; queda marcado solo por su postcss interno, ' +
+      'que procesa el CSS que escribimos nosotros (ver la fila de postcss)',
   },
 
   /* ── Corre sirviendo, pero con entrada nuestra ─────────────────────────── */
-  sharp: {
-    alcance: 'ENTRADA_NUESTRA', por: 'transitiva de next, solo la usa el optimizador de imagenes',
-    comprobado: '/_next/image devuelve 404 en produccion: ningun byte de imagen pasa por sharp en runtime',
+  'gray-matter': {
+    alcance: 'ENTRADA_NUESTRA',
+    por: 'parsea el frontmatter del blog; marcado por su js-yaml',
+    comprobado: 'el YAML que procesa son los .mdx del repositorio, no algo que mande el visitante',
   },
   'js-yaml': {
     alcance: 'ENTRADA_NUESTRA',
@@ -77,21 +77,17 @@ const ALCANCE = {
     alcance: 'ENTRADA_NUESTRA',
     por: 'via next y critters (optimizeCss activo); el CSS que procesa lo escribimos nosotros',
   },
-  nanoid: { alcance: 'ENTRADA_NUESTRA', por: 'transitiva de postcss; el fallo exige un generador propio con tamano cero' },
-  'source-map-js': { alcance: 'ENTRADA_NUESTRA', por: 'transitiva de postcss; mapas de nuestras propias fuentes' },
 
   /* ── Fuera del arbol de produccion. COMPROBADO, no afirmado ───────────── */
   tailwindcss: { alcance: 'SOLO_DESARROLLO', por: 'devDependency' },
   'eslint-config-next': { alcance: 'SOLO_DESARROLLO', por: 'devDependency' },
   '@next/eslint-plugin-next': { alcance: 'SOLO_DESARROLLO', por: 'via eslint-config-next' },
   'postcss-selector-parser': { alcance: 'SOLO_DESARROLLO', por: 'via tailwindcss' },
-  browserslist: { alcance: 'SOLO_DESARROLLO', por: 'herramienta de compilacion' },
-  'baseline-browser-mapping': { alcance: 'SOLO_DESARROLLO', por: 'dato de browserslist' },
+  'postcss-nested': { alcance: 'SOLO_DESARROLLO', por: 'via tailwindcss' },
   chokidar: { alcance: 'SOLO_DESARROLLO', por: 'vigilancia de archivos en desarrollo' },
   'fast-glob': { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
   micromatch: { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
   braces: { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
-  'brace-expansion': { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
 }
 
 /* ── preguntar, con bandera explícita ─────────────────────────────────────── */
