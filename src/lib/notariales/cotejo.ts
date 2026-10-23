@@ -18,19 +18,66 @@
  * exención muerta y el indicador agregado, pero una capa más abajo —en el dato,
  * no en el cálculo—, y ahí ya no hay guarda que lo alcance: solo dos lecturas.
  *
- * CUATRO ESTADOS, no dos. «No transcrito» y «no cargado» no son lo mismo que
+ * CINCO ESTADOS, no dos. «No transcrito» y «no cargado» no son lo mismo que
  * «difiere», y confundirlos convertiría el informe en un semáforo inútil:
  *
  *   · COINCIDE        las dos lecturas dicen lo mismo
  *   · DIFIERE         dicen cosas distintas → volver al PDF antes de publicar
  *   · SIN_TRANSCRIBIR está en la base y no en el documento → ¿de dónde salió?
  *   · SIN_CARGAR      está en el documento y no en la base → falta cargarlo
+ *   · SIN_LECTURA     el documento dice `pendiente`: no hay segunda lectura
  *
  * El tercero es el más incómodo y el que más importa: una cifra en la base que
  * nadie transcribió es una cifra con una sola lectura, y puede que con ninguna.
+ *
+ * ─────────────────────────────────────────────────────────────────────────────
+ * EL QUINTO ESTADO, y por qué hizo falta (2026-10-22, hallazgo N-02)
+ *
+ * El cotejo compara `valor`, `unidad` y `articulo` —y NO comparaba el **modo de
+ * cálculo** de un tramo ni la **regla de redondeo**. Son los dos parámetros que
+ * más mueven la cifra sin cambiar ningún número de la tabla:
+ *
+ *     la MISMA tabla ORIP, mismos valores y unidades, solo cambiando el modo
+ *       base $200.000.000 → TASA_SOBRE_TOTAL 2.262.000 · MARGINAL 1.773.900
+ *       base $600.000.000 → TASA_SOBRE_TOTAL 7.998.000 · MARGINAL 6.717.600
+ *
+ * Un millón doscientos ochenta mil pesos de diferencia, y el cotejo daba
+ * COINCIDE en los dos casos.
+ *
+ * ⚠ Y AL AÑADIRLOS APARECIÓ EL PROBLEMA DE FONDO: **el documento normativo
+ * transcrito no dice el modo.** Ni en el bloque ni en la prosa. Así que no hay
+ * segunda lectura que cotejar, y rellenarla desde la base sería convertir el
+ * cotejo en un eco —exactamente lo que estas líneas de arriba existen para
+ * evitar—.
+ *
+ * De ahi `SIN_LECTURA`: el documento escribe `pendiente`, que no es un valor
+ * sino una declaración de que **nadie ha leído ese parámetro del PDF todavía**.
+ * No cuenta como coincidencia, no cuenta como diferencia, y bloquea `completo`.
+ *
+ * > La ausencia de evidencia no es una coincidencia. Es una casilla vacía con
+ * > nombre.
  */
 
-export type EstadoCotejo = 'COINCIDE' | 'DIFIERE' | 'SIN_TRANSCRIBIR' | 'SIN_CARGAR'
+export type EstadoCotejo =
+  | 'COINCIDE' | 'DIFIERE' | 'SIN_TRANSCRIBIR' | 'SIN_CARGAR' | 'SIN_LECTURA'
+
+/**
+ * Lo que el documento escribe cuando un parámetro **no se ha leído del PDF**.
+ *
+ * No es un valor con el que se pueda comparar: es la ausencia, declarada. Se
+ * escribe en la columna `valor` del bloque.
+ */
+export const PENDIENTE = 'pendiente'
+
+/**
+ * Campos cuyo valor es un NOMBRE y no una cifra: se comparan como texto
+ * normalizado, no con `normalizarValor` —que ante «TASA_SOBRE_TOTAL» devuelve
+ * la cadena tal cual y haría sensible la comparación a un espacio o a una
+ * mayúscula, que es como quedan muertas las comparaciones—.
+ */
+function esCampoDeTexto(campo: string): boolean {
+  return campo === 'redondeo.modo' || campo.endsWith('.modo')
+}
 
 /** Una fila del bloque legible por máquina de la transcripción. */
 export interface FilaTranscrita {
@@ -184,12 +231,34 @@ export function compararCotejo(
     const c = mapaC.get(llave) ?? null
     const [concepto, campo] = llave.split('·') as [string, string]
 
+    /* EL DOCUMENTO DECLARA QUE NO HA LEÍDO ESTE PARÁMETRO. Va primero, antes
+     * que cualquier otra clasificación: sin segunda lectura no hay cotejo
+     * posible, ni para bien ni para mal. Y se dice si la base tiene algo, que
+     * es lo que decide si hay un dato publicable sin respaldo de lectura. */
+    if (t && normalizarTexto(t.valor) === PENDIENTE) {
+      return {
+        concepto, campo, estado: 'SIN_LECTURA' as const, transcrito: t, cargado: c,
+        diferencias: [
+          c
+            ? 'la base tiene un valor y el documento declara que nadie lo ha leído del PDF: ' +
+              'no hay segunda lectura con la que compararlo'
+            : 'nadie lo ha leído del PDF y tampoco está cargado',
+        ],
+      }
+    }
+
     if (t && !c) return { concepto, campo, estado: 'SIN_CARGAR' as const, transcrito: t, cargado: null, diferencias: [] }
     if (!t && c) return { concepto, campo, estado: 'SIN_TRANSCRIBIR' as const, transcrito: null, cargado: c, diferencias: [] }
     if (!t || !c) return { concepto, campo, estado: 'SIN_CARGAR' as const, transcrito: t, cargado: c, diferencias: [] }
 
     const diferencias: string[] = []
-    if (normalizarValor(t.valor) !== normalizarValor(c.valor)) {
+    /* Un MODO se compara como texto; una cifra, como cifra. El mismo `!==` con
+     * el normalizador equivocado dejaría pasar «tasa_sobre_total» frente a
+     * «TASA_SOBRE_TOTAL», o lo reportaría como diferencia siendo el mismo modo. */
+    const iguales = esCampoDeTexto(campo)
+      ? normalizarTexto(t.valor) === normalizarTexto(c.valor)
+      : normalizarValor(t.valor) === normalizarValor(c.valor)
+    if (!iguales) {
       diferencias.push(`valor: el documento dice ${t.valor} y la base tiene ${c.valor}`)
     }
     if (normalizarTexto(t.unidad) !== normalizarTexto(c.unidad)) {
@@ -262,6 +331,8 @@ export interface VeredictoSeccion {
   difieren: number
   sin_transcribir: number
   sin_cargar: number
+  /** Declarados `pendiente` en el documento: sin segunda lectura. */
+  sin_lectura: number
   campos: VeredictoCampo[]
 }
 
@@ -305,6 +376,7 @@ export function veredictoPorSeccion(
     difieren: suyos.filter(r => r.estado === 'DIFIERE').length,
     sin_transcribir: suyos.filter(r => r.estado === 'SIN_TRANSCRIBIR').length,
     sin_cargar: suyos.filter(r => r.estado === 'SIN_CARGAR').length,
+    sin_lectura: suyos.filter(r => r.estado === 'SIN_LECTURA').length,
     campos: suyos.map(r => ({
       concepto: r.concepto,
       campo: r.campo,
@@ -334,9 +406,23 @@ export interface ResumenCotejo {
   difieren: number
   sin_transcribir: number
   sin_cargar: number
+  /**
+   * Parámetros que el documento declara `pendiente`: cargados o no, **no
+   * tienen segunda lectura**. No son diferencias y NO son coincidencias.
+   */
+  sin_lectura: number
   /** ¿Se puede activar el año con esto? Solo si NADA difiere ni sobra. */
   apto: boolean
-  /** `sin_cargar === 0`. `apto` sin esto no autoriza a publicar. */
+  /**
+   * `sin_cargar === 0 && sin_lectura === 0`. `apto` sin esto no autoriza a
+   * publicar.
+   *
+   * ⚠ `sin_lectura` entra en COMPLETO y no en APTO, a propósito. `apto`
+   * significa «nada de lo cargado contradice la transcripción» y un parámetro
+   * sin transcribir no contradice nada: meterlo ahí borraría la distinción
+   * entre consistencia y completitud, que costó un defecto descubrirla —el
+   * `apto: true` sobre 53 cifras sin cargar—.
+   */
   completo: boolean
 }
 
@@ -351,12 +437,14 @@ export function resumirCotejo(resultados: ResultadoCotejo[]): ResumenCotejo {
   const difieren = cuenta('DIFIERE')
   const sinTranscribir = cuenta('SIN_TRANSCRIBIR')
   const sinCargar = cuenta('SIN_CARGAR')
+  const sinLectura = cuenta('SIN_LECTURA')
   return {
     total: resultados.length,
     coinciden: cuenta('COINCIDE'),
     difieren,
     sin_transcribir: sinTranscribir,
     sin_cargar: sinCargar,
+    sin_lectura: sinLectura,
     /**
      * CONSISTENCIA, no completitud: «nada de lo cargado contradice la
      * transcripción». Deliberado y probado —un año vacío no contradice nada—.
@@ -373,6 +461,6 @@ export function resumirCotejo(resultados: ResultadoCotejo[]): ResumenCotejo {
      * Lo descubrió el arnés del panel el día que se le puso un código de salida:
      * imprimía `{"sin_cargar":53,"apto":true}` y nadie lo había mirado.
      */
-    completo: sinCargar === 0,
+    completo: sinCargar === 0 && sinLectura === 0,
   }
 }

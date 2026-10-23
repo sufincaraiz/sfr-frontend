@@ -266,6 +266,30 @@ export function valoresDesdeAnio(anio: AnioNotarial): ValorCargado[] {
         unidad: c.unidad ?? 'PESOS', articulo: articuloDe(c.respaldos, 'valor'),
       })
     }
+    /* EL REDONDEO, en dos filas y no en una.
+     *
+     * ⚠ Hasta el 2026-10-22 el redondeo NO se cotejaba, y es un parámetro
+     * normativo: la notarial dice «a la centena más próxima» y la registral «a
+     * la centena más cercana» (art. 25). Cargarlo al peso en vez de a la
+     * centena cambia la cifra final de cada concepto con aritmética.
+     *
+     * Dos filas —`unidad` y `modo`— porque son dos decisiones distintas: a qué
+     * múltiplo y en qué sentido. Una sola fila «100 CERCANO» no podría decir
+     * cuál de las dos mitades difiere, que es justo lo que el cotejo existe para
+     * señalar. El `articulo` sale del respaldo del campo `redondeo`.
+     */
+    const articuloRedondeo = articuloDe(c.respaldos, 'redondeo')
+    if (c.redondeo) {
+      out.push({
+        concepto: c.clave, campo: 'redondeo.unidad', valor: String(c.redondeo.unidad),
+        unidad: 'PESOS', articulo: articuloRedondeo,
+      })
+      out.push({
+        concepto: c.clave, campo: 'redondeo.modo', valor: String(c.redondeo.modo),
+        unidad: '', articulo: articuloRedondeo,
+      })
+    }
+
     const articuloTramos = articuloDe(c.respaldos, 'tramos')
     for (const t of c.tramos ?? []) {
       const unidadLimite = t.en_uvt ? 'UVT' : 'PESOS'
@@ -273,6 +297,16 @@ export function valoresDesdeAnio(anio: AnioNotarial): ValorCargado[] {
         valor: t.hasta === null || t.hasta === undefined ? 'abierto' : String(t.hasta) })
       out.push({ concepto: c.clave, campo: `tramo.${t.orden}.valor`, valor: String(t.valor),
         unidad: t.unidad, articulo: articuloTramos })
+      /* EL MODO DE CÁLCULO — el parámetro que más mueve la cifra sin cambiar
+       * ningún número de la tabla. Con los mismos valores y unidades, la tabla
+       * ORIP da 2.262.000 como TASA_SOBRE_TOTAL y 1.773.900 como TASA_MARGINAL
+       * sobre una base de $200.000.000. Hasta el 2026-10-22 el cotejo daba
+       * COINCIDE en los dos casos (hallazgo N-02).
+       *
+       * La `unidad` va vacía a propósito: un modo es un nombre, no una
+       * magnitud, y el cotejo lo compara como texto normalizado. */
+      out.push({ concepto: c.clave, campo: `tramo.${t.orden}.modo`, valor: String(t.modo_calculo),
+        unidad: '', articulo: articuloTramos })
       if (t.aporte_snr !== null && t.aporte_snr !== undefined) {
         out.push({ concepto: c.clave, campo: `tramo.${t.orden}.aporte_snr`, valor: String(t.aporte_snr),
           unidad: 'PESOS', articulo: articuloTramos })

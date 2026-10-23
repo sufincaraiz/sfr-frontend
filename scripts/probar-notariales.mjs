@@ -41,7 +41,7 @@ import { clasificarError } from '../src/lib/notariales/errores.ts'
 import { ErrorEsquemaNotarial } from '../src/lib/notariales/tipos.ts'
 import {
   leerBloqueCotejo, compararCotejo, resumirCotejo, normalizarValor,
-  veredictoPorSeccion, avance,
+  veredictoPorSeccion, avance, PENDIENTE,
 } from '../src/lib/notariales/cotejo.ts'
 import { valoresDesdeAnio, exigirEditable, subirVersion } from '../src/lib/notariales/datos.ts'
 import { readFileSync } from 'node:fs'
@@ -1915,6 +1915,22 @@ check('un concepto sin valor no produce fila',
 check('los aportes institucionales se cotejan uno a uno, sin deducir la mitad',
   FILAS.filter(f => /aporte_(snr|fondo)$/.test(f.campo)).length === 14)
 
+/* N-02 · LA EMISIÓN DE LOS DOS PARÁMETROS QUE ANTES NO VIAJABAN.
+ * Sin estas dos verificaciones, borrar los `out.push` del modo o del redondeo
+ * en `datos.ts` dejaría el arnés entero en verde: las fixtures sintéticas del
+ * bloque N-02 no pasan por `valoresDesdeAnio`, así que no lo notarían. */
+check('N-02 · el MODO de cada tramo viaja al cotejo, uno por tramo',
+  FILAS.filter(f => f.concepto === 'recaudo_snr' && /^tramo\.\d+\.modo$/.test(f.campo)).length === 6,
+  `(${FILAS.filter(f => f.concepto === 'recaudo_snr' && /\.modo$/.test(f.campo)).length})`)
+/* El `length > 0` no es decorativo: un `every` sobre la lista vacía pasa, y
+ * esta verificación existe justo para el caso en que la lista podría vaciarse. */
+check('…y sin unidad: un modo es un nombre, no una magnitud',
+  (() => { const m = FILAS.filter(f => /^tramo\.\d+\.modo$/.test(f.campo))
+    return m.length > 0 && m.every(f => f.unidad === '') })())
+check('N-02 · el REDONDEO viaja en dos filas, unidad y modo por separado',
+  FILAS.some(f => f.concepto === 'recaudo_snr' && f.campo === 'redondeo.unidad') &&
+  FILAS.some(f => f.concepto === 'recaudo_snr' && f.campo === 'redondeo.modo'))
+
 // EL CASO QUE JUSTIFICA TODO ESTO: la cifra mal leída del papel.
 const CON_ERRATA = valoresDesdeAnio(ANIO).map(f =>
   f.concepto === 'recaudo_snr' && f.campo === 'tramo.1.valor' ? { ...f, valor: '28090' } : f)
@@ -2312,6 +2328,162 @@ check('el panel declara que los tramos no se pueden editar todav\u00eda, o que y
     desigual.comprador > desigual.vendedor &&
     desigual.comprador + desigual.vendedor === desigual.liquidado,
     `(${desigual.comprador} / ${desigual.vendedor})`)
+}
+
+/* ───────────────────────────────────────────────────────────────────────
+ * N-02 · EL COTEJO MIRA EL MODO Y EL REDONDEO
+ *
+ * Dos parámetros mueven la cifra sin cambiar ningún número de la tabla, y hasta
+ * el 2026-10-22 el cotejo daba COINCIDE con los dos cambiados:
+ *
+ *   la MISMA tabla ORIP, mismos valores y unidades, solo el modo
+ *     base $200.000.000 → SOBRE_TOTAL 2.262.000 · MARGINAL 1.773.900
+ *     base $600.000.000 → SOBRE_TOTAL 7.998.000 · MARGINAL 6.717.600
+ *
+ * Las fixtures de aqui son SINTÉTICAS: no salen del documento ni de la base, y
+ * por eso pueden afirmar un esperado sin convertir la prueba en un eco. */
+{
+  const fila = (concepto, campo, valor, unidad = '', articulo = 'art. 1') =>
+    ({ concepto, campo, valor, unidad, articulo })
+
+  // Una tabla de dos tramos, en los dos lados, IDENTICA salvo lo que se indique.
+  const docBase = [
+    fila('x', 'tramo.1.hasta', '1000', 'PESOS'),
+    fila('x', 'tramo.1.valor', '500', 'PESOS'),
+    fila('x', 'tramo.1.modo', 'FIJO'),
+    fila('x', 'tramo.2.hasta', 'abierto', 'PESOS'),
+    fila('x', 'tramo.2.valor', '9.11', 'POR_MIL'),
+    fila('x', 'tramo.2.modo', 'TASA_SOBRE_TOTAL'),
+    fila('x', 'redondeo.unidad', '100', 'PESOS'),
+    fila('x', 'redondeo.modo', 'CERCANO'),
+  ]
+  const clonar = (filas, cambios = {}) => filas.map(f => {
+    const llave = `${f.concepto}·${f.campo}`
+    return llave in cambios ? { ...f, ...cambios[llave] } : { ...f }
+  })
+
+  // ── 1. coincidencia completa ──────────────────────────────────────────────
+  {
+    const r = resumirCotejo(compararCotejo(docBase, clonar(docBase)))
+    check('N-02 · coincidencia completa: 8 de 8 y nada pendiente',
+      r.coinciden === 8 && r.difieren === 0 && r.sin_lectura === 0 && r.apto && r.completo,
+      JSON.stringify(r))
+  }
+
+  // ── 2. SOLO el modo cambia ────────────────────────────────────────────────
+  {
+    const cargado = clonar(docBase, { 'x·tramo.2.modo': { valor: 'TASA_MARGINAL' } })
+    const res = compararCotejo(docBase, cargado)
+    const modo = res.find(x => x.campo === 'tramo.2.modo')
+    const r = resumirCotejo(res)
+    check('N-02 · mismo valor y misma unidad, MODO distinto → DIFIERE',
+      modo.estado === 'DIFIERE', `(${modo.estado})`)
+    check('…y el resto de la tabla sigue coincidiendo: la diferencia está localizada',
+      r.difieren === 1 && r.coinciden === 7, JSON.stringify(r))
+    check('…y el año deja de ser apto',
+      !r.apto)
+  }
+
+  // ── 3. SOLO el redondeo cambia ────────────────────────────────────────────
+  {
+    const porUnidad = compararCotejo(docBase, clonar(docBase, { 'x·redondeo.unidad': { valor: '1' } }))
+    check('N-02 · solo la UNIDAD de redondeo cambia → DIFIERE',
+      porUnidad.find(x => x.campo === 'redondeo.unidad').estado === 'DIFIERE')
+    const porModo = compararCotejo(docBase, clonar(docBase, { 'x·redondeo.modo': { valor: 'ARRIBA' } }))
+    check('N-02 · solo el MODO de redondeo cambia → DIFIERE',
+      porModo.find(x => x.campo === 'redondeo.modo').estado === 'DIFIERE')
+    check('…y las dos mitades del redondeo se señalan por separado',
+      resumirCotejo(porUnidad).difieren === 1 && resumirCotejo(porModo).difieren === 1)
+  }
+
+  // ── 4. el modo se compara como TEXTO, no como cifra ───────────────────────
+  {
+    const igual = compararCotejo(docBase, clonar(docBase, { 'x·tramo.2.modo': { valor: ' tasa_sobre_total ' } }))
+    check('N-02 · un modo con otra caja y espacios es el MISMO modo, no una diferencia',
+      igual.find(x => x.campo === 'tramo.2.modo').estado === 'COINCIDE')
+    /* Si se comparara con el normalizador de cifras, «TASA_SOBRE_TOTAL» y
+     * «tasa_sobre_total» serian distintos y el informe tendria un falso
+     * hallazgo cada vez que alguien escribe en minuscula. */
+  }
+
+  // ── 5. unidad y limite incorrectos siguen detectandose ────────────────────
+  {
+    const u = compararCotejo(docBase, clonar(docBase, { 'x·tramo.2.valor': { unidad: 'PORCENTAJE' } }))
+    check('N-02 · unidad incorrecta → DIFIERE (un 9,11 % no es 9,11 por mil)',
+      u.find(x => x.campo === 'tramo.2.valor').estado === 'DIFIERE')
+    const l = compararCotejo(docBase, clonar(docBase, { 'x·tramo.1.hasta': { valor: '1001' } }))
+    check('N-02 · límite incorrecto → DIFIERE',
+      l.find(x => x.campo === 'tramo.1.hasta').estado === 'DIFIERE')
+  }
+
+  // ── 6. AUSENTE no es COINCIDENTE ──────────────────────────────────────────
+  {
+    const sinModoEnDoc = docBase.filter(f => f.campo !== 'tramo.2.modo')
+    const res = compararCotejo(sinModoEnDoc, clonar(docBase))
+    const x = res.find(y => y.campo === 'tramo.2.modo')
+    check('N-02 · el modo cargado y NO transcrito sale SIN_TRANSCRIBIR, no COINCIDE',
+      x.estado === 'SIN_TRANSCRIBIR', `(${x.estado})`)
+    check('…y eso basta para que el año NO sea apto: una sola lectura no es cotejo',
+      !resumirCotejo(res).apto)
+
+    const sinRedondeoEnDoc = docBase.filter(f => !f.campo.startsWith('redondeo.'))
+    const res2 = compararCotejo(sinRedondeoEnDoc, clonar(docBase))
+    check('N-02 · el redondeo cargado y no transcrito también: 2 SIN_TRANSCRIBIR',
+      resumirCotejo(res2).sin_transcribir === 2 && !resumirCotejo(res2).apto)
+  }
+
+  // ── 7. «pendiente»: leído el PDF y el PDF no lo dice ──────────────────────
+  {
+    const conPendiente = clonar(docBase, { 'x·tramo.2.modo': { valor: PENDIENTE } })
+    const res = compararCotejo(conPendiente, clonar(docBase))
+    const x = res.find(y => y.campo === 'tramo.2.modo')
+    const r = resumirCotejo(res)
+    check('N-02 · `pendiente` en el documento → SIN_LECTURA, ni coincide ni difiere',
+      x.estado === 'SIN_LECTURA' && r.coinciden === 7 && r.difieren === 0, JSON.stringify(r))
+    check('…y lo dice: hay valor en la base y no hay segunda lectura',
+      /no hay segunda lectura/.test(x.diferencias.join(' ')), x.diferencias.join(' '))
+    check('…NO autoriza a publicar: bloquea `completo`',
+      r.completo === false && r.sin_lectura === 1)
+    check('…y NO se cuenta como contradicción: `apto` sigue siendo cierto',
+      r.apto === true)
+    /* La distinción cuesta un defecto descubrirla: `apto` es consistencia
+     * —nada de lo cargado contradice— y `completo` es completitud. Un parametro
+     * sin transcribir no contradice nada, y tampoco autoriza nada. */
+
+    const pendienteYSinCargar = compararCotejo(conPendiente, clonar(docBase).filter(f => f.campo !== 'tramo.2.modo'))
+    const y = pendienteYSinCargar.find(z => z.campo === 'tramo.2.modo')
+    check('N-02 · `pendiente` y sin cargar sigue siendo SIN_LECTURA, y lo dice',
+      y.estado === 'SIN_LECTURA' && /tampoco está cargado/.test(y.diferencias.join(' ')),
+      y.diferencias.join(' '))
+  }
+
+  // ── 8. transcripción de referencia incompleta ─────────────────────────────
+  {
+    const soloDosFilas = [docBase[0], docBase[1]]
+    const r = resumirCotejo(compararCotejo(soloDosFilas, clonar(docBase)))
+    /* ⚠ ESTA VERIFICACIÓN AFIRMABA `!r.completo` Y LA EQUIVOCADA ERA ELLA.
+     * `completo` significa «nada de lo que el documento transcribe falta en la
+     * base», y con una transcripción de dos filas eso es cierto: no falta nada.
+     * Lo que sobra son seis cargados sin transcribir, y de eso se encarga
+     * `apto`. No se ensanchó `completo` para que la prueba pasara: se corrigió
+     * la prueba, porque la pareja es la que autoriza. */
+    check('N-02 · una transcripción a medias no produce coincidencias falsas',
+      r.coinciden === 2 && r.sin_transcribir === 6, JSON.stringify(r))
+    check('…y la PAREJA cierra la puerta: apto es falso, así que apto && completo también',
+      r.apto === false && (r.apto && r.completo) === false, JSON.stringify(r))
+  }
+
+  // ── 9. el veredicto del panel cuenta los pendientes, SIN la cifra ─────────
+  {
+    const conPendiente = clonar(docBase, { 'x·tramo.2.modo': { valor: PENDIENTE } })
+    const v = veredictoPorSeccion(conPendiente, clonar(docBase))[0]
+    check('N-02 · el veredicto del panel lleva `sin_lectura`',
+      v.sin_lectura === 1 && v.total === 8, JSON.stringify({ sl: v.sin_lectura, t: v.total }))
+    const serializado = JSON.stringify(v)
+    check('…y NO lleva la cifra esperada: el panel no puede copiarla',
+      !serializado.includes('9.11') && !serializado.includes('TASA_SOBRE_TOTAL'),
+      serializado.slice(0, 120))
+  }
 }
 
 console.log(`\n${fail === 0 ? '✓ TODO EN VERDE' : '✗ HAY FALLOS'} — ${ok} verificaciones, ${fail} fallos\n`)
