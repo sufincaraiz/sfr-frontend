@@ -3237,6 +3237,280 @@ distingue, la guarda está aceptando los dos y solo uno es legítimo.
 Arreglada: `[]` pasa, `undefined` **detiene** con un mensaje que dice la
 diferencia. 5 verificaciones y una mutación.
 
+# UNA LLAMADA QUE FALTA NO TIENE SINTAXIS
+
+**Categoría propia, y separada a propósito de las tres de «leer una expresión no
+es leer un camino».** Aquellas son código PRESENTE que no se alcanza. Ésta es
+código AUSENTE. Las primeras se cazan preguntando **«se llega ahí?»**; ésta solo
+preguntando **«esto debería existir?»** —y esa pregunta no se le puede hacer al
+repositorio—.
+
+## El caso, completo
+
+El 2026-10-23, en producción: **9 de los 12 leads de los últimos 60 días no
+generaron ningún aviso a Leonel.** Clientes reales, con nombre y teléfono,
+esperando una llamada que nadie sabía que había que hacer. Uno de ellos
+—Martha Patricia Navarrete, el 11 de octubre— envió el formulario **dos veces
+el mismo día**, probablemente porque nadie le contestó la primera.
+
+La causa no fue un fallo. `POST /api/leads` —por donde postean los **cuatro**
+formularios públicos del sitio— **no contenía ni una línea de notificación.
+Nunca la tuvo.** La escritura del lead era lo último dentro del `try`, y
+después no había nada.
+
+## Por qué ninguna guarda podía encontrarlo
+
+`verificar-escrituras.mjs` busca «una escritura seguida de algo que puede
+fallar en el mismo try». Se fue a mirar si `/api/leads` estaba entre sus ocho
+entradas de deuda conocida: **no estaba, y no era un fallo de la guarda.** La
+guarda hacía exactamente lo que dice. Aquí la escritura no iba seguida de nada,
+así que no había ninguna forma sintáctica que detectar.
+
+Un `??` que desarma una guarda se ve leyendo el llamador. Un `!` que falsifica
+una comprobación se ve leyendo el tipo. Una condición inalcanzable se ve
+siguiendo el camino. **Una llamada que no está no se ve en ninguna parte**,
+porque no hay dónde mirar: no deja hueco, no deja token, no deja nada. Es
+indistinguible de un archivo que está bien.
+
+## Lo que lo mantuvo escondido
+
+Dos cosas, y la segunda es la que vale para la próxima vez.
+
+**Primera: el único camino instrumentado era el menos usado.**
+`enviarAlertaLeadWhatsApp` se llamaba desde cuatro sitios —dos crons, la salud
+de Redis y el agente Mac— y ninguno era el formulario público. El único camino
+de leads que sí avisaba era el del chat de Mac, que ya habíamos **medido en
+Redis como apenas utilizado**. 3 de 12 leads.
+
+**Segunda, y es la regla:**
+
+> Las pruebas recorren el camino que el programador tiene a mano, no el que la
+> gente usa.
+
+Funcionaba en las pruebas porque en las pruebas se prueba Mac: es el camino
+interesante, el que tiene lógica, el que se acaba de escribir. El formulario
+de contacto es aburrido, lleva años ahi y «ya funciona». Nadie prueba el
+camino aburrido, y el camino aburrido es por donde entra el 75 % de los
+clientes.
+
+Corolario práctico: **al elegir qué instrumentar, mirar el reparto de uso
+REAL, no el reparto de complejidad.** Y si no se conoce el reparto de uso, eso
+es lo primero que hay que medir.
+
+## Las dos puertas mudas del camino que sí avisaba
+
+Aun en el camino instrumentado había **tres `return` que salían sin escribir
+nada**, y el defecto se habría escondido igual:
+
+* `whatsapp.ts:41` — `if (!to) return`, sin un solo log. Si faltaba la variable
+  de entorno, no se avisaba y no quedaba rastro.
+* `tools.ts:630` y `:668` — `if (resumen)`. Si el LLM que genera el resumen
+  fallaba o devolvía vacío, **la falta de un texto de cortesía se convertía en
+  la falta del aviso entero**. El nombre y el teléfono ya bastan para devolver
+  una llamada.
+* `whatsapp.ts:84` — el cuerpo literal de Meta iba a `console.warn` y se iba
+  con el log. Cuando se fue a buscar para los tres leads de Mac, **ya no
+  existía**.
+
+De ahí la regla que ahora sostiene `aviso-lead.ts`:
+
+> Un camino de aviso no puede tener un solo `return` mudo. Si no se avisa, algo
+> queda escrito, siempre.
+
+Y está probada de forma **exhaustiva y no por muestreo**: se recorren las 64
+combinaciones de las tres variables de configuración y el resumen, y se exige
+que las 64 produzcan o un envío o un motivo decible. Si alguien añade una
+condición y se le olvida el motivo, la prueba se cae.
+
+## Lo único que convierte esta clase en algo mecanizable
+
+No se puede escribir una guarda que adivine qué llamadas faltan. **Sí se puede
+escribir la respuesta una vez y hacer que el build la compruebe.** Es lo que
+hace `verificar-avisos.mjs`: declara la regla de negocio —«todo sitio que crea
+un lead avisa, o declara por qué no»— y la vigila en las dos direcciones.
+
+Y una anotación sobre el instrumento, porque se portó bien a la primera: **su
+segunda dirección me cazó a mí.** La primera versión traía una excepción
+declarada para `src/app/api/admin/crm/route.ts` «porque lo crea un admin a
+mano». Plausible y falsa: ese archivo no crea leads. Una lista de excepciones
+acumula exactamente esa clase de entrada cuando nadie la contrasta, y por eso
+la guarda también se pone en rojo cuando una razón caduca.
+
+La mutación que borra la llamada de `/api/leads` **no la caza ninguna prueba del
+arnés** —una llamada que falta no tiene sintaxis—: la mata la guarda. Si
+sobreviviera, el arreglo de hoy podría deshacerse mañana sin que nada se
+quejara, que es exactamente cómo llegó a existir.
+
+## LA LÍNEA BASE: UN TESTIGO QUE NO ES NUESTRO
+
+**2026-10-23.** Leonel abrió el panel de Meta y trajo la cifra que ningún
+instrumento del repositorio podía dar:
+
+> plantilla `nuevo_lead_sfr` — **APROBADA** y activa, Utilidad, Spanish (COL),
+> en vigor desde el **2026-07-29**.
+> **MENSAJES ENTREGADOS: 1.** Uno, en los 86 días de vida de la plantilla.
+> La columna siguiente marcaba (3), consistente con los 3 leads del agente Mac.
+
+Es la primera vez en el proyecto que hay un **testigo externo**. Las 53 cifras
+notariales se cotejan contra un documento que transcribimos nosotros: dos
+lecturas, sí, pero las dos nuestras. Aquí la segunda lectura la lleva Meta, con
+su propio contador, y no la controlamos. Eso la hace mejor que cualquiera de
+las nuestras.
+
+### Qué cierra, y contra qué superficie
+
+Dos candidatos del diagnóstico, y los cierra **contra una superficie que no es
+la nuestra**:
+
+* **no era la plantilla** — estaba aprobada desde julio;
+* **el token sirvió al menos una vez** — un mensaje se entregó.
+
+Y lo que lo vuelve un hecho en vez de una conclusión: la lectura del código
+—«solo el camino de Mac llama al aviso, y Mac apenas se usa»— y el contador de
+Meta —«1 entregado, (3) al lado»— **coinciden sin haberse mirado**. Dos
+instrumentos independientes diciendo lo mismo.
+
+### Lo que ese 1 NO demuestra
+
+**Que el token funcione hoy.** Un token que entregó un mensaje sirvió; si sirve
+ahora solo lo prueba un envío real, no una inspección. Por eso el token **deja
+de investigarse** y el criterio de aceptación pasa a ser un hecho observable:
+
+> Un lead de prueba enviado por el **FORMULARIO WEB** —no por Mac, que es el
+> camino que ya funcionaba— que llegue al WhatsApp de Leonel, y el contador de
+> Meta pasando de **1 a 2**.
+>
+> Mientras eso no ocurra, el arreglo NO está hecho, aunque el código esté bien
+> y el build en verde.
+
+Esa última frase es la regla general, y es la misma familia que «un verde que
+no puede ser rojo no es un verde»: **código correcto y cadena comprobada son
+afirmaciones distintas**, y aquí la segunda la firma un instrumento ajeno.
+
+### El cotejo permanente
+
+`scripts/cotejar-avisos.mjs` compara nuestros `ACEPTADO_POR_META` con los
+entregados de Meta. La cifra de Meta **se teclea**, no se consulta por API, por
+dos razones:
+
+1. si el guión fuera a buscarla, las dos lecturas pasarían por el mismo token y
+   la misma credencial, y un fallo de permisos las movería a las dos a la vez;
+2. teclearla obliga a que una persona abra el panel y la lea, que es el acto
+   que la convierte en una segunda lectura y no en un eco —la misma razón por
+   la que el veredicto del panel notarial no lleva la cifra transcrita—.
+
+Y el guión distingue las dos direcciones de la diferencia, que no significan lo
+mismo: si nosotros contamos **más** que Meta, es la distancia normal entre
+«aceptado» y «entregado» (un número bloqueado se acepta y no se entrega); si
+Meta entrega **más** de los que registramos, hay un camino de envío que no pasa
+por `avisarLead`, y eso es el defecto del 2026-10-23 otra vez en otra forma.
+
+### Y lo que ninguna de las dos cifras es
+
+Un acuse. «Entregado» de Meta es entregado al teléfono, y nuestro
+`ACEPTADO_POR_META` es menos todavía. **Un acuse no es que el emisor crea que
+envió: es que el receptor cite lo recibido.**
+
+## VARIANTE: UNA DECISIÓN CORRECTA CON UN MOTIVO INVENTADO
+
+No es una afirmación falsa. Es algo más difícil de cazar: **la decisión
+acertada acompañada de una justificación que no resiste comprobación.**
+
+El caso, del mismo día. Al cablear el aviso en `/api/leads` lo puse FUERA del
+`try` de la escritura —correcto— y escribí en el comentario que era porque un
+fallo del aviso «no puede convertir un lead guardado en un 500 que le diga al
+visitante que vuelva a intentarlo, **así se duplicó Martha Patricia Navarrete
+el 11 de octubre**».
+
+Eso contradice mi propio hallazgo de media hora antes: en esa ruta **no había
+ningún código de aviso**, así que no podía lanzar nada ni producir ningún 500.
+Ella se duplicó porque nadie le contestó. Cogí un hecho real del incidente y
+lo pegué como causa de una decisión que ya había tomado por otra razón.
+
+El motivo que sí resiste, y es el que está ahora en el archivo:
+
+> Un aviso es un efecto secundario del registro de un lead, y un efecto
+> secundario no puede decidir si el hecho principal ocurrió.
+
+### Por qué esta variante es peor que una mentira franca
+
+Porque **se descubre verificando el motivo, no el código — y nadie verifica los
+motivos.** El código estaba bien, la prueba pasaba, la guarda estaba contenta y
+el comentario sonaba a experiencia ganada en el incidente: la clase de frase
+que un lector futuro cita en vez de comprobar. Habría sobrevivido a cualquier
+revisión que mirara si el código hace lo que el comentario dice, porque lo hace.
+Lo que no hace es hacerlo **por eso**.
+
+Y el modo de fallo es el habitual y en la dirección cómoda: un detalle concreto
+y verificable —un nombre, una fecha— presta credibilidad a una relación causal
+que nadie va a reconstruir. Es la misma mecánica de las cifras infladas de la
+doctrina AEO, aplicada a un comentario de código.
+
+### Cómo se caza
+
+No hay guarda posible. Lo único que funciona: **cuando un comentario explica un
+PORQUÉ con un caso concreto, comprobar que ese caso podía ocurrir por ese
+camino.** Y la señal de alarma es la propia vistosidad: si el motivo es una
+anécdota y no una propiedad, probablemente llegó después de la decisión.
+
+Un motivo basado en una propiedad —«un efecto secundario no decide si el hecho
+principal ocurrió»— no se cae cuando alguien lo verifica. Uno basado en una
+anécdota, sí.
+
+## TENER EL DATO NO ES USARLO
+
+La regla, tal cual, porque es la forma más traicionera de incumplir una regla
+propia:
+
+> Tener el dato no es usarlo. Y es más grave que no tenerlo, porque el
+> documento parece cumplido.
+
+El caso, el mismo día. `scripts/cotejar-avisos.mjs` nació para cotejar nuestros
+avisos contra el contador de Meta. En su primera ejecución dio:
+
+> ✗ DIFIEREN, y en la dirección que NO debería poder pasar. Meta entregó 1 más
+> de los que registramos. Hay un camino de envío que no pasa por `avisarLead`.
+
+Falso y alarmante. Estaba comparando **el contador de toda la vida de la
+plantilla** —desde el 2026-07-29— contra una tabla nacida diez minutos antes.
+Ese 1 se entregó meses antes de que `avisos_lead` existiera.
+
+Y lo incómodo no es el fallo, es dónde estaba la respuesta: **la línea base
+estaba escrita, fechada y en una constante del propio archivo.** Se usaba para
+imprimir la cabecera y para nada más. El proyecto ya tenía la regla escrita
+—«una medición sin su línea base fechada no es una medición, es un número»— y
+la incumplí con la línea base delante.
+
+Por eso es peor que no tenerla. Si no estuviera, el guión no habría podido
+imprimir la cabecera y la falta habría sido visible. Estando —decorando— el
+archivo **parece** cumplir la regla: cualquiera que lo abra ve la fecha, la
+cifra y la procedencia, y concluye que está cotejado contra su línea base.
+
+### La forma general
+
+Un dato guardado en el sitio correcto, con su fecha y su fuente, **que no entra
+en ninguna decisión**. Hermanos de la misma familia ya en este documento: el
+comentario que promete un filtro que no existe, el cron que avisa de 0 filas
+sobre una tabla que nadie escribe, la guarda que nadie llama. En todos, lo que
+engaña no es la ausencia: es la presencia inerte.
+
+La pregunta que lo caza, y hay que hacérsela a cada constante documentada:
+**¿qué se rompe si le cambio el valor?** Si la respuesta es «una línea del
+informe se imprime distinta», no está en uso. Es la misma pregunta que el
+arnés de mutaciones le hace al código, hecha a mano sobre los datos.
+
+## La consecuencia que queda abierta
+
+La lista de lo que el sistema **debería** hacer solo no existe en ninguna parte:
+vive en la cabeza de Leonel. Mientras siga ahí, el único detector de esta clase
+de defecto es que un cliente se pierda. Las 15 preguntas están en
+`LO-QUE-EL-SISTEMA-DEBERIA-HACER-SOLO.md`, con lo que el código hace hoy al
+lado: **2 existen, 4 a medias, 8 no existen, 1 no se puede responder sin él.**
+
+Un «no existe» de esa tabla no es una tarea todavía. Puede que la respuesta sea
+que no hace falta —y entonces lo que hay que escribir es **por qué no hace
+falta**, para que nadie lo vuelva a preguntar dentro de un año.
+
 # LEER UNA EXPRESIÓN NO ES LEER UN CAMINO
 
 **Tres defectos de la misma familia**, y los tres parecen sustancia cuando son

@@ -2,7 +2,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
 import { consultarExperto } from '@/lib/agent/expert'
-import { enviarAlertaLeadWhatsApp } from '@/lib/whatsapp'
+import { avisarLead } from '@/lib/whatsapp'
 import {
   norm, terminos, filtrarPorTerminos, puntuar, tiposDesde, TIPO_SINONIMOS, type Puntuable,
 } from './busqueda-texto'
@@ -626,8 +626,14 @@ async function crearOActualizarLead(input: LeadInput, conversationId: string) {
     // Resumen para el asesor: una sola vez, al captar contacto y si aún no lo tiene.
     if (captaContacto && !conv.lead.summary) {
       const resumen = await generarResumenLead(updated.id, conversationId)
-      // Alerta al asesor por WhatsApp (dormida si no hay ALERT_WHATSAPP_TO). No bloqueante.
-      if (resumen) await enviarAlertaLeadWhatsApp(updated.name, updated.phone, resumen)
+      /* ⚠ AQUÍ DECÍA `if (resumen) await …`, y eso convertía la falta de un
+       * texto de cortesía en la falta del aviso entero: si el LLM que genera
+       * el resumen fallaba o devolvía vacío, no se avisaba y NADA lo decía.
+       * El nombre y el teléfono ya bastan para devolver la llamada, así que el
+       * resumen no puede ser una condición. El `|| ''` no desarma ninguna
+       * guarda: `decidirAviso` acepta el resumen vacío a propósito y no
+       * bloquea por él. Y ahora, además, queda fila pase lo que pase. */
+      await avisarLead(updated.id, updated.name, updated.phone, resumen || '')
     }
     return { ok: true, leadId: updated.id, action: 'updated' }
   }
@@ -664,8 +670,14 @@ async function crearOActualizarLead(input: LeadInput, conversationId: string) {
   // Resumen para el asesor: lead nuevo captado con contacto → se genera una vez.
   if (captaContacto) {
     const resumen = await generarResumenLead(lead.id, conversationId)
-    // Alerta al asesor por WhatsApp (dormida si no hay ALERT_WHATSAPP_TO). No bloqueante.
-    if (resumen) await enviarAlertaLeadWhatsApp(lead.name, lead.phone, resumen)
+    /* ⚠ AQUÍ DECÍA `if (resumen) await …`, y eso convertía la falta de un
+     * texto de cortesía en la falta del aviso entero: si el LLM que genera
+     * el resumen fallaba o devolvía vacío, no se avisaba y NADA lo decía.
+     * El nombre y el teléfono ya bastan para devolver la llamada, así que el
+     * resumen no puede ser una condición. El `|| ''` no desarma ninguna
+     * guarda: `decidirAviso` acepta el resumen vacío a propósito y no
+     * bloquea por él. Y ahora, además, queda fila pase lo que pase. */
+    await avisarLead(lead.id, lead.name, lead.phone, resumen || '')
   }
 
   return { ok: true, leadId: lead.id, action: 'created' }

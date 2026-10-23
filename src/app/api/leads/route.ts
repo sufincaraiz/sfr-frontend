@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
+import { avisarLead } from '@/lib/whatsapp'
 
 // ─── Rate limit (en memoria, por IP) ──────────────────────────────────────────
 
@@ -61,6 +62,7 @@ export async function POST(req: NextRequest) {
 
   const { nombre, telefono, mensaje, email, channel, propertySlug } = parsed.data
 
+  let leadId: string
   try {
     // Si viene de la ficha de una propiedad, resolvemos su id para enlazarla
     let propertyId: string | null = null
@@ -72,7 +74,7 @@ export async function POST(req: NextRequest) {
       propertyId = prop?.id ?? null
     }
 
-    await prisma.lead.create({
+    const lead = await prisma.lead.create({
       data: {
         name:    nombre,
         phone:   telefono,
@@ -83,7 +85,7 @@ export async function POST(req: NextRequest) {
         ...(propertyId && { property_id: propertyId }),
       },
     })
-    return NextResponse.json({ ok: true })
+    leadId = lead.id
   } catch (err) {
     console.error('[api/leads] error al crear lead:', err)
     return NextResponse.json(
@@ -91,4 +93,45 @@ export async function POST(req: NextRequest) {
       { status: 500 },
     )
   }
+
+  /* ─── EL AVISO QUE FALTABA ─────────────────────────────────────
+   *
+   * ⚠ Esta ruta estuvo SIN NINGUNA LÍNEA DE AVISO desde que existe. Los cuatro
+   * formularios públicos del sitio postean aquí, y el 2026-10-23 se midió que 9
+   * de los 12 leads de los últimos 60 días entraron por este camino sin que
+   * Leonel se enterara de ninguno. No es que el aviso fallara: no existía.
+   *
+   * Y nadie pudo verlo antes porque el único camino instrumentado —el agente
+   * Mac— era el menos usado. Las pruebas recorren el camino que el programador
+   * tiene a mano, no el que la gente usa.
+   *
+   * VA FUERA DEL `try` DE LA ESCRITURA, a propósito, y el motivo es éste:
+   *
+   *   > Un aviso es un efecto secundario del registro de un lead, y un efecto
+   *   > secundario no puede decidir si el hecho principal ocurrió.
+   *
+   * Dentro del `try`, un fallo del aviso saldría por el `catch` de la escritura
+   * y devolvería un 500 diciendo «no pudimos guardar tu solicitud» sobre un
+   * lead que SÍ está guardado. El visitante volvería a enviarlo y tendríamos
+   * dos filas del mismo cliente.
+   *
+   * ⚠ La primera versión de este comentario atribuía esa colocación al
+   * duplicado real de Martha Patricia Navarrete del 11 de octubre, y era una
+   * justificación inventada a posteriori: en esta ruta no había NINGÚN código
+   * de aviso, así que no podía lanzar nada ni producir ningún 500. Ella se
+   * duplicó porque nadie le contestó. La decisión era correcta; el motivo, no.
+   *
+   * `avisarLead` no lanza y deja fila haga lo que haga, así que se puede
+   * esperar sin envolverlo: si no sale el aviso, queda escrito por qué. Se
+   * espera (y no se deja al aire) porque en serverless la función muere al
+   * responder y un `fetch` sin `await` no llegaría a salir.
+   */
+  const intento = await avisarLead(leadId, nombre, telefono, mensaje || '')
+
+  /* Al visitante se le dice que recibimos su solicitud, que es cierto: el lead
+   * está guardado. No se le cuenta el estado del aviso interno, que no es asunto
+   * suyo —pero tampoco se le promete que «te contactaremos pronto» desde aquí si
+   * nadie se ha enterado: eso lo decide el texto del formulario, y queda
+   * anotado—. */
+  return NextResponse.json({ ok: true, aviso: intento.resultado })
 }

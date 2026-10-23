@@ -196,6 +196,66 @@ enum LeadPipeline {
   CERRADO_PERDIDO
 }
 
+/// Resultado de UN intento de avisar de un lead.
+///
+/// ⚠ `ACEPTADO_POR_META` NO significa que Leonel lo haya leído, ni siquiera
+/// que le llegara al teléfono: significa que la API de Meta devolvió 2xx. El
+/// nombre dice exactamente hasta dónde llega lo que sabemos, a propósito. Un
+/// nombre como ENVIADO o ENTREGADO afirmaría de más.
+enum ResultadoAviso {
+  ACEPTADO_POR_META
+  RECHAZADO_POR_META
+  SIN_CONFIGURAR
+  ERROR_DE_RED
+  SIN_RESUMEN
+}
+
+/// UN INTENTO DE AVISO, CON SU RESULTADO LITERAL
+/// ============================================
+///
+/// Nace el 2026-10-23, después de que 9 de 12 leads de 60 días no generaran
+/// ningún aviso y nadie pudiera saberlo: el modelo `Lead` no guardaba nada de
+/// la notificación, así que la pregunta «¼a cuántos no se avisó?» no tenía
+/// respuesta posible desde la base. Era un verde que no podía ser rojo.
+///
+/// UNA FILA POR INTENTO, no un campo en `Lead`, por tres razones:
+///
+///   1. un lead puede tener varios intentos y varios canales, y un campo
+///      único guardaría solo el último —que es justo el que menos importa
+///      cuando se investiga por qué no llegó el primero—;
+///   2. el cuerpo literal de Meta no cabe en un booleano, y es lo único que
+///      permite distinguir «plantilla sin aprobar» de «token caducado»;
+///   3. la AUSENCIA de filas también informa: un lead sin ninguna fila es un
+///      lead por cuyo camino no pasó código de aviso, que es exactamente el
+///      defecto de los nueve.
+///
+/// Y la regla que este modelo existe para sostener: **el camino de aviso no
+/// puede tener un solo `return` mudo.** Si no se avisa, hay fila; con su
+/// motivo. `SIN_CONFIGURAR` y `SIN_RESUMEN` son los dos returns que antes no
+/// escribían nada.
+model AvisoLead {
+  id           String         @id @default(uuid())
+  lead_id      String
+  /// "whatsapp" hoy; el día que haya correo, "email". Texto y no enum porque
+  /// añadir un canal no debería necesitar una migración.
+  canal        String         @default("whatsapp")
+  /// A qué número o dirección se intentó. Null solo si no había destino
+  /// configurado, que es en sí el motivo del fallo.
+  destino      String?
+  resultado    ResultadoAviso
+  /// Código HTTP de la respuesta de Meta, cuando hubo respuesta.
+  http_status  Int?
+  /// EL CUERPO LITERAL de la respuesta, sin interpretar y sin resumir. Hasta
+  /// hoy esto se imprimía con console.warn y se perdía con el log.
+  error        String?        @db.Text
+  intentado_at DateTime       @default(now())
+  lead         Lead           @relation(fields: [lead_id], references: [id], onDelete: Cascade)
+
+  @@index([lead_id])
+  @@index([resultado])
+  @@map("avisos_lead")
+}
+
 model Lead {
   id                String            @id @default(uuid())
   property_id       String?
@@ -232,6 +292,7 @@ model Lead {
   agent             Agent?            @relation(fields: [assigned_agent_id], references: [id])
   conversations     Conversation[]
   contacto          Contacto?
+  avisos            AvisoLead[]
 
   @@map("leads")
 }
@@ -858,9 +919,9 @@ model Ingreso {
   /// Causación y recaudo son FECHAS DISTINTAS y ambas importan: la primera
   /// manda en renta e IVA, la segunda en el flujo de caja.
   /// DIA PURO: el día que la persona declara. El instante está en created_at.
-  fecha_causacion       DateTime  @db.Date
+  fecha_causacion       DateTime      @db.Date
   /// DIA PURO.
-  fecha_recaudo         DateTime? @db.Date
+  fecha_recaudo         DateTime?     @db.Date
   valor_base            Decimal       @db.Decimal(16, 2)
   /// HECHOS del documento, no cálculos: el IVA facturado y lo que el cliente
   /// retuvo según su comprobante. El sistema calcula un sugerido y AVISA si
@@ -921,7 +982,7 @@ model Egreso {
   tercero_id               String?
   tercero                  Tercero?          @relation(fields: [tercero_id], references: [id], onDelete: SetNull)
   /// DIA PURO: el día del gasto, tecleado. El instante está en created_at.
-  fecha                    DateTime @db.Date
+  fecha                    DateTime          @db.Date
   descripcion              String
   valor_base               Decimal           @db.Decimal(16, 2)
   /// IVA PAGADO al proveedor. Se llama así y no «descontable» a propósito: si
@@ -949,7 +1010,7 @@ model Egreso {
   reembolsaTercero         Tercero?          @relation("EgresoReembolsa", fields: [reembolsa_tercero_id], references: [id], onDelete: SetNull)
   estado_reembolso         EstadoReembolso?
   /// DIA PURO.
-  fecha_reembolso          DateTime? @db.Date
+  fecha_reembolso          DateTime?         @db.Date
   /// Rastro de la reclasificación: de qué naturaleza venía, quién y por qué.
   reclasificado_de         NaturalezaEgreso?
   reclasificado_por        String?
@@ -1007,11 +1068,11 @@ model MovimientoCustodia {
   property_id            String?
   property               Property?          @relation(fields: [property_id], references: [id], onDelete: SetNull)
   /// DIA PURO: el día que la persona declara. La hora era precisión falsa.
-  fecha_recibido         DateTime @db.Date
+  fecha_recibido         DateTime           @db.Date
   valor                  Decimal            @db.Decimal(16, 2)
   estado                 EstadoCustodia     @default(RECIBIDO)
   /// DIA PURO.
-  fecha_cierre           DateTime? @db.Date
+  fecha_cierre           DateTime?          @db.Date
   /// A quién se le entregó, si era dinero de terceros.
   entregado_a_tercero_id String?
   entregadoA             Tercero?           @relation("CustodiaDestino", fields: [entregado_a_tercero_id], references: [id], onDelete: SetNull)
@@ -1113,9 +1174,9 @@ model EnlaceContador {
   /// Alcance PREVISTO del enlace. ⚠ Hoy no lo lee nadie: no hay consulta que
   /// filtre por este rango, así que la columna no restringe nada todavía.
   /// DIA PURO: el periodo de un reporte es un rango de días, no de instantes.
-  periodo_desde    DateTime @db.Date
+  periodo_desde    DateTime               @db.Date
   /// DIA PURO.
-  periodo_hasta    DateTime @db.Date
+  periodo_hasta    DateTime               @db.Date
   expiraAt         DateTime
   revocado         Boolean                @default(false)
   ultimoAcceso     DateTime?
@@ -1165,13 +1226,13 @@ model AccesoEnlaceContador {
 /// Dominio autorizado para respaldar una cifra. Tabla, no lista en código:
 /// añadir una autoridad es una fila, pero es un acto deliberado y queda firmado.
 model FuenteNormativa {
-  id      String  @id @default(uuid())
-  dominio String  @unique
-  entidad String
+  id             String   @id @default(uuid())
+  dominio        String   @unique
+  entidad        String
   /// OFICIAL | SECUNDARIA. Solo OFICIAL respalda; SECUNDARIA deja constancia de
   /// que se consultó algo que NO sirve de respaldo.
-  tipo    String  @default("OFICIAL")
-  activo  Boolean @default(true)
+  tipo           String   @default("OFICIAL")
+  activo         Boolean  @default(true)
   /// Es una compilación (un normograma), no la entidad emisora. Cuando lo es, el
   /// respaldo que la cite está obligado a llevar `nota`.
   es_compilacion Boolean  @default(false)
@@ -1187,18 +1248,18 @@ model FuenteNormativa {
 
 /// El respaldo de UN campo. Sin él, ese campo no habilita nada.
 model RespaldoNormativo {
-  id String @id @default(uuid())
+  id                String    @id @default(uuid())
   /// ANIO | CONCEPTO | REGLA_RETENCION
-  ambito String
+  ambito            String
   /// id de la fila respaldada, según el ámbito.
-  referencia_id String
+  referencia_id     String
   /// uvt | uvb | tarifa_iva | redondeo_iva | base_notarial | base_registro |
   /// base_orip | base_timbre | base_retencion | tramos | valor | redondeo |
   /// reparto | sujeto_legal | tarifa
-  campo    String
-  norma    String
+  campo             String
+  norma             String
   /// El artículo donde está la CIFRA.
-  articulo String?
+  articulo          String?
   /// URL_OFICIAL | DOCUMENTO_ARCHIVADO.
   ///
   /// La URL nunca fue el requisito: era un sustituto de la procedencia, y en la
@@ -1207,52 +1268,52 @@ model RespaldoNormativo {
   /// entidad emisora—, mientras el documento lleva firma, radicado y sellos.
   /// Lo que se amplía es el SOPORTE, no la autoridad: un PDF de una notaría
   /// particular, de un gremio o de un sitio comercial sigue sin valer.
-  tipo_evidencia String @default("URL_OFICIAL")
+  tipo_evidencia    String    @default("URL_OFICIAL")
   /// Obligatoria con URL_OFICIAL. Con un documento archivado puede no existir.
-  url      String?
+  url               String?
   /// La autoridad, por su fila en fuentes_normativas. Con una URL se deduce del
   /// dominio; un documento no trae dominio, así que hay que nombrarla.
-  fuente_dominio String?
+  fuente_dominio    String?
   // ── Solo DOCUMENTO_ARCHIVADO: la guarda exige las seis ──
   /// Dónde quedó guardado, para poder volver a abrirlo.
-  documento_ruta  String?
+  documento_ruta    String?
   /// SHA-256 en hexadecimal: sin él, sustituir el archivo no deja rastro.
-  documento_hash  String?
+  documento_hash    String?
   /// La entidad que lo emitió, como la nombra el propio documento.
-  entidad_emisora String?
+  entidad_emisora   String?
   /// De dónde se obtuvo, en texto, y cuándo.
-  obtenido_de     String?   @db.Text
-  obtenido_en     DateTime? @db.Date
-  archivado_por   String?
+  obtenido_de       String?   @db.Text
+  obtenido_en       DateTime? @db.Date
+  archivado_por     String?
   /// DÓNDE LO CONSIGUE EL LECTOR por su cuenta. Obligatorio con un documento
   /// archivado: el PDF se guarda como `authenticated` y NO se publica —publicar
   /// una copia de una norma que no emitimos nos convertiría en un sitio desde el
   /// que citarla, y cuando la entidad la modifique nuestra copia diría lo viejo
   /// con nuestra marca encima—. Sin esta frase, la simulación citaría un
   /// documento que nadie más puede ver.
-  donde_conseguirlo String? @db.Text
+  donde_conseguirlo String?   @db.Text
 
   fuente_id String?
   fuente    FuenteNormativa? @relation(fields: [fuente_id], references: [id])
 
-  fecha_norma DateTime? @db.Date
+  fecha_norma       DateTime? @db.Date
   /// ¿La norma lo EXIGE, o lo PERMITE y lo adoptamos nosotros? El Concepto DIAN
   /// 003550 dice «podrá aproximarse»: el redondeo del IVA es ADOPTADO, no
   /// exigido, y el respaldo no puede afirmar lo contrario.
-  caracter    String    @default("EXIGIDO")
+  caracter          String    @default("EXIGIDO")
   /// DESDE CUÁNDO RIGE. Obligatoria: el año es una etiqueta, no un rango. La
   /// notarial de 2026 rige desde el 1 de febrero y la registral desde el 2.
-  vigencia_desde DateTime  @db.Date
+  vigencia_desde    DateTime  @db.Date
   /// Hasta cuándo rigió. NULL = sigue vigente.
-  vigencia_hasta DateTime? @db.Date
+  vigencia_hasta    DateTime? @db.Date
   /// El artículo que fija la VIGENCIA, que no es el de la cifra: la tarifa está
   /// en el art. 50 y la vigencia en el art. 56. Y puede estar modificado por otra
   /// resolución que ese artículo no menciona.
   articulo_vigencia String?
   /// Obligatoria cuando la fuente es una compilación.
-  nota              String?  @db.Text
+  nota              String?   @db.Text
   verificado_por    String
-  verificado_en     DateTime @default(now())
+  verificado_en     DateTime  @default(now())
 
   @@unique([ambito, referencia_id, campo])
   @@index([vigencia_desde])
@@ -1261,29 +1322,29 @@ model RespaldoNormativo {
 
 /// Un año tarifario. `anio` es una ETIQUETA, no un rango de fechas.
 model AnioNotarial {
-  id   String @id @default(uuid())
-  anio Int    @unique
+  id                     String    @id @default(uuid())
+  anio                   Int       @unique
   /// BORRADOR | ACTIVO. Misma semántica que parametros_fiscales.
-  estado     String   @default("BORRADOR")
-  uvt        Decimal? @db.Decimal(14, 2)
-  uvb        Decimal? @db.Decimal(14, 2)
-  tarifa_iva Decimal? @db.Decimal(5, 2)
+  estado                 String    @default("BORRADOR")
+  uvt                    Decimal?  @db.Decimal(14, 2)
+  uvb                    Decimal?  @db.Decimal(14, 2)
+  tarifa_iva             Decimal?  @db.Decimal(5, 2)
   /// A qué múltiplo aproxima el IVA y en qué sentido. Es regla normativa, no
   /// decisión del motor: sin respaldo cargado, el IVA no liquida.
-  redondeo_iva_unidad Int?
+  redondeo_iva_unidad    Int?
   /// CERCANO | ARRIBA | ABAJO | PUBLICADO
-  redondeo_iva_modo   String?
+  redondeo_iva_modo      String?
   /// Sube con CUALQUIER escritura sobre el año, sus conceptos, sus tramos o sus
   /// reglas, y en la MISMA transacción: alimenta el código del PDF, y si subiera
   /// aparte, dos PDF con tarifas distintas podrían llevar el mismo código.
-  version                Int      @default(1)
-  version_actualizada_en DateTime @default(now())
-  cerrado                Boolean  @default(false)
-  notas                  String?  @db.Text
+  version                Int       @default(1)
+  version_actualizada_en DateTime  @default(now())
+  cerrado                Boolean   @default(false)
+  notas                  String?   @db.Text
   activado_por           String?
   activado_en            DateTime?
-  created_at             DateTime @default(now())
-  updated_at             DateTime @updatedAt
+  created_at             DateTime  @default(now())
+  updated_at             DateTime  @updatedAt
 
   conceptos ConceptoNotarial[]
   reglas    ReglaRetencionNotarial[]
@@ -1294,23 +1355,23 @@ model AnioNotarial {
 /// Un concepto de la liquidación. Tabla y no enum: añadir un concepto no puede
 /// exigir una migración.
 model ConceptoNotarial {
-  id      String       @id @default(uuid())
-  anio_id String
-  anio    AnioNotarial @relation(fields: [anio_id], references: [id], onDelete: Cascade)
-  clave   String
-  label   String
+  id                   String       @id @default(uuid())
+  anio_id              String
+  anio                 AnioNotarial @relation(fields: [anio_id], references: [id], onDelete: Cascade)
+  clave                String
+  label                String
   /// Para el texto de la página. «beneficencia» entra aquí; NUNCA es el nombre
   /// del concepto, que es «impuesto de registro».
-  terminos_coloquiales String[] @default([])
+  terminos_coloquiales String[]     @default([])
   /// COSTOS_NOTARIALES | IMPUESTOS | REGISTRO | DOCUMENTOS_PREVIOS | OBLIGACIONES
-  grupo String
-  orden Int
+  grupo                String
+  orden                Int
   /// FIJO | PORCENTAJE | POR_MIL | TRAMOS | POR_UNIDAD | VALOR_LIBRE | REGLAS
-  tipo  String
+  tipo                 String
   /// NOTARIAL | REGISTRO | ORIP | TIMBRE | RETENCION | TARIFA_REGISTRAL |
   /// UNIDADES | NINGUNA. Cada valor nombra UNA función con su propia norma: la
   /// notarial toma el mayor de cuatro valores (art. 51 a) y la registral de dos.
-  base  String
+  base                 String
 
   valor  Decimal? @db.Decimal(14, 2)
   /// PESOS | PORCENTAJE | POR_MIL. Sin esto, un 3 que significa «3 por mil»
@@ -1325,7 +1386,7 @@ model ConceptoNotarial {
   /// una tabla normativa futura puede bajar.
   monotonicidad   String  @default("LIBRE")
 
-  grava_iva Boolean @default(false)
+  grava_iva           Boolean @default(false)
   /// El precio publicado YA lleva el IVA dentro (copia simple, art. 5). El
   /// componente se extrae; jamás se suma un 19 % encima, y no vuelve a BASE_IVA.
   precio_incluye_iva  Boolean @default(false)
@@ -1353,17 +1414,17 @@ model ConceptoNotarial {
   /// HACIA DÓNDE desvía el supuesto, escrito. Obligatorio en todo concepto
   /// marcado como estimación: «Si la notaría expide más, el costo sube». Sin la
   /// dirección, el aviso informa de que hay incertidumbre y no de qué hacer.
-  sesgo_en_sencilla String? @db.Text
+  sesgo_en_sencilla         String? @db.Text
 
   /// La unidad de la TARIFA, con su plural ESCRITO: «copia auténtica» no
   /// pluraliza añadiendo una «s», y esto lo lee un comprador junto a una cifra.
-  unidad_label  String?
-  unidad_plural String?
+  unidad_label                    String?
+  unidad_plural                   String?
   /// CANTIDAD DERIVADA: clave de otro concepto cuya cantidad se multiplica por la
   /// de este. Las hojas de la escritura se preguntan UNA vez y alimentan el papel
   /// notarial y las copias auténticas; preguntarlas dos veces las desincronizaría
   /// sin un solo error.
-  multiplica_cantidad_de String?
+  multiplica_cantidad_de          String?
   /// CLAVE AJENA COMPUESTA sobre (anio_id, clave): hace imposible —no
   /// improbable— que apunte a un concepto que no existe, incluso si alguien
   /// escribe directo en la base. Comprobado contra Postgres antes de aplicarla:
@@ -1375,24 +1436,24 @@ model ConceptoNotarial {
   /// ⚠ EXIGE ORDEN DE INSERCIÓN: el origen antes que el derivado. Lo garantiza
   /// `exigirOrdenDeDerivados`, que corre en las pruebas: si alguien reordena el
   /// catálogo, falla el arnés y no la siembra.
-  origen_cantidad ConceptoNotarial?  @relation("CantidadDerivada", fields: [anio_id, multiplica_cantidad_de], references: [anio_id, clave], onDelete: NoAction, onUpdate: NoAction)
-  derivados       ConceptoNotarial[] @relation("CantidadDerivada")
+  origen_cantidad                 ConceptoNotarial?  @relation("CantidadDerivada", fields: [anio_id, multiplica_cantidad_de], references: [anio_id, clave], onDelete: NoAction, onUpdate: NoAction)
+  derivados                       ConceptoNotarial[] @relation("CantidadDerivada")
   /// Qué cuenta el usuario cuando la cantidad es derivada: «3 copias», no «24
   /// hojas». Obligatorio si `multiplica_cantidad_de`.
-  unidad_captura_label   String?
-  unidad_captura_plural  String?
+  unidad_captura_label            String?
+  unidad_captura_plural           String?
   /// Supuesto DECLARADO de la calculadora sencilla, que no pregunta la cantidad.
   /// Exige `es_estimacion_en_sencilla`: un supuesto que no se declara no se ve.
-  cantidad_en_sencilla   Int?
-  cantidad_sugerida      Int?
+  cantidad_en_sencilla            Int?
+  cantidad_sugerida               Int?
   /// El VALOR cambia según la notaría.
-  cantidad_variable_por_notaria   Boolean @default(false)
+  cantidad_variable_por_notaria   Boolean            @default(false)
   /// La CANTIDAD depende de la operación.
-  cantidad_variable_por_operacion Boolean @default(false)
+  cantidad_variable_por_operacion Boolean            @default(false)
   /// Texto de la pregunta: cuándo aplica este concepto y cuándo no.
-  ayuda      String?  @db.Text
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  ayuda                           String?            @db.Text
+  created_at                      DateTime           @default(now())
+  updated_at                      DateTime           @updatedAt
 
   tramos TramoConcepto[]
 
@@ -1404,33 +1465,33 @@ model ConceptoNotarial {
 /// Un tramo de una tabla por cuantía. Un solo mecanismo cubre el mínimo
 /// notarial, los tramos ORIP y los marginales del timbre.
 model TramoConcepto {
-  id          String           @id @default(uuid())
-  concepto_id String
-  concepto    ConceptoNotarial @relation(fields: [concepto_id], references: [id], onDelete: Cascade)
-  orden       Int
+  id           String           @id @default(uuid())
+  concepto_id  String
+  concepto     ConceptoNotarial @relation(fields: [concepto_id], references: [id], onDelete: Cascade)
+  orden        Int
   /// LÍMITES CONTIGUOS: el intervalo es `desde < base <= hasta`, porque la
   /// resolución escribe «De $0 hasta $100.000.000» y «hasta» INCLUYE. El «+1»
   /// impreso NO se guarda: dejaría fuera $100.000.000,50, que es una cuantía
   /// posible en cuanto la base sale de un avalúo catastral.
-  desde Decimal  @db.Decimal(18, 2)
+  desde        Decimal          @db.Decimal(18, 2)
   /// NULL = tramo abierto. Exactamente uno por concepto.
-  hasta Decimal? @db.Decimal(18, 2)
+  hasta        Decimal?         @db.Decimal(18, 2)
   /// Los límites van en UVT, no en pesos (timbre).
-  en_uvt Boolean @default(false)
+  en_uvt       Boolean          @default(false)
   /// FIJO | TASA_SOBRE_TOTAL | TASA_MARGINAL
   modo_calculo String
-  valor        Decimal @db.Decimal(14, 4)
+  valor        Decimal          @db.Decimal(14, 4)
   /// PESOS | PORCENTAJE | POR_MIL
   unidad       String
   /// DISTRIBUCIÓN INSTITUCIONAL del recaudo (art. 50 parágrafo: 50 % para la
   /// Superintendencia y 50 % para el Fondo). No tiene nada que ver con el reparto
   /// comprador/vendedor: el usuario paga UN recaudo y esto solo sale en el PDF.
   /// Una guarda comprueba que los dos sumen `valor`.
-  aporte_snr   Decimal? @db.Decimal(14, 2)
-  aporte_fondo Decimal? @db.Decimal(14, 2)
+  aporte_snr   Decimal?         @db.Decimal(14, 2)
+  aporte_fondo Decimal?         @db.Decimal(14, 2)
   /// Solo TRAZABILIDAD: la equivalencia en UVB que publica la resolución. El
   /// motor NO recalcula el valor a partir de ella — manda el documento.
-  valor_en_uvb Decimal? @db.Decimal(14, 4)
+  valor_en_uvb Decimal?         @db.Decimal(14, 4)
 
   @@unique([concepto_id, orden])
   @@map("tramos_concepto")
@@ -1440,20 +1501,20 @@ model TramoConcepto {
 /// añadir la siguiente es una fila, SI se apoya en un dato que el formulario ya
 /// pregunta. Si necesita una pregunta nueva, eso es código.
 model ReglaRetencionNotarial {
-  id      String       @id @default(uuid())
-  anio_id String
-  anio    AnioNotarial @relation(fields: [anio_id], references: [id], onDelete: Cascade)
-  clave   String
-  label   String
+  id           String       @id @default(uuid())
+  anio_id      String
+  anio         AnioNotarial @relation(fields: [anio_id], references: [id], onDelete: Cascade)
+  clave        String
+  label        String
   /// La general va SIEMPRE última, o una excepción nunca se evaluaría.
-  orden   Int
-  activa  Boolean @default(true)
+  orden        Int
+  activa       Boolean      @default(true)
   /// TARIFA | EXENCION | REDUCCION_PCT_POR_ANIO | TOPE
   tipo_efecto  String
-  valor_efecto Decimal? @db.Decimal(14, 4)
+  valor_efecto Decimal?     @db.Decimal(14, 4)
   /// PORCENTAJE | POR_MIL
   unidad       String?
-  created_at   DateTime @default(now())
+  created_at   DateTime     @default(now())
 
   condiciones CondicionReglaRetencion[]
 

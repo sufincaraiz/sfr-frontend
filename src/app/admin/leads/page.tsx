@@ -2,14 +2,60 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
-import { RefreshCw, UserPlus, Check, Loader2 } from 'lucide-react';
+import { RefreshCw, UserPlus, Check, Loader2, BellOff, BellRing, AlertTriangle } from 'lucide-react';
+import {
+  estadoDeAviso, pideAtencionUrgente, etiquetaDeResultado, resumirAvisos,
+  type ResultadoAviso,
+} from '@/lib/aviso-lead';
+
+interface AvisoRow {
+  resultado: ResultadoAviso;
+  destino: string | null;
+  http_status: number | null;
+  error: string | null;
+  intentado_at: string;
+}
 
 interface LeadRow {
   id: string; name: string; phone: string; email: string;
   channel: string; message: string | null; status: string;
   created_at: string;
+  lastContactAt: string | null;
   property: { slug: string; title: string | null; type: string } | null;
   contacto: { id: string } | null;
+  avisos: AvisoRow[];
+}
+
+/* ─── LA INSIGNIA DEL AVISO ─────────────────────────────────────
+ *
+ * Tres estados y no dos, porque «nunca se intentó» y «falló» piden cosas
+ * distintas: el primero es un hueco en el código y el segundo un problema con
+ * Meta. Pintarlos igual fue lo que mantuvo el defecto invisible.
+ *
+ * Y «Meta aceptó» no dice «Leonel lo leyó»: el texto de la insignia no afirma
+ * más de lo que la base sabe. */
+function insigniaAviso(l: LeadRow) {
+  const estado = estadoDeAviso(l.avisos);
+  const ultimo = l.avisos[0];
+  const detalle = ultimo
+    ? `${etiquetaDeResultado(ultimo.resultado)}` +
+      (ultimo.http_status ? ` · HTTP ${ultimo.http_status}` : '') +
+      (ultimo.destino ? ` · a ${ultimo.destino}` : '') +
+      (ultimo.error ? `\n\n${ultimo.error}` : '')
+    : 'Este lead no tiene ninguna fila de aviso: por su camino no pasó código de notificación.';
+
+  const pinta =
+    estado === 'AVISADO'
+      ? { icono: <BellRing size={12} />, texto: 'Avisado', color: '#15803D', bg: '#F0FDF4', borde: '#BBF7D0' }
+      : estado === 'FALLO'
+      ? { icono: <AlertTriangle size={12} />, texto: 'Aviso fallido', color: '#B91C1C', bg: '#FEF2F2', borde: '#FECACA' }
+      : { icono: <BellOff size={12} />, texto: 'Sin avisar', color: '#92400E', bg: '#FFFBEB', borde: '#FDE68A' };
+
+  return (
+    <span title={detalle} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, padding: '3px 8px', borderRadius: 7, background: pinta.bg, color: pinta.color, border: `1px solid ${pinta.borde}`, fontSize: '0.7rem', fontWeight: 700, whiteSpace: 'nowrap', cursor: 'help' }}>
+      {pinta.icono} {pinta.texto}
+    </span>
+  );
 }
 
 const STATUS_OPTS = [
@@ -102,17 +148,21 @@ export default function AdminLeadsPage() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
             <thead>
               <tr style={{ background: '#F8FAFC' }}>
-                {['Nombre', 'Teléfono', 'Email', 'Propiedad', 'Canal', 'Mensaje', 'Fecha', 'Estado', 'Acciones'].map(h => (
+                {['Nombre', 'Teléfono', 'Email', 'Propiedad', 'Canal', 'Mensaje', 'Fecha', 'Estado', 'Aviso', 'Acciones'].map(h => (
                   <th key={h} style={{ padding: '10px 14px', textAlign: 'left', color: '#64748B', fontWeight: 700, fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.5px', whiteSpace: 'nowrap' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {leads.length === 0 && !loading && (
-                <tr><td colSpan={9} style={{ padding: '3rem', textAlign: 'center', color: '#94A3B8' }}>No hay leads con este filtro</td></tr>
+                <tr><td colSpan={10} style={{ padding: '3rem', textAlign: 'center', color: '#94A3B8' }}>No hay leads con este filtro</td></tr>
               )}
               {leads.map((l, i) => (
-                <tr key={l.id} style={{ borderTop: '1px solid #F1F5F9', background: i % 2 === 0 ? '#fff' : '#FAFAFA' }}>
+                /* UN LEAD SIN AVISO NO PUEDE PARECER ATENDIDO. Si nadie se
+                 * enteró y nadie lo ha tocado, la fila se marca: no está
+                 * esperando a Leonel, está esperando a que alguien descubra
+                 * que existe. */
+                <tr key={l.id} style={{ borderTop: '1px solid #F1F5F9', background: pideAtencionUrgente(estadoDeAviso(l.avisos), l.status, l.lastContactAt) ? '#FFFBEB' : i % 2 === 0 ? '#fff' : '#FAFAFA', boxShadow: pideAtencionUrgente(estadoDeAviso(l.avisos), l.status, l.lastContactAt) ? 'inset 3px 0 0 #D97706' : undefined }}>
                   <td style={{ padding: '10px 14px', color: '#0D2D5E', fontWeight: 700, whiteSpace: 'nowrap' }}>{l.name}</td>
                   <td style={{ padding: '10px 14px' }}>
                     <a href={`tel:${l.phone}`} style={{ color: '#1B56A1', textDecoration: 'none', fontWeight: 600, whiteSpace: 'nowrap' }}>{l.phone}</a>
@@ -135,6 +185,7 @@ export default function AdminLeadsPage() {
                     {new Date(l.created_at).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td style={{ padding: '10px 14px' }}>{getBadge(l.status)}</td>
+                  <td style={{ padding: '10px 14px' }}>{insigniaAviso(l)}</td>
                   <td style={{ padding: '10px 14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <select

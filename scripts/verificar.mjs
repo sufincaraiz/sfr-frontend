@@ -82,6 +82,8 @@ const GUARDAS = {
       vigila: 'la misma decision escrita en mas de un archivo (informativo: no rompe)' },
     { nombre: 'escrituras', guion: 'verificar-escrituras.mjs',
       vigila: 'escrituras seguidas de algo que puede fallar en el mismo try' },
+    { nombre: 'avisos', guion: 'verificar-avisos.mjs',
+      vigila: 'que todo camino que crea un lead avise, o declare por que no' },
   ],
   despues: [
     { nombre: 'trazas', guion: 'verificar-trazas.mjs',

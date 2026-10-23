@@ -64,6 +64,117 @@ const LOS_DOS = `${H_NOTARIAL} && ${H_FINANZAS}`
  * una mutación sobrevive, lo que se cae es esa frase.
  */
 const MUTACIONES = [
+  /* ─── EL AVISO DEL LEAD · 2026-10-23 ────────────────────────────
+   * La última es la que importa de verdad: borra la LLAMADA al aviso en
+   * /api/leads, que es literalmente el defecto que dejó 9 de 12 leads sin que
+   * nadie se enterara. Ninguna prueba del arnés la caza —una llamada que falta
+   * no tiene sintaxis— y por eso la mata una GUARDA y no una prueba. Si esa
+   * mutación sobreviviera, el arreglo de hoy podría deshacerse mañana sin que
+   * nada se quejara, que es exactamente como llegó a existir.
+   */
+  {
+    nombre: 'aviso: sin destino configurado vuelve a mandar igual',
+    porque: 'sin destino no hay a quien avisar; mandar de todas formas producira un rechazo de Meta que nadie pidio y una fila confusa.',
+    archivo: 'src/lib/aviso-lead.ts',
+    de: "  if (falta.length > 0) {",
+    a: "  if (false) {",
+    comando: 'node scripts/probar-aviso-lead.mjs',
+  },
+  {
+    nombre: 'aviso: el resumen vacio vuelve a bloquear el aviso',
+    porque: 'era el `if (resumen)` de tools.ts: convertia la falta de un texto de cortesia en la falta del aviso entero, y en silencio.',
+    archivo: 'src/lib/aviso-lead.ts',
+    de: "  return { manda: true, destino: to }",
+    a: "  if (!resumen) return { manda: false, resultado: 'SIN_RESUMEN', motivo: 'sin resumen', destino: to }\n  return { manda: true, destino: to }",
+    comando: 'node scripts/probar-aviso-lead.mjs',
+  },
+  {
+    nombre: 'aviso: una lista vacia de avisos vuelve a contar como fallo',
+    porque: 'vacio significa «por aqui no paso codigo de aviso» y fallo significa «Meta lo rechazo». Confundirlos es lo que mantuvo el defecto invisible medio ano.',
+    archivo: 'src/lib/aviso-lead.ts',
+    de: "  if (!Array.isArray(avisos) || avisos.length === 0) return 'NUNCA_SE_INTENTO'",
+    a: "  if (!Array.isArray(avisos) || avisos.length === 0) return 'FALLO'",
+    comando: 'node scripts/probar-aviso-lead.mjs',
+  },
+  {
+    nombre: 'aviso: un timeout de Meta vuelve a contar como aceptado',
+    porque: 'si no hubo respuesta no se sabe nada, y contarlo como aceptado es la forma mas directa de volver a tener un verde que no puede ser rojo.',
+    archivo: 'src/lib/aviso-lead.ts',
+    de: "  if (estado === null) return 'ERROR_DE_RED'",
+    a: "  if (estado === null) return 'ACEPTADO_POR_META'",
+    comando: 'node scripts/probar-aviso-lead.mjs',
+  },
+  {
+    nombre: 'aviso: un lead nuevo sin avisar deja de pedir atencion',
+    porque: 'un lead del que nadie se entero no puede verse igual que uno que ya esta esperando a Leonel: el primero espera a que alguien descubra que existe.',
+    archivo: 'src/lib/aviso-lead.ts',
+    de: "  return status === 'new'",
+    a: "  return false",
+    comando: 'node scripts/probar-aviso-lead.mjs',
+  },
+  {
+    nombre: 'LA LLAMADA QUE FALTA: /api/leads deja de avisar',
+    porque: 'es el defecto exacto del 2026-10-23: 9 de 12 leads en 60 dias sin que nadie se enterara. Ninguna PRUEBA puede cazarlo; lo caza la guarda verificar-avisos.mjs.',
+    archivo: 'src/app/api/leads/route.ts',
+    de: "  const intento = await avisarLead(leadId, nombre, telefono, mensaje || '')",
+    a: "  const intento = { resultado: 'SIN_CONFIGURAR' }",
+    comando: 'node scripts/verificar-avisos.mjs',
+  },
+  /* ─── N-02 · EL COTEJO MIRA EL MODO Y EL REDONDEO ──────────────────
+   * Seis mutaciones, una por decisión. La cuarta y la quinta son las que
+   * importan de verdad: rompen la EMISIÓN en `datos.ts`, y antes de añadir las
+   * tres verificaciones sobre `FILAS` habrían sobrevivido las dos —las fixtures
+   * sintéticas del bloque N-02 no pasan por `valoresDesdeAnio`, así que el
+   * arnés entero se quedaba en verde con el modo sin viajar—.
+   */
+  {
+    nombre: 'cotejo: el modo vuelve a compararse como cifra y no como texto',
+    porque: 'con `normalizarValor`, «tasa_sobre_total» y «TASA_SOBRE_TOTAL» serian modos distintos y cada minuscula seria un falso hallazgo.',
+    archivo: 'src/lib/notariales/cotejo.ts',
+    de: "  return campo === 'redondeo.modo' || campo.endsWith('.modo')",
+    a: "  return false",
+    comando: 'node scripts/probar-notariales.mjs',
+  },
+  {
+    nombre: 'cotejo: `pendiente` vuelve a ser un valor con el que comparar',
+    porque: 'sin el quinto estado, un parametro que nadie leyo del PDF sale COINCIDE o DIFIERE: en los dos casos el informe afirma algo que no sabe.',
+    archivo: 'src/lib/notariales/cotejo.ts',
+    de: "    if (t && normalizarTexto(t.valor) === PENDIENTE) {",
+    a: "    if (false) {",
+    comando: 'node scripts/probar-notariales.mjs',
+  },
+  {
+    nombre: 'cotejo: `completo` deja de mirar los que no tienen segunda lectura',
+    porque: 'un parametro sin leer no contradice nada, asi que `apto` sigue cierto: si `completo` tampoco lo mira, la pareja autoriza publicar una cifra con una sola lectura.',
+    archivo: 'src/lib/notariales/cotejo.ts',
+    de: "    completo: sinCargar === 0 && sinLectura === 0,",
+    a: "    completo: sinCargar === 0,",
+    comando: 'node scripts/probar-notariales.mjs',
+  },
+  {
+    nombre: 'datos: el modo del tramo deja de viajar al cotejo',
+    porque: 'es el parametro que mueve 1.280.000 pesos sin cambiar ningun numero de la tabla. Si no se emite, no se cotejar y el informe dice COINCIDE.',
+    archivo: 'src/lib/notariales/datos.ts',
+    de: "      out.push({ concepto: c.clave, campo: `tramo.${t.orden}.modo`, valor: String(t.modo_calculo),",
+    a: "      if (false) out.push({ concepto: c.clave, campo: `tramo.${t.orden}.modo`, valor: String(t.modo_calculo),",
+    comando: 'node scripts/probar-notariales.mjs',
+  },
+  {
+    nombre: 'datos: el redondeo deja de viajar al cotejo',
+    porque: 'cargarlo al peso en vez de a la centena cambia la cifra final de cada concepto con aritmetica, y hasta N-02 no se cotejaba.',
+    archivo: 'src/lib/notariales/datos.ts',
+    de: "    if (c.redondeo) {",
+    a: "    if (false) {",
+    comando: 'node scripts/probar-notariales.mjs',
+  },
+  {
+    nombre: 'datos: el modo viaja con una unidad inventada',
+    porque: 'un modo no es una magnitud. Con unidad, el cotejo compara tambien ese campo y produce diferencias de unidad sobre algo que no la tiene.',
+    archivo: 'src/lib/notariales/datos.ts',
+    de: "        unidad: '', articulo: articuloTramos })",
+    a: "        unidad: 'PESOS', articulo: articuloTramos })",
+    comando: 'node scripts/probar-notariales.mjs',
+  },
   {
     nombre: 'catalogo: publicar vuelve a admitir precio cero',
     porque: 'cero no es un precio, y un 0 en una oferta de schema.org afirma «gratis».',
