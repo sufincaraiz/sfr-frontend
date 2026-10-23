@@ -61,6 +61,24 @@ const ALCANCE = {
       'no es autoalojado. El salto que las cierra es a 15.5.24, dentro de la misma mayor.',
   },
 
+  zod: {
+    alcance: 'VISITANTE',
+    por: 'dependencia DIRECTA, y valida el JSON que manda el visitante en /api/leads y /api/visitas',
+    comprobado:
+      'GHSA-mrhx-c7xc-m3w5 (<4.6.6): agota memoria validando COLECCIONES con ' +
+      'restriccion de tamano. Se midio: los seis z.array(...).max(N) del ' +
+      'proyecto estan TODOS en rutas /api/admin/ detras de requireRole; los ' +
+      'esquemas que toca un visitante -LeadSchema, visitas- solo llevan ' +
+      'cadenas con min/max. Asi que el visitante alcanza zod pero no el ' +
+      'constructo vulnerable. Se queda en VISITANTE y no en ENTRADA_NUESTRA a ' +
+      'proposito: es directa y procesa entrada del visitante, y la categoria ' +
+      'mas alarmante es la direccion segura para equivocarse. EL ARREGLO ES ' +
+      'BARATO Y NO SE TOMO EN ESTE LOTE: 4.4.3 -> 4.6.6 es un salto MENOR ' +
+      'dentro de la misma mayor, con fixAvailable. Va al tablero como lote ' +
+      'propio, junto a next 15.5.24, porque en este proyecto las dependencias ' +
+      'se actualizan solas y con luz verde.',
+  },
+
   /* ── Corre sirviendo, pero con entrada nuestra ─────────────────────────── */
   sharp: {
     alcance: 'ENTRADA_NUESTRA', por: 'transitiva de next, solo la usa el optimizador de imagenes',
@@ -71,8 +89,6 @@ const ALCANCE = {
     por: 'via gray-matter, que parsea el frontmatter del blog; esas rutas leen el MDX en runtime',
     comprobado: 'el YAML que procesa son los .mdx del repositorio, no algo que mande el visitante',
   },
-  argparse: { alcance: 'ENTRADA_NUESTRA', por: 'transitiva de js-yaml, misma cadena de gray-matter' },
-  'sprintf-js': { alcance: 'ENTRADA_NUESTRA', por: 'transitiva de argparse, misma cadena' },
   postcss: {
     alcance: 'ENTRADA_NUESTRA',
     por: 'via next y critters (optimizeCss activo); el CSS que procesa lo escribimos nosotros',
@@ -81,16 +97,9 @@ const ALCANCE = {
   'source-map-js': { alcance: 'ENTRADA_NUESTRA', por: 'transitiva de postcss; mapas de nuestras propias fuentes' },
 
   /* ── Fuera del arbol de produccion. COMPROBADO, no afirmado ───────────── */
-  tailwindcss: { alcance: 'SOLO_DESARROLLO', por: 'devDependency' },
-  'eslint-config-next': { alcance: 'SOLO_DESARROLLO', por: 'devDependency' },
-  '@next/eslint-plugin-next': { alcance: 'SOLO_DESARROLLO', por: 'via eslint-config-next' },
   'postcss-selector-parser': { alcance: 'SOLO_DESARROLLO', por: 'via tailwindcss' },
   browserslist: { alcance: 'SOLO_DESARROLLO', por: 'herramienta de compilacion' },
   'baseline-browser-mapping': { alcance: 'SOLO_DESARROLLO', por: 'dato de browserslist' },
-  chokidar: { alcance: 'SOLO_DESARROLLO', por: 'vigilancia de archivos en desarrollo' },
-  'fast-glob': { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
-  micromatch: { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
-  braces: { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
   'brace-expansion': { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
 }
 

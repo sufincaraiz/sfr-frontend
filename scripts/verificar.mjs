@@ -123,7 +123,11 @@ const GUARDAS = {
  * Y de aquí se desbloquea `allowScripts`: con el gestor fijado, el campo lo
  * genera la herramienta en vez de escribirse de memoria.
  */
-const NPM_ESPERADO = '11.19.0'
+/* 2026-10-23: Vercel paso su imagen de build de npm 11.19.0 a 11.19.1 y el
+ * despliegue se cayo. Es el caso que esta guarda predijo literalmente —«el
+ * proveedor cambio de imagen de build»—, y funciono: lo supimos por el build
+ * rojo y no por un comportamiento raro en produccion. */
+const NPM_ESPERADO = '11.19.1'
 
 function quienConstruye() {
   const npm = spawnSync('npm --version', { encoding: 'utf8', shell: true })
