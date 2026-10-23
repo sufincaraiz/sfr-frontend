@@ -3343,6 +3343,15 @@ quejara, que es exactamente cómo llegó a existir.
 
 ## LA LÍNEA BASE: UN TESTIGO QUE NO ES NUESTRO
 
+> ⚠⚠ **ALCANCE NO VERIFICADO (2026-10-23, por la tarde).** Todo lo que sigue
+> en esta sección describe un número cuyo PERIODO no conocemos, y por tanto no
+> es una medición todavía. La pantalla de Meta tenía un filtro «Últimos 7 días»
+> y no sabemos si la columna de entregados lo respeta. `cotejar-avisos.mjs` se
+> **niega a cotejar** mientras `alcance_verificado` sea `false`, y el denominador
+> además está contaminado (ver la sección del cron de vigilancia). Lo que sí
+> quedó probado de punta a punta es el aviso: Leonel recibió el lead de prueba
+> del formulario web en su WhatsApp a las 16:40 del 2026-10-23.
+
 **2026-10-23.** Leonel abrió el panel de Meta y trajo la cifra que ningún
 instrumento del repositorio podía dar:
 
@@ -3498,6 +3507,108 @@ La pregunta que lo caza, y hay que hacérsela a cada constante documentada:
 **¿qué se rompe si le cambio el valor?** Si la respuesta es «una línea del
 informe se imprime distinta», no está en uso. Es la misma pregunta que el
 arnés de mutaciones le hace al código, hecha a mano sobre los datos.
+
+## EL CASO CON SU NÚMERO: 46 NOCHES
+
+El proyecto ya tenía la regla escrita —«un recordatorio que no envejece se
+vuelve paisaje»— y aquí está el caso, medido el 2026-10-23 contra producción:
+
+| pendiente | noches | último aviso |
+|---|---|---|
+| acceso derivable sin publicar (finca-el-cural…) | **46** | 2026-10-20 |
+| valor futuro (lote-campestre-parcelacion-nim…) | **32** | 2026-10-20 |
+
+**2 pendientes, los 2 de más de 7 noches, ~27 mensajes enviados** desde el
+2026-09-07. Leonel trajo la captura cuando el contador iba por 43.
+
+### Lo que hace a este caso peor que la regla original
+
+El comentario del propio `cron/vigilancia` dice, literalmente, que el mensaje
+«tiene que envejecer con el pendiente» —y **lo hace**: nombra el más viejo,
+desde cuándo está y cuántas noches lleva—. O sea que el arreglo ya se hizo una
+vez, con esa misma regla en la mano.
+
+> **Envejecer el TEXTO no bastó.** Lo que no cambia es la FORMA: mismo canal,
+> misma cadencia, mismo aspecto en la pantalla del teléfono. A las 46 noches,
+> un número que crece dentro de una frase idéntica es tan invisible como la
+> frase.
+
+Corolario: cuando se dice «que el aviso envejezca», envejecer el contenido es
+la mitad fácil. La que importa es que **a partir de cierto umbral el aviso deje
+de parecerse a sí mismo** —otra cadencia, otro destinatario, otro canal, o
+callarse—. Si a la quinta vez se ve igual que a la primera, es paisaje aunque
+las palabras cambien.
+
+## EL INDICADOR AGREGADO, CON EL DETALLE EN LA MISMA PANTALLA
+
+Ya está escrito que un indicador que agrupa causas distintas no se diagnostica
+desde él. **La variante nueva es peor:** el detalle estaba en la MISMA salida,
+unas líneas más arriba, y aun así me quedé en el agregado.
+
+El 2026-10-23, antes de empujar, la cadena imprimió «21 de 22 en verde» con una
+guarda en rojo. Leí la sección de vulnerabilidades que está justo encima
+—informativa, con la deuda conocida de `next`— y concluí «la roja es la de
+`next`». Las líneas con `✗` que decían la verdad —`zod` sin clasificar, nueve
+filas caducas— estaban en esa misma pantalla. Empujé sobre un verde que no era
+verde y el despliegue se cayó.
+
+Lo que lo hizo posible: el `grep` con el que fui a leer mi propio instrumento.
+Busqué la línea de resumen, no las líneas de fallo. **El filtro con el que se
+mira un informe decide lo que el informe dice**, y eso no es un problema del
+informe.
+
+La regla operativa: **cuando un agregado dice que algo está mal, el siguiente
+paso es leer las líneas con `✗`, no explicar el agregado.** Una explicación
+plausible para un rojo es la forma más rápida de no mirarlo.
+
+## TABLERO AL 2026-10-23 · MEDIDO Y APLAZADO A PROPÓSITO
+
+Nada de esto se construye sin luz verde. Está medido, que es lo que lo
+distingue de una lista de buenas intenciones.
+
+| qué | medida | por qué espera |
+|---|---|---|
+| **Plantilla propia para alertas internas** | ~27 mensajes no-lead por `nuevo_lead_sfr` desde el 2026-09-07 | mientras compartan plantilla, el contador de Meta no puede ser testigo del cotejo de avisos. Requiere trámite de aprobación con Meta |
+| **Que el aviso de vigilancia cambie de forma a las 7 noches** | 2 pendientes, 46 y 32 noches, ~27 envíos | envejecer el texto ya se hizo y no bastó; hay que decidir QUÉ cambia (cadencia, canal, escalado o silencio semanal) y eso es una decisión de negocio |
+| **`zod` 4.4.3 → 4.6.6** | GHSA-mrhx-c7xc-m3w5, salto MENOR con `fixAvailable` | las dependencias van en lote propio y con luz verde |
+| **`next` → 15.5.24** | 1 crítica alcanzable por visitante, clasificada | igual, y va sola y la última |
+| **Verificar el alcance del contador de Meta** | un clic: cambiar el filtro y ver si la cifra cambia | lo hace una persona en su panel, no un guión |
+| **Las 15 preguntas de negocio** | 2 existen, 4 a medias, 8 no existen | las contesta Leonel; sin eso no se sabe cuáles son defectos |
+| **Segunda vía de aviso (§4)** | 0 emisores alternativos en todo el repositorio | propuesta abajo, sin construir |
+| **El enlace del contador** | tres piezas, estado real | de antes; sigue en pie |
+| **Lecturas completas aplazadas** | `JsonLd.tsx` + 6 archivos de finanzas | medidas y declaradas; se imprimen en cada build |
+
+Y lo que Leonel tiene pendiente de hacer a mano: **borrar el lead de prueba**
+(`PRUEBA DE AVISO - borrar`, 3000000000, canal `contacto`, 2026-10-23) y
+**mover de estado los 12 leads que ya llamó**, o las filas en ámbar del panel se
+vuelven paisaje —la misma trampa de las 46 noches, en otra pantalla—.
+
+## LO QUE CONTAMINA AL TESTIGO EXTERNO
+
+El cron de vigilancia manda sus alertas internas por `nuevo_lead_sfr`, que es
+**la plantilla de leads**: «⚠ VIGILANCIA DE CONTENIDO» en el campo del nombre y
+una ruta del panel en el del teléfono. Dos consecuencias, y la segunda importa
+más:
+
+1. el mensaje dice «Ingresa al CRM para darle seguimiento» sobre algo que no es
+   un lead, y confunde;
+2. **contamina el contador que convertimos en testigo externo.** Meta cuenta
+   esas ~27 entregas como entregas de la plantilla de leads, así que las dos
+   lecturas del cotejo no están contando lo mismo —y eso no se arregla
+   aclarando el periodo—.
+
+Medido el 2026-10-23, los cuatro emisores no-lead de esa plantilla:
+
+| emisor | ha disparado |
+|---|---|
+| `cron/vigilancia` · contenido pendiente | **~27 desde el 2026-09-07** |
+| `cron/vigilancia` · pool P2024 agotado | no medible desde la base (depende de los logs) |
+| `cron/purge-visitas` · retención incumplida | **nunca** (0 mensajes de +12 meses, de 746) |
+| `redis-salud` · limitador sin Redis | **nunca** (0 filas de `estado-redis`) |
+
+La forma general, y es la que conviene recordar: **un testigo externo solo vale
+si mide lo mismo que tú.** Compartir el canal con otro emisor convierte al
+testigo en un agregado —y ya sabemos qué pasa con los agregados—.
 
 ## La consecuencia que queda abierta
 

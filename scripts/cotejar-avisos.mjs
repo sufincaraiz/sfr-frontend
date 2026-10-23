@@ -77,6 +77,35 @@ const BASE = {
   /** Fecha desde la que existe `avisos_lead`. Antes de esto no hay filas y no
    *  es un defecto: es que la tabla no existía. */
   graba_desde: '2026-10-23',
+
+  /**
+   * ⚠⚠ ALCANCE NO VERIFICADO — ESTE COTEJO NO SE PUEDE USAR TODAVÍA.
+   *
+   * La pantalla de plantillas de Meta tenía un filtro «Últimos 7 días» arriba.
+   * **No sabemos si la columna de entregados lo respeta.** Si lo respeta, ese 1
+   * es de una semana y no el histórico desde el 2026-07-29, y toda la
+   * aritmética de abajo está anclada a un número cuyo periodo desconocemos.
+   *
+   * No se supone en ninguna dirección. Y hay dos indicios que apuntan a que
+   * NO es el histórico, pero ninguno lo demuestra:
+   *
+   *   · el cron de vigilancia ha mandado ~27 mensajes por ESTA MISMA plantilla
+   *     desde el 2026-09-07, y Leonel tiene captura de haber recibido uno de
+   *     ellos, así que las entregas históricas son >> 1;
+   *   · pero «1 en los últimos 7 días» tampoco cuadra: los re-avisos de
+   *     vigilancia caen cada 3 días y el último fue el 2026-10-20, así que en
+   *     esa ventana deberían ser 2.
+   *
+   * Ninguna de las dos lecturas cuadra con lo medido, y por eso el guión se
+   * niega a cotejar. Un número con el alcance sin declarar no es una medición.
+   *
+   * CÓMO SE CIERRA, en un clic y sin leer documentación: cambiar el filtro de
+   * la pantalla a otro rango —30 días, o todo el tiempo— y mirar si la cifra
+   * cambia. Si cambia, la columna respeta el filtro y el 1 es de 7 días. Si no
+   * cambia, es el histórico. Es una prueba DIFERENCIAL: no pregunta qué
+   * significa la columna, le cambia una entrada y mira la salida.
+   */
+  alcance_verificado: false,
 }
 
 const metaArg = process.argv[2]
@@ -98,7 +127,7 @@ try {
   const leadsTotal = await prisma.lead.count()
 
   console.log('\n══ DOS LECTURAS DE LOS AVISOS ════════════════════════════════')
-  console.log(`   línea base: Meta decía ${BASE.entregados} entregado(s) el ${BASE.fecha},`)
+  console.log(`   línea base: Meta decía ${BASE.entregados} entregado(s) el ${BASE.fecha}${BASE.alcance_verificado ? '' : '  ⚠ ALCANCE NO VERIFICADO'},`)
   console.log(`   con la plantilla activa desde el ${BASE.desde}.\n`)
 
   console.log('   ── LECTURA 1 · NUESTRA BASE ──────────────────────────────')
@@ -121,6 +150,35 @@ try {
     console.log('   por la misma credencial y dejarían de ser dos.')
     console.log('\n═════════════════════════════════════════════════════════════\n')
     process.exit(0)
+  }
+
+  /* EL GUION SE NIEGA A COTEJAR MIENTRAS EL ALCANCE NO ESTE VERIFICADO.
+   *
+   * No imprime un veredicto con una advertencia al lado: se para. Un cotejo con
+   * una nota de «ojo, puede que la base sea de otro periodo» se lee como un
+   * cotejo, y la nota se vuelve paisaje —que es justo el fallo que estamos
+   * midiendo en el cron de vigilancia—. Si el numero no se puede usar, el
+   * instrumento no da numero. */
+  if (!BASE.alcance_verificado) {
+    console.log('\n   ✗ NO SE PUEDE COTEJAR: el alcance de la línea base no está verificado.')
+    console.log(`   El ${BASE.fecha} Meta mostraba ${BASE.entregados} entregado(s), pero su`)
+    console.log('   pantalla tenia un filtro «Ultimos 7 dias» y no sabemos si la columna')
+    console.log('   lo respeta. Si lo respeta, ese 1 es de una semana y no el historico.')
+    console.log('\n   CÓMO SE CIERRA, en un clic: cambia el filtro a otro rango y mira si')
+    console.log('   la cifra cambia. Si cambia, respeta el filtro. Es una prueba')
+    console.log('   diferencial: no pregunta que significa la columna, le cambia una')
+    console.log('   entrada y mira la salida.')
+    console.log('\n   Después, pon alcance_verificado: true y corrige `entregados` al')
+    console.log('   valor historico. Hasta entonces este guion no compara nada.')
+    console.log('\n   ── Y HAY UN DENOMINADOR QUE CORREGIR ANTES ───────────────')
+    console.log('   El cron de vigilancia manda sus alertas internas por ESTA MISMA')
+    console.log('   plantilla: ~27 mensajes desde el 2026-09-07 que no son leads. Meta')
+    console.log('   los cuenta como entregas de la plantilla de leads, asi que las dos')
+    console.log('   lecturas NO estan contando lo mismo. Mientras eso siga asi, el')
+    console.log('   contador de Meta no sirve de testigo por mucho que se aclare el')
+    console.log('   periodo. Plantilla propia para alertas internas: esta en el tablero.')
+    console.log('\n═════════════════════════════════════════════════════════════\n')
+    process.exit(1)
   }
 
   const meta = Number(metaArg)
