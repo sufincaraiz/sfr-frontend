@@ -64,6 +64,39 @@ const LOS_DOS = `${H_NOTARIAL} && ${H_FINANZAS}`
  * una mutación sobrevive, lo que se cae es esa frase.
  */
 const MUTACIONES = [
+  /* ─── EL LATIDO · 2026-10-25 ──────────────────────────────────────────── */
+  {
+    nombre: 'latido: /fail deja de normalizar la barra final',
+    porque: 'una URL copiada del panel puede traer barra; «…uuid//fail» devuelve 404 y el aviso de FALLO se perderia justo cuando mas falta hace.',
+    archivo: 'src/lib/latido.ts',
+    de: "  const limpia = base.trim().replace(/\\/+$/, '')",
+    a: "  const limpia = base.trim()",
+    comando: 'node scripts/probar-latido.mjs',
+  },
+  {
+    nombre: 'latido: el fallo deja de mandarse y se espera al silencio',
+    porque: 'el silencio tarda el margen entero -una hora-; el /fail llega en segundos. El silencio queda solo para lo que no se puede avisar.',
+    archivo: 'src/lib/latido.ts',
+    de: "  return estado === 'FALLO' ? `${limpia}/fail` : limpia",
+    a: "  return limpia",
+    comando: 'node scripts/probar-latido.mjs',
+  },
+  {
+    nombre: 'latido: sin URL vuelve a callarse',
+    porque: 'un camino que se desactiva en silencio es indistinguible de uno que funciona. Es la leccion de los tres return mudos que dejaron 9 leads sin aviso.',
+    archivo: 'src/lib/latido.ts',
+    de: "    return { late: false, motivo: 'no se latió: falta HEALTHCHECKS_PING_URL en el entorno' }",
+    a: "    return { late: true, base: '' }",
+    comando: 'node scripts/probar-latido.mjs',
+  },
+  {
+    nombre: 'latido: acepta http y manda la credencial en claro',
+    porque: 'la URL ES la llave: por http viaja en claro hasta el vigilante, y quien la vea puede mandar «estoy vivo» en falso.',
+    archivo: 'src/lib/latido.ts',
+    de: "  if (!/^https:\\/\\//i.test(base)) {",
+    a: "  if (false) {",
+    comando: 'node scripts/probar-latido.mjs',
+  },
   /* ─── EL AVISO DEL LEAD · 2026-10-23 ────────────────────────────
    * La última es la que importa de verdad: borra la LLAMADA al aviso en
    * /api/leads, que es literalmente el defecto que dejó 9 de 12 leads sin que
