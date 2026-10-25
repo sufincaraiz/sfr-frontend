@@ -123,24 +123,11 @@ Cuando la tengas, pásame la URL de ping y la cableo.
 
 ---
 
-## 2 · Mirar de qué periodo es el «1 entregado» (dos minutos)
+## 2 · ~~Mirar de qué periodo es el «1 entregado»~~ — YA ESTÁ, GRACIAS
 
-Cuando viste la plantilla `nuevo_lead_sfr` decía **MENSAJES ENTREGADOS: 1**,
-pero esa pantalla tenía arriba un filtro que decía **«Últimos 7 días»**. No
-sabemos si esa columna respeta el filtro, y de eso depende todo: si lo respeta,
-ese 1 es de una semana; si no, es el total desde el 29 de julio.
-
-**No hace falta entender la pantalla. Haz esto:**
-
-> Cambia el filtro de arriba a otro rango —30 días, 90 días, o «todo el
-> tiempo»— y mira si el número cambia.
->
-> - **Si cambia** → la columna respeta el filtro. Dime cuánto sale con el rango
->   más largo que te deje elegir.
-> - **Si no cambia** → es el histórico, y el 1 es de toda la vida.
-
-Es una prueba de las que no pueden salir mal: no pregunta qué significa la
-columna, le cambia una cosa y mira qué pasa.
+Tu captura del domingo lo resolvió sin que hiciera falta tocar el filtro: el
+viernes decía 1 y el domingo 3. Eso demuestra que **el contador se mueve** y que
+no era el total desde julio. No hay nada que hacer aquí.
 
 ---
 

@@ -3343,14 +3343,13 @@ quejara, que es exactamente cómo llegó a existir.
 
 ## LA LÍNEA BASE: UN TESTIGO QUE NO ES NUESTRO
 
-> ⚠⚠ **ALCANCE NO VERIFICADO (2026-10-23, por la tarde).** Todo lo que sigue
-> en esta sección describe un número cuyo PERIODO no conocemos, y por tanto no
-> es una medición todavía. La pantalla de Meta tenía un filtro «Últimos 7 días»
-> y no sabemos si la columna de entregados lo respeta. `cotejar-avisos.mjs` se
-> **niega a cotejar** mientras `alcance_verificado` sea `false`, y el denominador
-> además está contaminado (ver la sección del cron de vigilancia). Lo que sí
-> quedó probado de punta a punta es el aviso: Leonel recibió el lead de prueba
-> del formulario web en su WhatsApp a las 16:40 del 2026-10-23.
+> **RESUELTO el 2026-10-25, y la línea base de abajo era FALSA.** El «1
+> entregado» NO era el histórico desde el 2026-07-29. El contador es **vivo y
+> acotado**: el viernes decía 1, el domingo 3, con índice de entrega del 100 %.
+> Lo que sigue demostrado es que el contador se mueve, no cuál es su ventana.
+> Por eso `cotejar-avisos.mjs` ya **solo coteja incrementos entre dos lecturas
+> fechadas**, nunca totales. Y sigue sin dictaminar: el denominador está sucio
+> hasta que `alerta_interna_sfr` esté cableada.
 
 **2026-10-23.** Leonel abrió el panel de Meta y trajo la cifra que ningún
 instrumento del repositorio podía dar:
@@ -3508,6 +3507,51 @@ La pregunta que lo caza, y hay que hacérsela a cada constante documentada:
 informe se imprime distinta», no está en uso. Es la misma pregunta que el
 arnés de mutaciones le hace al código, hecha a mano sobre los datos.
 
+## LA FORMA MÁS BARATA DE SABER QUÉ MIDE UN INSTRUMENTO
+
+> Haz algo y mira si cambia.
+
+El 2026-10-23 nos quedamos atascados en una pregunta que parecía necesitar
+documentación: la pantalla de plantillas de Meta decía «MENSAJES ENTREGADOS: 1»
+con un filtro «Últimos 7 días» encima, y no sabíamos si la columna respetaba el
+filtro. De eso dependía todo el cotejo.
+
+Se diseñó una **prueba diferencial** para resolverlo sin entender la pantalla:
+cambiar el filtro a otro rango y mirar si la cifra cambia. Era correcta.
+
+**Y no hizo falta.** El instrumento se delató solo, porque mientras tanto
+habíamos hecho algo: el lead de prueba del viernes. El domingo el contador
+marcaba 3 donde el viernes marcaba 1. Eso, sin tocar ningún filtro, dio tres
+hechos y ninguno es inferencia:
+
+1. **el contador se mueve** —subió después de nuestro envío—;
+2. **no es el histórico desde julio** —con ~27 entregas de vigilancia desde
+   septiembre no habría podido decir 1 el viernes—;
+3. y el **+2** cuadra con lo que sabemos que salió en esa ventana: el lead de
+   prueba y un re-aviso de vigilancia (ciclo de 3 días, el anterior el 20).
+
+### La generalización, que es lo que vale para la próxima vez
+
+**Ante un instrumento que no se entiende, mover una entrada cuesta menos que
+leer su documentación, y dice más.** La documentación describe lo que el
+fabricante quiso; la respuesta al estímulo describe lo que hace.
+
+Esta sesión lo usó tres veces y las tres funcionaron:
+
+| instrumento que no se entendía | el estímulo | lo que reveló |
+|---|---|---|
+| `vercel env pull` — ¿devuelve los valores? | medir `DATABASE_URL`, que **sabemos** que funciona | salía vacía: no descifra nada. Evitó reportar «el token está vacío» como causa |
+| el contador de Meta — ¿qué periodo? | mandar un lead y volver a mirar | vivo y acotado; la línea base era falsa |
+| el arnés entero — ¿discrimina? | las 36 mutaciones | 0 supervivientes |
+
+Las tres son la misma técnica: **meter una entrada conocida y comprobar que la
+salida cambia como debe.** Es lo que el arnés de mutaciones le hace al código,
+hecho a mano sobre un instrumento ajeno.
+
+Y el corolario incómodo: **un instrumento al que nunca se le ha movido nada
+está sin verificar**, por muy bien que se haya leído su manual y por muchas
+veces que se haya usado. Usarlo no es probarlo.
+
 ## CORRECCIÓN DE UNA REGLA PROPIA · 2026-10-25
 
 **Es la primera vez en el proyecto que una regla nuestra falla en producción
@@ -3625,10 +3669,10 @@ distingue de una lista de buenas intenciones.
 | **Que el aviso de vigilancia cambie de forma a las 7 noches** | 2 pendientes, 46 y 32 noches, ~27 envíos | envejecer el texto ya se hizo y no bastó; hay que decidir QUÉ cambia (cadencia, canal, escalado o silencio semanal) y eso es una decisión de negocio |
 | **`zod` 4.4.3 → 4.6.6** | GHSA-mrhx-c7xc-m3w5, salto MENOR con `fixAvailable` | las dependencias van en lote propio y con luz verde |
 | **`next` → 15.5.24** | 1 crítica alcanzable por visitante, clasificada | igual, y va sola y la última |
-| **Verificar el alcance del contador de Meta** | un clic: cambiar el filtro y ver si la cifra cambia | lo hace una persona en su panel, no un guión |
+| ~~**Verificar el alcance del contador de Meta**~~ **HECHO 2026-10-25** | viernes 1 → domingo 3, índice 100 % | el instrumento se delató al movernos y la prueba diferencial no hizo falta. Vivo y acotado; la ventana exacta sigue sin conocerse y por eso el cotejo va por incrementos |
 | **Las 15 preguntas de negocio** | 2 existen, 4 a medias, 8 no existen | las contesta Leonel; sin eso no se sabe cuáles son defectos |
 | **Segunda vía de aviso (§4)** · APROBADA, bloqueada por dos dependencias externas | 0 emisores alternativos en todo el repositorio | `PROPUESTA-SEGUNDA-VIA-DE-AVISO.md`. Piezas 1 y 2 juntas, la 3 después. **No se construye nada** hasta que Meta apruebe la plantilla y Resend verifique el dominio: mejor nada que código que no se puede probar |
-| **La pieza 2, reescrita: testigo externo en vez de pulso que se echa en falta** | la bandeja de Leonel tenía **1.932 sin leer** | un detector que depende de que alguien advierta un silencio no es un detector. Se invierte: healthchecks.io (Hobbyist $0, 20 trabajos) espera el ping diario y **escribe si no llega**. La ausencia deja de ser algo que advertir y pasa a ser un aviso que llega |
+| **La pieza 2, reescrita · APROBADA PARA HOY, bloqueada solo por la URL de ping** | la bandeja de Leonel tenía **1.932 sin leer** | un detector que depende de que alguien advierta un silencio no es un detector. Se invierte: healthchecks.io (Hobbyist $0, 20 trabajos) espera el ping diario y **escribe si no llega**. La ausencia deja de ser algo que advertir y pasa a ser un aviso que llega |
 | **El enlace del contador** | tres piezas, estado real | de antes; sigue en pie |
 | **Lecturas completas aplazadas** | `JsonLd.tsx` + 6 archivos de finanzas | medidas y declaradas; se imprimen en cada build |
 
