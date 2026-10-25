@@ -178,3 +178,55 @@ son decisiones tuyas y no mías. Van después, cuando me digas cuáles aceptas.
 
 No toco `schema.prisma` hasta que contestes: si lo cambio sin migrar, el cliente
 de Prisma esperaría una columna que no existe y rompería el desarrollo local.
+
+---
+
+# Apéndice · La identidad del documento (2026-10-25)
+
+Inspeccionado contra el esquema, no supuesto.
+
+**Lo que hay:** `@@unique([ambito, referencia_id, campo])`, `url String?`,
+`documento_hash String?`, y `hashDeBytes()` en `huella.ts`, ya probada.
+
+## La hipótesis se sostiene en el fondo y se rompe al implementarla
+
+Poner la identidad en la clave es correcto. Pero **no puede entrar como dos
+columnas anulables**:
+
+> En SQL, una restricción UNIQUE **no considera iguales dos NULL**. Si la clave
+> fuera `(ambito, referencia_id, campo, documento_hash)`, cada respaldo de tipo
+> URL —que no tiene hash— llevaría NULL ahí, y **la restricción dejaría de
+> impedir nada para ellos**: el mismo respaldo se podría insertar sin límite.
+
+Es la clase de defecto que llevamos la sesión entera cazando: una guarda que
+parece puesta y no muerde. **Una sola columna `identidad_documento`, `NOT
+NULL`**, calculada al escribir: el hash cuando hay documento archivado, la URL
+normalizada cuando no. Así la restricción muerde siempre.
+
+*(Postgres 15+ tiene `NULLS NOT DISTINCT`, que sería la alternativa. No he
+comprobado si Prisma 5.22 lo expone, así que no lo propongo.)*
+
+## El tercer caso: una URL es un lugar, no un documento
+
+Las dos mitades de la identidad **no son la misma clase de cosa**. El hash
+identifica unos bytes; la URL identifica dónde miraste. Falla en las dos
+direcciones:
+
+- **el mismo documento en dos URL** (con y sin `www`, dos rutas, un redirect) →
+  se cuentan como dos lecturas independientes que no lo son;
+- **la misma URL sirviendo otro contenido con el tiempo** —una compilación que
+  se actualiza en su sitio— → se cuenta como una, y la lectura vieja pasa a ser
+  silenciosamente una lectura del texto nuevo. Hoy lo único que ata un respaldo
+  de URL a lo que había ahí es su `verificado_en`: **no guardamos el hash de lo
+  que se descargó.**
+
+De ahí la consecuencia: **la identidad por URL es un escalón más débil y no
+puede contar por sí sola como segunda lectura independiente.** Lo que encaja
+exactamente con que la independencia se declare y se firme.
+
+## Y una consecuencia concreta del cambio de clave
+
+`guardarRespaldo` hace `upsert` sobre `ambito_referencia_id_campo`. Con la
+clave nueva ese upsert deja de identificar una fila: **habría que decidir si
+reemplaza el respaldo de ese documento o añade uno nuevo**, y hoy el formulario
+no distingue «corrijo esto» de «añado una segunda fuente». Es parte del lote.
