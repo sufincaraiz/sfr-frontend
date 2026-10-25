@@ -3508,6 +3508,59 @@ La pregunta que lo caza, y hay que hacérsela a cada constante documentada:
 informe se imprime distinta», no está en uso. Es la misma pregunta que el
 arnés de mutaciones le hace al código, hecha a mano sobre los datos.
 
+## CORRECCIÓN DE UNA REGLA PROPIA · 2026-10-25
+
+**Es la primera vez en el proyecto que una regla nuestra falla en producción
+teniéndola aplicada.** No es una regla nueva: es que la que teníamos estaba
+incompleta, y la prueba de que estaba incompleta es que la seguimos bien y el
+defecto ocurrió igual.
+
+**Versión antigua** (escrita antes del 2026-10-14):
+
+> Un recordatorio que no envejece se vuelve paisaje.
+
+La aplicamos, y bien. El comentario de `cron/vigilancia` lo dice con todas las
+letras —«EL MENSAJE TIENE QUE ENVEJECER CON EL PENDIENTE. Antes decía "N sin
+corregir hace +3 días", idéntico la primera vez y la quinta»— y el mensaje
+pasó a nombrar el hallazgo más viejo, desde cuándo está y cuántas noches lleva.
+El texto envejece de verdad: cada aviso lleva un número distinto.
+
+**A las 46 noches era invisible igual.** 2 pendientes, ~27 mensajes, ninguno
+movió nada.
+
+**Versión corregida:**
+
+> Lo que tiene que cambiar no es el CONTENIDO del recordatorio, sino el GESTO
+> que se hace con él. Mismo canal, misma cadencia y mismo aspecto se despachan
+> con el mismo movimiento, diga lo que diga el texto. **Un aviso que no exige
+> un acto distinto para cerrarse, no se cierra.**
+
+### Por qué la primera versión no bastaba
+
+Porque describía el aviso y no al que lo recibe. Un mensaje de WhatsApp a las
+13:00 con el mismo remitente, la misma forma y el mismo icono se procesa con un
+gesto aprendido —mirar, reconocer la forma, deslizar— y ese gesto **no lee el
+texto**. El número que crece dentro de una frase idéntica no llega a la parte
+que decide: llega a la parte que ya clasificó el mensaje antes de leerlo.
+
+Envejecer el contenido es la mitad fácil y es la que un programador puede hacer
+solo. La otra mitad —que a partir de cierto umbral el aviso deje de parecerse a
+sí mismo— obliga a cambiar cadencia, canal o destinatario, y eso ya es una
+decisión de negocio.
+
+### La forma de comprobarlo
+
+No «¿el texto cambia?» sino: **¿qué tiene que hacer alguien para que este aviso
+deje de llegar?** Si la respuesta es «nada, desaparece solo cuando se arregle»,
+el aviso se puede ignorar sin coste, y lo que no tiene coste se ignora. Si la
+respuesta es «descartarlo a mano, y entonces vuelve en una semana», hay un acto.
+
+Y el corolario incómodo que vale para los dos casos de esta sesión —las 46
+noches y el ámbar de los leads—: **ninguna forma de avisar arregla algo que
+nadie va a tocar.** Antes de elegir el formato hay que contestar si el pendiente
+merece arreglarse. Si no lo merece, el defecto no está en el canal: está en el
+criterio que lo marcó.
+
 ## EL CASO CON SU NÚMERO: 46 NOCHES
 
 El proyecto ya tenía la regla escrita —«un recordatorio que no envejece se
@@ -3568,13 +3621,13 @@ distingue de una lista de buenas intenciones.
 
 | qué | medida | por qué espera |
 |---|---|---|
-| **Plantilla propia para alertas internas** | ~27 mensajes no-lead por `nuevo_lead_sfr` desde el 2026-09-07 | mientras compartan plantilla, el contador de Meta no puede ser testigo del cotejo de avisos. Requiere trámite de aprobación con Meta |
+| ~~**Plantilla propia para alertas internas**~~ → **YA NO ES TABLERO: ES PREREQUISITO** | ~27 mensajes no-lead por `nuevo_lead_sfr` desde el 2026-09-07 | el cotejo NO PUEDE EXISTIR mientras compartan plantilla, aunque se aclare el periodo —«un testigo externo solo sirve si mide lo mismo que tú»—. Pedida a Leonel el 2026-10-25 en `PARA-LEONEL-PLANTILLA-Y-CONTADOR.md`; espera aprobación de Meta, y al llegar se cablea |
 | **Que el aviso de vigilancia cambie de forma a las 7 noches** | 2 pendientes, 46 y 32 noches, ~27 envíos | envejecer el texto ya se hizo y no bastó; hay que decidir QUÉ cambia (cadencia, canal, escalado o silencio semanal) y eso es una decisión de negocio |
 | **`zod` 4.4.3 → 4.6.6** | GHSA-mrhx-c7xc-m3w5, salto MENOR con `fixAvailable` | las dependencias van en lote propio y con luz verde |
 | **`next` → 15.5.24** | 1 crítica alcanzable por visitante, clasificada | igual, y va sola y la última |
 | **Verificar el alcance del contador de Meta** | un clic: cambiar el filtro y ver si la cifra cambia | lo hace una persona en su panel, no un guión |
 | **Las 15 preguntas de negocio** | 2 existen, 4 a medias, 8 no existen | las contesta Leonel; sin eso no se sabe cuáles son defectos |
-| **Segunda vía de aviso (§4)** | 0 emisores alternativos en todo el repositorio | propuesta abajo, sin construir |
+| **Segunda vía de aviso (§4)** | 0 emisores alternativos en todo el repositorio | propuesta escrita en `PROPUESTA-SEGUNDA-VIA-DE-AVISO.md`, sin construir. Tres piezas; la 2 (pulso semanal) es la que cierra el agujero aunque sea la que no entrega ningún lead |
 | **El enlace del contador** | tres piezas, estado real | de antes; sigue en pie |
 | **Lecturas completas aplazadas** | `JsonLd.tsx` + 6 archivos de finanzas | medidas y declaradas; se imprimen en cada build |
 
