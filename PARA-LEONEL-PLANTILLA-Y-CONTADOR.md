@@ -72,6 +72,57 @@ tener sentido.
 
 ---
 
+## 1-bis · Verificar el dominio en Resend (va en paralelo con lo anterior)
+
+Esto es lo otro que tarda, así que conviene arrancarlo el mismo día. Es para
+que el sistema pueda avisarte **también por correo** y no solo por WhatsApp.
+
+1. Crear una cuenta gratuita en **resend.com**.
+2. Añadir el dominio **sufincaraiz.com**.
+3. Resend dará **tres o cuatro registros DNS** (SPF, DKIM y uno de verificación).
+   Hay que pegarlos donde esté el DNS del dominio y esperar a que Resend los dé
+   por buenos. Suele tardar minutos, a veces horas.
+
+**Y ya que estás en ese mismo panel de DNS**, deja hecha la dirección donde
+quieres recibirlos — hay dos opciones y hay que elegir una:
+
+| | **A · dirección propia** *(la que recomiendo)* | **B · solo una regla de Gmail** |
+|---|---|---|
+| qué es | `avisos@sufincaraiz.com` con **Cloudflare Email Routing** (gratis), que reenvía a tu correo | un filtro que etiqueta «Avisos SFR» y omite Recibidos |
+| coste | 0 | 0 |
+| trabajo | se hace en el mismo panel de DNS, de una sentada | cinco minutos en Gmail |
+| el riesgo | ninguno: la dirección **es** el filtro | si el remitente cambia, el filtro deja de funcionar **y nada lo avisa** |
+
+**Lo que NO vale, y es decisión tomada:** que esto caiga en
+`sufincaraiz.comercial@gmail.com`. Esa bandeja tiene 1.932 sin leer. Un aviso
+que llega ahí nace invisible.
+
+**Y una advertencia para cualquiera de las dos:** sacar el correo de Recibidos
+lo hace *más* fácil de perder si nadie mira esa carpeta. Hay que **activar la
+notificación de esa etiqueta en el móvil**. Si no, habremos cambiado «se pierde
+entre 1.932» por «está en una carpeta que nadie abre».
+
+---
+
+## 1-ter · Una cuenta en healthchecks.io (cinco minutos, sin esperas)
+
+Es el vigilante de fuera: el sistema le manda una señal cada día, y **si un día
+la señal no llega, él te escribe**. Es lo único que puede avisar de que todo lo
+demás murió, porque no depende de nada nuestro.
+
+- Cuenta gratuita en **healthchecks.io**. El plan Hobbyist es **$0** y permite
+  20 vigilados; necesitamos 1.
+- Cuando entres, mira en **Integraciones** si aparece **Telegram**. Si está,
+  ésa es la mejor opción de aviso: te llega al teléfono y **no pasa por Meta**,
+  que es justo lo que esta pieza existe para evitar.
+- En **Account Settings › Email Reports**, activa los **recordatorios diarios**
+  de comprobaciones caídas. Sin eso, el aviso llega una sola vez y si se pasa
+  por alto, vuelve el silencio.
+
+Cuando la tengas, pásame la URL de ping y la cableo.
+
+---
+
 ## 2 · Mirar de qué periodo es el «1 entregado» (dos minutos)
 
 Cuando viste la plantilla `nuevo_lead_sfr` decía **MENSAJES ENTREGADOS: 1**,

@@ -3627,7 +3627,8 @@ distingue de una lista de buenas intenciones.
 | **`next` → 15.5.24** | 1 crítica alcanzable por visitante, clasificada | igual, y va sola y la última |
 | **Verificar el alcance del contador de Meta** | un clic: cambiar el filtro y ver si la cifra cambia | lo hace una persona en su panel, no un guión |
 | **Las 15 preguntas de negocio** | 2 existen, 4 a medias, 8 no existen | las contesta Leonel; sin eso no se sabe cuáles son defectos |
-| **Segunda vía de aviso (§4)** | 0 emisores alternativos en todo el repositorio | propuesta escrita en `PROPUESTA-SEGUNDA-VIA-DE-AVISO.md`, sin construir. Tres piezas; la 2 (pulso semanal) es la que cierra el agujero aunque sea la que no entrega ningún lead |
+| **Segunda vía de aviso (§4)** · APROBADA, bloqueada por dos dependencias externas | 0 emisores alternativos en todo el repositorio | `PROPUESTA-SEGUNDA-VIA-DE-AVISO.md`. Piezas 1 y 2 juntas, la 3 después. **No se construye nada** hasta que Meta apruebe la plantilla y Resend verifique el dominio: mejor nada que código que no se puede probar |
+| **La pieza 2, reescrita: testigo externo en vez de pulso que se echa en falta** | la bandeja de Leonel tenía **1.932 sin leer** | un detector que depende de que alguien advierta un silencio no es un detector. Se invierte: healthchecks.io (Hobbyist $0, 20 trabajos) espera el ping diario y **escribe si no llega**. La ausencia deja de ser algo que advertir y pasa a ser un aviso que llega |
 | **El enlace del contador** | tres piezas, estado real | de antes; sigue en pie |
 | **Lecturas completas aplazadas** | `JsonLd.tsx` + 6 archivos de finanzas | medidas y declaradas; se imprimen en cada build |
 

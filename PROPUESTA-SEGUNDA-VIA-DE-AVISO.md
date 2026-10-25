@@ -79,30 +79,119 @@ necesita, y ninguna relación con Meta. La alternativa —SMTP de Gmail con una
 contraseña de aplicación— evita tocar DNS, pero reutiliza la cuenta de Google
 que ya sostiene otras cosas del negocio y entrega peor; no la recomiendo.
 
-**Lo que hay que decidir y no puedo decidir yo:** a qué dirección. El correo del
-negocio (`sufincaraiz.comercial@gmail.com`) es el obvio, pero si es la misma
-bandeja que Leonel ya tiene llena, el aviso nace siendo paisaje. Vale la pena
-una dirección aparte que solo reciba esto.
+#### A qué dirección — decidido el 2026-10-25
 
-### Pieza 2 · El pulso semanal (lo que de verdad cierra el agujero)
+**Nada de esto va a `sufincaraiz.comercial@gmail.com`.** Esa bandeja tenía 1.932
+correos sin leer: ya perdió la pelea, y un aviso que cae ahí nace siendo
+paisaje. Dos opciones concretas para que Leonel elija, las dos de coste cero:
 
-Un correo semanal que llega **pase lo que pase**, incluso —sobre todo— cuando no
-hay nada que contar:
+**Opción A — dirección propia, fuera del flujo general** *(recomendada)*
 
-> Esta semana: 3 leads, 3 avisados por WhatsApp, 3 por correo, 0 fallidos.
+`avisos@sufincaraiz.com`, creada con **Cloudflare Email Routing**: gratis,
+reenvía a la cuenta que él quiera, y se configura **en el mismo panel de DNS que
+ya hay que tocar para verificar el dominio en Resend**. Un solo sitio nuevo, y
+se hace de una sentada con la otra tarea.
+
+Ventaja real: la dirección **es** el filtro. No depende de que una regla acierte
+a reconocer el mensaje.
+
+**Opción B — solo una regla de Gmail**
+
+Un filtro por remitente → etiqueta «Avisos SFR» + *omitir Recibidos*. Cero DNS,
+cinco minutos.
+
+Pero tiene un fallo que hay que decir: **el filtro puede dejar de funcionar en
+silencio.** Si cambia el remitente, el aviso vuelve al montón y nada lo anuncia
+— es la misma familia de defecto que estuvimos cazando toda la semana.
+
+**Y una trampa que vale para las dos:** sacar el correo de Recibidos lo hace
+*más* invisible si nadie mira esa etiqueta. Con cualquiera de las dos hay que
+**activar la notificación de esa etiqueta en el móvil**; si no, habremos
+cambiado «se pierde entre 1.932» por «está en una carpeta que nadie abre».
+
+### Pieza 2 · El testigo externo que espera el pulso
+
+> ⚠ **Esta pieza está reescrita (2026-10-25).** La primera versión proponía un
+> correo semanal que, al no llegar, informaría de que el sistema murió. Está
+> mal, y por una razón que ya es regla del proyecto: **le pedía a una persona
+> que advirtiera un silencio.** La bandeja de Leonel tenía 1.932 correos sin
+> leer; uno que falta ahí no se distingue de los que sobran. Un detector que
+> depende de que alguien note una ausencia no es un detector.
+
+**Se invierte: que un servicio de fuera espere el pulso y escriba si no llega.**
+
+El cron diario hace un `GET` a una URL. Si ese ping no llega cuando toca, el
+servicio manda el aviso. **La ausencia deja de ser algo que advertir y pasa a
+ser un aviso que llega.**
+
+Y cumple el principio 1 mejor que el correo: **no comparte infraestructura con
+nada nuestro.** No depende de Vercel, ni de Meta, ni de nuestra base de datos,
+ni de nuestro código. Si todo lo nuestro muere a la vez, ése es justo el caso en
+que avisa.
+
+#### El servicio: healthchecks.io
+
+Comprobado en su propia página de precios el 2026-10-25, no de memoria:
+
+| | |
+|---|---|
+| Plan **Hobbyist** | **$0/mes** |
+| Trabajos vigilados | **20** (necesitamos 1) |
+| Historial | 100 entradas por trabajo |
+| Lo que sí es de pago | créditos de SMS, WhatsApp y llamada telefónica |
+
+Está hecho exactamente para esto: vigilar crons por ausencia de ping. Lo que
+necesitamos cabe de sobra en el plan gratuito.
+
+**Un dato que NO pude confirmar:** si la integración de **Telegram** está
+disponible sin pagar. Su página de precios solo limita por plan los créditos de
+SMS, WhatsApp y llamada, así que casi seguro que Telegram no está limitado —
+pero «casi seguro» no es comprobado, y se ve en dos segundos en la página de
+Integraciones de la cuenta. Lo menciono porque Telegram sería el mejor destino:
+llega al teléfono y **no es Meta**, mientras que WhatsApp como destino de la
+alerta volvería a meter a Meta en el camino que esta pieza existe para evitar.
+
+#### Aplicando la regla corregida al propio diseño
+
+> ¿Qué tiene que hacer alguien para que este aviso deje de llegar?
+
+- **Al pulso semanal por correo, la respuesta es «nada, llega siempre».** No
+  exige ningún acto y se despacha con el mismo gesto. Por eso **deja de ser el
+  detector**: pasa a ser el resumen que se lee cuando hay algo que leer. Son dos
+  funciones distintas y en la primera versión las había juntado en una.
+- **A la alerta del servicio externo, la respuesta es: arreglar el cron, o
+  entrar en healthchecks.io y pausar la comprobación a mano.** Eso es un acto, y
+  es lo que le da coste a ignorarla.
+
+Pero hay un matiz que la documentación de healthchecks deja claro y conviene no
+pasar por alto: **no tiene un ajuste general de aviso repetido.** Por defecto
+avisa en la transición, así que una alerta ignorada una vez devuelve el
+silencio — el fallo contrario y igual de malo. Tres formas de darle insistencia,
+de su propia documentación:
+
+1. **Recordatorios por correo, cada hora o cada día**, sobre cualquier
+   comprobación caída (*Account Settings › Email Reports*). Gratis, y convierte
+   el aviso en algo que vuelve hasta que se arregla.
+2. **Pushover con prioridad «Emergency»**, que repite cada ~5 minutos **hasta
+   que alguien lo reconoce**. Ése es literalmente «exige un acto distinto para
+   cerrarse». Pushover es una compra única de unos $5 por plataforma, no una
+   suscripción.
+3. Sistemas de guardia tipo PagerDuty — desproporcionado para este negocio.
+
+**Recomiendo la 1 de entrada** (gratis, y suficiente), y dejar la 2 anotada por
+si alguna vez un aviso caído pasa inadvertido.
+
+#### El correo semanal, con su función nueva
+
+Se queda, pero ya no es el detector. Es el resumen:
+
+> Esta semana: 3 leads · 3 avisados por WhatsApp · 3 por correo · 0 fallidos.
 > Último aviso entregado: miércoles 14:22.
 
-Si una semana **no llega**, eso es información. Es la única forma de distinguir
-«no hubo leads» de «el sistema dejó de funcionar», que hoy son el mismo silencio.
-
-Y resuelve el problema circular de las alertas internas: hoy, si WhatsApp muere,
-la alerta de que WhatsApp murió saldría por WhatsApp.
-
-**Limitación conocida, y es de verdad:** el plan Hobby de Vercel solo permite
-crons diarios. El pulso semanal tendría que ser un cron diario que solo actúa
-los lunes, o aceptar que sea diario. Un pulso diario tiene más riesgo de
-volverse paisaje —lo acabamos de medir con las 46 noches— así que preferiría
-semanal, con la comprobación del día dentro del cron.
+**Limitación real:** el plan Hobby de Vercel solo permite crons diarios. El
+resumen semanal sería un cron diario que solo escribe los lunes. El **ping** al
+servicio externo, en cambio, sale todos los días, que es como debe ser: cuanto
+más seguido se espera el pulso, antes se nota su falta.
 
 ### Pieza 3 · La alerta de racha (barata, y solo si las dos anteriores existen)
 
@@ -141,6 +230,29 @@ resolver. Construida sola, no sirve.
 La pieza 1 es la única que necesita algo de fuera: **verificar el dominio en
 Resend tocando DNS**, que lo hace Leonel y tarda lo que tarde la propagación.
 Conviene pedirlo con tiempo, igual que la plantilla de Meta.
+
+---
+
+## El orden, decidido el 2026-10-25
+
+**Piezas 1 y 2 juntas** —la 1 salva un lead, la 2 hace verificable a la 1— y la
+**3 después**: sin la 1 no hay por dónde avisar, y sin la 2 la 3 es circular.
+
+**Nada se construye hasta que lleguen las dos aprobaciones externas**, que van
+en paralelo y las dos dependen de Leonel:
+
+| dependencia | quién | espera |
+|---|---|---|
+| plantilla `alerta_interna_sfr` | Meta | aprobación |
+| dominio verificado en Resend | DNS de `sufincaraiz.com` | propagación |
+
+Mejor nada que código que no se puede probar.
+
+### Cómo se acepta la plantilla nueva
+
+Con **el mismo criterio que la de leads**: no «aprobada» — **llegada**. Un envío
+real que llegue al teléfono de Leonel, y el contador que se mueva. Aprobada es
+lo que dice Meta de su formulario; llegada es lo que dice el teléfono.
 
 ---
 
