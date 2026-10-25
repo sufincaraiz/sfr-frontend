@@ -1247,8 +1247,30 @@ model FuenteNormativa {
 }
 
 /// El respaldo de UN campo. Sin él, ese campo no habilita nada.
+/// DE QUÉ DOCUMENTO salió un respaldo. Del documento, NO del dominio: un mismo
+/// portal oficial aloja el PDF firmado de una resolución y, en otra página, su
+/// texto integrado con las modificaciones. Son dos documentos con autoridad
+/// distinta, y la URL no dice de cuál se bajó nadie.
+///
+/// Nace el 2026-10-25, antes de que se carguen las 53 cifras. Después habrían
+/// sido 53 respaldos sin clase y nadie vuelve sobre ellos.
+enum ClaseDocumental {
+  /// El texto auténtico tal como se publicó: Diario Oficial, o el PDF firmado
+  /// con radicado y sellos que expidió la propia entidad. Activa solo.
+  PUBLICACION_OFICIAL
+  /// Texto compilado o integrado: un normograma, una versión consolidada. Útil,
+  /// y NO es el texto auténtico: el normograma de Cancillería declara por
+  /// escrito que tiene erratas de digitación. No activa solo.
+  TEXTO_COMPILADO
+  /// Una reproducción. Nunca activa.
+  COPIA
+  /// Un índice o ficha: dice que la norma existe y dónde está, no qué dice.
+  /// Sirve para localizar, no para sostener. Nunca activa.
+  INDICE
+}
+
 model RespaldoNormativo {
-  id                String    @id @default(uuid())
+  id                String          @id @default(uuid())
   /// ANIO | CONCEPTO | REGLA_RETENCION
   ambito            String
   /// id de la fila respaldada, según el ámbito.
@@ -1268,7 +1290,21 @@ model RespaldoNormativo {
   /// entidad emisora—, mientras el documento lleva firma, radicado y sellos.
   /// Lo que se amplía es el SOPORTE, no la autoridad: un PDF de una notaría
   /// particular, de un gremio o de un sitio comercial sigue sin valer.
-  tipo_evidencia    String    @default("URL_OFICIAL")
+  tipo_evidencia    String          @default("URL_OFICIAL")
+  /// DE QUÉ CLASE DE DOCUMENTO salió, grabado AL ESCRIBIR y no deducido después.
+  ///
+  /// ⚠ Es otro eje que `tipo_evidencia`, que dice el SOPORTE (cómo lo tenemos)
+  /// y no la autoridad del documento. Un PDF archivado puede ser el original
+  /// firmado o una descarga del normograma: mismo soporte, autoridad distinta.
+  ///
+  /// SIN VALOR POR DEFECTO, a propósito. Un respaldo que no declara su clase NO
+  /// activa, igual que una cifra sin respaldo no activa: el valor que significa
+  /// «no se decidió» no puede leerse como una decisión.
+  ///
+  /// Y se graba aquí y no se deduce de `fuentes_normativas` porque si se
+  /// dedujera, reclasificar un dominio cambiaría en silencio el significado de
+  /// todos los respaldos históricos.
+  clase_documental  ClaseDocumental
   /// Obligatoria con URL_OFICIAL. Con un documento archivado puede no existir.
   url               String?
   /// La autoridad, por su fila en fuentes_normativas. Con una URL se deduce del
@@ -1282,8 +1318,8 @@ model RespaldoNormativo {
   /// La entidad que lo emitió, como la nombra el propio documento.
   entidad_emisora   String?
   /// De dónde se obtuvo, en texto, y cuándo.
-  obtenido_de       String?   @db.Text
-  obtenido_en       DateTime? @db.Date
+  obtenido_de       String?         @db.Text
+  obtenido_en       DateTime?       @db.Date
   archivado_por     String?
   /// DÓNDE LO CONSIGUE EL LECTOR por su cuenta. Obligatorio con un documento
   /// archivado: el PDF se guarda como `authenticated` y NO se publica —publicar
@@ -1291,7 +1327,7 @@ model RespaldoNormativo {
   /// que citarla, y cuando la entidad la modifique nuestra copia diría lo viejo
   /// con nuestra marca encima—. Sin esta frase, la simulación citaría un
   /// documento que nadie más puede ver.
-  donde_conseguirlo String?   @db.Text
+  donde_conseguirlo String?         @db.Text
 
   fuente_id String?
   fuente    FuenteNormativa? @relation(fields: [fuente_id], references: [id])

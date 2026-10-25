@@ -12,6 +12,7 @@
  */
 
 import type { LiquidacionIva } from './iva.ts'
+import type { ClaseDocumental } from './clase-documental.ts'
 
 /** Versión del motor. Sube cuando cambia una REGLA de cálculo, no el formato. */
 export const VERSION_MOTOR = 1
@@ -188,6 +189,18 @@ export interface Respaldo {
   norma: string
   /** URL_OFICIAL o DOCUMENTO_ARCHIVADO. Por defecto, el primero. */
   tipo_evidencia?: TipoEvidencia
+  /**
+   * DE QUÉ CLASE DE DOCUMENTO salió. Otro eje que `tipo_evidencia`, que dice el
+   * SOPORTE y no la autoridad: un PDF archivado puede ser el original firmado o
+   * una descarga de un normograma, mismo soporte y autoridad distinta.
+   *
+   * ⚠ Opcional en el TIPO y obligatoria en la REGLA, a propósito: la base puede
+   * traer filas que no la tengan, y lo que no puede pasar es que la ausencia se
+   * lea como una clase. `puedeActivar` devuelve SIN_CLASE y no activa.
+   *
+   * La decide el documento, nunca el dominio: ver `clase-documental.ts`.
+   */
+  clase_documental?: ClaseDocumental | null
   /**
    * ¿La norma EXIGE esto, o lo PERMITE y lo adoptamos nosotros?
    *

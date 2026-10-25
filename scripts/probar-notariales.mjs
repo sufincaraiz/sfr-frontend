@@ -98,6 +98,9 @@ const RESP = (campo, url = 'https://www.supernotariado.gov.co/resolucion.pdf') =
   // Art. 56: rige desde el 1 de febrero de 2026. No desde el 1 de enero.
   vigencia_desde: '2026-02-01', vigencia_hasta: null, articulo_vigencia: 'art. 56',
   verificado_en: '2026-10-06', verificado_por: 'prueba',
+  // Desde el 2026-10-25 todo respaldo declara de qué documento salió. La
+  // fixture usa el original, que es el único que activa solo.
+  clase_documental: 'PUBLICACION_OFICIAL',
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -175,6 +178,10 @@ const DOC = {
   norma: 'Resolución RES-2026-000964-6',
   articulo: 'art. 50',
   tipo_evidencia: 'DOCUMENTO_ARCHIVADO',
+  // El PDF entregado en ventanilla CON firma, radicado y sellos: ése sí es la
+  // publicación oficial. Uno bajado de un normograma sería TEXTO_COMPILADO
+  // aunque el soporte fuera idéntico — y ése es justo el hueco que se cerró.
+  clase_documental: 'PUBLICACION_OFICIAL',
   fuente_dominio: 'supernotariado.gov.co',
   documento_ruta: 'normas/2026/res-2026-000964-6.pdf',
   documento_hash: 'a'.repeat(64),
@@ -236,9 +243,26 @@ check('la autoridad de un documento se resuelve contra la MISMA tabla',
 lanza('un respaldo que dice ser de una entidad y enlaza a otra',
   () => exigirRespaldoOficial({ ...DOC, url: 'https://www.dian.gov.co/x.pdf' }, FUENTES_OFICIALES),
   'RespaldoNoOficial', 'y su enlace es de')
-check('a un documento archivado no se le exige la nota de compilación',
-  (() => { exigirRespaldoOficial({ ...DOC, fuente_dominio: 'cancilleria.gov.co', nota: null },
+/* ⚠ ESTA VERIFICACIÓN DECÍA LO CONTRARIO Y ERA UN HUECO (hasta 2026-10-25).
+ *
+ * Afirmaba: «a un documento archivado no se le exige la nota de compilación».
+ * Su razón estaba escrita y era buena —un PDF firmado con radicado y sellos
+ * vale por sí mismo— pero confundía «PDF archivado» con «PDF original
+ * firmado». Un PDF bajado del normograma de Cancillería es archivado, NO es el
+ * original, y lleva las erratas de digitación que la ficha de esa misma fuente
+ * declara por escrito. Entraba sin nota y sin que nada se quejara.
+ *
+ * Lo que decide ahora es la CLASE DOCUMENTAL, no el soporte. Las dos mitades: */
+check('un documento archivado que es el ORIGINAL firmado no necesita nota',
+  (() => { exigirRespaldoOficial({ ...DOC, clase_documental: 'PUBLICACION_OFICIAL', nota: null },
     FUENTES_OFICIALES); return true })())
+lanza('un documento archivado que salió de un TEXTO COMPILADO, sin nota',
+  () => exigirRespaldoOficial({ ...DOC, clase_documental: 'TEXTO_COMPILADO', nota: null },
+    FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'lo que decide es el documento, no el soporte')
+lanza('un respaldo que no declara de qué clase de documento salió',
+  () => exigirRespaldoOficial({ ...DOC, clase_documental: undefined }, FUENTES_OFICIALES),
+  'RespaldoNoOficial', 'no declara de qué clase de documento')
 
 lanza('un documento archivado que no dice dónde lo consigue el lector',
   () => exigirRespaldoOficial({ ...DOC, donde_conseguirlo: null }, FUENTES_OFICIALES),
