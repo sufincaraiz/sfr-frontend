@@ -189,8 +189,13 @@ export function puedeEscribir(
  * Para generarlo: `node scripts/testigo-de-despliegue.mjs`. El testigo se pega
  * en Vercel (SOLO en Production) y la huella se commitea aquí.
  */
+/* Rotada el 2026-10-26: el primer testigo no llegó a aparecer en Vercel, así
+ * que se generó otro. La huella vieja queda inservible por construcción —no
+ * hay forma de que un testigo abra dos puertas— y por eso rotar es seguro:
+ * basta reemplazar esta línea. Que la rotación exija un commit es deseable,
+ * porque deja rastro de cuándo se hizo. */
 export const HUELLA_DEL_TESTIGO =
-  'fbcfa6d46e3ed763dd4f3dfde108feecc19654f0f677206f6708d308c0122b76'
+  '3da0a97c2229a3783b792840bb0305e5b75a69d6154a2282f1a924da9d451700'
 
 /** Forma mínima: 32+ caracteres de un alfabeto sin ambigüedades. */
 export function formaDeTestigo(v: string | undefined | null): boolean {
