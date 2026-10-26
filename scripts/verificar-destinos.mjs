@@ -37,6 +37,18 @@ const SIN_GUARDA_A_PROPOSITO = [
     porque: 'no escribe en la base: lee el repositorio y escribe su propio inventario.' },
   { archivo: 'scripts/probar-panel-notarial.mjs',
     porque: 'arnés con cliente de base FALSO en memoria; no abre ninguna conexión.' },
+  { archivo: 'scripts/testigo-de-despliegue.mjs',
+    porque:
+      'FALSO POSITIVO del patrón: casa por `createHash(...).update(...)`, que es ' +
+      'un hash, no una escritura. No abre ninguna conexión: genera dos cadenas y ' +
+      'las imprime. El patrón se deja ANCHO a propósito —cualquier `.update(` ' +
+      'cuenta— porque un falso positivo cuesta escribir esta línea y un falso ' +
+      'negativo es justo lo que esta guarda existe para impedir.' },
+  /* `probar-destino-base.mjs` NO está aquí, y lo estuvo un minuto: lo declaré
+   * como excepción y la segunda dirección de esta misma guarda lo rechazó,
+   * porque ese arnés SÍ llama a `exigirDestinoParaEscribir` —con URLs
+   * inventadas, para probar sus dos direcciones—. Tercera vez que esta lista me
+   * caza a mí: la razón era plausible y falsa. */
 ]
 
 /** Lo de un solo uso, ya corrido. Se agrupa porque la razón es la misma. */

@@ -50,6 +50,8 @@
  * Módulo HOJA: sin `@/`, sin `enum`, sin propiedades de constructor.
  */
 
+import { createHash } from 'node:crypto'
+
 export type ClaseDeDestino = 'SEGURO' | 'PRODUCCION_CONOCIDA' | 'DESCONOCIDO'
 
 /**
@@ -163,6 +165,55 @@ export function puedeEscribir(
   return { puede: true, motivo: `escribiendo en ${d.host} CON autorización explícita` }
 }
 
+/* ─── EL TESTIGO DEL DESPLIEGUE ───────────────────────────────────────────────
+ *
+ * ⚠ LA PRIMERA VERSIÓN DE ESTO USABA EL HOST COMO VALOR, Y ERA UN HUECO. El
+ * host `acela.proxy.rlwy.net` no es un secreto: está en el panel de Railway,
+ * salió impreso en la conversación del 2026-10-26 y se deduce del proyecto.
+ * Comprobado ejecutándolo: exportando esa cadena, cualquiera obtenía
+ * autorización completa como «la app desplegada».
+ *
+ * Ahora el valor es un TESTIGO ALEATORIO que vive solo en Vercel. Y no se
+ * compara contra una constante del repositorio —una constante en el repositorio
+ * deja de ser secreta en cuanto alguien lo clona—: se compara su **huella
+ * SHA-256**, que es lo que sí puede vivir aquí sin revelar nada.
+ *
+ * Se eligió la huella y no una simple comprobación de forma —longitud y
+ * alfabeto— porque la forma sola no verifica: 32 caracteres cualesquiera
+ * pasarían. La forma es fricción; la huella es verificación, y cuesta lo mismo.
+ *
+ * ⚠ VACÍA SIGNIFICA DESACTIVADO, no «cualquier cosa vale». Mientras no haya
+ * testigo configurado, esta llave NO abre nunca y solo queda la autorización
+ * por ejecución. Fail-closed también aquí.
+ *
+ * Para generarlo: `node scripts/testigo-de-despliegue.mjs`. El testigo se pega
+ * en Vercel (SOLO en Production) y la huella se commitea aquí.
+ */
+export const HUELLA_DEL_TESTIGO = ''
+
+/** Forma mínima: 32+ caracteres de un alfabeto sin ambigüedades. */
+export function formaDeTestigo(v: string | undefined | null): boolean {
+  const s = typeof v === 'string' ? v.trim() : ''
+  return s.length >= 32 && /^[A-Za-z0-9_-]+$/.test(s)
+}
+
+/**
+ * ¿Es éste el testigo del despliegue? Forma **y** huella.
+ *
+ * `huellaEsperada` es parámetro para que el arnés pueda probarlo con una huella
+ * suya: si estuviera clavado a la constante, la única forma de probar el camino
+ * bueno sería meter el secreto de verdad en el arnés.
+ */
+export function testigoValido(
+  v: string | undefined | null,
+  huellaEsperada: string = HUELLA_DEL_TESTIGO,
+): boolean {
+  const esperada = String(huellaEsperada ?? '').trim().toLowerCase()
+  if (!/^[0-9a-f]{64}$/.test(esperada)) return false // sin huella, no abre nunca
+  if (!formaDeTestigo(v)) return false
+  return createHash('sha256').update(String(v).trim()).digest('hex') === esperada
+}
+
 /**
  * OPERACIONES DE LECTURA, lista cerrada.
  *
@@ -205,12 +256,12 @@ export function autorizacionDeEscritura(
   d: Destino,
   despliegue: string | undefined = process.env.SFR_DESTINO_DE_DESPLIEGUE,
   porEjecucion: string | undefined = process.env.ESCRIBIR_EN_PRODUCCION,
+  huellaEsperada: string = HUELLA_DEL_TESTIGO,
 ): { puede: boolean; motivo: string } {
   if (d.clase === 'SEGURO') {
     return { puede: true, motivo: `${d.host} es una base aislada` }
   }
-  const dep = String(despliegue ?? '').trim().toLowerCase()
-  if (dep && d.host && dep === d.host.toLowerCase()) {
+  if (testigoValido(despliegue, huellaEsperada)) {
     return { puede: true, motivo: 'la app desplegada, autorizada por su configuración' }
   }
   return puedeEscribir(d, porEjecucion)

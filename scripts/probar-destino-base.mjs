@@ -17,8 +17,9 @@
 import {
   clasificarDestino, puedeEscribir, exigirDestinoParaEscribir, hostDeLaBase,
   DestinoNoAutorizado, HOSTS_SEGUROS, esEscritura, OPERACIONES_DE_LECTURA,
-  autorizacionDeEscritura,
+  autorizacionDeEscritura, testigoValido, formaDeTestigo,
 } from '../src/lib/destino-base.ts'
+import { randomBytes, createHash } from 'node:crypto'
 
 let ok = 0, fail = 0
 const check = (nombre, cond, extra = '') => {
@@ -158,17 +159,73 @@ console.log('\n══ LA APP SE AUTORIZA POR CONFIGURACIÓN, NO POR DETECCIÓN �
   const d = clasificarDestino(PROD)
   check('sin ninguna de las dos llaves, NO puede escribir',
     autorizacionDeEscritura(d, undefined, undefined).puede === false)
-  check('con la variable de DESPLIEGUE igual al host, sí',
-    autorizacionDeEscritura(d, 'acela.proxy.rlwy.net', undefined).puede === true)
+  /* ⚠ ESTA VERIFICACIÓN AFIRMABA QUE EL HOST AUTORIZABA, Y ERA EL HUECO.
+   * El host no es un secreto: está en el panel de Railway, salió impreso en una
+   * conversación y se deduce del proyecto. Quien lo supiera quedaba autorizado
+   * como «la app desplegada» —comprobado ejecutándolo—. Ahora el valor es un
+   * testigo aleatorio verificado por su huella, y se afirma lo contrario. */
+  check('con el HOST como valor de despliegue, YA NO autoriza',
+    autorizacionDeEscritura(d, 'acela.proxy.rlwy.net', undefined).puede === false)
   check('con la de despliegue apuntando a OTRO host, no',
     autorizacionDeEscritura(d, 'otra.base.com', undefined).puede === false)
   check('con la autorización por EJECUCIÓN, sí',
     autorizacionDeEscritura(d, undefined, 'acela.proxy.rlwy.net').puede === true)
   check('la base aislada no necesita ninguna de las dos',
     autorizacionDeEscritura(clasificarDestino(LOCAL), undefined, undefined).puede === true)
-  check('…y el motivo distingue cuál de las dos llaves abrió',
-    /configuraci/.test(autorizacionDeEscritura(d, 'acela.proxy.rlwy.net').motivo) &&
+  /* Igual que la de arriba: usaba el host como testigo. La mitad de «por
+   * configuración» se comprueba abajo, con un testigo de verdad. */
+  check('…y el motivo de la autorización por ejecución lo dice',
     /autorización expl/.test(autorizacionDeEscritura(d, undefined, 'acela.proxy.rlwy.net').motivo))
+}
+
+
+console.log('\n══ EL TESTIGO: FORMA Y HUELLA, NO UNA CONSTANTE ══════════')
+
+/* El arnés genera su PROPIO testigo. Si usara el de verdad, el secreto
+ * tendría que estar aquí dentro —y entonces no sería secreto—. */
+const TESTIGO = randomBytes(32).toString('base64url')
+const HUELLA = createHash('sha256').update(TESTIGO).digest('hex')
+
+check('el testigo bueno, con su huella, vale', testigoValido(TESTIGO, HUELLA))
+check('otro testigo con la misma FORMA no vale',
+  !testigoValido(randomBytes(32).toString('base64url'), HUELLA))
+
+/* ⚠ ESTO ES LO QUE LA COMPROBACIÓN DE FORMA SOLA NO PODRÍA HACER: 43
+ * caracteres del alfabeto correcto, forma impecable, y no es el testigo. */
+check('43 caracteres de forma impecable NO abren la puerta',
+  formaDeTestigo('a'.repeat(43)) === true && testigoValido('a'.repeat(43), HUELLA) === false)
+
+check('EL HUECO VIEJO: el host ya no autoriza nada',
+  !testigoValido('acela.proxy.rlwy.net', HUELLA))
+check('…y tampoco tiene la forma de un testigo',
+  formaDeTestigo('acela.proxy.rlwy.net') === false)
+
+for (const [etiqueta, v] of [['corto', 'abc'], ['31 caracteres', 'a'.repeat(31)],
+  ['con espacios dentro', 'a'.repeat(20) + ' ' + 'b'.repeat(20)],
+  ['con símbolos', 'a'.repeat(40) + '!@#'], ['vacío', ''], ['undefined', undefined]]) {
+  check(`un testigo ${etiqueta} no tiene la forma`, formaDeTestigo(v) === false)
+}
+
+/* SIN HUELLA CONFIGURADA NO ABRE NUNCA. Es el estado del repositorio hasta que
+ * alguien genere el testigo, y tiene que ser fail-closed también ahí. */
+for (const h of ['', '   ', 'no-es-una-huella', 'a'.repeat(63), 'A'.repeat(64)]) {
+  check(`con la huella esperada «${String(h).slice(0, 18)}» no abre`,
+    testigoValido(TESTIGO, h) === false)
+}
+check('la huella en MAYÚSCULAS también vale: es hexadecimal',
+  testigoValido(TESTIGO, HUELLA.toUpperCase()))
+
+console.log('\n══ Y LA AUTORIZACIÓN COMPLETA, CON EL TESTIGO ═════════════')
+{
+  const d = clasificarDestino(PROD)
+  check('con el testigo bueno, la app escribe',
+    autorizacionDeEscritura(d, TESTIGO, undefined, HUELLA).puede === true)
+  check('con el HOST en vez del testigo, NO',
+    autorizacionDeEscritura(d, 'acela.proxy.rlwy.net', undefined, HUELLA).puede === false)
+  check('sin huella configurada, el testigo bueno tampoco abre',
+    autorizacionDeEscritura(d, TESTIGO, undefined, '').puede === false)
+  check('…pero la autorización por ejecución sigue funcionando sin huella',
+    autorizacionDeEscritura(d, undefined, 'acela.proxy.rlwy.net', '').puede === true)
 }
 
 
