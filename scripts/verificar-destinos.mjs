@@ -86,7 +86,25 @@ const presentes = new Set(escritores.map(e => e.archivo))
 const conGuarda = new Set(escritores.filter(e => e.comprueba).map(e => e.archivo))
 const caducas = [...declarados].filter(a => !presentes.has(a) || conGuarda.has(a))
 
+/* ─── LA AUTORIZACIÓN DEL DESPLIEGUE NO PUEDE VIVIR EN UN ARCHIVO ──────────
+ *
+ * `SFR_DESTINO_DE_DESPLIEGUE` autoriza a la app a escribir en producción, y
+ * existe SOLO en Vercel. Si alguien la escribe en un `.env*` del repositorio,
+ * cualquier guion lanzado con ese archivo quedaría autorizado para siempre —y
+ * volvería a ser la autorización permanente que decidimos no tener, con la
+ * diferencia de que esta vez nadie la vería—.
+ *
+ * Se miran los archivos del DISCO, no los del repositorio: `.env*` está en
+ * .gitignore, así que buscar en git no encontraría nada y el verde sería falso. */
+const VAR_DESPLIEGUE = 'SFR_DESTINO_DE_DESPLIEGUE'
+const archivosEnv = globSync('.env*')
+const conLaVariable = archivosEnv.filter(f => {
+  if (f === '.env.example') return false
+  return new RegExp(`^\\s*(export\\s+)?${VAR_DESPLIEGUE}\\s*=`, 'm').test(readFileSync(f, 'utf8'))
+})
+
 console.log('\n══ QUIEN ESCRIBE, COMPRUEBA A DÓNDE ══════════════════════════')
+console.log(`  archivos de entorno en disco: ${archivosEnv.length} (${archivosEnv.join(', ')})`)
 console.log(`  guiones que escriben: ${escritores.length}`)
 console.log(`  comprueban el destino: ${escritores.filter(e => e.comprueba).length}`)
 console.log(`  declarados sin guarda: ${declarados.size} (${SIN_GUARDA_A_PROPOSITO.length} por su naturaleza · ${YA_CORRIERON.length} de un solo uso, ya corridos)`)
@@ -108,8 +126,18 @@ if (caducas.length) {
   console.log('  se deja de leer entera, y entonces no protege nada.')
 }
 
-if (!mudos.length && !caducas.length) {
-  console.log('  → todos comprueban el destino o tienen su razón escrita.')
+if (conLaVariable.length) {
+  console.log(`\n  ✗ ${VAR_DESPLIEGUE} ESTÁ ESCRITA EN UN ARCHIVO:`)
+  for (const f of conLaVariable) console.log(`     · ${f}`)
+  console.log('\n  Esa variable autoriza a escribir en producción y vive SOLO en Vercel.')
+  console.log('  En un archivo, cualquier guion lanzado con él queda autorizado para')
+  console.log('  siempre — la autorización permanente que decidimos no tener, y esta')
+  console.log('  vez sin que nadie la vea. Quítala del archivo y ponla en Vercel.')
 }
 
-process.exit(mudos.length || caducas.length ? 1 : 0)
+if (!mudos.length && !caducas.length && !conLaVariable.length) {
+  console.log('  → todos comprueban el destino o tienen su razón escrita,')
+  console.log('    y la autorización del despliegue no está en ningún archivo.')
+}
+
+process.exit(mudos.length || caducas.length || conLaVariable.length ? 1 : 0)

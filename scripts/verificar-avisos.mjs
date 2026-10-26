@@ -57,6 +57,17 @@ const SIN_AVISO_A_PROPOSITO = [
 const CREA = /prisma\s*\.\s*lead\s*\.\s*(create|upsert)\s*\(/
 const AVISA = /\bavisarLead\s*\(/
 
+/* AMBITO DECLARADO, y no es una casualidad.
+ *
+ * Barre src/app y src/lib porque ahi es donde vive el codigo que crear un lead;
+ * los guiones de scripts/ no sirven peticiones y quedan fuera a proposito.
+ *
+ * ⚠ ESTE DETECTOR LLEVA SU PROPIO PATRON DENTRO, en la expresion que usa
+ * para buscar. Hoy no se cuenta a si mismo UNICAMENTE porque scripts/ esta
+ * fuera del ambito. Si alguien amplia esto a scripts/ -cosa razonable-, el
+ * detector empieza a encontrarse a si mismo y a declararse conforme sin que
+ * nadie se entere. Le paso a verificar-destinos.mjs el 2026-10-26 y su
+ * cuenta paso de 0 a 1. Si amplias el ambito, excluye este archivo. */
 const archivos = [
   ...globSync('src/app/**/route.ts'),
   ...globSync('src/app/**/actions.ts'),

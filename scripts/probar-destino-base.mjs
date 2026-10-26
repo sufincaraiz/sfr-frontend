@@ -16,7 +16,8 @@
  */
 import {
   clasificarDestino, puedeEscribir, exigirDestinoParaEscribir, hostDeLaBase,
-  DestinoNoAutorizado, HOSTS_SEGUROS,
+  DestinoNoAutorizado, HOSTS_SEGUROS, esEscritura, OPERACIONES_DE_LECTURA,
+  autorizacionDeEscritura,
 } from '../src/lib/destino-base.ts'
 
 let ok = 0, fail = 0
@@ -135,6 +136,41 @@ check('IPv6 local, en la forma que Node devuelve de verdad',
   clasificarDestino('postgresql://u:p@[::1]:5432/d').clase === 'SEGURO')
 check('…y una URL IPv6 SIN corchetes no se parsea, así que se niega',
   clasificarDestino('postgresql://u:p@::1:5432/d').clase === 'DESCONOCIDO')
+
+console.log('\n══ LO DESCONOCIDO ES ESCRITURA ══════════════════════════')
+
+for (const op of OPERACIONES_DE_LECTURA) {
+  check(`${op} es lectura y no se comprueba`, esEscritura(op) === false)
+}
+for (const op of ['create', 'createMany', 'update', 'updateMany', 'upsert',
+                  'delete', 'deleteMany', 'executeRaw', 'createManyAndReturn']) {
+  check(`${op} es ESCRITURA`, esEscritura(op) === true)
+}
+/* Lo desconocido cae del lado seguro: una operación nueva de Prisma, o un
+ * nombre que no conocemos, se comprueba igual. Por eso se enumeran las
+ * LECTURAS y no las escrituras. */
+for (const op of ['operacionDelFuturo', '', null, undefined, 'FINDMANY']) {
+  check(`${JSON.stringify(op)} se trata como escritura`, esEscritura(op) === true)
+}
+
+console.log('\n══ LA APP SE AUTORIZA POR CONFIGURACIÓN, NO POR DETECCIÓN ══════')
+{
+  const d = clasificarDestino(PROD)
+  check('sin ninguna de las dos llaves, NO puede escribir',
+    autorizacionDeEscritura(d, undefined, undefined).puede === false)
+  check('con la variable de DESPLIEGUE igual al host, sí',
+    autorizacionDeEscritura(d, 'acela.proxy.rlwy.net', undefined).puede === true)
+  check('con la de despliegue apuntando a OTRO host, no',
+    autorizacionDeEscritura(d, 'otra.base.com', undefined).puede === false)
+  check('con la autorización por EJECUCIÓN, sí',
+    autorizacionDeEscritura(d, undefined, 'acela.proxy.rlwy.net').puede === true)
+  check('la base aislada no necesita ninguna de las dos',
+    autorizacionDeEscritura(clasificarDestino(LOCAL), undefined, undefined).puede === true)
+  check('…y el motivo distingue cuál de las dos llaves abrió',
+    /configuraci/.test(autorizacionDeEscritura(d, 'acela.proxy.rlwy.net').motivo) &&
+    /autorización expl/.test(autorizacionDeEscritura(d, undefined, 'acela.proxy.rlwy.net').motivo))
+}
+
 
 console.log(`\n${fail === 0 ? '✓ TODO EN VERDE' : '✗ HAY FALLOS'} — ${ok + fail} verificaciones, ${fail} fallos\n`)
 process.exit(fail === 0 ? 0 : 1)

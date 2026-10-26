@@ -4,6 +4,39 @@ import 'server-only'
 // navegador en silencio: pasó con /admin/cifras vía lib/cifras-publicas.
 import { PrismaClient } from '@prisma/client'
 import { registrarPoolAgotado } from '@/lib/pool-agotado'
+import {
+  clasificarDestino, autorizacionDeEscritura, esEscritura, DestinoNoAutorizado,
+} from '@/lib/destino-base'
+
+/**
+ * ¿PUEDE ESTE PROCESO ESCRIBIR EN LA BASE A LA QUE APUNTA?
+ *
+ * Se resuelve UNA vez y se recuerda: `DATABASE_URL` no cambia dentro de un
+ * proceso, y recalcularlo en cada consulta sería trabajo en el camino caliente
+ * para obtener siempre la misma respuesta.
+ */
+let veredictoDeEscritura: { puede: boolean; motivo: string; host: string | null } | null = null
+
+function exigirDestinoParaEscrituraDeCliente(): void {
+  if (!veredictoDeEscritura) {
+    const d = clasificarDestino(process.env.DATABASE_URL)
+    const v = autorizacionDeEscritura(d)
+    veredictoDeEscritura = { ...v, host: d.host }
+  }
+  if (veredictoDeEscritura.puede) return
+  throw new DestinoNoAutorizado(
+    `${veredictoDeEscritura.motivo}\n\n` +
+    '  Esta comprobación vive en el cliente de Prisma, así que cubre TODA escritura\n' +
+    '  aunque quien la haga no sepa que existe.\n\n' +
+    '  · Si querías la base aislada: no pases --env-file, o pasa .env.local.\n' +
+    '  · Si de verdad hay que escribir en producción desde un guion, autorízalo\n' +
+    '    para ESTA ejecución:\n' +
+    `      ESCRIBIR_EN_PRODUCCION="${veredictoDeEscritura.host ?? '<host>'}" node --env-file=.env.produccion <guion>\n\n` +
+    '  ⚠ Si esto sale en la APP DESPLEGADA, lo que falta es la variable\n' +
+    '    SFR_DESTINO_DE_DESPLIEGUE en Vercel, con el host de la base dentro.',
+    veredictoDeEscritura.host,
+  )
+}
 
 /* `$extends` devuelve un cliente de tipo DISTINTO a PrismaClient, así que el
  * global se tipa a partir de la fábrica y no a mano: si la extensión cambia, el
@@ -82,6 +115,16 @@ function construir() {
      * contador vive en Redis, no en Postgres: ver lib/pool-agotado.ts. */
     query: {
       async $allOperations({ model, operation, args, query }) {
+        /* ── A DÓNDE SE ESTÁ ESCRIBIENDO ────────────────────────────────────
+         *
+         * ⚠ ESTO ESTABA EN UN AYUDANTE QUE HABÍA QUE ACORDARSE DE LLAMAR, y de
+         * los 28 guiones que escriben en la base lo llamaban CERO. Escribí que
+         * «protege a los que vengan», y nada hacía que un guion futuro lo
+         * invocara: era fail-closed para quien se acordara, que es otra forma
+         * de decir fail-open.
+         *
+         * Aquí pasan TODAS las escrituras, sepa o no su autor que existe. */
+        if (esEscritura(operation)) exigirDestinoParaEscrituraDeCliente()
         try {
           return await query(args)
         } catch (e) {

@@ -163,6 +163,59 @@ export function puedeEscribir(
   return { puede: true, motivo: `escribiendo en ${d.host} CON autorización explícita` }
 }
 
+/**
+ * OPERACIONES DE LECTURA, lista cerrada.
+ *
+ * ⚠ Se enumeran las LECTURAS y no las escrituras, a propósito. Si se
+ * enumeraran las escrituras, una operación nueva de Prisma —o uno de sus
+ * nombres que no conocemos— caería del lado de «no es escritura» y pasaría sin
+ * mirar. Enumerando lecturas, lo desconocido cae del lado seguro: se trata como
+ * escritura y se comprueba.
+ */
+export const OPERACIONES_DE_LECTURA = [
+  'findUnique', 'findUniqueOrThrow', 'findFirst', 'findFirstOrThrow', 'findMany',
+  'count', 'aggregate', 'groupBy', 'queryRaw', 'findRaw', 'aggregateRaw',
+]
+
+export function esEscritura(operation: string | undefined | null): boolean {
+  const op = typeof operation === 'string' ? operation.trim() : ''
+  if (!op) return true // sin nombre, se asume lo peor
+  return !OPERACIONES_DE_LECTURA.includes(op)
+}
+
+/**
+ * ¿Está este proceso autorizado a escribir, mire donde mire?
+ *
+ * Tres llaves, y ninguna es «adivinar si soy la app»:
+ *
+ *   1. el destino es una base aislada → siempre;
+ *   2. `SFR_DESTINO_DE_DESPLIEGUE` coincide con el host → es la app desplegada,
+ *      autorizada **por su configuración**, no por detección de entorno. Si se
+ *      detectara el entorno (`process.env.VERCEL`), un fallo de esa detección
+ *      tumbaría producción, y ése es el lado por el que no se puede fallar;
+ *   3. `ESCRIBIR_EN_PRODUCCION` coincide con el host → una persona lo autorizó
+ *      para ESTA ejecución.
+ *
+ * La 2 y la 3 llevan nombres distintos y es deliberado: la 2 vive solo en
+ * Vercel y `verificar-destinos.mjs` rompe el build si aparece en cualquier
+ * `.env*` del repositorio. Si se pudiera dejar escrita en un archivo, volvería
+ * a ser la autorización permanente que decidimos no tener.
+ */
+export function autorizacionDeEscritura(
+  d: Destino,
+  despliegue: string | undefined = process.env.SFR_DESTINO_DE_DESPLIEGUE,
+  porEjecucion: string | undefined = process.env.ESCRIBIR_EN_PRODUCCION,
+): { puede: boolean; motivo: string } {
+  if (d.clase === 'SEGURO') {
+    return { puede: true, motivo: `${d.host} es una base aislada` }
+  }
+  const dep = String(despliegue ?? '').trim().toLowerCase()
+  if (dep && d.host && dep === d.host.toLowerCase()) {
+    return { puede: true, motivo: 'la app desplegada, autorizada por su configuración' }
+  }
+  return puedeEscribir(d, porEjecucion)
+}
+
 export class DestinoNoAutorizado extends Error {
   host: string | null
   constructor(mensaje: string, host: string | null) {
