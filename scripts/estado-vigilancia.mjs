@@ -19,7 +19,7 @@
  * aspecto en la pantalla del teléfono. A los 43 días el número que crece
  * dentro de una frase idéntica es tan invisible como la frase.
  *
- *     node --env-file=.env.local scripts/estado-vigilancia.mjs
+ *     node --env-file=.env.produccion scripts/estado-vigilancia.mjs
  */
 import { PrismaClient } from '@prisma/client'
 

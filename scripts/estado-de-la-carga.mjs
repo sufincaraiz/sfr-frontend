@@ -30,7 +30,7 @@
  * normativas las verificó una PERSONA. Medido el 2026-10-19: 7 de 8 eran
  * «precarga» y 1 «titular», o sea ninguna.
  *
- *     node --env-file=.env.local scripts/estado-de-la-carga.mjs [año]
+ *     node --env-file=.env.produccion scripts/estado-de-la-carga.mjs [año]
  */
 import { readFileSync } from 'node:fs'
 import { PrismaClient } from '@prisma/client'

@@ -47,7 +47,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  * CÓMO SE USA
  *
- *     node --env-file=.env.local scripts/cotejar-avisos.mjs <entregados-ahora>
+ *     node --env-file=.env.produccion scripts/cotejar-avisos.mjs <entregados-ahora>
  *
  * La cifra de Meta **se pasa a mano, leída de su panel**. No se consulta por
  * API a propósito, y no es por comodidad:
@@ -133,7 +133,7 @@ try {
     console.log('\n   ── FALTA LA LECTURA DE HOY ───────────────────────────────')
     console.log('   Ve a business.facebook.com → WhatsApp Manager → Plantillas →')
     console.log('   nuevo_lead_sfr, lee MENSAJES ENTREGADOS y pásalo:')
-    console.log('\n     node --env-file=.env.local scripts/cotejar-avisos.mjs <esa cifra>\n')
+    console.log('\n     node --env-file=.env.produccion scripts/cotejar-avisos.mjs <esa cifra>\n')
     console.log('   No se consulta por API a propósito: las dos lecturas pasarían')
     console.log('   por la misma credencial y dejarían de ser dos.')
     console.log('\n═════════════════════════════════════════════════════════════\n')

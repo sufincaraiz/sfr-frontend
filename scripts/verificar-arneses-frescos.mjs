@@ -79,7 +79,7 @@ if (problemas.length) {
   console.log('')
   for (const p of problemas) console.log(`  ✗ ${p}.`)
   console.log('\n  Córrelo y actualiza el registro:')
-  console.log('    node --env-file=.env.local scripts/probar-panel-notarial.mjs')
+  console.log('    node --env-file=.env.produccion scripts/probar-panel-notarial.mjs')
   console.log('  Su verde es de la última vez que alguien se acordó, y eso no es un hecho')
   console.log('  sobre hoy.\n')
   process.exit(1)

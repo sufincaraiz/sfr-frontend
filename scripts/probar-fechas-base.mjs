@@ -21,7 +21,7 @@
  * preguntar» no es «está bien», pero tampoco es motivo para romper un build por
  * una red caída. Se ve distinto de un cero, y eso basta.
  *
- *   node --env-file=.env.local scripts/probar-fechas-base.mjs
+ *   node --env-file=.env.produccion scripts/probar-fechas-base.mjs
  */
 import { PrismaClient } from '@prisma/client'
 import { diaPuro, anioDelDia } from '../src/lib/dia-colombia.ts'

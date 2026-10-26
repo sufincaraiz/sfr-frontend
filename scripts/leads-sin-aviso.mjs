@@ -27,7 +27,7 @@
  *
  * De ahí las dos columnas del informe. «INTENTADO» no significa entregado.
  *
- *     node --env-file=.env.local scripts/leads-sin-aviso.mjs [dias]
+ *     node --env-file=.env.produccion scripts/leads-sin-aviso.mjs [dias]
  */
 import { PrismaClient } from '@prisma/client'
 

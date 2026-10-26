@@ -15,7 +15,7 @@
  * Lo único que este guión puede hacer es **poner delante lo que hay que
  * verificar, con todo lo que hace falta para hacerlo y nada más**.
  *
- *     node --env-file=.env.local scripts/fuentes-para-verificar.mjs
+ *     node --env-file=.env.produccion scripts/fuentes-para-verificar.mjs
  */
 import { PrismaClient } from '@prisma/client'
 import { clasificarFirma } from '../src/lib/notariales/firma.ts'

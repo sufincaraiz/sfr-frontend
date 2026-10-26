@@ -64,6 +64,39 @@ const LOS_DOS = `${H_NOTARIAL} && ${H_FINANZAS}`
  * una mutación sobrevive, lo que se cae es esa frase.
  */
 const MUTACIONES = [
+  /* ─── EL DESTINO DE LA BASE · 2026-10-26 ─────────────────────────────── */
+  {
+    nombre: "destino: la lista de seguros se traga cualquier host",
+    porque: "si todo es seguro, la guarda deja de negarse y vuelve el estado de hace dos semanas: escribir en produccion sin decidirlo.",
+    archivo: 'src/lib/destino-base.ts',
+    de: "export const HOSTS_SEGUROS = ['localhost', '127.0.0.1', '[::1]']",
+    a: "export const HOSTS_SEGUROS = ['localhost', '127.0.0.1', '[::1]', 'acela.proxy.rlwy.net']",
+    comando: 'node scripts/probar-destino-base.mjs',
+  },
+  {
+    nombre: "destino: sin autorizacion vuelve a dejar pasar",
+    porque: "es la guarda entera: una autorizacion que no hace falta no es una autorizacion.",
+    archivo: 'src/lib/destino-base.ts',
+    de: "  if (!dada) {",
+    a: "  if (false) {",
+    comando: 'node scripts/probar-destino-base.mjs',
+  },
+  {
+    nombre: "destino: la autorizacion deja de tener que nombrar el host",
+    porque: "un \u00absi\u00bb valdria para cualquier base y se podria dejar escrito en un archivo; el host obliga a mirar a donde se apunta.",
+    archivo: 'src/lib/destino-base.ts',
+    de: "  if (!d.host || dada !== d.host.toLowerCase()) {",
+    a: "  if (false) {",
+    comando: 'node scripts/probar-destino-base.mjs',
+  },
+  {
+    nombre: "destino: exigir deja de detener y solo devuelve",
+    porque: "detener y devolver no es lo mismo: un llamador puede ignorar un booleano con un if olvidado, y es exactamente como nacio este problema.",
+    archivo: 'src/lib/destino-base.ts',
+    de: "  if (!v.puede) {",
+    a: "  if (false) {",
+    comando: 'node scripts/probar-destino-base.mjs',
+  },
   /* ─── EL LATIDO · 2026-10-25 ──────────────────────────────────────────── */
   {
     nombre: 'latido: /fail deja de normalizar la barra final',
