@@ -189,7 +189,8 @@ export function puedeEscribir(
  * Para generarlo: `node scripts/testigo-de-despliegue.mjs`. El testigo se pega
  * en Vercel (SOLO en Production) y la huella se commitea aquí.
  */
-export const HUELLA_DEL_TESTIGO = ''
+export const HUELLA_DEL_TESTIGO =
+  'fbcfa6d46e3ed763dd4f3dfde108feecc19654f0f677206f6708d308c0122b76'
 
 /** Forma mínima: 32+ caracteres de un alfabeto sin ambigüedades. */
 export function formaDeTestigo(v: string | undefined | null): boolean {

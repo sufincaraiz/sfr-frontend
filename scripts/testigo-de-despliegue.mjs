@@ -24,6 +24,46 @@
  *     node scripts/testigo-de-despliegue.mjs
  */
 import { randomBytes, createHash } from 'node:crypto'
+import { HUELLA_DEL_TESTIGO, testigoValido, formaDeTestigo } from '../src/lib/destino-base.ts'
+
+/* ─── MODO COMPROBAR ──────────────────────────────────────────────────────────
+ *
+ *     node scripts/testigo-de-despliegue.mjs comprobar <testigo>
+ *
+ * Existe porque hay un hueco entre generar el testigo y que la app funcione:
+ * **nadie comprueba que el valor pegado en Vercel sea el que produjo la
+ * huella.** Un carácter de más al copiar y la app deja de poder escribir — y
+ * eso se descubriría cuando dejen de llegar leads, que es el daño que todo
+ * esto existe para evitar.
+ *
+ * Esto lo convierte en una pregunta de diez segundos, ANTES de desplegar. */
+const [modo, valor] = process.argv.slice(2)
+if (modo === 'comprobar') {
+  if (!valor) {
+    console.log('\n  Uso: node scripts/testigo-de-despliegue.mjs comprobar <testigo>\n')
+    process.exit(1)
+  }
+  console.log('')
+  if (!/^[0-9a-f]{64}$/.test(HUELLA_DEL_TESTIGO)) {
+    console.log('  ✗ El código no tiene huella configurada, así que no hay contra qué comparar.')
+    process.exit(1)
+  }
+  if (!formaDeTestigo(valor)) {
+    console.log('  ✗ Ese valor no tiene forma de testigo (32+ caracteres, letras,')
+    console.log('    dígitos, «-» y «_»). ¿Se copió entero, sin espacios ni comillas?')
+    process.exit(1)
+  }
+  if (testigoValido(valor)) {
+    console.log('  ✓ COINCIDE con la huella del código.')
+    console.log('    Si ese mismo valor está en Vercel (Production), la app podrá escribir.\n')
+    process.exit(0)
+  }
+  console.log('  ✗ NO coincide con la huella del código.')
+  console.log('    Si ese valor es el que está en Vercel, la app NO podrá escribir y')
+  console.log('    los leads se perderán. Revisa que se copió entero, o genera uno')
+  console.log('    nuevo corriendo este guión sin argumentos.\n')
+  process.exit(1)
+}
 
 /* base64url: 32 bytes → 43 caracteres sin `+`, `/` ni `=`, que se rompen al
  * pasar por una URL, por un .env o por un panel web. */
