@@ -3507,6 +3507,71 @@ La pregunta que lo caza, y hay que hacérsela a cada constante documentada:
 informe se imprime distinta», no está en uso. Es la misma pregunta que el
 arnés de mutaciones le hace al código, hecha a mano sobre los datos.
 
+## UN DETECTOR QUE SE INCLUYE EN SU PROPIA POBLACIÓN
+
+**Categoría nueva, 2026-10-26.** No es un instrumento que engaña por cómo se
+lee ni por dónde corre: es uno que **se encuentra a sí mismo** y se cuenta.
+
+`verificar-destinos.mjs` busca guiónes que escriban en la base. Su patrón lleva
+dentro el literal `$executeRaw`, así que **casó con su propio código fuente** y
+apareció en su informe como un guión que escribe y que —cómo no— cumple la
+regla. La cuenta de «comprueban el destino» pasó de **0 a 1**: exactamente la
+diferencia entre «no hay ninguno protegido» y «hay uno», que era justo lo que
+había que ver.
+
+### La distinción que hay que hacer, porque no toda autoinclusión es un defecto
+
+Repasados los **8 detectores** de la cadena que recorren el repositorio:
+
+| situación | cuántos | cuáles |
+|---|---|---|
+| **se contaba a sí mismo** | **1** | `verificar-destinos` (corregido) |
+| **lleva su patrón dentro, salvado solo por el ÁMBITO** | **2** | `verificar-avisos`, `verificar-escrituras` |
+| **se incluye LEGÍTIMAMENTE** | **1** | `verificar-portabilidad` |
+| no puede encontrarse (ámbito o extensión) | 4 | el resto |
+
+Los dos del medio son lo incómodo: `verificar-avisos` **tiene su propio patrón
+en su código** y no se auto-cuenta únicamente porque barre `src/app/**` y
+`src/lib/**`, no `scripts/`. Si alguien amplía ese ámbito —cosa razonable— el
+detector empieza a contarse y **nadie se entera**. Es una trampa latente, no un
+defecto actual.
+
+Y `verificar-portabilidad` **debe** incluirse: comprueba que los archivos no
+lleven CRLF, y su propio archivo también tiene que cumplirlo.
+
+### La regla
+
+> Un detector se excluye de su propio barrido **cuando su código contiene el
+> patrón que busca**, y se incluye cuando la propiedad que comprueba también le
+> aplica. **En los dos casos se declara por escrito.** Una exclusión silenciosa
+> es la misma trampa con el signo cambiado: nadie sabe si falta por decisión o
+> por olvido.
+
+La pregunta mecánica que lo caza, y vale para cualquier detector nuevo:
+**¿mi propio archivo casa con mi propio patrón?** Se contesta ejecutando el
+detector y mirando si su nombre sale en la lista —no leyendo el código—.
+
+## PRISMA NUNCA LEYÓ `.env.local`
+
+**Corrección de algo que afirmé el 2026-10-26 y era falso.** Dije que el
+renombrado cubría `prisma db push` y `prisma migrate`. No los cubre, y el
+mecanismo que yo describí no existía:
+
+- `.env.local` es convención de **Next**, no de Prisma. El CLI de Prisma lee
+  `.env`, y `npx prisma validate` solo anuncia «Prisma schema loaded from
+  prisma\schema.prisma» —nunca menciona un archivo de entorno cargado—.
+- **No existe ningún `.env`** ni en la raíz ni en `prisma/`. Comprobado.
+- Sin él, Prisma **falla explícitamente**: `P1012 · Environment variable not
+  found: DATABASE_URL`. Eso es fail-closed, pero **por accidente**: basta que
+  alguien cree un `.env` —lo más normal del mundo— para que Prisma lo lea en
+  silencio.
+- Y lo que no cierra nada: **una `DATABASE_URL` exportada en la terminal gana a
+  todo.** Comprobado ejecutándolo: con una URL inventada, `prisma validate`
+  pasa. Es exactamente como se corrieron todos los `db push` de esta sesión.
+
+Lo que protege hoy a Prisma no es el renombrado: es **la ausencia de un archivo**
+que nadie ha creado todavía.
+
 ## LA FORMA MÁS BARATA DE SABER QUÉ MIDE UN INSTRUMENTO
 
 > Haz algo y mira si cambia.
