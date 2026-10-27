@@ -23,7 +23,6 @@ import { camposExigidos, DUENO_DEL_CONCEPTO, DUENOS, type Dueno } from './catalo
 import { verificarTramos } from './tramos.ts'
 import { verificarReglas } from './retencion.ts'
 import { BASES } from './bases.ts'
-import { esClaseDocumental, puedeActivar } from './clase-documental.ts'
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Fechas
@@ -241,35 +240,30 @@ export function exigirRespaldoOficial(r: Respaldo, fuentes: Fuente[]): void {
     )
   }
 
-  /* ─── LA CLASE DOCUMENTAL ─────────────────────────────────────────────────
+  /* ─── LA CLASE DOCUMENTAL: DESENGANCHADA HASTA QUE EXISTA SU COLUMNA ──────
    *
-   * ⚠ Y AQUÍ ESTABA EL HUECO, hasta el 2026-10-25. La comprobación de arriba
-   * mira `tipo_evidencia`, que es el SOPORTE, así que un PDF archivado cuya
-   * fuente es una compilación se escapaba entera —y el arnés lo afirmaba como
-   * correcto: «a un documento archivado no se le exige la nota de
-   * compilación»—. La razón escrita era que un PDF firmado con radicado y
-   * sellos vale por sí mismo, y es verdad; lo que no es verdad es que todo PDF
-   * archivado sea el original firmado. Uno bajado del normograma de Cancillería
-   * es un PDF archivado, NO es el original, y lleva las erratas de digitación
-   * que la ficha de esa misma fuente declara por escrito.
+   * ⚠ ESTO EXIGÍA `clase_documental`, Y DEJÓ EL MÓDULO ENTERO SIN PODER ACTIVAR
+   * NINGÚN AÑO (2026-10-26 → 2026-10-27).
    *
-   * La clase documental cierra eso porque no mira el soporte ni el dominio:
-   * mira de qué documento salió. */
-  if (!esClaseDocumental(r.clase_documental)) {
-    throw new RespaldoNoOficial(
-      `El respaldo de «${r.campo}» no declara de qué clase de documento salió. ` +
-      'Las opciones son: publicación oficial original, texto compilado o integrado, ' +
-      'copia o reproducción, e índice o fuente informativa. No se supone ninguna: ' +
-      'un respaldo sin clase declarada no sostiene una cifra.',
-    )
-  }
-  if (r.clase_documental === 'TEXTO_COMPILADO' && !String(r.nota ?? '').trim()) {
-    throw new RespaldoNoOficial(
-      `El respaldo de «${r.campo}» salió de un texto compilado y no trae la nota que diga ` +
-      'qué edición se consultó y dónde está el texto auténtico. Da igual si llegó por URL ' +
-      'o como documento archivado: lo que decide es el documento, no el soporte.',
-    )
-  }
+   * El commit 0de6582 añadió a la vez la columna en el esquema y esta
+   * exigencia. El 26226d0 retiró la COLUMNA —el cliente que Vercel regenera en
+   * cada build la pedía y la base no la tenía— y dejó la EXIGENCIA. Desde
+   * entonces: `panel.ts` no la guarda, `datos.ts` no la lee, el formulario no la
+   * pregunta, y esta guarda la pedía igual. Comprobado ejecutándolo: un
+   * respaldo PERFECTO, tal como vuelve de la base, salía «NO VALE». Así que
+   * ningún respaldo leído valía, ningún año podía activarse, y guardar un
+   * respaldo desde el panel fallaba siempre.
+   *
+   * Es la tercera de la misma familia que la cadena de `&&` y el `?? []`: una
+   * guarda que va POR DELANTE de su esquema. Exige algo que el sistema no
+   * puede ni guardar ni leer, y en vez de proteger, bloquea.
+   *
+   * Lo que se pierde mientras tanto, y hay que decirlo: vuelve el hueco del PDF
+   * archivado bajado de un normograma, que entra sin nota de compilación. Es el
+   * estado anterior al 0de6582. Lo cierra de verdad el lote del modelo de
+   * evidencia, que vuelve a enganchar `clase-documental.ts` JUNTO CON su
+   * migración —guarda y esquema en el mismo commit, que es la lección—. Ese
+   * módulo y su arnés siguen intactos y probados, esperando. */
 }
 
 /**
@@ -293,21 +287,14 @@ const estadoDelRespaldo = (
     return { vale: false, motivo: e instanceof Error ? e.message : String(e) }
   }
 
-  /* LA REGLA DE ACTIVACIÓN, que es la del cotejo aplicada al documento: una
-   * publicación oficial activa sola; un texto compilado no, porque puede traer
-   * erratas —el normograma de Cancillería lo declara por escrito—; y dos
-   * compilados no son dos lecturas, son el mismo texto copiado dos veces.
-   *
-   * ⚠ HOY ESTA LISTA TIENE COMO MUCHO UN ELEMENTO, y conviene saberlo: la clave
-   * única de `respaldos_normativos` es (ambito, referencia_id, campo), así que
-   * un campo no puede tener dos respaldos. Es decir, **un texto compilado no
-   * puede activar nunca**, porque no hay sitio donde poner la segunda fuente
-   * que lo acompañaría. No es un defecto de esta función: es que la regla de
-   * «dos lecturas» pide un cambio de clave que no está hecho. Mientras no esté,
-   * el motivo que devuelve `puedeActivar` dice exactamente qué falta, y eso es
-   * mejor que activar con una sola lectura. */
-  const v = puedeActivar(delCampo)
-  return v.activa ? { vale: true, motivo: null } : { vale: false, motivo: v.motivo }
+  /* ⚠ AQUÍ IBA `puedeActivar(delCampo)`, la regla de las dos lecturas sobre la
+   * CLASE de cada documento. Se desengancha con la exigencia de arriba y por la
+   * misma razón: devolvía SIN_CLASE para todo respaldo leído de la base, porque
+   * la clase no tiene columna. Quitar solo la de arriba habría dejado el año
+   * igual de bloqueado una línea más abajo —dos sitios encadenados, y había
+   * que mirar los dos—. Vuelve con el modelo de evidencia, junto con su
+   * migración y con la clave que admita dos respaldos por campo. */
+  return { vale: true, motivo: null }
 }
 
 const tieneRespaldo = (respaldos: Respaldo[] | undefined, campo: string, fuentes: Fuente[]): boolean =>

@@ -3507,6 +3507,55 @@ La pregunta que lo caza, y hay que hacérsela a cada constante documentada:
 informe se imprime distinta», no está en uso. Es la misma pregunta que el
 arnés de mutaciones le hace al código, hecha a mano sobre los datos.
 
+## UNA GUARDA QUE VA POR DELANTE DE SU ESQUEMA
+
+**Tercera de la misma familia**, después de la cadena de `&&` y del `?? []`.
+Las tres tienen la misma forma: **una protección desacoplada de aquello que
+protege.** Aquellas desarmaban la guarda sin que se notara; ésta hace lo
+contrario y es igual de mala: **la guarda está armada y bloquea todo.**
+
+### El caso, 2026-10-26 → 2026-10-27
+
+1. El commit `0de6582` añadió **a la vez** la columna `clase_documental` al
+   esquema y una exigencia en `exigirRespaldoOficial`: sin clase, el respaldo
+   no vale.
+2. El `26226d0` arregló producción retirando **la columna** —el cliente que
+   Vercel regenera en cada build la pedía y la base no la tenía—. **Y dejó la
+   exigencia.**
+3. Desde ese momento: `panel.ts` no guarda la clase, `datos.ts` no la lee, el
+   formulario no la pregunta, y la guarda la exige igual.
+
+Resultado, comprobado ejecutándolo: **un respaldo perfecto, tal como vuelve de
+la base, salía «NO VALE».** Ningún respaldo leído valía, **ningún año podía
+activarse**, y guardar un respaldo desde el panel fallaba siempre.
+
+Lo que lo escondió fue lo de siempre en esta familia: **el arnés estaba en
+verde.** Sus fixtures traían la clase puesta, así que verificaban la regla —y
+la regla misma era el defecto—. Y en producción no se notó porque había 0
+respaldos y el año en borrador.
+
+### La forma general
+
+> **Una guarda y el esquema que la sostiene se cambian en el mismo commit, o
+> no se cambian.** Revertir solo uno de los dos no deja un estado intermedio:
+> deja uno roto, y en la dirección que sea —desarmada o bloqueando—.
+
+Es la gemela de la de ayer —«un esquema por delante de la base no es un
+estado intermedio inofensivo»—. Aquella era el esquema adelantado a la base;
+ésta, la guarda adelantada al esquema. **Las tres capas —base, esquema y
+guarda— tienen que moverse juntas**, y cada vez que se ha movido una sola, se
+ha roto algo que ningún arnés veía.
+
+### Y dos detalles del arreglo que valen como método
+
+- **Estaba en dos sitios encadenados.** `exigirRespaldoOficial` lo exigía, y
+  por debajo `puedeActivar` devolvía `SIN_CLASE`. Quitar solo el primero
+  habría dejado el año igual de bloqueado una línea más abajo.
+- **La prueba se vio en rojo antes de darla por buena.** Se devolvió solo
+  `guardas.ts` a la versión anterior, la prueba de extremo a extremo dio 1
+  pendiente («no declara de qué clase de documento salió»), y con el arreglo,
+  0. Una prueba que no se ha visto fallar no demuestra el arreglo.
+
 ## EL RIGOR NO SE CONTAGIA NI ENTRE DOS PREGUNTAS DEL MISMO TRABAJO
 
 **2026-10-27.** El caso es pequeño y la lección no.

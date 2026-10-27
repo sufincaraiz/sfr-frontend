@@ -252,17 +252,42 @@ lanza('un respaldo que dice ser de una entidad y enlaza a otra',
  * original, y lleva las erratas de digitación que la ficha de esa misma fuente
  * declara por escrito. Entraba sin nota y sin que nada se quejara.
  *
- * Lo que decide ahora es la CLASE DOCUMENTAL, no el soporte. Las dos mitades: */
-check('un documento archivado que es el ORIGINAL firmado no necesita nota',
-  (() => { exigirRespaldoOficial({ ...DOC, clase_documental: 'PUBLICACION_OFICIAL', nota: null },
+ * Lo que decidía era la CLASE DOCUMENTAL, no el soporte…
+ *
+ * ⚠ …Y SE GIRA OTRA VEZ, 2026-10-27, y es la quinta afirmación de la sesión
+ * que sobrevive a su premisa. Las dos verificaciones de abajo afirmaban que la
+ * guarda EXIGÍA la clase. Y la exigía, sí: pero la columna que la guarda había
+ * sido retirada del esquema el día antes, así que esa exigencia hacía que
+ * NINGÚN respaldo leído de la base valiera. El arnés estaba en verde mientras
+ * el módulo no podía activar ningún año: verificaba la regla, y la regla misma
+ * era el defecto.
+ *
+ * Ahora afirman la verdad del estado actual —la clase NO se exige mientras no
+ * tenga columna— y lo que más importa, abajo: que un respaldo tal como vuelve
+ * de la base VALE. Cuando el modelo de evidencia vuelva a enganchar la clase
+ * con su migración, estas se giran de nuevo, y el comentario de arriba explica
+ * hacia dónde. */
+check('mientras la clase no tenga columna, un respaldo SIN clase vale',
+  (() => { exigirRespaldoOficial({ ...DOC, clase_documental: undefined }, FUENTES_OFICIALES)
+    return true })())
+check('…y un compilado sin nota tampoco se rechaza: vuelve el hueco anterior al 0de6582',
+  (() => { exigirRespaldoOficial({ ...DOC, clase_documental: 'TEXTO_COMPILADO', nota: null },
     FUENTES_OFICIALES); return true })())
-lanza('un documento archivado que salió de un TEXTO COMPILADO, sin nota',
-  () => exigirRespaldoOficial({ ...DOC, clase_documental: 'TEXTO_COMPILADO', nota: null },
-    FUENTES_OFICIALES),
-  'RespaldoNoOficial', 'lo que decide es el documento, no el soporte')
-lanza('un respaldo que no declara de qué clase de documento salió',
-  () => exigirRespaldoOficial({ ...DOC, clase_documental: undefined }, FUENTES_OFICIALES),
-  'RespaldoNoOficial', 'no declara de qué clase de documento')
+
+/* EL CASO QUE ROMPIÓ EL MÓDULO, convertido en verificación: un respaldo
+ * perfecto con EXACTAMENTE los campos que `datos.ts` lee de la base, sin
+ * ninguno de más. Si alguien vuelve a exigir un campo que la base no guarda,
+ * esto se cae aquí y no en producción. */
+{
+  const comoVuelveDeLaBase = {
+    campo: 'tramos', norma: 'RES-2026-000964-6', articulo: 'art. 50',
+    url: 'https://www.supernotariado.gov.co/resolucion.pdf', fecha_norma: '2026-01-20',
+    vigencia_desde: '2026-02-01', vigencia_hasta: null, articulo_vigencia: 'art. 56',
+    verificado_en: '2026-10-06', verificado_por: 'leonel@sufincaraiz.com',
+  }
+  check('un respaldo PERFECTO, tal como vuelve de la base, VALE',
+    (() => { exigirRespaldoOficial(comoVuelveDeLaBase, FUENTES_OFICIALES); return true })())
+}
 
 lanza('un documento archivado que no dice dónde lo consigue el lector',
   () => exigirRespaldoOficial({ ...DOC, donde_conseguirlo: null }, FUENTES_OFICIALES),
