@@ -54,8 +54,26 @@ const GUARDAS = {
       vigila: 'la forma donde el hueco y el solape no se pueden escribir, y los cinco extremos' },
     { nombre: 'puerta del catalogo publico', guion: 'probar-publicable-propiedad.mjs',
       vigila: 'que pasar a available exija precio, foto y descripcion, y que diga QUE falta' },
+    /* ⚠ ESTOS CINCO NO ESTABAN, y corrian solo en una maquina (2026-10-27).
+     * Se escribieron entre el 23 y el 27 de octubre y se daban por verdes, pero
+     * ninguno se ejecutaba en el build: su verde era un hecho sobre la maquina
+     * donde se escribieron, que es la regla del instrumento en una sola
+     * superficie incumplida por quien la habia escrito. Y uno protege algo que
+     * ya esta en produccion: el aviso de los leads. Los cinco corren sin base. */
+    { nombre: 'aviso de los leads', guion: 'probar-aviso-lead.mjs',
+      vigila: 'que el camino de aviso no tenga ningun return mudo y que vacio no sea fallido' },
+    { nombre: 'latido externo', guion: 'probar-latido.mjs',
+      vigila: 'que el /fail se construya bien y que la URL del vigilante no se escape' },
+    { nombre: 'destino de la base', guion: 'probar-destino-base.mjs',
+      vigila: 'que escribir en produccion exija el testigo o una autorizacion por ejecucion' },
+    { nombre: 'clase documental', guion: 'probar-clase-documental.mjs',
+      vigila: 'que una evidencia insuficiente no pueda activar (modulo en espera de su migracion)' },
+    { nombre: 'quien leyo', guion: 'probar-lector.mjs',
+      vigila: 'que dos lecturas de asistente, o del mismo lector, no cuenten como dos' },
+    /* Sin numero en el texto: decia «las 14 afirmaciones» cuando ya eran 52. Un
+     * numero escrito a mano en una descripcion envejece solo. */
     { nombre: 'mutaciones', guion: 'mutar.mjs',
-      vigila: 'que las 14 afirmaciones del motor sigan respaldadas por una mutacion real' },
+      vigila: 'que cada afirmacion del motor siga respaldada por una mutacion real' },
     { nombre: 'enlace del contador', guion: 'verificar-enlace-contador.mjs',
       vigila: 'que lo escrito —esquema, politica PUBLICA, retencion— y lo construido coincidan' },
     { nombre: 'arneses frescos', guion: 'verificar-arneses-frescos.mjs',
