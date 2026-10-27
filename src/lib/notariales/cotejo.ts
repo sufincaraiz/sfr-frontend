@@ -58,6 +58,12 @@
  * > nombre.
  */
 
+/* El validador de fechas es el de las guardas y no uno propio: dos definiciones
+ * de «fecha válida» terminan discrepando, y la del 31 de febrero ya se resolvió
+ * allí una vez. */
+import { esFechaIso } from './guardas.ts'
+import { veredictoDeLecturas } from './lector.ts'
+
 export type EstadoCotejo =
   | 'COINCIDE' | 'DIFIERE' | 'SIN_TRANSCRIBIR' | 'SIN_CARGAR' | 'SIN_LECTURA'
 
@@ -86,6 +92,24 @@ export interface FilaTranscrita {
   valor: string
   unidad: string
   articulo: string
+  /**
+   * Desde cuándo RIGE la norma de esta cifra, leído del PDF (AAAA-MM-DD).
+   * Vacío si esta lectura no la trae —la primera lectura, de cinco columnas, no
+   * la trae—.
+   *
+   * ⚠ Es el campo donde vive la trampa del 1 de enero: la notarial de 2026 rige
+   * desde el 1 de FEBRERO y la registral desde el 2, y las fuentes que circulan
+   * siguen diciendo enero. Hasta el 2026-10-27 era el ÚNICO campo de una cifra
+   * sin segunda lectura: la guarda por fecha la aplicaba bien, pero sobre la
+   * fecha que alguien cargara, y el cotejo no la miraba.
+   */
+  vigencia_desde?: string
+  /**
+   * Quién hizo ESTA lectura. No se compara —las dos lecturas tienen por
+   * definición lectores distintos—: se clasifica y se muestra. Ver
+   * `lector.ts`. Vacío si no se declaró, y eso también se muestra.
+   */
+  lector?: string
 }
 
 /**
@@ -102,6 +126,10 @@ export interface ValorCargado {
   valor: string
   unidad: string
   articulo: string
+  /** La `vigencia_desde` del respaldo que cubre este campo. Ver `valoresDesdeAnio`. */
+  vigencia_desde?: string
+  /** El `verificado_por` de ese mismo respaldo: quién hizo la lectura cargada. */
+  lector?: string
 }
 
 export interface ResultadoCotejo {
@@ -125,7 +153,19 @@ export class ErrorBloqueCotejo extends Error {
 
 export const INICIO = '<!-- COTEJO:INICIO -->'
 export const FIN = '<!-- COTEJO:FIN -->'
-const COLUMNAS = ['concepto', 'campo', 'valor', 'unidad', 'articulo'] as const
+/* DOS CABECERAS ADMITIDAS, y es deliberado.
+ *
+ * La primera lectura —la del 2026-10-13— tiene cinco columnas y se queda como
+ * está: no se le añade vigencia ni lector, porque NO SE SABE quién la leyó (la
+ * cabecera del documento dice «el titular» y los cuatro commits que la
+ * escribieron están coautorizados por un asistente) ni se puede rellenar su
+ * vigencia sin fabricar la referencia contra la que se coteja. Tampoco cambia
+ * su huella, así que `transcripcion.generada.ts` no se regenera.
+ *
+ * Las lecturas nuevas traen siete. Una fila de cinco columnas no tiene
+ * vigencia, y eso NO cuenta como coincidencia: ver `compararCotejo`. */
+const COLUMNAS_LEGADO = ['concepto', 'campo', 'valor', 'unidad', 'articulo'] as const
+const COLUMNAS = [...COLUMNAS_LEGADO, 'vigencia_desde', 'lector'] as const
 
 /**
  * Normaliza una cifra para comparar: «52.374» y «52374» son el mismo número, y
@@ -177,7 +217,7 @@ export function leerBloqueCotejo(texto: string): FilaTranscrita[] {
   const lineas = texto.slice(desde + INICIO.length, hasta).split('\n')
   const filas: FilaTranscrita[] = []
   const vistas = new Set<string>()
-  let cabecera = false
+  let columnas: readonly string[] | null = null
 
   for (let i = 0; i < lineas.length; i++) {
     const cruda = (lineas[i] ?? '').trim()
@@ -185,33 +225,51 @@ export function leerBloqueCotejo(texto: string): FilaTranscrita[] {
     const celdas = cruda.split('|').slice(1, -1).map(c => c.trim())
     if (/^[-: ]+$/.test(celdas.join(''))) continue
 
-    if (!cabecera) {
-      if (celdas.join(',').toLowerCase() !== COLUMNAS.join(',')) {
+    if (!columnas) {
+      const leida = celdas.join(',').toLowerCase()
+      if (leida === COLUMNAS.join(',')) columnas = COLUMNAS
+      else if (leida === COLUMNAS_LEGADO.join(',')) columnas = COLUMNAS_LEGADO
+      else {
         throw new ErrorBloqueCotejo(
-          `la cabecera tiene que ser exactamente «${COLUMNAS.join(' | ')}» y es «${celdas.join(' | ')}».`,
+          `la cabecera tiene que ser exactamente «${COLUMNAS.join(' | ')}» ` +
+          `(o la de la primera lectura, sin las dos últimas) y es «${celdas.join(' | ')}».`,
           i + 1,
         )
       }
-      cabecera = true
       continue
     }
 
-    if (celdas.length !== COLUMNAS.length) {
-      throw new ErrorBloqueCotejo(`la fila tiene ${celdas.length} columnas y deben ser ${COLUMNAS.length}.`, i + 1)
+    if (celdas.length !== columnas.length) {
+      throw new ErrorBloqueCotejo(`la fila tiene ${celdas.length} columnas y deben ser ${columnas.length}.`, i + 1)
     }
-    const [concepto, campo, valor, unidad, articulo] = celdas as [string, string, string, string, string]
+    /* Con valor por defecto en cada posición, y no con `!`: el `!` convence al
+     * compilador de que no hace falta preguntar, y las ausencias se comprueban
+     * justo debajo, que es donde tienen que comprobarse. */
+    const [concepto = '', campo = '', valor = '', unidad = '', articulo = '',
+      vigencia_desde = '', lector = ''] = celdas
     for (const [nombre, v] of [['concepto', concepto], ['campo', campo], ['valor', valor], ['articulo', articulo]] as const) {
       if (!v) throw new ErrorBloqueCotejo(`falta ${nombre}.`, i + 1)
+    }
+    /* Una fecha mal escrita NO se trata como vacía: eso la convertiría en «sin
+     * lectura» en silencio, y nadie sabría que la lectura existía y se perdió.
+     * «1 de febrero de 2026» se rechaza a propósito: la comparación es exacta y
+     * necesita la forma AAAA-MM-DD. */
+    if (vigencia_desde && !esFechaIso(vigencia_desde)) {
+      throw new ErrorBloqueCotejo(
+        `la vigencia «${vigencia_desde}» no es una fecha AAAA-MM-DD que exista. ` +
+        'Si la lectura no la trae, se deja la casilla vacía.',
+        i + 1,
+      )
     }
     const llave = `${concepto}·${campo}`
     if (vistas.has(llave)) {
       throw new ErrorBloqueCotejo(`«${llave}» está transcrito dos veces.`, i + 1)
     }
     vistas.add(llave)
-    filas.push({ concepto, campo, valor, unidad, articulo })
+    filas.push({ concepto, campo, valor, unidad, articulo, vigencia_desde, lector })
   }
 
-  if (!cabecera) throw new ErrorBloqueCotejo('el bloque no tiene cabecera.')
+  if (!columnas) throw new ErrorBloqueCotejo('el bloque no tiene cabecera.')
   if (!filas.length) throw new ErrorBloqueCotejo('el bloque no tiene ni una fila.')
   return filas
 }
@@ -282,11 +340,43 @@ export function compararCotejo(
         'Uno de los dos leyó otro artículo',
       )
     }
-    return {
-      concepto, campo,
-      estado: (diferencias.length ? 'DIFIERE' : 'COINCIDE') as EstadoCotejo,
-      transcrito: t, cargado: c, diferencias,
+
+    /* ─── LA VIGENCIA, desde el 2026-10-27 ──────────────────────────────────
+     *
+     * Se compara igual que el artículo: SOLO si el respaldo ya la trae, porque
+     * mientras no hay respaldo no hay qué comparar. Pero aquí la igualdad es
+     * EXACTA, no por compatibilidad: no hay granularidades distintas de una
+     * fecha. «2026-01-01» frente a «2026-02-01» es la trampa entera. */
+    const vt = String(t.vigencia_desde ?? '').trim()
+    const vc = String(c.vigencia_desde ?? '').trim()
+    if (vt && vc && vt !== vc) {
+      diferencias.push(
+        `vigencia: el documento dice que rige desde ${vt} y el respaldo dice ${vc}. ` +
+        'Las tarifas de 2026 no rigen desde el 1 de enero: la notarial, desde el 1 de febrero',
+      )
     }
+    if (diferencias.length) {
+      return { concepto, campo, estado: 'DIFIERE' as const, transcrito: t, cargado: c, diferencias }
+    }
+
+    /* ⚠ Y SI LA LECTURA NO TRAE VIGENCIA, LA CIFRA NO «COINCIDE». Coincide lo
+     * leído, pero la fecha desde la que rige —la que decide si una tarifa se
+     * aplica a un acto— tiene UNA sola lectura: la de quien cargó. Llamar
+     * COINCIDE a eso sería repetir lo que este campo existe para corregir: que
+     * la trampa del 1 de enero vivía justo en lo único sin comparar.
+     *
+     * SIN_LECTURA y no DIFIERE, porque no hay contradicción: hay un hueco. Así
+     * cuenta en `completo` y no en `apto`, igual que un `pendiente`. */
+    if (vc && !vt) {
+      return {
+        concepto, campo, estado: 'SIN_LECTURA' as const, transcrito: t, cargado: c,
+        diferencias: [
+          'la cifra coincide, pero la fecha desde la que rige solo tiene una lectura —la de ' +
+          'quien la cargó—: la transcripción no trae vigencia con la que compararla',
+        ],
+      }
+    }
+    return { concepto, campo, estado: 'COINCIDE' as const, transcrito: t, cargado: c, diferencias }
   })
 }
 
@@ -312,7 +402,10 @@ export function compararCotejo(
 // cifra transcrita no aparezca en ninguna parte.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export type AspectoDiferente = 'valor' | 'unidad' | 'articulo'
+/* `vigencia` es aspecto, como el artículo: el panel dice QUE difiere en la
+ * vigencia, nunca QUÉ fecha esperaba —si la dijera, el titular la copiaría y el
+ * cotejo dejaría de comparar dos lecturas—. */
+export type AspectoDiferente = 'valor' | 'unidad' | 'articulo' | 'vigencia'
 
 export interface VeredictoCampo {
   concepto: string
@@ -322,6 +415,12 @@ export interface VeredictoCampo {
   mirar_en: string
   /** Qué aspecto no coincide. Sin decir qué se esperaba. */
   difiere_en: AspectoDiferente[]
+  /**
+   * Cuánto valen las dos lecturas juntas, en palabras: «dos lecturas de
+   * asistente: pueden compartir el mismo error», «confirmada por la entidad
+   * emisora»… Ver `lector.ts`. Ausente si falta una de las dos lecturas.
+   */
+  lecturas?: string
 }
 
 export interface VeredictoSeccion {
@@ -337,7 +436,7 @@ export interface VeredictoSeccion {
 }
 
 const ASPECTO: Record<string, AspectoDiferente> = {
-  valor: 'valor', unidad: 'unidad', 'artículo': 'articulo',
+  valor: 'valor', unidad: 'unidad', 'artículo': 'articulo', vigencia: 'vigencia',
 }
 
 /** Qué aspectos difieren, leído de los mensajes y vaciado de cifras. */
@@ -384,6 +483,12 @@ export function veredictoPorSeccion(
       // El artículo de la transcripción es navegación y sí se muestra.
       mirar_en: articuloDe.get(`${r.concepto}·${r.campo}`) ?? '',
       difiere_en: aspectosDe(r),
+      /* QUIÉN leyó cada lado y cuánto valen juntas. Es seguro llevarlo al panel:
+       * dice quién, nunca qué se esperaba. Solo cuando existen las dos lecturas;
+       * con una sola no hay pareja que valorar. */
+      ...(r.transcrito && r.cargado
+        ? { lecturas: veredictoDeLecturas(r.transcrito.lector, r.cargado.lector).texto }
+        : {}),
     })),
   }))
 }

@@ -43,7 +43,7 @@ import {
   leerBloqueCotejo, compararCotejo, resumirCotejo, normalizarValor,
   veredictoPorSeccion, avance, PENDIENTE,
 } from '../src/lib/notariales/cotejo.ts'
-import { valoresDesdeAnio, exigirEditable, subirVersion } from '../src/lib/notariales/datos.ts'
+import { valoresDesdeAnio, exigirEditable, subirVersion, campoDelRespaldo } from '../src/lib/notariales/datos.ts'
 import { readFileSync } from 'node:fs'
 import { calcularBaseRegistro, calcularBaseOrip } from '../src/lib/notariales/bases.ts'
 import { VERSION_MOTOR } from '../src/lib/notariales/tipos.ts'
@@ -2016,8 +2016,15 @@ check('una unidad distinta se reporta como unidad, no como valor',
 check('el veredicto va agrupado por concepto, que es como se guarda',
   VEREDICTO.length === new Set([...BLOQUE_REAL.map(f => f.concepto), ...CARGADO_MAL.map(f => f.concepto)]).size,
   `(${VEREDICTO.length} secciones)`)
+/* ⚠ ESTA SUMA NO CONTABA `sin_lectura`, el quinto estado que añadió N-02, y
+ * pasaba por casualidad: ninguna fila de esta fixture caía en él. El
+ * 2026-10-27 empezaron a caer —el bloque real no trae vigencia y los respaldos
+ * de la fixture sí, así que esas cifras ya no «coinciden»: tienen la fecha sin
+ * segunda lectura— y la suma dejó de cuadrar. La equivocada era la suma: una
+ * comprobación de que los estados cubren el total tiene que nombrarlos todos. */
 check('cada sección trae su propio recuento',
-  VEREDICTO.every(v => v.coinciden + v.difieren + v.sin_transcribir + v.sin_cargar === v.total))
+  VEREDICTO.every(v =>
+    v.coinciden + v.difieren + v.sin_transcribir + v.sin_cargar + v.sin_lectura === v.total))
 
 // ── El avance, para no cargar a ciegas ────────────────────────────────────
 check('el avance cuenta sobre las 53 transcritas',
@@ -2533,6 +2540,122 @@ check('el panel declara que los tramos no se pueden editar todav\u00eda, o que y
       !serializado.includes('9.11') && !serializado.includes('TASA_SOBRE_TOTAL'),
       serializado.slice(0, 120))
   }
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * LA VIGENCIA, CON SEGUNDA LECTURA · 2026-10-27
+ *
+ * La trampa del 1 de enero vivía en el único campo de una cifra sin comparar:
+ * la guarda por fecha la aplicaba bien, pero sobre la fecha que alguien
+ * cargara. Las fixtures son SINTÉTICAS, salvo la del documento real, que se
+ * usa para comprobar que la primera lectura sigue leyéndose intacta. */
+console.log('\n══ LA VIGENCIA, CON SEGUNDA LECTURA ══')
+{
+  const MARCAS = t => `<!-- COTEJO:INICIO -->\n${t}\n<!-- COTEJO:FIN -->`
+  const NUEVA = '| concepto | campo | valor | unidad | articulo | vigencia_desde | lector |\n' +
+    '|---|---|---|---|---|---|---|\n'
+
+  // ── el lector del bloque ──
+  check('la primera lectura, de CINCO columnas, se sigue leyendo entera',
+    BLOQUE_REAL.length === 53 && BLOQUE_REAL.every(f => (f.vigencia_desde ?? '') === ''),
+    `(${BLOQUE_REAL.length} filas)`)
+  {
+    const f = leerBloqueCotejo(MARCAS(NUEVA + '| x | valor | 100 | PESOS | art. 1 | 2026-02-01 | asistente |'))
+    check('la cabecera nueva, de SIETE, trae vigencia y lector',
+      f.length === 1 && f[0].vigencia_desde === '2026-02-01' && f[0].lector === 'asistente', JSON.stringify(f[0]))
+  }
+  {
+    const f = leerBloqueCotejo(MARCAS(NUEVA + '| x | valor | 100 | PESOS | art. 1 |  |  |'))
+    check('en la de siete, la vigencia vacía se admite: la lectura no la trae',
+      f[0].vigencia_desde === '' && f[0].lector === '')
+  }
+  /* Una fecha mal escrita NO se trata como vacía: eso la convertiría en «sin
+   * lectura» en silencio y nadie sabría que la lectura existía. */
+  for (const mala of ['1 de febrero de 2026', '2026-02-30', '01/02/2026', '2026-2-1']) {
+    lanza(`una vigencia «${mala}» se RECHAZA, no se toma por vacía`,
+      () => leerBloqueCotejo(MARCAS(NUEVA + `| x | valor | 100 | PESOS | art. 1 | ${mala} | asistente |`)),
+      'ErrorBloqueCotejo', 'no es una fecha')
+  }
+  lanza('una cabecera de seis columnas no es ninguna de las dos',
+    () => leerBloqueCotejo(MARCAS('| concepto | campo | valor | unidad | articulo | vigencia_desde |\n|---|---|---|---|---|---|\n')),
+    'ErrorBloqueCotejo', 'cabecera')
+
+  // ── la comparación ──
+  const T = (v, extra = {}) => ({ concepto: 'x', campo: 'valor', valor: '100', unidad: 'PESOS',
+    articulo: 'art. 1', vigencia_desde: v, lector: 'asistente', ...extra })
+  const C = (v, extra = {}) => ({ concepto: 'x', campo: 'valor', valor: '100', unidad: 'PESOS',
+    articulo: 'art. 1', vigencia_desde: v, lector: 'leonel@sufincaraiz.com', ...extra })
+  const uno = (t, c) => compararCotejo([t], [c])[0]
+
+  check('misma cifra y misma vigencia → COINCIDE',
+    uno(T('2026-02-01'), C('2026-02-01')).estado === 'COINCIDE')
+  {
+    const r = uno(T('2026-02-01'), C('2026-01-01'))
+    check('LA TRAMPA: cargada desde el 1 de enero y leída desde el 1 de febrero → DIFIERE',
+      r.estado === 'DIFIERE' && r.diferencias.some(d => d.startsWith('vigencia')), JSON.stringify(r.diferencias))
+  }
+  {
+    const r = uno(T(''), C('2026-02-01'))
+    check('⚠ la lectura SIN vigencia no «coincide»: SIN_LECTURA, aunque la cifra sea igual',
+      r.estado === 'SIN_LECTURA', `(${r.estado})`)
+    check('…y lo dice: la fecha solo tiene una lectura',
+      /solo tiene una lectura/.test(r.diferencias.join(' ')))
+  }
+  check('sin respaldo cargado todavía, la vigencia no se compara (como el artículo)',
+    uno(T('2026-02-01'), C('')).estado === 'COINCIDE')
+  {
+    const r = uno(T('2026-02-01'), C('2026-01-01', { valor: '999' }))
+    check('cifra Y vigencia distintas: se dicen las dos',
+      r.estado === 'DIFIERE' && r.diferencias.length === 2)
+  }
+
+  // ── apto y completo ──
+  {
+    const r = resumirCotejo(compararCotejo([T('')], [C('2026-02-01')]))
+    check('la vigencia sin segunda lectura bloquea COMPLETO y no APTO: no contradice, falta',
+      r.completo === false && r.apto === true && r.sin_lectura === 1, JSON.stringify(r))
+  }
+
+  // ── el panel no puede llevar la fecha esperada ──
+  {
+    const v = veredictoPorSeccion([T('2026-02-01')], [C('2026-01-01')])[0]
+    check('el veredicto del panel dice que difiere EN LA VIGENCIA',
+      v.campos[0].difiere_en.includes('vigencia'), JSON.stringify(v.campos[0].difiere_en))
+    check('…y NO lleva la fecha esperada: el titular no puede copiarla',
+      !JSON.stringify(v).includes('2026-02-01'), JSON.stringify(v).slice(0, 160))
+    check('…y sí dice cuánto valen las dos lecturas juntas',
+      /persona/.test(v.campos[0].lecturas ?? ''), v.campos[0].lecturas)
+  }
+  {
+    const v = veredictoPorSeccion([T('2026-02-01', { lector: 'asistente' })],
+      [C('2026-02-01', { lector: 'claude' })])[0]
+    check('dos lecturas de asistente se dicen como tales en el panel',
+      /dos lecturas de asistente/.test(v.campos[0].lecturas ?? ''), v.campos[0].lecturas)
+  }
+
+  // ── la derivación desde el año cargado ──
+  const FILAS_V = valoresDesdeAnio(ANIO)
+  check('valoresDesdeAnio no pierde filas al añadir vigencia y lector',
+    FILAS_V.length === FILAS.length, `(${FILAS_V.length} frente a ${FILAS.length})`)
+  /* EL ARTÍCULO Y LA VIGENCIA SALEN DEL MISMO RESPALDO. Si un día divergen
+   * —alguien cambia uno de los dos mapeos—, la vigencia comparada sería la de
+   * otra norma y el cotejo mentiría sin que nada lo notara. */
+  {
+    let mal = 0
+    for (const f of FILAS_V) {
+      const resp = (f.concepto === '(anio)' ? ANIO.respaldos
+        : ANIO.conceptos.find(c => c.clave === f.concepto)?.respaldos) ?? []
+      const r = resp.find(x => x.campo === campoDelRespaldo(f.campo))
+      if ((r?.articulo ?? '') !== f.articulo) mal++
+      if ((r?.vigencia_desde ?? '') !== f.vigencia_desde) mal++
+      if ((r?.verificado_por ?? '') !== f.lector) mal++
+    }
+    check('en CADA fila, artículo, vigencia y lector salen del mismo respaldo',
+      mal === 0, `(${mal} discrepancias)`)
+  }
+  check('…y hay filas con vigencia de verdad, no todas vacías',
+    FILAS_V.some(f => f.vigencia_desde), '(ninguna fila trajo vigencia: la fixture no la ejerce)')
 }
 
 console.log(`\n${fail === 0 ? '✓ TODO EN VERDE' : '✗ HAY FALLOS'} — ${ok} verificaciones, ${fail} fallos\n`)

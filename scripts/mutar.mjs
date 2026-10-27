@@ -64,6 +64,71 @@ const LOS_DOS = `${H_NOTARIAL} && ${H_FINANZAS}`
  * una mutación sobrevive, lo que se cae es esa frase.
  */
 const MUTACIONES = [
+  /* ─── VIGENCIA Y LECTOR · 2026-10-27 ─────────────────────────────────────── */
+  {
+    nombre: "vigencia: dos fechas distintas dejan de compararse",
+    porque: "es la trampa entera: cargada desde el 1 de enero y leida desde el 1 de febrero tiene que saltar.",
+    archivo: "src/lib/notariales/cotejo.ts",
+    de: "    if (vt && vc && vt !== vc) {",
+    a: "    if (false) {",
+    comando: "node scripts/probar-notariales.mjs",
+  },
+  {
+    nombre: "vigencia: la lectura SIN vigencia vuelve a «coincidir»",
+    porque: "la fecha que decide si una tarifa se aplica a un acto tendria una sola lectura, y el cotejo diria COINCIDE.",
+    archivo: "src/lib/notariales/cotejo.ts",
+    de: "    if (vc && !vt) {",
+    a: "    if (false) {",
+    comando: "node scripts/probar-notariales.mjs",
+  },
+  {
+    nombre: "vigencia: una fecha mal escrita pasa a tomarse por vacia",
+    porque: "convertiria en silencio una lectura existente en «sin lectura»: nadie sabria que la fecha se leyo y se perdio.",
+    archivo: "src/lib/notariales/cotejo.ts",
+    de: "    if (vigencia_desde && !esFechaIso(vigencia_desde)) {",
+    a: "    if (false) {",
+    comando: "node scripts/probar-notariales.mjs",
+  },
+  {
+    nombre: "vigencia: valoresDesdeAnio deja de traer la del respaldo",
+    porque: "sin la vigencia cargada no hay nada que comparar, y el cotejo volveria a no mirarla.",
+    archivo: "src/lib/notariales/datos.ts",
+    de: "    return { ...f, vigencia_desde: r?.vigencia_desde ?? '', lector: r?.verificado_por ?? '' }",
+    a: "    return { ...f, vigencia_desde: '', lector: r?.verificado_por ?? '' }",
+    comando: "node scripts/probar-notariales.mjs",
+  },
+  {
+    nombre: "vigencia: los tramos dejan de mapearse a su respaldo",
+    porque: "la vigencia comparada seria la de otra norma —o ninguna— y el cotejo mentiria sin que nada lo notara.",
+    archivo: "src/lib/notariales/datos.ts",
+    de: "  if (campoCotejo.startsWith('tramo.')) return 'tramos'",
+    a: "  if (campoCotejo.startsWith('tramo.')) return campoCotejo",
+    comando: "node scripts/probar-notariales.mjs",
+  },
+  {
+    nombre: "lector: dos asistentes vuelven a contar como independientes",
+    porque: "dos lecturas de asistente pueden compartir el mismo error; contarlas como dos es sumar una lectura dos veces.",
+    archivo: "src/lib/notariales/lector.ts",
+    de: "  if (la.clase === 'ASISTENTE' && lb.clase === 'ASISTENTE') {",
+    a: "  if (false) {",
+    comando: "node scripts/probar-lector.mjs",
+  },
+  {
+    nombre: "lector: el mismo lector dos veces cuenta como dos lecturas",
+    porque: "una persona que lee dos veces lo mismo no es una segunda lectura: es la misma con dos firmas.",
+    archivo: "src/lib/notariales/lector.ts",
+    de: "  if (la.identidad === lb.identidad) {",
+    a: "  if (false) {",
+    comando: "node scripts/probar-lector.mjs",
+  },
+  {
+    nombre: "lector: cualquier dominio con «entidad:» sube a entidad emisora",
+    porque: "«entidad:» no es una palabra magica: un blog no confirma una tarifa por escribir eso delante.",
+    archivo: "src/lib/notariales/lector.ts",
+    de: "    if (dominiosOficiales.map(d => d.toLowerCase()).includes(dominio)) {",
+    a: "    if (true) {",
+    comando: "node scripts/probar-lector.mjs",
+  },
   /* ─── EL DESTINO DE LA BASE · 2026-10-26 ─────────────────────────────── */
   {
     nombre: "destino: la lista de seguros se traga cualquier host",

@@ -317,7 +317,34 @@ export function valoresDesdeAnio(anio: AnioNotarial): ValorCargado[] {
       }
     }
   }
-  return out
+
+  /* ─── VIGENCIA Y LECTOR, en UN solo paso, para todas las filas ─────────────
+   *
+   * Desde el 2026-10-27. No se añaden en cada `out.push` de arriba —son diez— a
+   * propósito: olvidar uno dejaría una fila con la vigencia AUSENTE en silencio,
+   * y una vigencia ausente es justo la trampa que esto existe para cerrar. Aquí
+   * no se puede olvidar ninguna: se recorre `out` entero.
+   *
+   * Sale del MISMO respaldo que el artículo, con el mismo mapeo. Hay una
+   * verificación en el arnés que comprueba, fila por fila, que el artículo y la
+   * vigencia vienen del mismo respaldo: si un día divergen, se cae allí. */
+  const porClave = new Map(anio.conceptos.map(c => [c.clave, c.respaldos]))
+  return out.map(f => {
+    const respaldos = f.concepto === '(anio)' ? anio.respaldos : porClave.get(f.concepto)
+    const r = respaldos?.find(x => x.campo === campoDelRespaldo(f.campo))
+    return { ...f, vigencia_desde: r?.vigencia_desde ?? '', lector: r?.verificado_por ?? '' }
+  })
+}
+
+/**
+ * De qué respaldo sale una fila del cotejo. Es el mapeo que ya usa el artículo
+ * en `valoresDesdeAnio`: todos los tramos de un concepto los cubre UN respaldo
+ * —el de `tramos`—, y las dos mitades del redondeo, el de `redondeo`.
+ */
+export function campoDelRespaldo(campoCotejo: string): string {
+  if (campoCotejo.startsWith('tramo.')) return 'tramos'
+  if (campoCotejo.startsWith('redondeo.')) return 'redondeo'
+  return campoCotejo
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
