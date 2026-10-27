@@ -3507,6 +3507,41 @@ La pregunta que lo caza, y hay que hacérsela a cada constante documentada:
 informe se imprime distinta», no está en uso. Es la misma pregunta que el
 arnés de mutaciones le hace al código, hecha a mano sobre los datos.
 
+## EL RIGOR NO SE CONTAGIA NI ENTRE DOS PREGUNTAS DEL MISMO TRABAJO
+
+**2026-10-27.** El caso es pequeño y la lección no.
+
+El proyecto ya tenía escrita la regla —«el grep no ve las capas de mapeo;
+confirmar abriendo el archivo»—. El 26 de octubre, diagnosticando la CPU de
+Vercel, la apliqué **bien** para una pregunta: seguí los imports de cada página
+hasta las librerías que consultan `property`, y así encontré que `/nosotros`,
+`/mac`, `/preguntas-frecuentes` y `/llms.txt` dependían de las propiedades,
+cosa que un grep directo no veía.
+
+**Una hora después, en la pregunta siguiente del mismo informe, me la salté.**
+Para saber si las rutas de propiedades revalidaban, grepé `revalidatePath`
+**literal** en el archivo de la ruta, encontré cero, y escribí «las propiedades
+no revalidan nada». Era falso: revalidan a través de `revalidarPropiedad()`, en
+`lib/revalidar-propiedad.ts`, con cobertura buena y el patrón de comodín. La
+librería intermedia lo escondía, exactamente lo que la regla describe.
+
+Y la afirmación falsa **viajó**: el siguiente encargo la repetía como «lo
+único que se mantiene» de todo el diagnóstico.
+
+### Lo que enseña
+
+> El rigor no se contagia ni entre dos preguntas del mismo trabajo.
+
+Haberlo hecho bien en la primera no protege la segunda. Al contrario: el acierto
+reciente da la sensación de que el método ya está en marcha, y la segunda
+pregunta se contesta con la herramienta rápida porque «ya sé cómo es esto».
+
+Y hay una señal que debería haberme frenado: **una respuesta de CERO**. Un grep
+que encuentra algo puede estar incompleto; uno que no encuentra **nada** sobre
+una ruta que obviamente hace algo —crear y editar propiedades— es la señal de
+que se está mirando en el sitio equivocado. **Un cero sobre algo que debería
+existir se confirma abriendo el archivo, siempre.**
+
 ## UN DETECTOR QUE SE INCLUYE EN SU PROPIA POBLACIÓN
 
 **Categoría nueva, 2026-10-26.** No es un instrumento que engaña por cómo se

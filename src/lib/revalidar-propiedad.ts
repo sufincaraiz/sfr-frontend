@@ -51,4 +51,14 @@ export function revalidarPropiedad(slug?: string | null): void {
   // última propiedad de un tipo tiene que sacarlo del buscador, y publicar la
   // primera de un tipo nuevo tiene que meterlo.
   revalidateTag('enlaces')
+
+  // Las dos listas del BUSCADOR, cacheadas desde el 2026-10-27. Las dos salen
+  // del inventario, así que es AQUÍ —al publicar o vender— donde más cambian,
+  // no al editar un municipio o un tipo. Y `revalidateTag('enlaces')` de arriba
+  // no las alcanza: `getTiposOfrecibles()` usa `cache()` de React, que no
+  // persiste nada. Sin estas dos líneas, vender la última finca de un pueblo lo
+  // dejaría en el filtro hasta una hora: el usuario filtraría y no encontraría
+  // nada, que es el defecto que esas rutas existen para no tener.
+  revalidatePath('/api/municipios')
+  revalidatePath('/api/property-types')
 }

@@ -202,8 +202,22 @@ export function Header() {
             </div>
 
             {/* Buscador compacto en el drawer — no en la portada, que ya
-                tiene el del hero. */}
-            {!enPortada && (
+                tiene el del hero.
+
+                ⚠ SOLO CON EL CAJÓN ABIERTO, desde el 2026-10-27. El cajón
+                está SIEMPRE en el DOM —se oculta con max-height y
+                aria-hidden, no se desmonta—, así que este buscador se
+                montaba en cada carga de página, también en escritorio, donde
+                el cajón no se abre nunca: `lg:hidden` es CSS y el componente
+                existía igual. Y al montarse pide dos APIs. Gastaba red y
+                batería del visitante en algo que nadie iba a ver.
+
+                Dos efectos visibles, y los dos son cosméticos: al cerrar, el
+                buscador desaparece de golpe mientras el cajón aún se pliega
+                durante 0,3 s; al abrir, sus listas pueden tardar un instante
+                en llenarse. El cajón anima con un max-height FIJO, no medido
+                del contenido, así que la animación no se rompe. */}
+            {open && !enPortada && (
               <div className="pb-4">
                 <SearchBar compact />
               </div>

@@ -38,6 +38,11 @@ function revalidar() {
   revalidatePath('/sitemap-paginas.xml')
   // El índice de enlaces y los tipos ofrecibles se derivan del mismo catálogo.
   revalidateTag('enlaces')
+  // ⚠ …pero esa etiqueta NO alcanza a la lista del buscador: la ruta llama a
+  // `getTiposOfrecibles()`, que usa `cache()` de React y no persiste nada. La
+  // ruta está cacheada desde el 2026-10-27 y necesita su revalidación propia:
+  // ocultar un tipo sin esto lo dejaría en el selector hasta una hora.
+  revalidatePath('/api/property-types')
 }
 
 export async function GET() {

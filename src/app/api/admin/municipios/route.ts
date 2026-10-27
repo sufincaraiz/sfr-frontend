@@ -41,6 +41,11 @@ function revalidar(slug?: string | null) {
   revalidatePath('/')            // footer
   revalidatePath('/municipios')
   if (slug) revalidatePath(`/municipios/${slug}`)
+  // La lista del buscador, cacheada desde el 2026-10-27. Ordena por
+  // `demand_score` y muestra el `name`: editar cualquiera de los dos la cambia
+  // aunque el inventario no se mueva. Lo que más la cambia es el inventario, y
+  // eso lo cubre `revalidarPropiedad()`.
+  revalidatePath('/api/municipios')
 }
 
 export async function GET() {
