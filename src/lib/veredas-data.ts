@@ -263,11 +263,11 @@ const VEREDAS: Record<string, VeredaData> = {
       'La Alianza es una vereda consolidada de La Vega con vía pavimentada, ' +
       'servicios completos y una comunidad rural activa. Su combinación de ' +
       'fincas productivas y lotes para construcción, a precios más accesibles ' +
-      'que Bulucaima, la posiciona como la opción ideal para la primera finca.',
+      'que Bulucaima, es una alternativa para quienes buscan adquirir su primera finca en la región.',
     ventajas: [
       'Vía pavimentada: acceso cómodo en todos los vehículos durante todo el año',
       'Servicios públicos estables: agua, energía, telefonía e internet',
-      'Lotes con escritura pública y sin problemas jurídicos',
+      'Lotes con escritura pública registrada',
       'Comunidad organizada con junta de acción comunal activa',
       'Precios más accesibles que en Bulucaima para lotes equivalentes',
       'Cerca de la vía principal La Vega–Bogotá',
@@ -283,7 +283,7 @@ const VEREDAS: Record<string, VeredaData> = {
     faq: [
       {
         pregunta: '¿La Alianza es una buena opción para una primera finca en La Vega?',
-        respuesta: 'Es una de las mejores opciones. La vía pavimentada, los servicios completos y los precios accesibles la hacen ideal para quienes compran su primer inmueble campestre. Además, la comunidad organizada facilita la integración y el cuidado de la propiedad cuando no está habitada.',
+        respuesta: 'La Alianza puede ser una alternativa para adquirir tu primera propiedad campestre. Antes de tomar una decisión, es importante evaluar las características del lote, su acceso, los servicios disponibles, el uso del suelo y su situación jurídica.',
       },
       {
         pregunta: '¿Cuánto vale un lote en La Alianza?',
@@ -467,7 +467,7 @@ const VEREDAS: Record<string, VeredaData> = {
       'Total acceso a servicios: mercados, colegios, médicos a menos de 10 min',
       'Menor tiempo de desplazamiento a Bogotá de todas las veredas',
       'Lotificación activa con predios desde 500 m² disponibles',
-      'Casas con piscina que se alquilan por temporadas',
+      'Casas campestres con piscina, una alternativa para disfrutar fines de semana y temporadas de descanso',
       'Temperatura ideal para piscina exterior durante todo el año',
     ],
     // Decía «retornos superiores al 13 % anual» y «ocupación del 70–80 %».
@@ -485,7 +485,7 @@ const VEREDAS: Record<string, VeredaData> = {
     geo_lng: -74.3350,
     faq: [
       {
-        pregunta: '¿Por qué Guarumal es tan popular para alquiler vacacional?',
+        pregunta: '¿Qué ofrece Guarumal a quienes buscan una finca de descanso?',
         respuesta: 'La combinación de acceso fácil desde Bogotá (98 minutos), clima cálido ideal para piscina y cercanía a todos los servicios de La Vega la hacen atractiva para familias bogotanas en fin de semana.',
       },
       {

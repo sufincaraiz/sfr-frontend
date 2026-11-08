@@ -34,7 +34,7 @@ export function GuiaInversionBanner() {
               ¿Pensando en invertir en Cundinamarca?
             </p>
             <h2 style={{ color: '#fff', fontWeight: 800, fontSize: 'clamp(1.2rem, 2.6vw, 1.6rem)', lineHeight: 1.3, margin: 0 }}>
-              Descubre los secretos de rentabilidad en nuestra Guía Definitiva.
+              Consulta nuestra guía para invertir en finca raíz en La Vega y la región del Gualivá.
             </h2>
           </div>
         </div>

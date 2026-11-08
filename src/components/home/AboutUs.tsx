@@ -20,7 +20,7 @@ export function AboutUs({ textoReputacion }: AboutUsProps) {
     `Operando en el Gualivá desde ${DATOS_OFICIALES.anioFundacion}`,
     `${DATOS_OFICIALES.municipiosProvincia} municipios de cobertura en el Gualivá`,
     'Tours virtuales 360° en propiedades seleccionadas',
-    'Acompañamiento legal completo en cada transacción',
+    'Análisis documental inmobiliario asistido por sistemas especializados de IA y coordinación del estudio de títulos con abogado independiente',
     'Fotografía aérea con drones profesionales',
     // Sustituye al «98 % de clientes satisfechos», que no tenía encuesta detrás.
     `Calificación de ${textoReputacion}`,
@@ -90,8 +90,9 @@ export function AboutUs({ textoReputacion }: AboutUsProps) {
         <span data-about-eyebrow className="sfr-eyebrow">QUIÉNES SOMOS</span>
 
         <h2 data-about-heading className="sfr-section-heading">
-          La agencia inmobiliaria líder<br />
-          en La Vega, Cundinamarca
+          Inmobiliaria en La Vega y la región del Gualivá, especializada en
+          apartamentos, casas urbanas y campestres, proyectos inmobiliarios,
+          fincas, lotes y condominios.
         </h2>
 
         <div className="sfr-about-grid">
@@ -104,10 +105,12 @@ export function AboutUs({ textoReputacion }: AboutUsProps) {
               <strong>Mac</strong>, nuestro asistente disponible 24/7.
             </p>
             <p>
-              Ofrecemos un manejo integral de cada negocio — promoción, comercialización y
-              consultoría jurídica de fincas, lotes, casas campestres y condominios — con
-              criterio jurídico para acompañar tu inversión y el respaldo de la{' '}
-              <strong>Constructora Conarc</strong>. Tu inmueble te espera, hazlo realidad.
+              Te acompañamos en cada etapa del proceso de compraventa: desde la búsqueda
+              de una propiedad que se ajuste a tus necesidades y el análisis documental
+              preliminar asistido por sistemas especializados de inteligencia artificial,
+              hasta la coordinación del estudio de títulos con un abogado independiente y
+              la orientación en los trámites notariales, registrales y demás gestiones
+              necesarias para formalizar el negocio.
             </p>
 
             <ul className="sfr-about-facts">

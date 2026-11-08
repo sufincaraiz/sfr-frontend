@@ -62,7 +62,7 @@ function valorizacion(clima: { min: number; max: number; altitud: number } | nul
   // ningún intermediario inmobiliario puede sostener, porque el retorno depende
   // del mercado y no de la empresa. Se sustituye por el hecho observable, que
   // además es lo que un modelo puede citar.
-  { icon: TrendingUp, title: 'Demanda de alquiler vacacional', text: 'En la región hay propiedades de descanso que se alquilan por temporadas cortas, sobre todo fines de semana y puentes festivos. Cuánto rinda un inmueble concreto depende de su ubicación, su estado y las condiciones del mercado en cada momento: no publicamos cifras de ocupación ni de rentabilidad porque no las hemos medido.' },
+  { icon: TrendingUp, title: 'Demanda de alquiler vacacional', text: 'En la región hay propiedades de descanso que se alquilan por temporadas cortas, sobre todo fines de semana y puentes festivos. Cuánto rinda un inmueble concreto depende de su ubicación, su estado y las condiciones del mercado en cada momento: no publicamos cifras de ocupación ni de rentabilidad porque no las hemos medido. Su Finca Raíz se especializa en la intermediación inmobiliaria para operaciones de compraventa de inmuebles. No administra propiedades ni ofrece servicios de arrendamiento o alquiler vacacional.' },
   ]
 }
 
