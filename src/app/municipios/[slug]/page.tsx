@@ -374,8 +374,12 @@ export default async function MunicipioPage(
               <section>
                 <SectionHeader title={`Propiedades disponibles en ${data.name}`} icon={<Building2 size={20} />} />
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: '1.25rem', marginTop: '1.25rem' }}>
-                  {properties.map((p, i) => (
-                    <PropCard key={p.id} property={p} priority={i < 3} labels={tipoLabels} />
+                  {/* Sin priority: esta grilla va MUY por debajo del pliegue (tras
+                      hero, RespuestaDirecta, DatosVerificables y contenido). Precargar
+                      sus imágenes competía con el hero —el LCP real— por ancho de
+                      banda. Lazy por defecto: se bajan cuando se acercan al viewport. */}
+                  {properties.map((p) => (
+                    <PropCard key={p.id} property={p} priority={false} labels={tipoLabels} />
                   ))}
                 </div>
                 {properties.length >= 6 && (

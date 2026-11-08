@@ -1,10 +1,22 @@
 'use client';
 
 import Link from 'next/link';
+import Image, { type ImageLoaderProps } from 'next/image';
 import { useEffect, useRef } from 'react';
 import { SearchBar } from '@/components/search/SearchBar';
 
 const HERO_IMAGE = '/images/la-vega/la-vega-cundinamarca-home.jpg';
+
+// El loader GLOBAL (Cloudinary) devuelve las imágenes locales intactas, así que
+// no redimensiona este hero: sin esto, el móvil se bajaba el 1920 (146 KB).
+// Generamos variantes por ancho en /public y este loader propio deja que
+// next/image elija la adecuada por dispositivo y DPR (móvil: 19–62 KB). El
+// `priority` sigue precargando la variante correcta vía el srcset resultante.
+const HERO_VARIANTS = [640, 750, 828, 1080, 1200];
+function heroLoader({ width }: ImageLoaderProps): string {
+  const w = HERO_VARIANTS.find((x) => x >= width);
+  return w ? `/images/la-vega/la-vega-cundinamarca-home-${w}.jpg` : HERO_IMAGE;
+}
 
 export function Hero() {
   const bgRef = useRef<HTMLDivElement>(null);
@@ -27,19 +39,29 @@ export function Hero() {
       className="relative min-h-[100svh] flex flex-col items-center justify-center overflow-hidden"
       aria-label="Sección principal"
     >
-      {/* Fondo: imagen con parallax pasivo */}
+      {/* Fondo: imagen con parallax pasivo.
+          Antes era un background-image CSS: el navegador no lo descubre hasta
+          parsear el CSS y maquetar el div, así que la imagen más grande de la
+          portada (el LCP) se bajaba tarde. Ahora es next/image con `priority`,
+          que inyecta <link rel="preload"> en el <head> y la descubre de una.
+          El parallax sigue vivo: el transform va en el div contenedor. */}
       <div className="absolute inset-0 z-0 overflow-hidden">
         <div
           ref={bgRef}
           className="absolute w-full h-[133%] -top-[16%]"
-          style={{
-            backgroundImage: `url("${HERO_IMAGE}")`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-            willChange: 'transform',
-          }}
+          style={{ willChange: 'transform' }}
           aria-hidden="true"
-        />
+        >
+          <Image
+            src={HERO_IMAGE}
+            loader={heroLoader}
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            style={{ objectFit: 'cover', objectPosition: 'center' }}
+          />
+        </div>
         {/* Overlay estático — CSS fade-in, sin GSAP */}
         <div
           className="absolute inset-0 hero-overlay-anim"
