@@ -123,6 +123,7 @@ export function Header() {
               <button
                 aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
                 aria-expanded={open}
+                aria-controls="menu-movil"
                 onClick={() => setOpen(!open)}
                 className="lg:hidden p-2 rounded-md transition-colors hover:bg-white/10"
                 style={{ color: '#FFFFFF' }}
@@ -143,6 +144,7 @@ export function Header() {
 
       {/* Drawer móvil — slide-down con animación 0.3s */}
       <div
+        id="menu-movil"
         className="lg:hidden fixed inset-x-0 z-40 overflow-hidden"
         style={{
           top: 72,
@@ -151,7 +153,13 @@ export function Header() {
           transition: 'max-height 0.3s ease',
           overflowY: 'auto',
         }}
-        aria-hidden={!open}
+        // Cerrado: `inert` lo saca del orden de tabulación Y del árbol de
+        // accesibilidad. Reemplaza a aria-hidden={!open}, que ocultaba del
+        // árbol pero dejaba enfocables los <Link>/botones de dentro —la
+        // infracción que marcaba PageSpeed (aria-hidden con descendientes
+        // enfocables) y una trampa de teclado invisible. Abierto: sin inert,
+        // plenamente interactivo.
+        inert={!open}
       >
         <div
           style={{

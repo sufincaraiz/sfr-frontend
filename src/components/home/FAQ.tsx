@@ -46,9 +46,9 @@ export function FAQ({ faqs }: { faqs: FaqItem[] }) {
           </h2>
         </div>
 
-        <div className="sfr-faq-list" role="list">
+        <div className="sfr-faq-list">
           {FAQS.map((faq, i) => (
-            <details key={i} data-faq-item className="sfr-faq-item" role="listitem">
+            <details key={i} data-faq-item className="sfr-faq-item">
               <summary className="sfr-faq-summary">
                 <span className="sfr-faq-question-text">{faq.question}</span>
                 <span className="sfr-faq-icon" aria-hidden="true" />
