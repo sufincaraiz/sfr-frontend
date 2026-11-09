@@ -101,6 +101,14 @@ const ALCANCE = {
   browserslist: { alcance: 'SOLO_DESARROLLO', por: 'herramienta de compilacion' },
   'baseline-browser-mapping': { alcance: 'SOLO_DESARROLLO', por: 'dato de browserslist' },
   'brace-expansion': { alcance: 'SOLO_DESARROLLO', por: 'glob de herramientas' },
+  /* Publicadas a principios de noviembre de 2026, todas moderadas. Son el
+   * linter: `eslint-config-next` las trae y ningun byte suyo viaja al bundle. */
+  '@typescript-eslint/eslint-plugin': { alcance: 'SOLO_DESARROLLO', por: 'linter (eslint-config-next)' },
+  '@typescript-eslint/parser': { alcance: 'SOLO_DESARROLLO', por: 'linter (eslint-config-next)' },
+  '@typescript-eslint/type-utils': { alcance: 'SOLO_DESARROLLO', por: 'linter (eslint-config-next)' },
+  '@typescript-eslint/typescript-estree': { alcance: 'SOLO_DESARROLLO', por: 'linter (eslint-config-next)' },
+  '@typescript-eslint/utils': { alcance: 'SOLO_DESARROLLO', por: 'linter (eslint-config-next)' },
+  minimatch: { alcance: 'SOLO_DESARROLLO', por: 'glob del linter y de herramientas de compilacion' },
 }
 
 /* ── preguntar, con bandera explícita ─────────────────────────────────────── */
@@ -166,13 +174,22 @@ console.log(`     ${soloDesarrollo.sort().join(', ')}`)
 
 /* ── las comprobaciones ───────────────────────────────────────────────────── */
 
+/* ⚠ QUÉ ROMPE Y QUÉ AVISA (2026-11-09). Un aviso publicado contra el linter
+ * tumbó el despliegue de un cambio de caché: el árbol de lo que se sirve no
+ * había cambiado, cambió la base de datos de npm. Rompe lo que afecta a lo que
+ * se sirve —una vulnerabilidad nueva EN PRODUCCIÓN sin clasificar, o una
+ * clasificación que el audit desmiente—. Avisa lo que es limpieza: una nueva
+ * que el audit comprueba fuera de producción, o una fila que ya no aparece. */
 const problemas = []
+const avisos = []
 
 for (const v of todo.paquetes) {
-  if (!ALCANCE[v.name]) problemas.push(`${v.name} (${v.severity}) es NUEVA y no esta clasificada`)
+  if (ALCANCE[v.name]) continue
+  if (prod.nombres.has(v.name)) problemas.push(`${v.name} (${v.severity}) es NUEVA, esta en el arbol de PRODUCCION y no esta clasificada`)
+  else avisos.push(`${v.name} (${v.severity}) es nueva, fuera del arbol de produccion: clasificala como SOLO_DESARROLLO`)
 }
 for (const [n, d] of Object.entries(ALCANCE)) {
-  if (!todo.nombres.has(n)) { problemas.push(`${n} esta clasificado y ya no aparece en el audit: quita su fila`); continue }
+  if (!todo.nombres.has(n)) { avisos.push(`${n} esta clasificado y ya no aparece en el audit: quita su fila`); continue }
   /* LA CATEGORIA SE COMPRUEBA, no se cree. Un paquete declarado como solo de
    * desarrollo que SI esta en el arbol de produccion es una clasificacion
    * equivocada, y es exactamente el error que costo el despliegue rojo. */
@@ -185,6 +202,10 @@ for (const [n, d] of Object.entries(ALCANCE)) {
   }
 }
 
+if (avisos.length) {
+  console.log('')
+  for (const a of avisos) console.log(`  ⚠ ${a}.`)
+}
 if (problemas.length) {
   console.log('')
   for (const p of problemas) console.log(`  ✗ ${p}.`)

@@ -77,7 +77,9 @@ const GUARDAS = {
     { nombre: 'enlace del contador', guion: 'verificar-enlace-contador.mjs',
       vigila: 'que lo escrito —esquema, politica PUBLICA, retencion— y lo construido coincidan' },
     { nombre: 'arneses frescos', guion: 'verificar-arneses-frescos.mjs',
-      vigila: 'cuando corrio en verde por ultima vez lo que NO puede correr aqui' },
+      /* Avisa y no rompe desde el 2026-11-09: lo que mide es si una persona
+       * corrio a mano un arnes de produccion, no el codigo que se despliega. */
+      vigila: 'cuando corrio en verde por ultima vez lo que NO puede correr aqui (avisa)' },
     { nombre: 'volcados de tablas', guion: 'verificar-volcados.mjs',
       vigila: 'que ningun archivo versionado sea un volcado de filas con datos de terceros' },
     { nombre: 'migraciones SQL', guion: 'verificar-migraciones-sql.mjs',
