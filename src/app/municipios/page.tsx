@@ -8,7 +8,7 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 
 // Consulta la BD (municipios). ISR: si un build ocurre con la BD caída, se rellena
 // bajo demanda en vez de quedar congelada con lista vacía.
-export const revalidate = 3600
+export const revalidate = 86400
 
 // ─── Metadata ─────────────────────────────────────────────────────────────────
 

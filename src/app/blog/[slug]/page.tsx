@@ -15,7 +15,7 @@ import { TerritorioDelArticulo } from '@/components/malla/TerritorioDelArticulo'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 export async function generateStaticParams() {
   try {

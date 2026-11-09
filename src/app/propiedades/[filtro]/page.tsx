@@ -24,7 +24,7 @@ import { exigirIntegridadTipos } from '@/lib/tipos-integridad'
 // fabrica páginas infinitas sin contenido, y eso resta autoridad al dominio.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 interface Params { filtro: string }
 

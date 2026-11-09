@@ -36,7 +36,7 @@ import { contarPropiedadesDisponibles } from '@/lib/cifras-derivadas'
 // ninguna se inventó.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 const ACTUALIZADO = '2026-08-13'
 

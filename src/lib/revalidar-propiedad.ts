@@ -61,4 +61,36 @@ export function revalidarPropiedad(slug?: string | null): void {
   // nada, que es el defecto que esas rutas existen para no tener.
   revalidatePath('/api/municipios')
   revalidatePath('/api/property-types')
+
+  // ── Lo que faltaba al subir el reloj a 24 h (2026-11-09) ──────────────────
+  // Con `revalidate = 3600` estos huecos se cerraban solos en una hora; con
+  // 86400 durarían un día. Trazado por imports en INFORME-CPU-VERCEL.md,
+  // apéndice §1, «Una PROPIEDAD cambia».
+  //
+  // Municipio y vereda cuentan y listan las propiedades que tienen. Con la
+  // forma de patrón alcanza a todas las instancias: la propiedad puede haber
+  // cambiado DE municipio o de vereda, y entonces caducan las dos.
+  revalidatePath('/municipios/[slug]', 'page')
+  revalidatePath('/veredas/[slug]', 'page')
+  // Las cuatro citan el total del catálogo (`contarPropiedadesDisponibles`,
+  // `inventario()`), y `/registro-visita` lista las propiedades en su selector.
+  revalidatePath('/mac')
+  revalidatePath('/preguntas-frecuentes')
+  revalidatePath('/registro-visita')
+  for (const ruta of RUTAS_DE_RASTREADOR) revalidatePath(ruta)
 }
+
+/**
+ * Los route handlers que publican inventario y los leen solo rastreadores y
+ * modelos. Una ficha nueva que no aparece en el sitemap en un día es una ficha
+ * que el buscador tarda un día más en descubrir.
+ */
+export const RUTAS_DE_RASTREADOR = [
+  '/llms.txt',
+  '/sitemap-propiedades.xml',
+  '/sitemap-imagenes.xml',
+  '/sitemap-paginas.xml',
+  // Las veredas promocionadas por inventario (`veredasPublicables`) nacen y
+  // mueren con las propiedades asignadas.
+  '/sitemap-municipios.xml',
+] as const

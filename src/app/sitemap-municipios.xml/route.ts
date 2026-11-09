@@ -11,7 +11,7 @@ import { urlset, respuestaXml, masReciente, type EntradaSitemap } from '@/lib/si
 // alguien termina de escribir el contenido de un municipio, su página entra sola
 // aquí sin que nadie toque una lista.
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 export async function GET() {
   let municipios: { slug: string; updated_at: Date }[] = []

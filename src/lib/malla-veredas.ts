@@ -76,7 +76,11 @@ const leerVeredas = unstable_cache(
     }))
   },
   ['malla-veredas'],
-  { revalidate: 3600, tags: ['enlaces', 'veredas'] },
+  // 24 h, igual que las páginas que la leen: un `revalidate` menor aquí
+  // ARRASTRA a toda página que la consulta (Next toma el mínimo), y la dejaba
+  // en 1 h aunque declarara 86400. La frescura la dan los tags, que invalidan
+  // `revalidarPropiedad()` y `revalidarTodoElSitio()`.
+  { revalidate: 86400, tags: ['enlaces', 'veredas'] },
 )
 
 /**

@@ -22,7 +22,7 @@ import {
 // §1.3 y `noindex`, y entra al índice solo cuando entra su primera propiedad.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 interface Params { filtro: string; municipio: string }
 

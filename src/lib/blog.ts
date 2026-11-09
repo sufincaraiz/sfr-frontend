@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import matter from 'gray-matter'
 import readingTime from 'reading-time'
+import { cache } from 'react'
 import { prisma } from '@/lib/prisma'
 import { hoyEnColombia, diaEnColombia } from '@/lib/dia-colombia'
 import {
@@ -125,7 +126,10 @@ export async function getAllPosts(): Promise<PostMeta[]> {
 }
 
 /** Un post con su contenido (MDX o texto plano de comunidad). */
-export async function getPost(slug: string): Promise<Post | null> {
+// Envuelta en `cache()` de React: `generateMetadata` y la página la llaman con el
+// mismo slug en el mismo render, y sin esto la consulta corría dos veces. En un
+// slug inexistente (los bots que prueban URLs) queda en UNA consulta y `notFound()`.
+export const getPost = cache(async (slug: string): Promise<Post | null> => {
   // Lee el MDX si existe; si el archivo no está o no se puede leer, cae a la BD.
   // Nunca crea directorios (evita ENOENT en runtime serverless).
   try {
@@ -150,7 +154,7 @@ export async function getPost(slug: string): Promise<Post | null> {
     return { ...dbArticleToMeta(article), content: article.content }
   }
   return null
-}
+})
 
 /** Slugs de todos los posts (para generateStaticParams). */
 export async function getAllPostSlugs(): Promise<{ slug: string }[]> {

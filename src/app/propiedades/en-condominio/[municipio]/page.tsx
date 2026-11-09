@@ -26,7 +26,7 @@ import {
 // con el build en verde.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 interface Params { municipio: string }
 

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
+import { cache } from 'react';
 import { SITE_URL } from '@/lib/site';
 import { ogImageUrl, ogImageMeta } from '@/lib/og-image';
 import Image from 'next/image';
@@ -21,12 +22,17 @@ import { RelatedProperties } from '@/components/propiedades/RelatedProperties';
 import type { Property, PropertyMedia, PropertyFeature } from '@/types';
 
 // ISR: además de la revalidación on-demand al editar en el admin, la ficha se
-// regenera al menos cada hora como red de seguridad.
-export const revalidate = 3600;
+// regenera al menos cada 24 h como red de seguridad. Bajó de 3600 el
+// 2026-11-09: con la revalidación bajo demanda completa, el reloj de una hora
+// solo regeneraba fichas que nadie había cambiado (INFORME-CPU-VERCEL.md).
+export const revalidate = 86400;
 
 // ─── helpers ────────────────────────────────────────────────────────────────
 
-async function getProperty(slug: string) {
+// Envuelta en `cache()` de React: `generateMetadata` y la página la llaman con el
+// mismo slug en el mismo render, y sin esto la consulta corría dos veces. En un
+// slug inexistente (los bots que prueban URLs) queda en UNA consulta y `notFound()`.
+const getProperty = cache(async (slug: string) => {
   const raw = await prisma.property.findUnique({
     where: { slug },
     include: {
@@ -74,7 +80,7 @@ async function getProperty(slug: string) {
     features:         raw.features as PropertyFeature[],
   };
   return p;
-}
+});
 
 // Convierte una URL de YouTube (watch, youtu.be, shorts, embed) a su URL de embed
 function youtubeEmbedUrl(url: string | null | undefined): string | null {

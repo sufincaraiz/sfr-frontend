@@ -27,7 +27,15 @@
  * última vez que alguien lo corrió Y guardó el resultado». Si el registro es de
  * hace tres semanas, su verde no es un hecho sobre hoy, y eso se ve.
  *
- *   node scripts/verificar-arneses-frescos.mjs
+ * ⚠ EN EL BUILD AVISA, NO ROMPE (2026-11-09). Rompió durante diez días todos
+ * los despliegues —incluido uno de caché que no tocaba nada notarial— por algo
+ * que el código desplegado no puede arreglar: que una persona corra a mano un
+ * arnés que escribe en producción. Bloquear el despliegue no hace que nadie lo
+ * corra; solo detiene lo que no tiene que ver. Así que en el build sale con
+ * 0 y con el aviso a la vista, en la sección de avisos de verificar.mjs. Con
+ * `--estricto` vuelve a romper, para quien quiera comprobarlo a mano.
+ *
+ *   node scripts/verificar-arneses-frescos.mjs [--estricto]
  */
 import { readFileSync } from 'node:fs'
 
@@ -81,8 +89,10 @@ if (problemas.length) {
   console.log('\n  Córrelo y actualiza el registro:')
   console.log('    node --env-file=.env.produccion scripts/probar-panel-notarial.mjs')
   console.log('  Su verde es de la última vez que alguien se acordó, y eso no es un hecho')
-  console.log('  sobre hoy.\n')
-  process.exit(1)
+  console.log('  sobre hoy.')
+  const estricto = process.argv.includes('--estricto')
+  console.log(estricto ? '' : '  (aviso: no detiene el despliegue; ver la cabecera de este guion)\n')
+  process.exit(estricto ? 1 : 0)
 }
 
 console.log(`\n  ✓ ninguno lleva más de ${DIAS_MAXIMO} días sin correr en verde.\n`)

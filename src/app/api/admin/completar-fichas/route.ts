@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
+import { revalidarPropiedad } from '@/lib/revalidar-propiedad'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 
@@ -61,6 +62,7 @@ export async function PUT(req: NextRequest) {
     guardadas++
   }
 
-  revalidatePath('/propiedades')
+  // Acceso y servicios salen también en los listados y en `llms.txt`.
+  if (guardadas > 0) revalidarPropiedad()
   return NextResponse.json({ ok: true, guardadas })
 }

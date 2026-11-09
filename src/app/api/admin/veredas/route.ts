@@ -12,7 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { revalidatePath, revalidateTag } from 'next/cache'
+import { revalidarAsignacionVeredas } from '@/lib/revalidar-sitio'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
@@ -100,7 +100,7 @@ export async function PATCH(req: NextRequest) {
   const [props, veredas] = await Promise.all([
     prisma.property.findMany({
       where: { id: { in: asignaciones.map(a => a.property_id) } },
-      select: { id: true, title: true, municipality_id: true },
+      select: { id: true, slug: true, title: true, municipality_id: true },
     }),
     prisma.vereda.findMany({ select: { id: true, slug: true, name: true, municipality_id: true } }),
   ])
@@ -130,15 +130,10 @@ export async function PATCH(req: NextRequest) {
     })),
   )
 
-  revalidatePath('/propiedades')
-  revalidatePath('/veredas')
-  // El índice de enlaces y la malla dependen del inventario por vereda.
-  revalidateTag('enlaces')
-  revalidateTag('veredas')
-  for (const a of cambios) {
-    const v = a.vereda_id ? porVereda.get(a.vereda_id) : null
-    if (v) revalidatePath(`/veredas/${v.slug}`)
-  }
+  // Cambiar `vereda_id` caduca lo mismo que editar la propiedad: su ficha, la
+  // vereda de antes Y la de ahora, su municipio, los filtros, los sitemaps,
+  // el índice de enlaces y la malla (tags `enlaces` y `veredas`).
+  revalidarAsignacionVeredas(cambios.map(a => porProp.get(a.property_id)?.slug))
 
   // ── Promoción automática ──────────────────────────────────────────────────
   //

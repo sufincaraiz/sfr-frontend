@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { revalidatePath } from 'next/cache'
+import { revalidarArticulo } from '@/lib/revalidar-sitio'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { requireRole } from '@/lib/auth'
@@ -71,8 +71,7 @@ export async function POST(req: NextRequest) {
       published_at:     new Date(), // publicación directa
     },
   })
-  revalidatePath('/blog')
-  revalidatePath(`/blog/${slug}`)
+  revalidarArticulo(slug)
   void notificarIndexNow(urlsDeArticulo(slug), `artículo publicado ${slug}`)
   return NextResponse.json({ ok: true, slug }, { status: 201 })
 }
@@ -102,8 +101,7 @@ export async function PUT(req: NextRequest) {
   if (d.author_email !== undefined && d.author_email) data.author_email = d.author_email
 
   await prisma.article.update({ where: { id }, data })
-  revalidatePath('/blog')
-  revalidatePath(`/blog/${target.slug}`)
+  revalidarArticulo(target.slug)
   void notificarIndexNow(urlsDeArticulo(target.slug), `artículo actualizado ${target.slug}`)
   return NextResponse.json({ ok: true })
 }
@@ -121,7 +119,6 @@ export async function DELETE(req: NextRequest) {
   if (!target) return NextResponse.json({ error: 'Artículo no encontrado' }, { status: 404 })
 
   await prisma.article.delete({ where: { id } })
-  revalidatePath('/blog')
-  revalidatePath(`/blog/${target.slug}`)
+  revalidarArticulo(target.slug)
   return NextResponse.json({ ok: true })
 }

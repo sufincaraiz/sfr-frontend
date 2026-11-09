@@ -7,7 +7,7 @@ import { urlset, respuestaXml, type EntradaSitemap } from '@/lib/sitemap-xml'
 // raíz pesa mucho —la gente busca «finca con vista La Vega» y entra por la foto—
 // y las fotos de Cloudinary no se descubren solas desde el HTML.
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 export async function GET() {
   let filas: {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
+import { revalidarTodoElSitio } from '@/lib/revalidar-sitio'
 import { Prisma } from '@prisma/client'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
@@ -38,14 +39,13 @@ const BaseSchema = z.object({
 const UpdateSchema = BaseSchema.partial().extend({ id: z.string().min(1) })
 
 function revalidar(slug?: string | null) {
-  revalidatePath('/')            // footer
-  revalidatePath('/municipios')
   if (slug) revalidatePath(`/municipios/${slug}`)
-  // La lista del buscador, cacheada desde el 2026-10-27. Ordena por
-  // `demand_score` y muestra el `name`: editar cualquiera de los dos la cambia
-  // aunque el inventario no se mueva. Lo que más la cambia es el inventario, y
-  // eso lo cubre `revalidarPropiedad()`.
-  revalidatePath('/api/municipios')
+  // Con el reloj en 24 h, la portada, el índice y la página propia ya no
+  // bastan: el municipio sale también en los filtros, la malla de veredas, la
+  // ficha, las FAQ, `/nosotros`, la guía, `llms.txt`, dos sitemaps y la lista
+  // del buscador (`/api/municipios`, que ordena por `demand_score`). Ver por
+  // qué se invalida todo en `revalidarTodoElSitio()`.
+  revalidarTodoElSitio()
 }
 
 export async function GET() {

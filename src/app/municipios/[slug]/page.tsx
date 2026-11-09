@@ -23,7 +23,7 @@ import type { Property, PropertyMedia } from '@/types'
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
 // ISR: red de seguridad además de la revalidación on-demand al editar en el admin.
-export const revalidate = 3600
+export const revalidate = 86400
 
 export async function generateStaticParams() {
   try {

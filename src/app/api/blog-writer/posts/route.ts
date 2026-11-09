@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { revalidatePath } from 'next/cache'
+import { revalidarArticulo } from '@/lib/revalidar-sitio'
 import { z } from 'zod'
 import { prisma } from '@/lib/prisma'
 import { getBlogWriterSession } from '@/lib/auth'
@@ -58,8 +58,7 @@ export async function POST(req: NextRequest) {
     })
 
     // El post aparece de inmediato en el blog
-    revalidatePath('/blog')
-    revalidatePath(`/blog/${slug}`)
+    revalidarArticulo(slug)
 
     return NextResponse.json({ ok: true, slug })
   } catch (err) {
