@@ -9,7 +9,7 @@ import { JsonLd, breadcrumbSchema } from '@/components/seo/JsonLd'
 
 // ─── SSG ─────────────────────────────────────────────────────────────────────
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 export async function generateStaticParams() {
   try {

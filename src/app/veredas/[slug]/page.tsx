@@ -26,7 +26,7 @@ import type { Property, PropertyMedia } from '@/types'
 
 // La página consulta la BD (propiedades del municipio). ISR: si un build ocurre con
 // la BD caída, se rellena bajo demanda en vez de quedar congelada sin propiedades.
-export const revalidate = 3600
+export const revalidate = 86400
 
 export async function generateStaticParams() {
   // Guarda automática: rompe el build si veredas-data.ts y la tabla `veredas`

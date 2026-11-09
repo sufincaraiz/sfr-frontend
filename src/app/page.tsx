@@ -77,7 +77,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 // Consulta la BD (propiedades destacadas). ISR: si un build ocurre con la BD caída,
 // la home se rellena bajo demanda en vez de quedar congelada sin destacadas.
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 // ─── Fetch propiedades destacadas ─────────────────────────────────────────────
 const FEATURED_COUNT = 14;  // 2 filas de 7 para los carruseles de la home

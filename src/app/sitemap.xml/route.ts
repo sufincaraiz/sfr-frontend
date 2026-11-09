@@ -12,7 +12,7 @@ import { sitemapindex, respuestaXml } from '@/lib/sitemap-xml'
 // el segmento, y ponerla aquí obligaría a consultar las cinco fuentes en cada
 // petición del índice para no inventarla.
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 const SEGMENTOS = [
   'sitemap-paginas.xml',

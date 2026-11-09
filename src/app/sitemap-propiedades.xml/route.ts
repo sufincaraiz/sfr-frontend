@@ -9,7 +9,7 @@ import { urlset, respuestaXml, type EntradaSitemap } from '@/lib/sitemap-xml'
 //
 // `lastmod` sale de `updated_at` de la base. Nunca de new Date().
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 export async function GET() {
   let filas: { slug: string; updated_at: Date }[] = []

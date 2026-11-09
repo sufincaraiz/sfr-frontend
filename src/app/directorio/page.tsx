@@ -12,8 +12,9 @@ import { respuestaDirectorio } from '@/lib/respuestas-directas';
 // Era force-dynamic sin necesitarlo: la pagina es indexable, esta en el
 // sitemap y su contenido —nueve negocios locales— no cambia por minuto. Con
 // force-dynamic, Vercel respondia private/no-store y cada rastreo bajaba a
-// Railway. Una hora de revalidacion cubre de sobra la frescura.
-export const revalidate = 3600;
+// Railway. La frescura la da el revalidatePath de /api/admin/directorio; el
+// reloj de 24 h es solo la red de seguridad.
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   title: 'Directorio de Negocios Recomendados en La Vega',

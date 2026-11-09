@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { prisma } from '@/lib/prisma'
 import { PUBLICABLE } from '@/lib/publicable'
 
@@ -74,7 +75,10 @@ function mapMunicipio(m: any): Municipio {
 
 /** Un municipio con página publicada, por slug. null si no existe, no tiene
  *  contenido completo, está oculto o la BD no responde. */
-export async function getMunicipio(slug: string): Promise<Municipio | null> {
+// Envuelta en `cache()` de React: `generateMetadata` y la página la llaman con el
+// mismo slug en el mismo render, y sin esto la consulta corría dos veces. En un
+// slug inexistente (los bots que prueban URLs) queda en UNA consulta y `notFound()`.
+export const getMunicipio = cache(async (slug: string): Promise<Municipio | null> => {
   // También lo consumen las páginas de veredas (params estáticos que SÍ se prerenderizan)
   // para mostrar el municipio padre. Si la BD no responde en build, devolvemos null en
   // vez de tumbar el prerender.
@@ -85,7 +89,7 @@ export async function getMunicipio(slug: string): Promise<Municipio | null> {
     console.warn(`[getMunicipio ${slug}] BD no disponible; devolviendo null:`, err instanceof Error ? err.message : err)
     return null
   }
-}
+})
 
 /** Municipios con PÁGINA PUBLICADA, ordenados por demanda y nombre.
  *  Deriva de contenido completo + no oculto; nunca de una lista escrita a mano. */

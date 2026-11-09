@@ -16,7 +16,7 @@ import {
 // Las que SÍ tienen señal real la usan: /propiedades cambia cuando cambia una
 // propiedad, así que su fecha es la de la propiedad modificada más recientemente.
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 export async function GET() {
   let ultimaPropiedad: Date | null = null

@@ -31,9 +31,9 @@ export const metadata: Metadata = {
   },
 }
 
-// ─── Page (SSG, revalidate por ISR cada hora en producción) ──────────────────
+// ─── Page (SSG; ISR cada 24 h como red, la frescura la da revalidarArticulo) ──
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 export default async function BlogIndexPage() {
   const { posts, totalPages } = await getPaginatedPosts(1)

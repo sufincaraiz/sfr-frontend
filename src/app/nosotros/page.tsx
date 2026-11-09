@@ -34,7 +34,7 @@ import { hoyEnColombia } from '@/lib/dia-colombia';
 // ni ajena—, sin promesas de resultado, sin cifras sin procedencia.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export const metadata: Metadata = {
   // Decía «Liderando la evolución inmobiliaria en La Vega». El title es lo que

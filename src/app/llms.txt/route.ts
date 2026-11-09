@@ -24,7 +24,7 @@ import { cargarCifras, textoReputacion } from '@/lib/cifras-publicas'
 // explícitamente es más eficaz que confiar en que lo deduzca.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 export async function GET() {
   // ── Datos vivos ────────────────────────────────────────────────────────────
@@ -264,7 +264,7 @@ export async function GET() {
   return new Response(lineas.join('\n'), {
     headers: {
       'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400',
+      'Cache-Control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=86400',
     },
   })
 }

@@ -9,7 +9,7 @@ import { urlset, respuestaXml, masReciente, type EntradaSitemap } from '@/lib/si
 // `lastmod` = `updated` del frontmatter si existe, si no la fecha de publicación.
 // Ambas son fechas reales; nunca new Date().
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 export async function GET() {
   let posts: { slug: string; date: string; updated?: string }[] = []

@@ -449,3 +449,49 @@ dependencias** (los siete huecos de `revalidarPropiedad()` van después).
 | **caen poco o nada** | es **(A)**: un barredor. Entonces sí se piden las capturas de Firewall |
 
 Un día de datos basta para ver la dirección; dos, para confirmarla.
+
+---
+
+# DESPLIEGUE 2 · el reloj a 24 h, con la frescura bajo demanda (9 de noviembre)
+
+## Qué cambia
+
+- **`revalidate` 3600 → 86400** en las 24 rutas públicas ISR (portada,
+  `/nosotros`, `/mac`, FAQ, directorio, municipios, veredas, blog, ficha,
+  filtros, en-condominio, sitemaps y `llms.txt`). También en las dos
+  `unstable_cache` (`leerVeredas`, `leerIndice`): con 3600 arrastraban a 1 h
+  a toda página que las lee —Next toma el mínimo—, y `/nosotros`, la ficha,
+  las veredas y el blog seguían en 1 h aunque declararan 86400.
+- **`s-maxage` 3600 → 86400** en los sitemaps y `llms.txt`.
+- **Quedan en 1 h, a propósito:** `/registro-visita` (formulario) y las dos
+  APIs del buscador, por la razón escrita en `api/municipios/route.ts`.
+- **`dynamicParams` sigue en `true` en todas.** Decisión del titular: una
+  propiedad, vereda o municipio nuevo tiene que existir al publicarlo, sin
+  desplegar. Un slug inexistente cuesta un render y su 404 queda cacheado.
+- **La frescura deja de depender del reloj.** `revalidarPropiedad()` cubre ya
+  municipio, vereda, `/mac`, FAQ, `/registro-visita`, `llms.txt` y los cuatro
+  sitemaps de inventario; `revalidar-sitio.ts` añade `revalidarArticulo()`
+  (las cinco vistas del blog y su sitemap), `revalidarTodoElSitio()` (editar
+  un municipio) y `revalidarAsignacionVeredas()`. `completar-fichas` llama
+  ahora a `revalidarPropiedad()`.
+- **`POST /api/admin/revalidar`** (sesión de admin o `Bearer $CRON_SECRET`):
+  el camino de editar la base por fuera del panel.
+- **`getProperty`, `getMunicipio`, `getPost` en `cache()` de React:**
+  `generateMetadata` y la página compartían slug y consultaban dos veces.
+
+## La línea base
+
+| | |
+|---|---|
+| Fluid Active CPU del periodo | **3h36m / 4h** (dato del titular, 9 nov) |
+| parte del runtime nodejs | **58 %** |
+
+## Cómo se lee el resultado
+
+En Usage, filtrado por el proyecto, y en Observability → Functions, a los dos
+y tres días de desplegar sin otro despliegue en medio:
+
+| si el CPU diario y las invocaciones de páginas… | entonces |
+|---|---|
+| **caen a una fracción** (las regeneraciones pasan de ~24/día por ruta a ~1) | era el reloj. Cerrado. |
+| **caen poco** | el gasto no son regeneraciones: pedir el desglose por ruta y mirar 404 de slugs basura y `/propiedades` (ƒ) |

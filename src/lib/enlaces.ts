@@ -83,10 +83,11 @@ export interface Enlaces {
  * Salía «verde» solo porque Next reintenta hasta tres veces.
  *
  * `unstable_cache` comparte el resultado entre renders y entre peticiones: una
- * ronda por hora, no una por página.
+ * ronda por día, no una por página. La frescura la da el tag `enlaces`, que
+ * invalidan `revalidarPropiedad()`, `revalidarTodoElSitio()` y los tipos.
  *
  * El `catch` va FUERA a propósito. Si estuviera dentro, una caída de Railway
- * cachearía «nada tiene página» durante una hora y el sitio se quedaría sin
+ * cachearía «nada tiene página» durante un día y el sitio se quedaría sin
  * enlaces internos mucho después de que la base volviera.
  */
 const leerIndice = unstable_cache(
@@ -103,7 +104,9 @@ const leerIndice = unstable_cache(
     }
   },
   ['indice-enlaces-internos'],
-  { revalidate: 3600, tags: ['enlaces'] },
+  // 24 h: un valor menor ARRASTRA a toda página que lea el índice (Next toma
+  // el mínimo) y las dejaba en 1 h aunque declararan 86400.
+  { revalidate: 86400, tags: ['enlaces'] },
 )
 
 export const cargarEnlaces = cache(async (): Promise<Enlaces> => {

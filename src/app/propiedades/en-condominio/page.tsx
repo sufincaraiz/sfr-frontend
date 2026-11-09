@@ -20,7 +20,7 @@ import { getTipoPlurales } from '@/lib/property-types.server'
 // hecha ahora donde el cliente la lee.
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 const RUTA = '/propiedades/en-condominio'
 

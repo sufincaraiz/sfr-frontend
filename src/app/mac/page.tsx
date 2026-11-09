@@ -39,7 +39,7 @@ import { horarioEnProsa, contrasteConMac } from '@/lib/horario'
 // con enlace a la política de Habeas Data (Ley 1581 de 2012).
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const revalidate = 3600
+export const revalidate = 86400
 
 const ACTUALIZADO = '2026-08-13'
 

@@ -82,12 +82,13 @@ ${cuerpo}
 </sitemapindex>`
 }
 
-/** Respuesta XML con la cabecera y el cacheado correctos. */
+/** Respuesta XML con la cabecera y el cacheado correctos. `s-maxage` igual al
+ *  `revalidate` de las rutas (24 h): uno menor hacía volver al CDN cada hora. */
 export function respuestaXml(xml: string): Response {
   return new Response(xml, {
     headers: {
       'Content-Type': 'application/xml; charset=utf-8',
-      'Cache-Control': 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400',
+      'Cache-Control': 'public, max-age=0, s-maxage=86400, stale-while-revalidate=86400',
     },
   })
 }
