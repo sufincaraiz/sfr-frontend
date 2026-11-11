@@ -21,6 +21,22 @@ import {
 } from '../src/lib/destino-base.ts'
 import { randomBytes, createHash } from 'node:crypto'
 
+/* ── EL ARNÉS PRUEBA LA LÓGICA, NO EL ENTORNO ──────────────────────────────
+ * `autorizacionDeEscritura` y `clasificarDestino` leen estas variables por
+ * DEFECTO cuando el argumento llega `undefined`. Pasar `undefined` NO es «sin
+ * llaves»: dispara el default de parámetro, que hereda el entorno. En
+ * Producción (Vercel) el TESTIGO del despliegue (`SFR_DESTINO_DE_DESPLIEGUE`)
+ * existe en el entorno del build, así que los dos casos que afirman «sin
+ * ninguna de las dos llaves, NO puede escribir» lo heredaban y se volteaban:
+ * verde en local y en Preview, rojo SOLO en Producción —la superficie que
+ * decide—. Una prueba que afirma «sin llaves» tiene que fabricar ella misma el
+ * estado sin llaves. Se borran aquí, una vez, para que cada caso parta de un
+ * estado conocido; los que SÍ necesitan una llave la pasan explícita. No
+ * debilita la guarda: siguen corriendo todas las comprobaciones. */
+delete process.env.SFR_DESTINO_DE_DESPLIEGUE
+delete process.env.ESCRIBIR_EN_PRODUCCION
+delete process.env.BASES_AISLADAS
+
 let ok = 0, fail = 0
 const check = (nombre, cond, extra = '') => {
   if (cond) { ok++; console.log(`  ✓ ${nombre}`) }
