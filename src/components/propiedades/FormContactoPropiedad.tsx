@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { MessageCircle, Send } from 'lucide-react';
 import { SITE_URL } from '@/lib/site';
+import { CompartirPropiedad } from './CompartirPropiedad';
 
 interface Props {
   propertyTitle: string;
@@ -104,6 +105,10 @@ export function FormContactoPropiedad({ propertyTitle, propertySlug, price, what
       </div>
 
       <div style={{ background: '#fff', borderRadius: '0 0 12px 12px', border: '1.5px solid #E2E8F0', borderTop: 'none', padding: '1.4rem' }}>
+        {/* Compartir la ficha con terceros — distinto del botón verde de abajo,
+            que escribe a la inmobiliaria. Va justo encima del precio/CTA. */}
+        <CompartirPropiedad title={propertyTitle} slug={propertySlug} />
+
         {/* WhatsApp primero */}
         <a
           href={waHref}
