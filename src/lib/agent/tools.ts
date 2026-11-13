@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { prisma } from '@/lib/prisma'
 import { SITE_URL } from '@/lib/site'
+import { descripcionPlana } from '@/lib/descripcion'
 import { consultarExperto } from '@/lib/agent/expert'
 import { avisarLead } from '@/lib/whatsapp'
 import {
@@ -389,7 +390,7 @@ function formatProperty(p: {
     precio:       Number(p.price_cop),
     precioFormateado: `$${Number(p.price_cop).toLocaleString('es-CO')}`,
     areaCOP:      p.area_lot_m2 ?? p.area_built_m2 ?? null,
-    resumen:      p.short_description?.slice(0, 220) ?? null,
+    resumen:      descripcionPlana(p.short_description).slice(0, 220) || null,
     nueva:        p.updated_at ? esReciente(p.updated_at) : false,
     fotoPrincipal: p.media?.[0]?.url ?? null,
     urlFicha:     `${SITE_URL}/propiedad/${p.slug}`,
@@ -478,7 +479,7 @@ async function detallePropiedad(input: DetalleInput) {
      * repetiría «cero habitaciones» como si fuera un dato medido—. */
     habitaciones: p.bedrooms  > 0 ? p.bedrooms  : null,
     banos:        p.bathrooms > 0 ? p.bathrooms : null,
-    descripcion:  p.description ?? p.short_description ?? '',
+    descripcion:  descripcionPlana(p.description ?? p.short_description ?? ''),
     caracteristicas: p.features.map(f => ({ key: f.feature_key, value: f.feature_value })),
     fotos:        p.media.filter(m => m.type === 'image').map(m => m.url),
     videoUrl:     p.video_url ?? null,

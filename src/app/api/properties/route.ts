@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { descripcionPlana } from '@/lib/descripcion'
 
 export async function GET(request: NextRequest) {
   try {
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
       published_at:    p.published_at,
       updated_at:      p.updated_at,
       title:           p.title,
-      short_description: p.short_description,
+      short_description: descripcionPlana(p.short_description),
       meta_title:      p.meta_title,
       meta_description: p.meta_description,
       municipality:    p.municipality,

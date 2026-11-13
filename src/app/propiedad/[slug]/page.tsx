@@ -16,6 +16,9 @@ import { cargarEnlaces } from '@/lib/enlaces';
 import { GaleriaLightbox } from '@/components/propiedades/GaleriaLightbox';
 import { Modelo3D } from '@/components/propiedades/Modelo3D';
 import { FormContactoPropiedad } from '@/components/propiedades/FormContactoPropiedad';
+import { DescripcionFormateada } from '@/components/propiedades/DescripcionFormateada';
+import { EscucharDescripcion } from '@/components/propiedades/EscucharDescripcion';
+import { descripcionPlana } from '@/lib/descripcion';
 import { JsonLd, breadcrumbSchema, propertySchema } from '@/components/seo/JsonLd';
 import { DatosVerificables } from '@/components/aeo/DatosVerificables';
 import { RelatedProperties } from '@/components/propiedades/RelatedProperties';
@@ -259,7 +262,7 @@ export default async function PropiedadDetallePage(
   const listing = propertySchema({
     title,
     slug:          p.slug,
-    description:   descripcion || p.short_description || '',
+    description:   descripcionPlana(descripcion || p.short_description || ''),
     price_cop:     p.price_cop,
     status:        p.status,
     bedrooms:      p.bedrooms ?? 0,
@@ -452,9 +455,12 @@ export default async function PropiedadDetallePage(
             {/* Descripción */}
             {descripcion && (
               <section style={{ background: '#fff', borderRadius: 16, border: '1px solid #E2E8F0', padding: '1.5rem 1.75rem' }}>
-                <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.1rem', marginBottom: '1rem' }}>Descripción</h2>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: '1rem', flexWrap: 'wrap' }}>
+                  <h2 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '1.1rem', margin: 0 }}>Descripción</h2>
+                  <EscucharDescripcion texto={descripcionPlana(descripcion)} />
+                </div>
                 <div style={{ color: '#475569', lineHeight: 1.75, fontSize: '0.95rem', whiteSpace: 'pre-line' }}>
-                  {descripcion}
+                  <DescripcionFormateada texto={descripcion} />
                 </div>
               </section>
             )}

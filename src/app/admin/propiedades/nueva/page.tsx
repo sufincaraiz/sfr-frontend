@@ -6,6 +6,7 @@ import { Upload, X, Save, Loader2, CheckCircle2, MapPin, ArrowRight } from 'luci
 import { PROPERTY_TYPES } from '@/lib/utils';
 import { MUNICIPIOS_PROVINCIA } from '@/lib/datos-oficiales';
 import { subirArchivo } from '@/lib/subir-imagen';
+import { CampoConNegrilla } from '@/components/admin/CampoConNegrilla';
 
 const OTRO = '__otro__';
 
@@ -321,8 +322,8 @@ export default function NuevaPropiedadPage() {
       <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', padding: '1.5rem' }}>
         <SectionTitle title="📝 Descripción" />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <Field label="Descripción corta">
-            <textarea value={form.short_description} onChange={e => set('short_description', e.target.value)} rows={2} placeholder="Hermosa finca con vista panorámica…" style={{ ...inputStyle, resize: 'vertical' }} />
+          <Field label="Descripción corta (es la que se ve en la ficha)">
+            <CampoConNegrilla value={form.short_description} onChange={v => set('short_description', v)} rows={2} placeholder="Hermosa finca con vista panorámica…" style={{ ...inputStyle, resize: 'vertical' }} />
           </Field>
           <Field label="Descripción completa">
             <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={5} placeholder="Descripción detallada de la propiedad…" style={{ ...inputStyle, resize: 'vertical' }} />

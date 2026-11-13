@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { descripcionPlana } from '@/lib/descripcion'
 
 export async function GET(
   _request: NextRequest,
@@ -41,7 +42,7 @@ export async function GET(
       published_at:     property.published_at,
       updated_at:       property.updated_at,
       title:            property.title,
-      short_description: property.short_description,
+      short_description: descripcionPlana(property.short_description),
       description:      property.description,
       meta_title:       property.meta_title,
       meta_description: property.meta_description,

@@ -6,6 +6,7 @@ import { Save, Loader2, ArrowLeft, Trash2, Upload, X, Star, ChevronLeft, Chevron
 import { PROPERTY_TYPES, formatPrice } from '@/lib/utils';
 import { MUNICIPIOS_PROVINCIA } from '@/lib/datos-oficiales';
 import { subirArchivo } from '@/lib/subir-imagen';
+import { CampoConNegrilla } from '@/components/admin/CampoConNegrilla';
 
 const OTRO   = '__otro__';
 
@@ -526,8 +527,8 @@ export default function EditarPropiedadPage() {
       <div style={{ background: '#fff', borderRadius: 14, border: '1px solid #E2E8F0', padding: '1.5rem' }}>
         <h3 style={{ color: '#0D2D5E', fontWeight: 800, fontSize: '0.95rem', marginBottom: '1rem', paddingBottom: '0.5rem', borderBottom: '2px solid #EFF6FF' }}>Descripción y SEO</h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <Field label="Descripción corta">
-            <textarea value={form.short_description} onChange={e => set('short_description', e.target.value)} rows={3} style={{ ...inputStyle, resize: 'vertical', minHeight: 70 }} />
+          <Field label="Descripción corta (es la que se ve en la ficha)">
+            <CampoConNegrilla value={form.short_description ?? ''} onChange={v => set('short_description', v)} rows={3} style={{ ...inputStyle, resize: 'vertical', minHeight: 70 }} />
           </Field>
           <Field label="Descripción completa">
             <textarea value={form.description} onChange={e => set('description', e.target.value)} rows={14} style={{ ...inputStyle, resize: 'vertical', minHeight: 280, lineHeight: 1.6 }} />
